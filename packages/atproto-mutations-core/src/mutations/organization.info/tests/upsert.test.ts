@@ -1,14 +1,14 @@
 import { describe, it, expect } from "bun:test";
 import { Effect } from "effect";
-import { makeCredentialAgentLayer } from "../src/layers/credential";
-import { upsertOrganizationInfo } from "../src/mutations/organization.info/update-or-create";
-import type { CreateOrganizationInfoInput } from "../src/mutations/organization.info/utils/types";
+import { makeCredentialAgentLayer } from "../../../layers/credential";
+import { upsertOrganizationInfo } from "../upsert";
+import type { CreateOrganizationInfoInput } from "../utils/types";
 
 // ---------------------------------------------------------------------------
 // Credentials
 // ---------------------------------------------------------------------------
 
-await Bun.file(new URL(".env.test-credentials", import.meta.url))
+await Bun.file(new URL("../../../../tests/.env.test-credentials", import.meta.url))
   .text()
   .then((text) => {
     for (const line of text.split("\n")) {

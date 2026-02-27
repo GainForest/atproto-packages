@@ -24,10 +24,10 @@ export { createOrganizationInfo } from "./mutations/organization.info/create";
 export { updateOrganizationInfo } from "./mutations/organization.info/update";
 export {
   upsertOrganizationInfo,
-} from "./mutations/organization.info/update-or-create";
+} from "./mutations/organization.info/upsert";
 export type {
   UpsertOrganizationInfoInput,
-} from "./mutations/organization.info/update-or-create";
+} from "./mutations/organization.info/upsert";
 
 export {
   OrganizationInfoAlreadyExistsError,

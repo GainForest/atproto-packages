@@ -1,56 +1,44 @@
-// Import from generated types — used both locally and re-exported for callers.
+// ---------------------------------------------------------------------------
+// Re-export generated types — single source of truth, no manual duplication.
+// ---------------------------------------------------------------------------
+
+// The canonical record shape as stored on the PDS.
+export type { Main as OrganizationInfoRecord } from "@gainforest/generated/app/gainforest/organization/info.defs";
+
+// Nested sub-types re-exported so callers don't need to reach into generated paths.
+export type { Richtext } from "@gainforest/generated/app/gainforest/common/defs.defs";
+export type { Main as LinearDocument } from "@gainforest/generated/pub/leaflet/pages/linearDocument.defs";
+export type { SmallImage } from "@gainforest/generated/org/hypercerts/defs.defs";
+
+// ---------------------------------------------------------------------------
+// Derived types — computed from OrganizationInfoRecord, never hand-written.
+// Changing the lexicon regenerates OrganizationInfoRecord; these follow for free.
+// ---------------------------------------------------------------------------
+
 import type { Main as OrganizationInfoRecord } from "@gainforest/generated/app/gainforest/organization/info.defs";
-import type { Richtext } from "@gainforest/generated/app/gainforest/common/defs.defs";
-import type { Main as LinearDocument } from "@gainforest/generated/pub/leaflet/pages/linearDocument.defs";
-import type { SmallImage } from "@gainforest/generated/org/hypercerts/defs.defs";
-
-// Re-export the generated record type as the canonical shape for this entity.
-export type { OrganizationInfoRecord, Richtext, LinearDocument, SmallImage };
-
-// ---------------------------------------------------------------------------
-// Objective enum — matches the lexicon's enum values exactly.
-// ---------------------------------------------------------------------------
-
-export type Objective =
-  | "Conservation"
-  | "Research"
-  | "Education"
-  | "Community"
-  | "Other";
-
-// ---------------------------------------------------------------------------
-// Input types — what callers pass into each operation.
-//
-// Rules:
-//   - $type is always omitted (set internally to "app.gainforest.organization.info")
-//   - createdAt is always omitted from create/update inputs — operations set it
-//   - update input makes every field optional (partial patch semantics)
-// ---------------------------------------------------------------------------
-
-export type CreateOrganizationInfoInput = {
-  /** Min 8, max 255 characters */
-  displayName: string;
-  /** Short richtext description */
-  shortDescription: Richtext;
-  /** Long richtext document (pub.leaflet linearDocument) */
-  longDescription: LinearDocument;
-  /** At least one objective required */
-  objectives: Objective[];
-  /** ISO 3166-1 alpha-2 country code (e.g. "BR", "US") */
-  country: string;
-  visibility: "Public" | "Unlisted";
-  coverImage?: SmallImage;
-  logo?: SmallImage;
-  /** ISO 8601 datetime string */
-  startDate?: string;
-  /** Full URI including scheme (https://...) */
-  website?: string;
-};
 
 /**
- * Partial update — only the fields you want to change.
- * All fields are optional; omitted fields keep their existing values.
- * createdAt is not patchable — it is set once at creation time.
+ * Valid objective values — extracted directly from the record type so they
+ * stay in sync with the lexicon enum without manual duplication.
+ */
+export type Objective = OrganizationInfoRecord["objectives"][number];
+
+/**
+ * Input for createOrganizationInfo.
+ *
+ * Derived by stripping the fields that operations set internally:
+ *   - $type  — always "app.gainforest.organization.info", set by create/upsert
+ *   - createdAt — set once at creation time, never accepted from caller
+ */
+export type CreateOrganizationInfoInput = Omit<
+  OrganizationInfoRecord,
+  "$type" | "createdAt"
+>;
+
+/**
+ * Input for updateOrganizationInfo.
+ * Every field is optional — only the provided fields are changed.
+ * createdAt remains non-patchable (excluded from CreateOrganizationInfoInput).
  */
 export type UpdateOrganizationInfoInput = Partial<CreateOrganizationInfoInput>;
 
@@ -58,6 +46,10 @@ export type UpdateOrganizationInfoInput = Partial<CreateOrganizationInfoInput>;
 // Return type — what every operation yields on success.
 // ---------------------------------------------------------------------------
 
+/**
+ * Returned by all three operations (create, update, upsert) on success.
+ * uri and cid come from the PDS response; record is the committed value.
+ */
 export type OrganizationInfoMutationResult = {
   /** AT-URI of the record — at://<did>/app.gainforest.organization.info/self */
   uri: string;

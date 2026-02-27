@@ -1,19 +1,19 @@
 import { describe, it, expect } from "bun:test";
 import { Effect } from "effect";
-import { makeCredentialAgentLayer } from "../src/layers/credential";
-import { createOrganizationInfo } from "../src/mutations/organization.info/create";
-import { updateOrganizationInfo } from "../src/mutations/organization.info/update";
+import { makeCredentialAgentLayer } from "../../../layers/credential";
+import { createOrganizationInfo } from "../create";
+import { updateOrganizationInfo } from "../update";
 import {
   OrganizationInfoNotFoundError,
   OrganizationInfoValidationError,
-} from "../src/mutations/organization.info/utils/errors";
-import type { CreateOrganizationInfoInput } from "../src/mutations/organization.info/utils/types";
+} from "../utils/errors";
+import type { CreateOrganizationInfoInput } from "../utils/types";
 
 // ---------------------------------------------------------------------------
 // Credentials
 // ---------------------------------------------------------------------------
 
-await Bun.file(new URL(".env.test-credentials", import.meta.url))
+await Bun.file(new URL("../../../../tests/.env.test-credentials", import.meta.url))
   .text()
   .then((text) => {
     for (const line of text.split("\n")) {
@@ -164,10 +164,8 @@ describe("updateOrganizationInfo", () => {
       return;
     }
 
-    // This test uses a different account that has no organization.info record.
-    // We can't easily test this against the same account used for creation,
-    // so we test it by providing credentials for a fresh account.
-    // If ATPROTO_SECONDARY_* vars are set, use them; otherwise skip this sub-test.
+    // This test requires a second account that has no organization.info record.
+    // Set ATPROTO_SECONDARY_* in tests/.env.test-credentials to enable it.
     const secondaryService    = process.env["ATPROTO_SECONDARY_SERVICE"]    ?? "";
     const secondaryIdentifier = process.env["ATPROTO_SECONDARY_IDENTIFIER"] ?? "";
     const secondaryPassword   = process.env["ATPROTO_SECONDARY_PASSWORD"]   ?? "";

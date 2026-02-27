@@ -1,20 +1,20 @@
 import { describe, it, expect } from "bun:test";
 import { Effect } from "effect";
-import { makeCredentialAgentLayer } from "../src/layers/credential";
-import { createOrganizationInfo } from "../src/mutations/organization.info/create";
+import { makeCredentialAgentLayer } from "../../../layers/credential";
+import { createOrganizationInfo } from "../create";
 import {
   OrganizationInfoAlreadyExistsError,
   OrganizationInfoValidationError,
-} from "../src/mutations/organization.info/utils/errors";
-import type { CreateOrganizationInfoInput } from "../src/mutations/organization.info/utils/types";
+} from "../utils/errors";
+import type { CreateOrganizationInfoInput } from "../utils/types";
 
 // ---------------------------------------------------------------------------
-// Load test credentials from tests/.env.test-credentials (gitignored).
+// Load test credentials from the package-level tests/.env.test-credentials.
 // Copy tests/.env.test-credentials.example → tests/.env.test-credentials
 // and fill in your dedicated test account credentials.
 // ---------------------------------------------------------------------------
 
-await Bun.file(new URL(".env.test-credentials", import.meta.url))
+await Bun.file(new URL("../../../../tests/.env.test-credentials", import.meta.url))
   .text()
   .then((text) => {
     for (const line of text.split("\n")) {
