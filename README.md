@@ -58,16 +58,42 @@ atproto-packages/
 bun install
 ```
 
+### Lexicons
+
+`GENERATED/lexicons/` is **gitignored** and must be populated before building or testing. The codegen pipeline merges lexicon JSON files from two upstream repos, in priority order (later source wins on conflicts):
+
+| # | Repo | Default branch |
+|---|---|---|
+| 1 | [`GainForest/lexicons`](https://github.com/GainForest/lexicons) | `main` |
+| 2 | [`hypercerts-org/hypercerts-lexicon`](https://github.com/hypercerts-org/hypercerts-lexicon) | `main` |
+
+After merging, the script verifies that every `$ref` used across all lexicons can be resolved locally. If any ref is missing the script exits loudly — so codegen fails before generating broken types.
+
+**If you are adding new lexicons** that live in a different repo, add a new `fetch_and_merge` call for it in `GENERATED/scripts/fetch-lexicons.sh`.
+
 ### Generate types
 
-Types are generated from ATProto lexicon JSON files fetched from upstream repos. Run this once before building, and again whenever lexicons change.
+Fetch lexicons and generate TypeScript types. Run this once before your first build, and again whenever any lexicon changes.
 
 ```bash
-# Fetch lexicons from upstream + generate types
+# Fetch from GitHub (both repos @ main) + generate types
 bun run codegen
 
-# Use local sibling lexicon repos instead of fetching from remote
+# Fetch from local sibling directories instead of GitHub
+# (expects ../lexicons and ../hypercerts-lexicon relative to this repo)
 bun run codegen:local
+
+# Fetch only — skip type generation
+bun run fetch-lexicons
+
+# Fetch from a specific branch (e.g. when working on a lexicon PR)
+./GENERATED/scripts/fetch-lexicons.sh --gainforest-branch my-feature-branch
+
+# Mix: one source from local, the other from GitHub
+./GENERATED/scripts/fetch-lexicons.sh \
+  --gainforest-local ../lexicons \
+  --hypercerts-branch main
+# then run: bun run GENERATED/scripts/codegen.ts
 ```
 
 ### Build all packages
