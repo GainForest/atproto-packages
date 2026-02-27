@@ -5,3 +5,8 @@ dist/
 .env
 .env.local
 .env.*.local
+
+# Generated artifacts — populated by `bun run fetch-lexicons` and `bun run codegen`
+# Do not commit these; they are fetched fresh from source repos.
+GENERATED/lexicons/
+GENERATED/types/

@@ -6,11 +6,16 @@
     "build": "bun run --filter '*' build",
     "dev": "bun run --filter '*' dev",
     "clean": "rm -rf packages/*/dist",
+    "fetch-lexicons": "./GENERATED/scripts/fetch-lexicons.sh",
+    "fetch-lexicons:local": "./GENERATED/scripts/fetch-lexicons.sh -gl ../lexicons -hl ../hypercerts-lexicon",
+    "codegen": "bun run fetch-lexicons && bun run GENERATED/scripts/codegen.ts",
+    "codegen:local": "bun run fetch-lexicons:local && bun run GENERATED/scripts/codegen.ts",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "bun run build && changeset publish"
   },
   "devDependencies": {
+    "@atproto/lex": "^0.0.19",
     "@changesets/cli": "^2.29.8",
     "@types/bun": "latest",
     "tsup": "^8.5.1",
