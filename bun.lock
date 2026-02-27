@@ -17,6 +17,7 @@
       "dependencies": {
         "@atproto/api": "^0.13.17",
         "@atproto/oauth-client-node": "^0.3.9",
+        "@gainforest/internal-utils": "workspace:*",
         "iron-session": "^8.0.4",
       },
       "devDependencies": {
@@ -56,6 +57,15 @@
       "peerDependencies": {
         "next": ">=14.0.0",
         "typescript": "^5.0.0",
+      },
+    },
+    "packages/internal-utils": {
+      "name": "@gainforest/internal-utils",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "tsup": "^8.5.1",
+        "typescript": "^5.9.3",
       },
     },
   },
@@ -223,6 +233,8 @@
     "@gainforest/atproto-mutations-core": ["@gainforest/atproto-mutations-core@workspace:packages/atproto-mutations-core"],
 
     "@gainforest/atproto-mutations-next": ["@gainforest/atproto-mutations-next@workspace:packages/atproto-mutations-next"],
+
+    "@gainforest/internal-utils": ["@gainforest/internal-utils@workspace:packages/internal-utils"],
 
     "@img/colour": ["@img/colour@1.0.0", "", {}, "sha512-A5P/LfWGFSl6nsckYtjw9da+19jB8hkJ6ACTGcDfEJ0aE+l2n2El7dsVM7UVHZQ9s2lmYMWlrS21YLy2IR1LUw=="],
 
