@@ -4,14 +4,32 @@ import { AtprotoAgent } from "../src/services/AtprotoAgent";
 import { makeCredentialAgentLayer, CredentialLoginError } from "../src/layers/credential";
 
 // ---------------------------------------------------------------------------
-// Credentials — set these in packages/atproto-mutations-core/.env.test
+// Credentials — copy tests/.env.test-credentials.example to
+// tests/.env.test-credentials and fill in your values.
 //
 //   ATPROTO_SERVICE=bsky.social
 //   ATPROTO_IDENTIFIER=your-handle.bsky.social
 //   ATPROTO_PASSWORD=your-app-password
 //
-// Bun loads .env automatically. Never commit real credentials.
+// Never commit .env.test-credentials — it is gitignored.
 // ---------------------------------------------------------------------------
+
+await Bun.file(new URL(".env.test-credentials", import.meta.url))
+  .text()
+  .then((text) => {
+    for (const line of text.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq === -1) continue;
+      const key = trimmed.slice(0, eq).trim();
+      const val = trimmed.slice(eq + 1).trim();
+      process.env[key] = val;
+    }
+  })
+  .catch(() => {
+    // File not present — tests will self-skip below.
+  });
 
 const service    = process.env["ATPROTO_SERVICE"]    ?? "";
 const identifier = process.env["ATPROTO_IDENTIFIER"] ?? "";
@@ -23,8 +41,8 @@ describe("makeCredentialAgentLayer", () => {
   it("resolves an authenticated Agent with valid credentials", async () => {
     if (!credentialsProvided) {
       console.log(
-        "[skip] Set ATPROTO_SERVICE, ATPROTO_IDENTIFIER, ATPROTO_PASSWORD in " +
-        "packages/atproto-mutations-core/.env.test to run this test."
+        "[skip] Copy tests/.env.test-credentials.example → tests/.env.test-credentials " +
+        "and fill in your credentials to run this test."
       );
       return;
     }
