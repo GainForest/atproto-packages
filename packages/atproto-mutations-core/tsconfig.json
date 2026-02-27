@@ -5,8 +5,7 @@
     "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@gainforest/atproto-mutations-core": ["../atproto-mutations-core/dist/index.d.ts"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src/**/*"]
