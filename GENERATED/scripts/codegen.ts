@@ -18,7 +18,7 @@
  */
 
 import { join } from "node:path";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 
 // ============================================================
 // CONFIGURATION — the only thing you should ever edit manually
@@ -39,7 +39,9 @@ const EXCLUDED_NSIDS = new Set<string>([
   "app.certified.badge.award",
   "app.certified.badge.definition",
   "app.certified.badge.response",
-  "app.certified.location",
+  // "app.certified.location" — removed from exclusions; the mixed-type union
+  // in location.json uses refs only (org.hypercerts.defs#uri | #smallBlob | #string)
+  // which @atproto/lex can handle.
 ]);
 
 // ============================================================
@@ -83,6 +85,50 @@ async function assertLexiconsExist(): Promise<void> {
     process.exit(1);
   }
   console.log(`[codegen] Found ${count} lexicon file(s) in ${LEXICONS_DIR}`);
+}
+
+// ============================================================
+// LEXICON PATCHES
+// ============================================================
+
+/**
+ * Apply in-memory patches to fetched lexicons before running `lex build`.
+ *
+ * These patches correct upstream lexicon definitions that cause mismatches
+ * between what the PDS stores and what the generated validators accept.
+ * Each patch is documented with the reason it is needed.
+ *
+ * Add new patches here — NEVER commit hand-edits to GENERATED/lexicons/
+ * directly, since that directory is gitignored and re-populated on every
+ * `fetch-lexicons` run.
+ */
+async function applyLexiconPatches(): Promise<void> {
+  // ── Patch 1: add "audio/vnd.wave" to the audio blob accept list ──────────
+  // Some PDS implementations normalise "audio/wav" → "audio/vnd.wave" when a
+  // blob is uploaded. When we later build the record we use `raw.mimeType`
+  // from the upload response (required, otherwise the PDS rejects the write
+  // with "Referenced Mimetype does not match stored blob"). Without this entry
+  // in the accept list, `$parse` rejects the normalised MIME type.
+  const defsPath = join(LEXICONS_DIR, "app", "gainforest", "common", "defs.json");
+  try {
+    const raw = await readFile(defsPath, "utf8");
+    const defs = JSON.parse(raw) as Record<string, unknown>;
+    const audioDef = (defs as { defs?: { audio?: { properties?: { file?: { accept?: string[] } } } } })
+      .defs?.audio;
+    if (audioDef?.properties?.file?.accept) {
+      const accept = audioDef.properties.file.accept;
+      if (!accept.includes("audio/vnd.wave")) {
+        // Insert after "audio/wav" for readability
+        const wavIdx = accept.indexOf("audio/wav");
+        accept.splice(wavIdx + 1, 0, "audio/vnd.wave");
+        await writeFile(defsPath, JSON.stringify(defs, null, 4) + "\n", "utf8");
+        console.log('[codegen] Patch applied: added "audio/vnd.wave" to app.gainforest.common.defs#audio accept list');
+      }
+    }
+  } catch (e) {
+    // If the file doesn't exist yet (e.g. on a partial fetch), skip silently.
+    console.warn(`[codegen] Skipping audio/vnd.wave patch: ${e}`);
+  }
 }
 
 // ============================================================
@@ -134,6 +180,7 @@ if (EXCLUDED_NSIDS.size > 0) {
 }
 
 await assertLexiconsExist();
+await applyLexiconPatches();
 await runLexBuild();
 
 console.log(`\n[codegen] Done. Types written to ${OUT_DIR}`);

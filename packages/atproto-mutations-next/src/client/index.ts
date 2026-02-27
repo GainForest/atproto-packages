@@ -55,6 +55,20 @@ import type {
   DeleteRecordResult,
   UploadBlobInput,
   UploadBlobResult,
+  CertifiedLocationMutationResult,
+  CreateCertifiedLocationInput,
+  UpdateCertifiedLocationInput,
+  UpsertCertifiedLocationInput,
+  DefaultSiteMutationResult,
+  SetDefaultSiteInput,
+  LayerMutationResult,
+  CreateLayerInput,
+  UpdateLayerInput,
+  UpsertLayerInput,
+  AudioRecordingMutationResult,
+  CreateAudioRecordingInput,
+  UpdateAudioRecordingInput,
+  UpsertAudioRecordingInput,
 } from "@gainforest/atproto-mutations-core";
 import {
   createOrganizationInfoAction,
@@ -65,6 +79,19 @@ import {
   upsertClaimActivityAction,
   deleteClaimActivityAction,
   uploadBlobAction,
+  createCertifiedLocationAction,
+  updateCertifiedLocationAction,
+  upsertCertifiedLocationAction,
+  deleteCertifiedLocationAction,
+  setDefaultSiteAction,
+  createLayerAction,
+  updateLayerAction,
+  upsertLayerAction,
+  deleteLayerAction,
+  createAudioRecordingAction,
+  updateAudioRecordingAction,
+  upsertAudioRecordingAction,
+  deleteAudioRecordingAction,
 } from "../actions";
 import type { UnauthorizedError, SessionExpiredError } from "../server";
 
@@ -80,6 +107,23 @@ export type Mutations = {
   updateClaimActivity: (input: UpdateClaimActivityInput) => Promise<ClaimActivityMutationResult>;
   upsertClaimActivity: (input: UpsertClaimActivityInput) => Promise<ClaimActivityMutationResult & { created: boolean }>;
   deleteClaimActivity: (input: DeleteRecordInput) => Promise<DeleteRecordResult>;
+  // certified.location
+  createCertifiedLocation: (input: CreateCertifiedLocationInput) => Promise<CertifiedLocationMutationResult>;
+  updateCertifiedLocation: (input: UpdateCertifiedLocationInput) => Promise<CertifiedLocationMutationResult>;
+  upsertCertifiedLocation: (input: UpsertCertifiedLocationInput) => Promise<CertifiedLocationMutationResult & { created: boolean }>;
+  deleteCertifiedLocation: (input: DeleteRecordInput) => Promise<DeleteRecordResult>;
+  // organization.defaultSite
+  setDefaultSite: (input: SetDefaultSiteInput) => Promise<DefaultSiteMutationResult>;
+  // organization.layer
+  createLayer: (input: CreateLayerInput) => Promise<LayerMutationResult>;
+  updateLayer: (input: UpdateLayerInput) => Promise<LayerMutationResult>;
+  upsertLayer: (input: UpsertLayerInput) => Promise<LayerMutationResult & { created: boolean }>;
+  deleteLayer: (input: DeleteRecordInput) => Promise<DeleteRecordResult>;
+  // organization.recordings.audio
+  createAudioRecording: (input: CreateAudioRecordingInput) => Promise<AudioRecordingMutationResult>;
+  updateAudioRecording: (input: UpdateAudioRecordingInput) => Promise<AudioRecordingMutationResult>;
+  upsertAudioRecording: (input: UpsertAudioRecordingInput) => Promise<AudioRecordingMutationResult & { created: boolean }>;
+  deleteAudioRecording: (input: DeleteRecordInput) => Promise<DeleteRecordResult>;
   // blob
   uploadBlob: (input: UploadBlobInput) => Promise<UploadBlobResult>;
 };
@@ -158,6 +202,134 @@ export function createMutations(agentLayer: AgentLayer): Mutations {
      */
     deleteClaimActivity: adapt((input: DeleteRecordInput) =>
       deleteClaimActivityAction(input, agentLayer)
+    ),
+
+    // -----------------------------------------------------------------------
+    // certified.location
+    // -----------------------------------------------------------------------
+
+    /**
+     * Create a new app.certified.location record.
+     * Validates the GeoJSON shapefile before uploading.
+     */
+    createCertifiedLocation: adapt((input: CreateCertifiedLocationInput) =>
+      createCertifiedLocationAction(input, agentLayer)
+    ),
+
+    /**
+     * Update an existing app.certified.location record (partial patch).
+     * Throws MutationError with code NOT_FOUND if no record exists at input.rkey.
+     */
+    updateCertifiedLocation: adapt((input: UpdateCertifiedLocationInput) =>
+      updateCertifiedLocationAction(input, agentLayer)
+    ),
+
+    /**
+     * Upsert an app.certified.location record.
+     * Creates if absent, fully replaces if present.
+     * Returns { uri, cid, rkey, record, created: boolean }.
+     */
+    upsertCertifiedLocation: adapt((input: UpsertCertifiedLocationInput) =>
+      upsertCertifiedLocationAction(input, agentLayer)
+    ),
+
+    /**
+     * Delete an app.certified.location record.
+     * Throws MutationError with code IS_DEFAULT if this location is currently
+     * set as the organization's default site — set a different default first.
+     * Throws MutationError with code NOT_FOUND if no record exists at input.rkey.
+     */
+    deleteCertifiedLocation: adapt((input: DeleteRecordInput) =>
+      deleteCertifiedLocationAction(input, agentLayer)
+    ),
+
+    // -----------------------------------------------------------------------
+    // organization.defaultSite
+    // -----------------------------------------------------------------------
+
+    /**
+     * Set (upsert) the app.gainforest.organization.defaultSite singleton.
+     * Creates if absent, replaces if present. No delete operation — to "unset"
+     * a default site the record itself must be overwritten with a new location.
+     * Validates that the referenced certified.location exists in the same PDS.
+     */
+    setDefaultSite: adapt((input: SetDefaultSiteInput) =>
+      setDefaultSiteAction(input, agentLayer)
+    ),
+
+    // -----------------------------------------------------------------------
+    // organization.layer
+    // -----------------------------------------------------------------------
+
+    /**
+     * Create a new app.gainforest.organization.layer record.
+     */
+    createLayer: adapt((input: CreateLayerInput) =>
+      createLayerAction(input, agentLayer)
+    ),
+
+    /**
+     * Update an existing app.gainforest.organization.layer record (partial patch).
+     * Throws MutationError with code NOT_FOUND if no record exists at input.rkey.
+     */
+    updateLayer: adapt((input: UpdateLayerInput) =>
+      updateLayerAction(input, agentLayer)
+    ),
+
+    /**
+     * Upsert an app.gainforest.organization.layer record.
+     * Creates if absent, fully replaces if present.
+     * Returns { uri, cid, rkey, record, created: boolean }.
+     */
+    upsertLayer: adapt((input: UpsertLayerInput) =>
+      upsertLayerAction(input, agentLayer)
+    ),
+
+    /**
+     * Delete an app.gainforest.organization.layer record.
+     * Throws MutationError with code NOT_FOUND if no record exists at input.rkey.
+     */
+    deleteLayer: adapt((input: DeleteRecordInput) =>
+      deleteLayerAction(input, agentLayer)
+    ),
+
+    // -----------------------------------------------------------------------
+    // organization.recordings.audio
+    // -----------------------------------------------------------------------
+
+    /**
+     * Create a new app.gainforest.organization.recordings.audio record.
+     * Caller must supply all metadata; technical metadata required when providing
+     * an audio file.
+     */
+    createAudioRecording: adapt((input: CreateAudioRecordingInput) =>
+      createAudioRecordingAction(input, agentLayer)
+    ),
+
+    /**
+     * Update an existing app.gainforest.organization.recordings.audio record
+     * (partial patch).
+     * Throws MutationError with code NOT_FOUND if no record exists at input.rkey.
+     */
+    updateAudioRecording: adapt((input: UpdateAudioRecordingInput) =>
+      updateAudioRecordingAction(input, agentLayer)
+    ),
+
+    /**
+     * Upsert an app.gainforest.organization.recordings.audio record.
+     * Creates if absent, fully replaces if present.
+     * Returns { uri, cid, rkey, record, created: boolean }.
+     */
+    upsertAudioRecording: adapt((input: UpsertAudioRecordingInput) =>
+      upsertAudioRecordingAction(input, agentLayer)
+    ),
+
+    /**
+     * Delete an app.gainforest.organization.recordings.audio record.
+     * Throws MutationError with code NOT_FOUND if no record exists at input.rkey.
+     */
+    deleteAudioRecording: adapt((input: DeleteRecordInput) =>
+      deleteAudioRecordingAction(input, agentLayer)
     ),
 
     // -----------------------------------------------------------------------

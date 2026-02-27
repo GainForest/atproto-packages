@@ -52,6 +52,8 @@ function makeTinyPng(overrides?: { size?: number; type?: string }): Serializable
 const baseInput: UpsertClaimActivityInput = {
   title: "Test Claim Activity",
   shortDescription: "A test claim activity record created by the automated test suite.",
+  startDate: "2024-01-01T00:00:00.000Z",
+  endDate: "2024-12-31T23:59:59.000Z",
 };
 
 // ---------------------------------------------------------------------------

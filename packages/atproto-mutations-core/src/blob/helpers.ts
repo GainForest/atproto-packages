@@ -199,11 +199,17 @@ function uploadSingle(
     // @atproto/lex's isBlobRef rejects class instances — it requires a plain object
     // with { $type: "blob", ref: <CID instance>, mimeType, size }.
     // The @atproto/lexicon BlobRef stores the CID in `.ref` — we can re-wrap it.
+    //
+    // NOTE: We use `raw.mimeType` from the PDS response. The PDS may normalize
+    // MIME types on upload (e.g. "audio/wav" → "audio/vnd.wave"), and the stored
+    // blobRef must match what the PDS expects when writing the record — otherwise
+    // the PDS will reject the write with a "Referenced Mimetype does not match
+    // stored blob" error.
     const raw = res.data.blob as { ref: unknown; mimeType: string; size: number };
     const plainBlobRef = {
       $type: "blob" as const,
-      ref: raw.ref,      // This is a real CID instance — isBlobRef accepts it
-      mimeType: raw.mimeType,
+      ref: raw.ref,           // This is a real CID instance — isBlobRef accepts it
+      mimeType: raw.mimeType, // Use PDS-normalized MIME type to match stored blob
       size: raw.size,
     };
 

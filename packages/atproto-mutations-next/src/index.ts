@@ -52,10 +52,8 @@ export type {
   UpsertClaimActivityInput,
   ClaimActivityMutationResult,
   ClaimActivityRecord,
-  Contributor,
-  ContributorIdentity,
-  ContributorRole,
-  WorkScopeString,
+  WorkScope,
+  ActivityWeight,
   StrongRef,
   RichtextFacet,
 } from "@gainforest/atproto-mutations-core";
@@ -77,3 +75,70 @@ export {
   ClaimActivityNotFoundError,
   ClaimActivityPdsError,
 } from "@gainforest/atproto-mutations-core";
+
+// certified.location types — safe everywhere
+export type {
+  CertifiedLocationRecord,
+  CertifiedLocationMutationResult,
+  CreateCertifiedLocationInput,
+  UpdateCertifiedLocationInput,
+  UpsertCertifiedLocationInput,
+} from "@gainforest/atproto-mutations-core";
+export {
+  CertifiedLocationValidationError,
+  CertifiedLocationNotFoundError,
+  CertifiedLocationPdsError,
+  CertifiedLocationIsDefaultError,
+} from "@gainforest/atproto-mutations-core";
+
+// organization.defaultSite types — safe everywhere
+export type {
+  DefaultSiteRecord,
+  DefaultSiteMutationResult,
+  SetDefaultSiteInput,
+} from "@gainforest/atproto-mutations-core";
+export {
+  DefaultSiteValidationError,
+  DefaultSiteLocationNotFoundError,
+  DefaultSitePdsError,
+} from "@gainforest/atproto-mutations-core";
+
+// organization.layer types — safe everywhere
+export type {
+  LayerRecord,
+  LayerMutationResult,
+  LayerType,
+  CreateLayerInput,
+  UpdateLayerInput,
+  UpsertLayerInput,
+} from "@gainforest/atproto-mutations-core";
+export {
+  LayerValidationError,
+  LayerNotFoundError,
+  LayerPdsError,
+} from "@gainforest/atproto-mutations-core";
+
+// organization.recordings.audio types — safe everywhere
+export type {
+  AudioRecordingRecord,
+  AudioRecordingMutationResult,
+  AudioMetadata,
+  AudioTechnicalMetadata,
+  CreateAudioRecordingInput,
+  UpdateAudioRecordingInput,
+  UpsertAudioRecordingInput,
+} from "@gainforest/atproto-mutations-core";
+export {
+  AudioRecordingValidationError,
+  AudioRecordingNotFoundError,
+  AudioRecordingPdsError,
+} from "@gainforest/atproto-mutations-core";
+
+// GeoJSON utilities — safe everywhere
+export {
+  GeoJsonValidationError,
+  GeoJsonProcessingError,
+  validateGeojsonOrThrow,
+  computePolygonMetrics,
+} from "@gainforest/atproto-mutations-core";
+export type { PolygonMetrics } from "@gainforest/atproto-mutations-core";

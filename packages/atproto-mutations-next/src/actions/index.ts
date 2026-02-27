@@ -50,6 +50,34 @@ import {
   ClaimActivityPdsError,
   FileConstraintError,
   BlobUploadError,
+  GeoJsonValidationError,
+  GeoJsonProcessingError,
+  createCertifiedLocation,
+  updateCertifiedLocation,
+  upsertCertifiedLocation,
+  deleteCertifiedLocation,
+  CertifiedLocationValidationError,
+  CertifiedLocationNotFoundError,
+  CertifiedLocationPdsError,
+  CertifiedLocationIsDefaultError,
+  setDefaultSite,
+  DefaultSiteValidationError,
+  DefaultSiteLocationNotFoundError,
+  DefaultSitePdsError,
+  createLayer,
+  updateLayer,
+  upsertLayer,
+  deleteLayer,
+  LayerValidationError,
+  LayerNotFoundError,
+  LayerPdsError,
+  createAudioRecording,
+  updateAudioRecording,
+  upsertAudioRecording,
+  deleteAudioRecording,
+  AudioRecordingValidationError,
+  AudioRecordingNotFoundError,
+  AudioRecordingPdsError,
 } from "@gainforest/atproto-mutations-core";
 import type {
   MutationResult,
@@ -64,6 +92,26 @@ import type {
   DeleteRecordResult,
   UploadBlobInput,
   UploadBlobResult,
+  CertifiedLocationRecord,
+  CertifiedLocationMutationResult,
+  CreateCertifiedLocationInput,
+  UpdateCertifiedLocationInput,
+  UpsertCertifiedLocationInput,
+  DefaultSiteRecord,
+  DefaultSiteMutationResult,
+  SetDefaultSiteInput,
+  LayerRecord,
+  LayerMutationResult,
+  LayerType,
+  CreateLayerInput,
+  UpdateLayerInput,
+  UpsertLayerInput,
+  AudioRecordingRecord,
+  AudioRecordingMutationResult,
+  AudioTechnicalMetadata,
+  CreateAudioRecordingInput,
+  UpdateAudioRecordingInput,
+  UpsertAudioRecordingInput,
 } from "@gainforest/atproto-mutations-core";
 import { UnauthorizedError, SessionExpiredError } from "../server";
 
@@ -362,6 +410,356 @@ export async function deleteClaimActivityAction(
 }
 
 // ---------------------------------------------------------------------------
+// certified.location actions
+// ---------------------------------------------------------------------------
+
+type CertifiedLocationErrorCode =
+  | "UNAUTHORIZED"
+  | "SESSION_EXPIRED"
+  | "NOT_FOUND"
+  | "IS_DEFAULT"
+  | "INVALID_RECORD"
+  | "INVALID_GEOJSON"
+  | "GEOJSON_PROCESSING"
+  | "BLOB_UPLOAD_ERROR"
+  | "PDS_ERROR";
+
+type CertifiedLocationEffectError =
+  | CertifiedLocationValidationError
+  | CertifiedLocationNotFoundError
+  | CertifiedLocationPdsError
+  | CertifiedLocationIsDefaultError
+  | GeoJsonValidationError
+  | GeoJsonProcessingError
+  | FileConstraintError
+  | BlobUploadError
+  | UnauthorizedError
+  | SessionExpiredError;
+
+function mapCertifiedLocationError(
+  e: CertifiedLocationEffectError
+): MutationResult<never, CertifiedLocationErrorCode> {
+  switch (e._tag) {
+    case "UnauthorizedError":
+      return err("UNAUTHORIZED", e.message ?? "Not logged in");
+    case "SessionExpiredError":
+      return err("SESSION_EXPIRED", e.message ?? "Session expired, please log in again");
+    case "CertifiedLocationNotFoundError":
+      return err("NOT_FOUND", `certified.location not found at rkey: ${e.rkey}`);
+    case "CertifiedLocationIsDefaultError":
+      return err("IS_DEFAULT", `Cannot delete the default site: ${e.uri}. Set a different default first.`);
+    case "CertifiedLocationValidationError":
+      return err("INVALID_RECORD", e.message);
+    case "GeoJsonValidationError":
+      return err("INVALID_GEOJSON", e.message);
+    case "GeoJsonProcessingError":
+      return err("GEOJSON_PROCESSING", e.message);
+    case "FileConstraintError":
+      return err("INVALID_RECORD", e.reason);
+    case "BlobUploadError":
+      return err("BLOB_UPLOAD_ERROR", e.message);
+    case "CertifiedLocationPdsError":
+      return err("PDS_ERROR", e.message);
+  }
+}
+
+export async function createCertifiedLocationAction(
+  input: CreateCertifiedLocationInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<CertifiedLocationMutationResult, CertifiedLocationErrorCode>> {
+  return Effect.runPromise(
+    createCertifiedLocation(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function updateCertifiedLocationAction(
+  input: UpdateCertifiedLocationInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<CertifiedLocationMutationResult, CertifiedLocationErrorCode>> {
+  return Effect.runPromise(
+    updateCertifiedLocation(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function upsertCertifiedLocationAction(
+  input: UpsertCertifiedLocationInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<CertifiedLocationMutationResult & { created: boolean }, CertifiedLocationErrorCode>> {
+  return Effect.runPromise(
+    upsertCertifiedLocation(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function deleteCertifiedLocationAction(
+  input: DeleteRecordInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<DeleteRecordResult, CertifiedLocationErrorCode>> {
+  return Effect.runPromise(
+    deleteCertifiedLocation(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// organization.defaultSite actions
+// ---------------------------------------------------------------------------
+
+type DefaultSiteErrorCode =
+  | "UNAUTHORIZED"
+  | "SESSION_EXPIRED"
+  | "NOT_FOUND"
+  | "INVALID_RECORD"
+  | "PDS_ERROR";
+
+type DefaultSiteEffectError =
+  | DefaultSiteValidationError
+  | DefaultSiteLocationNotFoundError
+  | DefaultSitePdsError
+  | UnauthorizedError
+  | SessionExpiredError;
+
+function mapDefaultSiteError(
+  e: DefaultSiteEffectError
+): MutationResult<never, DefaultSiteErrorCode> {
+  switch (e._tag) {
+    case "UnauthorizedError":
+      return err("UNAUTHORIZED", e.message ?? "Not logged in");
+    case "SessionExpiredError":
+      return err("SESSION_EXPIRED", e.message ?? "Session expired, please log in again");
+    case "DefaultSiteLocationNotFoundError":
+      return err("NOT_FOUND", `certified.location not found: ${e.locationUri}`);
+    case "DefaultSiteValidationError":
+      return err("INVALID_RECORD", e.message);
+    case "DefaultSitePdsError":
+      return err("PDS_ERROR", e.message);
+  }
+}
+
+export async function setDefaultSiteAction(
+  input: SetDefaultSiteInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<DefaultSiteMutationResult, DefaultSiteErrorCode>> {
+  return Effect.runPromise(
+    setDefaultSite(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: DefaultSiteEffectError) => Effect.succeed(mapDefaultSiteError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// organization.layer actions
+// ---------------------------------------------------------------------------
+
+type LayerErrorCode =
+  | "UNAUTHORIZED"
+  | "SESSION_EXPIRED"
+  | "NOT_FOUND"
+  | "INVALID_RECORD"
+  | "PDS_ERROR";
+
+type LayerEffectError =
+  | LayerValidationError
+  | LayerNotFoundError
+  | LayerPdsError
+  | UnauthorizedError
+  | SessionExpiredError;
+
+function mapLayerError(
+  e: LayerEffectError
+): MutationResult<never, LayerErrorCode> {
+  switch (e._tag) {
+    case "UnauthorizedError":
+      return err("UNAUTHORIZED", e.message ?? "Not logged in");
+    case "SessionExpiredError":
+      return err("SESSION_EXPIRED", e.message ?? "Session expired, please log in again");
+    case "LayerNotFoundError":
+      return err("NOT_FOUND", `organization.layer not found at rkey: ${e.rkey}`);
+    case "LayerValidationError":
+      return err("INVALID_RECORD", e.message);
+    case "LayerPdsError":
+      return err("PDS_ERROR", e.message);
+  }
+}
+
+export async function createLayerAction(
+  input: CreateLayerInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<LayerMutationResult, LayerErrorCode>> {
+  return Effect.runPromise(
+    createLayer(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function updateLayerAction(
+  input: UpdateLayerInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<LayerMutationResult, LayerErrorCode>> {
+  return Effect.runPromise(
+    updateLayer(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function upsertLayerAction(
+  input: UpsertLayerInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<LayerMutationResult & { created: boolean }, LayerErrorCode>> {
+  return Effect.runPromise(
+    upsertLayer(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function deleteLayerAction(
+  input: DeleteRecordInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<DeleteRecordResult, LayerErrorCode>> {
+  return Effect.runPromise(
+    deleteLayer(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// organization.recordings.audio actions
+// ---------------------------------------------------------------------------
+
+type AudioRecordingErrorCode =
+  | "UNAUTHORIZED"
+  | "SESSION_EXPIRED"
+  | "NOT_FOUND"
+  | "INVALID_RECORD"
+  | "FILE_CONSTRAINT"
+  | "BLOB_UPLOAD_ERROR"
+  | "PDS_ERROR";
+
+type AudioRecordingEffectError =
+  | AudioRecordingValidationError
+  | AudioRecordingNotFoundError
+  | AudioRecordingPdsError
+  | FileConstraintError
+  | BlobUploadError
+  | UnauthorizedError
+  | SessionExpiredError;
+
+function mapAudioRecordingError(
+  e: AudioRecordingEffectError
+): MutationResult<never, AudioRecordingErrorCode> {
+  switch (e._tag) {
+    case "UnauthorizedError":
+      return err("UNAUTHORIZED", e.message ?? "Not logged in");
+    case "SessionExpiredError":
+      return err("SESSION_EXPIRED", e.message ?? "Session expired, please log in again");
+    case "AudioRecordingNotFoundError":
+      return err("NOT_FOUND", `organization.recordings.audio not found at rkey: ${e.rkey}`);
+    case "AudioRecordingValidationError":
+      return err("INVALID_RECORD", e.message);
+    case "FileConstraintError":
+      return err("FILE_CONSTRAINT", e.reason);
+    case "BlobUploadError":
+      return err("BLOB_UPLOAD_ERROR", e.message);
+    case "AudioRecordingPdsError":
+      return err("PDS_ERROR", e.message);
+  }
+}
+
+export async function createAudioRecordingAction(
+  input: CreateAudioRecordingInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<AudioRecordingMutationResult, AudioRecordingErrorCode>> {
+  return Effect.runPromise(
+    createAudioRecording(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: AudioRecordingEffectError) => Effect.succeed(mapAudioRecordingError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function updateAudioRecordingAction(
+  input: UpdateAudioRecordingInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<AudioRecordingMutationResult, AudioRecordingErrorCode>> {
+  return Effect.runPromise(
+    updateAudioRecording(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: AudioRecordingEffectError) => Effect.succeed(mapAudioRecordingError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function upsertAudioRecordingAction(
+  input: UpsertAudioRecordingInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<AudioRecordingMutationResult & { created: boolean }, AudioRecordingErrorCode>> {
+  return Effect.runPromise(
+    upsertAudioRecording(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: AudioRecordingEffectError) => Effect.succeed(mapAudioRecordingError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function deleteAudioRecordingAction(
+  input: DeleteRecordInput,
+  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+): Promise<MutationResult<DeleteRecordResult, AudioRecordingErrorCode>> {
+  return Effect.runPromise(
+    deleteAudioRecording(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: AudioRecordingEffectError) => Effect.succeed(mapAudioRecordingError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Re-export error code types so callers don't need a separate import
 // ---------------------------------------------------------------------------
-export type { OrgInfoErrorCode, ClaimActivityErrorCode, BlobErrorCode };
+export type {
+  OrgInfoErrorCode,
+  ClaimActivityErrorCode,
+  BlobErrorCode,
+  CertifiedLocationErrorCode,
+  DefaultSiteErrorCode,
+  LayerErrorCode,
+  LayerType,
+  AudioRecordingErrorCode,
+  AudioTechnicalMetadata,
+  CertifiedLocationRecord,
+  DefaultSiteRecord,
+  LayerRecord,
+  AudioRecordingRecord,
+};

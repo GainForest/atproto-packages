@@ -55,6 +55,108 @@ export type {
 } from "./utils/shared/types";
 
 // ---------------------------------------------------------------------------
+// GeoJSON utilities (shared — also used by certified.location)
+// ---------------------------------------------------------------------------
+export { validateGeojsonOrThrow } from "./geojson/validate";
+export {
+  computePolygonMetrics,
+  extractPolygonFeatures,
+  extractLineStringFeatures,
+  extractPointFeatures,
+  toFeatureCollection,
+  HECTARES_PER_SQUARE_METER,
+} from "./geojson/computations";
+export type { Coordinates, PolygonMetrics } from "./geojson/computations";
+export { GeoJsonValidationError, GeoJsonProcessingError } from "./geojson/errors";
+
+// ---------------------------------------------------------------------------
+// certified.location — app.certified.location
+// ---------------------------------------------------------------------------
+export { createCertifiedLocation } from "./mutations/certified.location/create";
+export { updateCertifiedLocation } from "./mutations/certified.location/update";
+export { upsertCertifiedLocation } from "./mutations/certified.location/upsert";
+export { deleteCertifiedLocation } from "./mutations/certified.location/delete";
+
+export {
+  CertifiedLocationValidationError,
+  CertifiedLocationNotFoundError,
+  CertifiedLocationPdsError,
+  CertifiedLocationIsDefaultError,
+} from "./mutations/certified.location/utils/errors";
+
+export type {
+  CertifiedLocationRecord,
+  CertifiedLocationMutationResult,
+  CreateCertifiedLocationInput,
+  UpdateCertifiedLocationInput,
+  UpsertCertifiedLocationInput,
+} from "./mutations/certified.location/utils/types";
+
+// ---------------------------------------------------------------------------
+// organization.defaultSite — app.gainforest.organization.defaultSite
+// ---------------------------------------------------------------------------
+export { setDefaultSite } from "./mutations/organization.defaultSite/set";
+
+export {
+  DefaultSiteValidationError,
+  DefaultSiteLocationNotFoundError,
+  DefaultSitePdsError,
+} from "./mutations/organization.defaultSite/utils/errors";
+
+export type {
+  DefaultSiteRecord,
+  DefaultSiteMutationResult,
+  SetDefaultSiteInput,
+} from "./mutations/organization.defaultSite/utils/types";
+
+// ---------------------------------------------------------------------------
+// organization.layer — app.gainforest.organization.layer
+// ---------------------------------------------------------------------------
+export { createLayer } from "./mutations/organization.layer/create";
+export { updateLayer } from "./mutations/organization.layer/update";
+export { upsertLayer } from "./mutations/organization.layer/upsert";
+export { deleteLayer } from "./mutations/organization.layer/delete";
+
+export {
+  LayerValidationError,
+  LayerNotFoundError,
+  LayerPdsError,
+} from "./mutations/organization.layer/utils/errors";
+
+export type {
+  LayerRecord,
+  LayerMutationResult,
+  LayerType,
+  CreateLayerInput,
+  UpdateLayerInput,
+  UpsertLayerInput,
+} from "./mutations/organization.layer/utils/types";
+
+// ---------------------------------------------------------------------------
+// organization.recordings.audio — app.gainforest.organization.recordings.audio
+// ---------------------------------------------------------------------------
+export { createAudioRecording } from "./mutations/organization.recordings.audio/create";
+export { updateAudioRecording } from "./mutations/organization.recordings.audio/update";
+export { upsertAudioRecording } from "./mutations/organization.recordings.audio/upsert";
+export { deleteAudioRecording } from "./mutations/organization.recordings.audio/delete";
+
+export {
+  AudioRecordingValidationError,
+  AudioRecordingNotFoundError,
+  AudioRecordingPdsError,
+} from "./mutations/organization.recordings.audio/utils/errors";
+
+export type {
+  AudioRecordingRecord,
+  AudioRecordingMutationResult,
+  AudioMetadata,
+  AudioTechnicalMetadata,
+  CreateAudioRecordingInput,
+  UpdateAudioRecordingInput,
+  UpsertAudioRecordingInput,
+} from "./mutations/organization.recordings.audio/utils/types";
+
+// ---------------------------------------------------------------------------
 // claim.activity — org.hypercerts.claim.activity
 // ---------------------------------------------------------------------------
 export { createClaimActivity } from "./mutations/claim.activity/create";
@@ -74,10 +176,8 @@ export type {
   UpsertClaimActivityInput,
   ClaimActivityMutationResult,
   ClaimActivityRecord,
-  Contributor,
-  ContributorIdentity,
-  ContributorRole,
-  WorkScopeString,
+  WorkScope,
+  ActivityWeight,
   StrongRef,
   RichtextFacet,
 } from "./mutations/claim.activity/utils/types";
