@@ -34,6 +34,10 @@ type LexSchema = {
 
 const SCHEMA_REGISTRY: Record<IndexedCollection, LexSchema> = {
   "app.certified.actor.profile":                           generated.app.certified.actor.profile,
+  "app.certified.badge.award":                             generated.app.certified.badge.award,
+  "app.certified.badge.definition":                        generated.app.certified.badge.definition,
+  "app.certified.badge.response":                          generated.app.certified.badge.response,
+  "app.certified.location":                                generated.app.certified.location,
   "app.gainforest.dwc.event":                              generated.app.gainforest.dwc.event,
   "app.gainforest.dwc.measurement":                        generated.app.gainforest.dwc.measurement,
   "app.gainforest.dwc.occurrence":                         generated.app.gainforest.dwc.occurrence,

@@ -33,15 +33,12 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
  * See: gainforest-indexer for prior art on which NSIDs are problematic.
  */
 const EXCLUDED_NSIDS = new Set<string>([
-  // app.certified.* — mixed-type union (string DID ref + object strongRef)
-  // that @atproto/lex cannot generate valid TypeScript for.
-  // Remove these if fixed upstream.
-  "app.certified.badge.award",
-  "app.certified.badge.definition",
-  "app.certified.badge.response",
-  // "app.certified.location" — removed from exclusions; the mixed-type union
-  // in location.json uses refs only (org.hypercerts.defs#uri | #smallBlob | #string)
-  // which @atproto/lex can handle.
+  // No NSIDs are currently excluded.
+  //
+  // Previously app.certified.badge.* were excluded because @atproto/lex could
+  // not generate valid TypeScript for the mixed-type union in badge.award.
+  // This was fixed in a later @atproto/lex version — all app.certified.*
+  // lexicons now compile cleanly.
 ]);
 
 // ============================================================

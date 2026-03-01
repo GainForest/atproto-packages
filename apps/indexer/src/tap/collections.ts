@@ -16,6 +16,10 @@
 
 export const INDEXED_COLLECTIONS = [
   "app.certified.actor.profile",
+  "app.certified.badge.award",
+  "app.certified.badge.definition",
+  "app.certified.badge.response",
+  "app.certified.location",
   "app.gainforest.dwc.event",
   "app.gainforest.dwc.measurement",
   "app.gainforest.dwc.occurrence",
@@ -74,6 +78,10 @@ export type RecordKeyType = "tid" | "literal:self" | "any";
 
 export const COLLECTION_KEY_TYPE: Record<IndexedCollection, RecordKeyType> = {
   "app.certified.actor.profile":                             "literal:self",
+  "app.certified.badge.award":                               "tid",
+  "app.certified.badge.definition":                          "tid",
+  "app.certified.badge.response":                            "tid",
+  "app.certified.location":                                  "tid",
   "app.gainforest.dwc.event":                                "tid",
   "app.gainforest.dwc.measurement":                          "tid",
   "app.gainforest.dwc.occurrence":                           "tid",

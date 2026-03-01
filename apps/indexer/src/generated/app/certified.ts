@@ -3,4 +3,6 @@
  */
 
 export * as actor from './certified/actor.ts'
+export * as badge from './certified/badge.ts'
 export * as defs from './certified/defs.ts'
+export * as location from './certified/location.ts'

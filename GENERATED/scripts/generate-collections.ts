@@ -37,15 +37,13 @@ import { join, dirname } from "node:path";
  * Add an NSID here when you intentionally don't want to index a collection.
  */
 const EXCLUDED_COLLECTIONS = new Set<string>([
-  // app.certified.* — from hypercerts-org/hypercerts-lexicon.
-  // Excluded because app.certified.badge.award uses a mixed-type union
-  // (string DID ref + object strongRef) that @atproto/lex cannot generate
-  // valid TypeScript for (TS error in generated file).  If this is fixed
-  // upstream, remove these exclusions.
-  "app.certified.badge.award",
-  "app.certified.badge.definition",
-  "app.certified.badge.response",
-  "app.certified.location",
+  // No collections are currently excluded.
+  //
+  // Previously app.certified.badge.* and app.certified.location were excluded
+  // because @atproto/lex could not generate valid TypeScript for the mixed-type
+  // union in badge.award (string DID ref + object strongRef). This was fixed in
+  // a later @atproto/lex version — all app.certified.* lexicons now compile
+  // cleanly. Remove this comment block if you add new exclusions.
 ]);
 
 // ============================================================
