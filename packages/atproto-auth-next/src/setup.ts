@@ -1,10 +1,394 @@
-import type { SupabaseClient } from "@supabase/supabase-js"; // type-only — no runtime dep on @supabase/supabase-js
-import { createOAuthClient } from "./oauth-client";
+/**
+ * createAuthSetup — the main entry point for @gainforest/atproto-auth-next.
+ *
+ * Creates a fully-configured auth setup object containing:
+ * - Route handlers (authorize, callback, logout, client-metadata, jwks, ePDS)
+ * - Server actions (authorize, logout, checkSession, getProfile, checkSessionAndGetProfile)
+ * - Session utilities (getSession, restoreSession, getAuthenticatedAgent)
+ * - Configuration metadata (isEpdsEnabled, publicUrl, isLoopback)
+ *
+ * Designed for the single-file setup pattern:
+ *
+ * ```typescript
+ * // lib/auth.ts
+ * import { createAuthSetup } from "@gainforest/atproto-auth-next";
+ * import { createClient } from "@supabase/supabase-js";
+ *
+ * const supabase = createClient(
+ *   process.env.NEXT_PUBLIC_SUPABASE_URL!,
+ *   process.env.SUPABASE_SERVICE_ROLE_KEY!
+ * );
+ *
+ * export const auth = createAuthSetup({
+ *   privateKeyJwk: process.env.ATPROTO_JWK_PRIVATE!,
+ *   cookieSecret: process.env.COOKIE_SECRET!,
+ *   supabase,
+ *   appId: "myapp",
+ *   clientName: "My App",
+ *   defaultPdsDomain: "climateai.org",
+ *   epds: process.env.NEXT_PUBLIC_EPDS_URL
+ *     ? { url: process.env.NEXT_PUBLIC_EPDS_URL }
+ *     : undefined,
+ *   onCallback: { redirectTo: "/" },
+ * });
+ * ```
+ */
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { NodeOAuthClient } from "@atproto/oauth-client-node";
+import type { NextRequest } from "next/server";
+import { createOAuthClient, DEFAULT_OAUTH_SCOPE } from "./oauth-client";
 import { createSupabaseSessionStore } from "./stores/session-store";
 import { createSupabaseStateStore } from "./stores/state-store";
-import type { SessionConfig } from "./session/config";
-import type { NodeOAuthClient } from "@atproto/oauth-client-node";
+import { resolvePublicUrl, isLoopback } from "./utils/url";
+import { buildSessionOptions, type SessionConfig } from "./session/config";
+import { getSession, saveSession, clearSession } from "./session/cookie";
+import { restoreSession, getAuthenticatedAgent } from "./session/restore";
+import { createAuthorizeHandler } from "./handlers/routes";
+import { createCallbackHandler } from "./handlers/routes";
+import { createLogoutHandler } from "./handlers/routes";
+import { createClientMetadataHandler, createJwksHandler } from "./handlers/metadata";
+import { createEpdsLoginHandler, createEpdsCallbackHandler } from "./handlers/epds";
+import { createAuthActions } from "./actions";
+import type { AuthActions } from "./actions";
+import type { AnySession } from "./session/types";
+import type { Agent } from "@atproto/api";
 
+// ─── Config types ─────────────────────────────────────────────────────────────
+
+export type AuthSetupConfig = {
+  // ─── Required ───────────────────────────────────────────────────────────────
+  /**
+   * Private JWK as a JSON string (the `ATPROTO_JWK_PRIVATE` env var).
+   * Must be an EC P-256 key used for client authentication and JWKS.
+   */
+  privateKeyJwk: string;
+  /**
+   * Secret for iron-session cookie encryption. Must be at least 32 characters.
+   */
+  cookieSecret: string;
+  /**
+   * Supabase client (server-side, service role key).
+   */
+  supabase: SupabaseClient;
+  /**
+   * Unique identifier for this app in the shared Supabase tables.
+   * e.g. "bumicerts", "myapp"
+   */
+  appId: string;
+
+  // ─── Optional: URL / Environment ─────────────────────────────────────────────
+  /**
+   * Explicit public URL override. If not set, auto-detected from:
+   *   NEXT_PUBLIC_BASE_URL → VERCEL_BRANCH_URL → VERCEL_URL → http://127.0.0.1:PORT
+   */
+  publicUrl?: string;
+
+  // ─── Optional: OAuth config ───────────────────────────────────────────────────
+  /**
+   * OAuth scope. Defaults to "atproto transition:generic".
+   */
+  scope?: string;
+  /**
+   * App name shown in OAuth consent and client metadata. Defaults to "Gainforest".
+   */
+  clientName?: string;
+  /**
+   * Cookie name for the app session. Defaults to "gainforest_session".
+   */
+  cookieName?: string;
+  /**
+   * Whether to set the cookie `Secure` flag. Defaults to true in production.
+   */
+  cookieSecure?: boolean;
+
+  // ─── Optional: Handle normalization ──────────────────────────────────────────
+  /**
+   * Default PDS domain for handle normalization.
+   * When set, "alice" → "alice.{defaultPdsDomain}".
+   * e.g. "climateai.org"
+   */
+  defaultPdsDomain?: string;
+
+  // ─── Optional: ePDS (email-based auth) ───────────────────────────────────────
+  /**
+   * ePDS configuration. When provided, email-based OAuth is enabled.
+   * The ePDS login/callback route handlers are wired automatically.
+   */
+  epds?: {
+    /** ePDS base URL (e.g. https://climateai.org). */
+    url: string;
+  };
+
+  // ─── Optional: Redirect paths ────────────────────────────────────────────────
+  /**
+   * Redirect paths after OAuth callbacks. Defaults to "/".
+   */
+  onCallback?: {
+    redirectTo: string;
+  };
+  /**
+   * Redirect path after logout. If not set, logout returns `{ ok: true }`.
+   */
+  onLogout?: {
+    redirectTo?: string;
+  };
+};
+
+// ─── Output types ─────────────────────────────────────────────────────────────
+
+type RouteHandler = (req: NextRequest) => Promise<unknown>;
+type NoopHandler = () => never;
+
+export type AuthSetup = {
+  /** The underlying NodeOAuthClient (for advanced use). */
+  oauthClient: NodeOAuthClient;
+  /** iron-session configuration (for advanced use). */
+  sessionConfig: SessionConfig;
+
+  /** Route handlers — re-export these from your API route files. */
+  handlers: {
+    /** Mount at: /api/oauth/authorize (POST) */
+    authorize: { POST: RouteHandler };
+    /** Mount at: /api/oauth/callback (GET) */
+    callback: { GET: RouteHandler };
+    /** Mount at: /api/oauth/logout (POST) */
+    logout: { POST: RouteHandler };
+    /** Mount at: /client-metadata.json (GET) */
+    clientMetadata: { GET: () => unknown };
+    /** Mount at: /.well-known/jwks.json (GET) */
+    jwks: { GET: () => unknown };
+    /**
+     * ePDS handlers. Only operational when `epds.url` is configured.
+     * If ePDS is not configured, calling these handlers throws an error.
+     */
+    epds: {
+      /** Mount at: /api/oauth/epds/login (GET) */
+      login: { GET: RouteHandler | NoopHandler };
+      /** Mount at: /api/oauth/epds/callback (GET) */
+      callback: { GET: RouteHandler | NoopHandler };
+    };
+  };
+
+  /**
+   * Server action factories — wrap these in a "use server" file.
+   *
+   * @example
+   * ```typescript
+   * // actions/auth.ts
+   * "use server";
+   * import { auth } from "@/lib/auth";
+   * export const authorize = auth.actions.authorize;
+   * export const logout = auth.actions.logout;
+   * export const checkSession = auth.actions.checkSession;
+   * export const checkSessionAndGetProfile = auth.actions.checkSessionAndGetProfile;
+   * ```
+   */
+  actions: AuthActions;
+
+  /** Session utilities for use in server-side code. */
+  session: {
+    /**
+     * Read the current session from the encrypted cookie.
+     * Returns `{ isLoggedIn: false }` if no session exists.
+     */
+    getSession: () => Promise<AnySession>;
+    /**
+     * Restore the OAuth session from Supabase for a given DID.
+     * Returns `null` if the session is gone (user must re-authenticate).
+     */
+    restoreSession: (did: string) => Promise<Awaited<ReturnType<NodeOAuthClient["restore"]>> | null>;
+    /**
+     * Get an authenticated @atproto/api Agent for a given DID.
+     * Returns `null` if the session cannot be restored.
+     */
+    getAuthenticatedAgent: (did: string) => Promise<Agent | null>;
+    /** Save a session to the encrypted cookie. */
+    saveSession: (data: {
+      did: string;
+      handle: string;
+      isLoggedIn: true;
+    }) => Promise<void>;
+    /** Clear the session cookie (logout). */
+    clearSession: () => Promise<void>;
+  };
+
+  /** Resolved public URL used for this setup. */
+  publicUrl: string;
+  /** Whether the resolved URL is a loopback (127.0.0.1/localhost). */
+  isLoopback: boolean;
+  /** Whether ePDS email-based auth is enabled. */
+  isEpdsEnabled: boolean;
+};
+
+// ─── Implementation ───────────────────────────────────────────────────────────
+
+/**
+ * Creates the complete auth setup for a Next.js application.
+ *
+ * Returns route handlers, server actions, and session utilities — all
+ * wired together from a single configuration object.
+ */
+export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
+  const {
+    privateKeyJwk,
+    cookieSecret,
+    supabase,
+    appId,
+    scope = DEFAULT_OAUTH_SCOPE,
+    clientName = "Gainforest",
+    cookieName,
+    cookieSecure,
+    defaultPdsDomain,
+    epds: epdsConfig,
+    onCallback,
+    onLogout,
+  } = config;
+
+  // ─── URL resolution ─────────────────────────────────────────────────────────
+  const publicUrl = resolvePublicUrl(config.publicUrl);
+  const loopback = isLoopback(publicUrl);
+  const isEpdsEnabled = !!epdsConfig;
+
+  // ─── Session config ─────────────────────────────────────────────────────────
+  const sessionConfig: SessionConfig = {
+    cookieSecret,
+    cookieName,
+    secure: cookieSecure,
+  };
+
+  // ─── Stores ─────────────────────────────────────────────────────────────────
+  const sessionStore = createSupabaseSessionStore(supabase, appId);
+  const stateStore = createSupabaseStateStore(supabase, appId);
+
+  // ─── Extra redirect URIs for ePDS ───────────────────────────────────────────
+  const extraRedirectUris = isEpdsEnabled
+    ? [`${publicUrl}/api/oauth/epds/callback`]
+    : [];
+
+  // ─── OAuth client ────────────────────────────────────────────────────────────
+  const oauthClient = createOAuthClient({
+    publicUrl,
+    privateKeyJwk,
+    sessionStore,
+    stateStore,
+    scope,
+    extraRedirectUris,
+    clientName,
+  });
+
+  // ─── Dev client ID for ePDS ─────────────────────────────────────────────────
+  // When loopback, the main OAuth client_id embeds redirect_uris in the query.
+  // We need to reconstruct the same client_id for ePDS requests.
+  const devClientId = (() => {
+    const allRedirectUris = [
+      `${publicUrl}/api/oauth/callback`,
+      ...extraRedirectUris,
+    ];
+    const params = new URLSearchParams();
+    params.set("scope", scope);
+    for (const uri of allRedirectUris) {
+      params.append("redirect_uri", uri);
+    }
+    return `http://localhost?${params.toString()}`;
+  })();
+
+  // ─── Route handlers ──────────────────────────────────────────────────────────
+  const authorizeHandler = createAuthorizeHandler(oauthClient, {
+    defaultPdsDomain,
+    scope,
+  });
+
+  const callbackHandler = createCallbackHandler(oauthClient, sessionConfig, {
+    redirectTo: onCallback?.redirectTo,
+  });
+
+  const logoutHandler = createLogoutHandler(oauthClient, sessionConfig, {
+    redirectTo: onLogout?.redirectTo,
+  });
+
+  const clientMetadataHandler = createClientMetadataHandler(publicUrl, {
+    clientName,
+    extraRedirectUris,
+    scope,
+  });
+
+  const jwksHandler = createJwksHandler(privateKeyJwk);
+
+  // ─── ePDS handlers ───────────────────────────────────────────────────────────
+  const epdsHandlerConfig = isEpdsEnabled
+    ? {
+        epdsUrl: epdsConfig!.url,
+        publicUrl,
+        devClientId,
+        scope,
+        supabase,
+        epdsStateAppId: `${appId}-epds`,
+        sessionStore,
+        sessionConfig,
+        successRedirectTo: onCallback?.redirectTo,
+      }
+    : null;
+
+  const noopEpdsHandler = (): never => {
+    throw new Error(
+      "[atproto-auth] ePDS is not configured. " +
+        "Pass `epds: { url: '...' }` to createAuthSetup() to enable email-based auth.",
+    );
+  };
+
+  const epdsLoginHandler = epdsHandlerConfig
+    ? createEpdsLoginHandler(epdsHandlerConfig)
+    : noopEpdsHandler;
+
+  const epdsCallbackHandler = epdsHandlerConfig
+    ? createEpdsCallbackHandler(epdsHandlerConfig)
+    : noopEpdsHandler;
+
+  // ─── Server actions ──────────────────────────────────────────────────────────
+  const actions = createAuthActions({
+    oauthClient,
+    sessionConfig,
+    defaultPdsDomain,
+    scope,
+  });
+
+  // ─── Session utilities ────────────────────────────────────────────────────────
+  const sessionUtils = {
+    getSession: () => getSession(sessionConfig),
+    restoreSession: (did: string) => restoreSession(oauthClient, did),
+    getAuthenticatedAgent: (did: string) =>
+      getAuthenticatedAgent(oauthClient, did),
+    saveSession: (data: { did: string; handle: string; isLoggedIn: true }) =>
+      saveSession(data, sessionConfig),
+    clearSession: () => clearSession(sessionConfig),
+  };
+
+  return {
+    oauthClient,
+    sessionConfig,
+    handlers: {
+      authorize: { POST: authorizeHandler },
+      callback: { GET: callbackHandler },
+      logout: { POST: logoutHandler },
+      clientMetadata: { GET: clientMetadataHandler },
+      jwks: { GET: jwksHandler },
+      epds: {
+        login: { GET: epdsLoginHandler },
+        callback: { GET: epdsCallbackHandler },
+      },
+    },
+    actions,
+    session: sessionUtils,
+    publicUrl,
+    isLoopback: loopback,
+    isEpdsEnabled,
+  };
+}
+
+// ─── Legacy low-level exports (backwards compat) ─────────────────────────────
+
+/** @deprecated Use createAuthSetup() instead. */
 export type OAuthSetupConfig = {
   publicUrl: string;
   privateKeyJwk: string;
@@ -15,11 +399,13 @@ export type OAuthSetupConfig = {
   appId: string;
 };
 
+/** @deprecated Use createAuthSetup() instead. */
 export type OAuthSetup = {
   oauthClient: NodeOAuthClient;
   sessionConfig: SessionConfig;
 };
 
+/** @deprecated Use createAuthSetup() instead. */
 export function createOAuthSetup({
   publicUrl,
   privateKeyJwk,

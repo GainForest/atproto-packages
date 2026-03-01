@@ -1,7 +1,7 @@
 {
   "name": "@gainforest/atproto-auth-next",
-  "version": "0.0.1",
-  "description": "ATProto OAuth authentication for Next.js — iron-session cookies, Supabase stores, pluggable route handlers.",
+  "version": "0.1.0",
+  "description": "ATProto OAuth authentication for Next.js — handle + ePDS email auth, iron-session cookies, Supabase stores, server actions factory.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -39,7 +39,8 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "test": "bun test"
   },
   "dependencies": {
     "@atproto/api": "^0.13.17",
