@@ -16,6 +16,7 @@
 import { EventHandler } from "./handler.ts";
 import { TapConsumer } from "./consumer.ts";
 import { listReposForPdsList } from "./pds.ts";
+import { discoverDidsByCollections } from "./discovery.ts";
 import type { HandlerStats } from "./handler.ts";
 import type { TapStatus } from "./consumer.ts";
 
@@ -36,6 +37,10 @@ export class TapSync {
   private readonly handler: EventHandler;
   private readonly seedDids: string[];
   private readonly seedPdss: string[];
+  private readonly discoveryCollections: string[];
+  private readonly enableDiscovery: boolean;
+  private readonly discoveryRelayUrl: string;
+  private readonly discoveryBatchSize: number;
 
   constructor(options: {
     tapUrl?: string;
@@ -47,6 +52,10 @@ export class TapSync {
     validationLogFilter?: string[];
     seedDids?: string[];
     seedPdss?: string[];
+    discoveryCollections?: string[];
+    enableDiscovery?: boolean;
+    discoveryRelayUrl?: string;
+    discoveryBatchSize?: number;
   } = {}) {
     const tapUrl = options.tapUrl ?? process.env["TAP_URL"] ?? "http://localhost:2480";
     const adminPassword = options.adminPassword ?? process.env["TAP_ADMIN_PASSWORD"];
@@ -58,6 +67,26 @@ export class TapSync {
     this.seedPdss =
       options.seedPdss ??
       (process.env["SEED_PDSS"]?.split(",").map((s) => s.trim()).filter(Boolean) ?? []);
+
+    this.discoveryCollections =
+      options.discoveryCollections ??
+      (process.env["DISCOVERY_COLLECTIONS"]?.split(",").map((s) => s.trim()).filter(Boolean) ?? [
+        "app.certified.actor.profile",
+        "app.gainforest.organization.info",
+        "org.hypercerts.claim.activity",
+      ]);
+
+    this.enableDiscovery =
+      options.enableDiscovery ?? (process.env["ENABLE_DISCOVERY"] !== "false");
+
+    this.discoveryRelayUrl =
+      options.discoveryRelayUrl ??
+      process.env["DISCOVERY_RELAY_URL"] ??
+      "https://bsky.network";
+
+    this.discoveryBatchSize =
+      options.discoveryBatchSize ??
+      (parseInt(process.env["DISCOVERY_BATCH_SIZE"] ?? "", 10) || 500);
 
     this.handler = new EventHandler({
       batchSize: options.batchSize ?? (parseInt(process.env["BATCH_SIZE"] ?? "", 10) || undefined),
@@ -81,19 +110,55 @@ export class TapSync {
   async start(): Promise<void> {
     console.log("\n=== GainForest Indexer — Tap Sync Starting ===\n");
 
-    // Collect all seed DIDs: explicit SEED_DIDS + DIDs crawled from SEED_PDSS
+    // Collect all seed DIDs from three sources:
+    // 1. DISCOVERY_COLLECTIONS (network-wide discovery by lexicon)
+    // 2. SEED_PDSS (crawl specific PDS hosts)
+    // 3. SEED_DIDS (explicit manual list)
     const allSeedDids = new Set<string>(this.seedDids);
 
+    // 1. Network-wide discovery by collection NSID
+    if (this.enableDiscovery && this.discoveryCollections.length > 0) {
+      console.log(
+        `  Discovering DIDs for ${this.discoveryCollections.length} collection(s)...`
+      );
+      const discoveredDids = await discoverDidsByCollections(
+        this.discoveryRelayUrl,
+        this.discoveryCollections
+      );
+      discoveredDids.forEach((did) => allSeedDids.add(did));
+      console.log(`  Discovery complete — ${discoveredDids.length} DIDs found.`);
+    }
+
+    // 2. PDS crawling
     if (this.seedPdss.length > 0) {
-      console.log(`  Crawling ${this.seedPdss.length} PDS host(s) for seed DIDs...`);
+      console.log(`  Crawling ${this.seedPdss.length} PDS host(s)...`);
       const pdssDids = await listReposForPdsList(this.seedPdss);
       pdssDids.forEach((did) => allSeedDids.add(did));
       console.log(`  PDS crawl complete — ${pdssDids.length} DIDs found.`);
     }
 
+    // 3. Add all discovered DIDs to Tap in batches
     if (allSeedDids.size > 0) {
-      console.log(`  Seeding ${allSeedDids.size} DID(s) into Tap...`);
-      await this.consumer.addRepos(Array.from(allSeedDids));
+      const didsArray = Array.from(allSeedDids);
+      console.log(
+        `  Adding ${didsArray.length} total DID(s) to Tap in batches of ${this.discoveryBatchSize}...`
+      );
+
+      for (let i = 0; i < didsArray.length; i += this.discoveryBatchSize) {
+        const batch = didsArray.slice(i, i + this.discoveryBatchSize);
+        await this.consumer.addRepos(batch);
+
+        const batchNum = Math.floor(i / this.discoveryBatchSize) + 1;
+        const totalBatches = Math.ceil(didsArray.length / this.discoveryBatchSize);
+        console.log(
+          `    Batch ${batchNum}/${totalBatches}: Added ${batch.length} DIDs (${i + batch.length}/${didsArray.length})`
+        );
+
+        // Brief delay between batches to avoid overwhelming Tap
+        if (i + this.discoveryBatchSize < didsArray.length) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
       console.log(`  Seeding complete.`);
     }
 
