@@ -14,14 +14,13 @@
 //
 // Example — server-to-server (e.g. post-signup org setup):
 //
-//   import { createOrganizationInfoAction, upsertOrganizationInfoAction }
-//     from "@gainforest/atproto-mutations-next/actions";
+//   import { actions } from "@gainforest/atproto-mutations-next/actions";
 //
 //   export async function signup(input: SignupInput, agentLayer: Layer) {
 //     const userResult = await createUserAction(input);
 //     if (!userResult.success) return userResult;
 //
-//     const orgResult = await upsertOrganizationInfoAction(orgInput, agentLayer);
+//     const orgResult = await actions.organization.info.upsert(orgInput, agentLayer);
 //     if (!orgResult.success) return orgResult;
 //
 //     return ok(userResult.data);
@@ -30,14 +29,7 @@
 import { Effect } from "effect";
 import type { Layer } from "effect";
 import {
-  createOrganizationInfo,
-  updateOrganizationInfo,
-  upsertOrganizationInfo,
-  createClaimActivity,
-  updateClaimActivity,
-  upsertClaimActivity,
-  deleteClaimActivity,
-  uploadBlob,
+  mutations,
   ok,
   err,
   AtprotoAgent,
@@ -52,29 +44,16 @@ import {
   BlobUploadError,
   GeoJsonValidationError,
   GeoJsonProcessingError,
-  createCertifiedLocation,
-  updateCertifiedLocation,
-  upsertCertifiedLocation,
-  deleteCertifiedLocation,
   CertifiedLocationValidationError,
   CertifiedLocationNotFoundError,
   CertifiedLocationPdsError,
   CertifiedLocationIsDefaultError,
-  setDefaultSite,
   DefaultSiteValidationError,
   DefaultSiteLocationNotFoundError,
   DefaultSitePdsError,
-  createLayer,
-  updateLayer,
-  upsertLayer,
-  deleteLayer,
   LayerValidationError,
   LayerNotFoundError,
   LayerPdsError,
-  createAudioRecording,
-  updateAudioRecording,
-  upsertAudioRecording,
-  deleteAudioRecording,
   AudioRecordingValidationError,
   AudioRecordingNotFoundError,
   AudioRecordingPdsError,
@@ -145,8 +124,42 @@ type BlobErrorCode =
   | "BLOB_UPLOAD_ERROR"
   | "PDS_ERROR";
 
+type CertifiedLocationErrorCode =
+  | "UNAUTHORIZED"
+  | "SESSION_EXPIRED"
+  | "NOT_FOUND"
+  | "IS_DEFAULT"
+  | "INVALID_RECORD"
+  | "INVALID_GEOJSON"
+  | "GEOJSON_PROCESSING"
+  | "BLOB_UPLOAD_ERROR"
+  | "PDS_ERROR";
+
+type DefaultSiteErrorCode =
+  | "UNAUTHORIZED"
+  | "SESSION_EXPIRED"
+  | "NOT_FOUND"
+  | "INVALID_RECORD"
+  | "PDS_ERROR";
+
+type LayerErrorCode =
+  | "UNAUTHORIZED"
+  | "SESSION_EXPIRED"
+  | "NOT_FOUND"
+  | "INVALID_RECORD"
+  | "PDS_ERROR";
+
+type AudioRecordingErrorCode =
+  | "UNAUTHORIZED"
+  | "SESSION_EXPIRED"
+  | "NOT_FOUND"
+  | "INVALID_RECORD"
+  | "FILE_CONSTRAINT"
+  | "BLOB_UPLOAD_ERROR"
+  | "PDS_ERROR";
+
 // ---------------------------------------------------------------------------
-// Error mapper — Effect errors → MutationResult error codes
+// Error mappers — Effect errors → MutationResult error codes
 // ---------------------------------------------------------------------------
 
 type OrgInfoEffectError =
@@ -233,197 +246,6 @@ function mapBlobError(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Helper: run an Effect against a caller-supplied agent layer
-// ---------------------------------------------------------------------------
-
-// The agent layer is passed as a parameter rather than read from a module-level
-// config so that:
-//   1. There are no hidden env reads inside this package.
-//   2. Callers choose between makeUserAgentLayer / makeServiceAgentLayer at
-//      the call site, enabling server-to-server composition with any auth scheme.
-//   3. The actions are fully testable with a makeServiceAgentLayer(mockAgent).
-
-// ---------------------------------------------------------------------------
-// organization.info actions
-// ---------------------------------------------------------------------------
-
-/**
- * Create a new app.gainforest.organization.info record.
- * Fails with ALREADY_EXISTS if one already exists (use upsert for idempotent writes).
- */
-export async function createOrganizationInfoAction(
-  input: CreateOrganizationInfoInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<OrganizationInfoMutationResult, OrgInfoErrorCode>> {
-  return Effect.runPromise(
-    createOrganizationInfo(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: OrgInfoEffectError) => Effect.succeed(mapOrgInfoError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-/**
- * Update an existing app.gainforest.organization.info record (partial patch).
- * Fails with NOT_FOUND if no record exists (use upsert if you want create-or-update).
- */
-export async function updateOrganizationInfoAction(
-  input: UpdateOrganizationInfoInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<OrganizationInfoMutationResult, OrgInfoErrorCode>> {
-  return Effect.runPromise(
-    updateOrganizationInfo(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: OrgInfoEffectError) => Effect.succeed(mapOrgInfoError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-/**
- * Upsert an app.gainforest.organization.info record.
- * Creates if absent, fully replaces if present (preserving original createdAt).
- * Prefer this over manually sequencing create + update.
- */
-export async function upsertOrganizationInfoAction(
-  input: CreateOrganizationInfoInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<
-  MutationResult<OrganizationInfoMutationResult & { created: boolean }, OrgInfoErrorCode>
-> {
-  return Effect.runPromise(
-    upsertOrganizationInfo(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: OrgInfoEffectError) => Effect.succeed(mapOrgInfoError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Blob action
-// ---------------------------------------------------------------------------
-
-/**
- * Upload a blob to the authenticated user's PDS.
- * Returns the BlobRef that can be embedded in subsequent record writes.
- *
- * Prefer the file-accepting inputs on create/update/upsert for most use cases.
- * Use this for advanced scenarios such as pre-uploading before a form submission.
- */
-export async function uploadBlobAction(
-  input: UploadBlobInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<UploadBlobResult, BlobErrorCode>> {
-  return Effect.runPromise(
-    uploadBlob(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: BlobEffectError) => Effect.succeed(mapBlobError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-// ---------------------------------------------------------------------------
-// claim.activity actions
-// ---------------------------------------------------------------------------
-
-/**
- * Create a new org.hypercerts.claim.activity record.
- * If `input.rkey` is absent, a TID is generated automatically.
- */
-export async function createClaimActivityAction(
-  input: CreateClaimActivityInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<ClaimActivityMutationResult, ClaimActivityErrorCode>> {
-  return Effect.runPromise(
-    createClaimActivity(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: ClaimActivityEffectError) =>
-        Effect.succeed(mapClaimActivityError(e))
-      ),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-/**
- * Update an existing org.hypercerts.claim.activity record (partial patch).
- * Fails with NOT_FOUND if no record exists at `input.rkey`.
- */
-export async function updateClaimActivityAction(
-  input: UpdateClaimActivityInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<ClaimActivityMutationResult, ClaimActivityErrorCode>> {
-  return Effect.runPromise(
-    updateClaimActivity(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: ClaimActivityEffectError) =>
-        Effect.succeed(mapClaimActivityError(e))
-      ),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-/**
- * Upsert an org.hypercerts.claim.activity record.
- * No rkey → always creates with a generated TID.
- * rkey present → creates if absent, fully replaces if found (preserving createdAt).
- */
-export async function upsertClaimActivityAction(
-  input: UpsertClaimActivityInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<
-  MutationResult<ClaimActivityMutationResult & { created: boolean }, ClaimActivityErrorCode>
-> {
-  return Effect.runPromise(
-    upsertClaimActivity(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: ClaimActivityEffectError) =>
-        Effect.succeed(mapClaimActivityError(e))
-      ),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-/**
- * Delete an org.hypercerts.claim.activity record by rkey.
- * Fails with NOT_FOUND if no record exists at `input.rkey`.
- */
-export async function deleteClaimActivityAction(
-  input: DeleteRecordInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<DeleteRecordResult, ClaimActivityErrorCode>> {
-  return Effect.runPromise(
-    deleteClaimActivity(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: ClaimActivityEffectError) =>
-        Effect.succeed(mapClaimActivityError(e))
-      ),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-// ---------------------------------------------------------------------------
-// certified.location actions
-// ---------------------------------------------------------------------------
-
-type CertifiedLocationErrorCode =
-  | "UNAUTHORIZED"
-  | "SESSION_EXPIRED"
-  | "NOT_FOUND"
-  | "IS_DEFAULT"
-  | "INVALID_RECORD"
-  | "INVALID_GEOJSON"
-  | "GEOJSON_PROCESSING"
-  | "BLOB_UPLOAD_ERROR"
-  | "PDS_ERROR";
-
 type CertifiedLocationEffectError =
   | CertifiedLocationValidationError
   | CertifiedLocationNotFoundError
@@ -463,69 +285,6 @@ function mapCertifiedLocationError(
   }
 }
 
-export async function createCertifiedLocationAction(
-  input: CreateCertifiedLocationInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<CertifiedLocationMutationResult, CertifiedLocationErrorCode>> {
-  return Effect.runPromise(
-    createCertifiedLocation(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-export async function updateCertifiedLocationAction(
-  input: UpdateCertifiedLocationInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<CertifiedLocationMutationResult, CertifiedLocationErrorCode>> {
-  return Effect.runPromise(
-    updateCertifiedLocation(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-export async function upsertCertifiedLocationAction(
-  input: UpsertCertifiedLocationInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<CertifiedLocationMutationResult & { created: boolean }, CertifiedLocationErrorCode>> {
-  return Effect.runPromise(
-    upsertCertifiedLocation(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-export async function deleteCertifiedLocationAction(
-  input: DeleteRecordInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<DeleteRecordResult, CertifiedLocationErrorCode>> {
-  return Effect.runPromise(
-    deleteCertifiedLocation(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-// ---------------------------------------------------------------------------
-// organization.defaultSite actions
-// ---------------------------------------------------------------------------
-
-type DefaultSiteErrorCode =
-  | "UNAUTHORIZED"
-  | "SESSION_EXPIRED"
-  | "NOT_FOUND"
-  | "INVALID_RECORD"
-  | "PDS_ERROR";
-
 type DefaultSiteEffectError =
   | DefaultSiteValidationError
   | DefaultSiteLocationNotFoundError
@@ -550,30 +309,6 @@ function mapDefaultSiteError(
   }
 }
 
-export async function setDefaultSiteAction(
-  input: SetDefaultSiteInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<DefaultSiteMutationResult, DefaultSiteErrorCode>> {
-  return Effect.runPromise(
-    setDefaultSite(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: DefaultSiteEffectError) => Effect.succeed(mapDefaultSiteError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-// ---------------------------------------------------------------------------
-// organization.layer actions
-// ---------------------------------------------------------------------------
-
-type LayerErrorCode =
-  | "UNAUTHORIZED"
-  | "SESSION_EXPIRED"
-  | "NOT_FOUND"
-  | "INVALID_RECORD"
-  | "PDS_ERROR";
-
 type LayerEffectError =
   | LayerValidationError
   | LayerNotFoundError
@@ -597,71 +332,6 @@ function mapLayerError(
       return err("PDS_ERROR", e.message);
   }
 }
-
-export async function createLayerAction(
-  input: CreateLayerInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<LayerMutationResult, LayerErrorCode>> {
-  return Effect.runPromise(
-    createLayer(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-export async function updateLayerAction(
-  input: UpdateLayerInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<LayerMutationResult, LayerErrorCode>> {
-  return Effect.runPromise(
-    updateLayer(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-export async function upsertLayerAction(
-  input: UpsertLayerInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<LayerMutationResult & { created: boolean }, LayerErrorCode>> {
-  return Effect.runPromise(
-    upsertLayer(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-export async function deleteLayerAction(
-  input: DeleteRecordInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
-): Promise<MutationResult<DeleteRecordResult, LayerErrorCode>> {
-  return Effect.runPromise(
-    deleteLayer(input).pipe(
-      Effect.map((result) => ok(result)),
-      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
-      Effect.provide(agentLayer)
-    )
-  );
-}
-
-// ---------------------------------------------------------------------------
-// organization.recordings.audio actions
-// ---------------------------------------------------------------------------
-
-type AudioRecordingErrorCode =
-  | "UNAUTHORIZED"
-  | "SESSION_EXPIRED"
-  | "NOT_FOUND"
-  | "INVALID_RECORD"
-  | "FILE_CONSTRAINT"
-  | "BLOB_UPLOAD_ERROR"
-  | "PDS_ERROR";
 
 type AudioRecordingEffectError =
   | AudioRecordingValidationError
@@ -693,12 +363,140 @@ function mapAudioRecordingError(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Agent layer type
+// ---------------------------------------------------------------------------
+
+type AgentLayer = Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>;
+
+// ---------------------------------------------------------------------------
+// organization.info actions
+// ---------------------------------------------------------------------------
+
+export async function createOrganizationInfoAction(
+  input: CreateOrganizationInfoInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<OrganizationInfoMutationResult, OrgInfoErrorCode>> {
+  return Effect.runPromise(
+    mutations.organization.info.create(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: OrgInfoEffectError) => Effect.succeed(mapOrgInfoError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function updateOrganizationInfoAction(
+  input: UpdateOrganizationInfoInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<OrganizationInfoMutationResult, OrgInfoErrorCode>> {
+  return Effect.runPromise(
+    mutations.organization.info.update(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: OrgInfoEffectError) => Effect.succeed(mapOrgInfoError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function upsertOrganizationInfoAction(
+  input: CreateOrganizationInfoInput,
+  agentLayer: AgentLayer
+): Promise<
+  MutationResult<OrganizationInfoMutationResult & { created: boolean }, OrgInfoErrorCode>
+> {
+  return Effect.runPromise(
+    mutations.organization.info.upsert(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: OrgInfoEffectError) => Effect.succeed(mapOrgInfoError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// organization.defaultSite actions
+// ---------------------------------------------------------------------------
+
+export async function setDefaultSiteAction(
+  input: SetDefaultSiteInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<DefaultSiteMutationResult, DefaultSiteErrorCode>> {
+  return Effect.runPromise(
+    mutations.organization.defaultSite.set(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: DefaultSiteEffectError) => Effect.succeed(mapDefaultSiteError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// organization.layer actions
+// ---------------------------------------------------------------------------
+
+export async function createLayerAction(
+  input: CreateLayerInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<LayerMutationResult, LayerErrorCode>> {
+  return Effect.runPromise(
+    mutations.organization.layer.create(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function updateLayerAction(
+  input: UpdateLayerInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<LayerMutationResult, LayerErrorCode>> {
+  return Effect.runPromise(
+    mutations.organization.layer.update(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function upsertLayerAction(
+  input: UpsertLayerInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<LayerMutationResult & { created: boolean }, LayerErrorCode>> {
+  return Effect.runPromise(
+    mutations.organization.layer.upsert(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function deleteLayerAction(
+  input: DeleteRecordInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<DeleteRecordResult, LayerErrorCode>> {
+  return Effect.runPromise(
+    mutations.organization.layer.delete(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: LayerEffectError) => Effect.succeed(mapLayerError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// organization.recordings.audio actions
+// ---------------------------------------------------------------------------
+
 export async function createAudioRecordingAction(
   input: CreateAudioRecordingInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+  agentLayer: AgentLayer
 ): Promise<MutationResult<AudioRecordingMutationResult, AudioRecordingErrorCode>> {
   return Effect.runPromise(
-    createAudioRecording(input).pipe(
+    mutations.organization.recordings.audio.create(input).pipe(
       Effect.map((result) => ok(result)),
       Effect.catchAll((e: AudioRecordingEffectError) => Effect.succeed(mapAudioRecordingError(e))),
       Effect.provide(agentLayer)
@@ -708,10 +506,10 @@ export async function createAudioRecordingAction(
 
 export async function updateAudioRecordingAction(
   input: UpdateAudioRecordingInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+  agentLayer: AgentLayer
 ): Promise<MutationResult<AudioRecordingMutationResult, AudioRecordingErrorCode>> {
   return Effect.runPromise(
-    updateAudioRecording(input).pipe(
+    mutations.organization.recordings.audio.update(input).pipe(
       Effect.map((result) => ok(result)),
       Effect.catchAll((e: AudioRecordingEffectError) => Effect.succeed(mapAudioRecordingError(e))),
       Effect.provide(agentLayer)
@@ -721,10 +519,10 @@ export async function updateAudioRecordingAction(
 
 export async function upsertAudioRecordingAction(
   input: UpsertAudioRecordingInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+  agentLayer: AgentLayer
 ): Promise<MutationResult<AudioRecordingMutationResult & { created: boolean }, AudioRecordingErrorCode>> {
   return Effect.runPromise(
-    upsertAudioRecording(input).pipe(
+    mutations.organization.recordings.audio.upsert(input).pipe(
       Effect.map((result) => ok(result)),
       Effect.catchAll((e: AudioRecordingEffectError) => Effect.succeed(mapAudioRecordingError(e))),
       Effect.provide(agentLayer)
@@ -734,12 +532,151 @@ export async function upsertAudioRecordingAction(
 
 export async function deleteAudioRecordingAction(
   input: DeleteRecordInput,
-  agentLayer: Layer.Layer<AtprotoAgent, UnauthorizedError | SessionExpiredError>
+  agentLayer: AgentLayer
 ): Promise<MutationResult<DeleteRecordResult, AudioRecordingErrorCode>> {
   return Effect.runPromise(
-    deleteAudioRecording(input).pipe(
+    mutations.organization.recordings.audio.delete(input).pipe(
       Effect.map((result) => ok(result)),
       Effect.catchAll((e: AudioRecordingEffectError) => Effect.succeed(mapAudioRecordingError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// claim.activity actions
+// ---------------------------------------------------------------------------
+
+export async function createClaimActivityAction(
+  input: CreateClaimActivityInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<ClaimActivityMutationResult, ClaimActivityErrorCode>> {
+  return Effect.runPromise(
+    mutations.claim.activity.create(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: ClaimActivityEffectError) =>
+        Effect.succeed(mapClaimActivityError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function updateClaimActivityAction(
+  input: UpdateClaimActivityInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<ClaimActivityMutationResult, ClaimActivityErrorCode>> {
+  return Effect.runPromise(
+    mutations.claim.activity.update(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: ClaimActivityEffectError) =>
+        Effect.succeed(mapClaimActivityError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function upsertClaimActivityAction(
+  input: UpsertClaimActivityInput,
+  agentLayer: AgentLayer
+): Promise<
+  MutationResult<ClaimActivityMutationResult & { created: boolean }, ClaimActivityErrorCode>
+> {
+  return Effect.runPromise(
+    mutations.claim.activity.upsert(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: ClaimActivityEffectError) =>
+        Effect.succeed(mapClaimActivityError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function deleteClaimActivityAction(
+  input: DeleteRecordInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<DeleteRecordResult, ClaimActivityErrorCode>> {
+  return Effect.runPromise(
+    mutations.claim.activity.delete(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: ClaimActivityEffectError) =>
+        Effect.succeed(mapClaimActivityError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// certified.location actions
+// ---------------------------------------------------------------------------
+
+export async function createCertifiedLocationAction(
+  input: CreateCertifiedLocationInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<CertifiedLocationMutationResult, CertifiedLocationErrorCode>> {
+  return Effect.runPromise(
+    mutations.certified.location.create(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function updateCertifiedLocationAction(
+  input: UpdateCertifiedLocationInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<CertifiedLocationMutationResult, CertifiedLocationErrorCode>> {
+  return Effect.runPromise(
+    mutations.certified.location.update(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function upsertCertifiedLocationAction(
+  input: UpsertCertifiedLocationInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<CertifiedLocationMutationResult & { created: boolean }, CertifiedLocationErrorCode>> {
+  return Effect.runPromise(
+    mutations.certified.location.upsert(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function deleteCertifiedLocationAction(
+  input: DeleteRecordInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<DeleteRecordResult, CertifiedLocationErrorCode>> {
+  return Effect.runPromise(
+    mutations.certified.location.delete(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: CertifiedLocationEffectError) => Effect.succeed(mapCertifiedLocationError(e))),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// blob actions
+// ---------------------------------------------------------------------------
+
+export async function uploadBlobAction(
+  input: UploadBlobInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<UploadBlobResult, BlobErrorCode>> {
+  return Effect.runPromise(
+    mutations.blob.upload(input).pipe(
+      Effect.map((result) => ok(result)),
+      Effect.catchAll((e: BlobEffectError) => Effect.succeed(mapBlobError(e))),
       Effect.provide(agentLayer)
     )
   );

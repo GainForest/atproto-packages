@@ -6,7 +6,11 @@
 // For context-specific imports use the subpath exports:
 //   @gainforest/atproto-mutations-next/actions  — raw server actions (server-to-server)
 //   @gainforest/atproto-mutations-next/server   — layer construction, server utils
-//   @gainforest/atproto-mutations-next/client   — adapted mutations namespace for useMutation
+//   @gainforest/atproto-mutations-next/client   — createMutations() factory for useMutation
+
+// Core mutations namespace (Effect-based) — re-exported for convenience
+export { mutations } from "@gainforest/atproto-mutations-core";
+export type { Mutations } from "@gainforest/atproto-mutations-core";
 
 // Core primitives — safe everywhere
 export type { MutationResult } from "@gainforest/atproto-mutations-core";
