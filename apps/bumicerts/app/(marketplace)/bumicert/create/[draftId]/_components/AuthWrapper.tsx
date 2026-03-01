@@ -6,12 +6,28 @@ import { useAtprotoStore } from "@/components/stores/atproto";
 import { BuildingIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AtprotoSignInButton from "@/components/global/Header/AtprotoSignInButton";
-import { allowedPDSDomains } from "@/lib/config/gainforest-sdk";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { trpcApi } from "@/components/providers/TrpcProvider";
-import { ProgressiveBlur } from "@/components/ui/progressive-blur";
+import { useQuery } from "@tanstack/react-query";
+import { graphqlClient } from "@/lib/graphql/client";
+import { graphql } from "@/lib/graphql/tada";
+
+// Query to check if organization info exists
+const OrgInfoCheckQuery = graphql(`
+  query OrgInfoCheck($did: String!) {
+    gainforest {
+      organization {
+        infos(where: { did: $did }, limit: 1) {
+          records {
+            meta { did }
+            displayName
+          }
+        }
+      }
+    }
+  }
+`);
 
 const AuthWrapper = ({
   children,
@@ -27,16 +43,24 @@ const AuthWrapper = ({
   const {
     isPending: isPendingOrganizationInfo,
     error: organizationInfoError,
+    data: orgData,
     isPlaceholderData: isOlderData,
-  } = trpcApi.gainforest.organization.info.get.useQuery(
-    {
-      did: auth.user?.did ?? "",
-      pdsDomain: allowedPDSDomains[0],
+  } = useQuery({
+    queryKey: ["org-info-check", auth.user?.did],
+    queryFn: async () => {
+      if (!auth.user?.did) return null;
+      const response = await graphqlClient.request(OrgInfoCheckQuery, {
+        did: auth.user.did,
+      });
+      const records = response.gainforest?.organization?.infos?.records ?? [];
+      if (records.length === 0) {
+        throw new Error("Organization not found");
+      }
+      return records[0];
     },
-    {
-      enabled: !!auth.user?.did,
-    }
-  );
+    enabled: !!auth.user?.did,
+    staleTime: 60 * 1000, // 1 minute
+  });
 
   const isLoadingOrganizationInfo = isPendingOrganizationInfo || isOlderData;
   const isAuthenticated = auth.status === "AUTHENTICATED";

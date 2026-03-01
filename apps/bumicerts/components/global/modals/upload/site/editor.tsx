@@ -7,15 +7,11 @@ import {
   ModalTitle,
 } from "@/components/ui/modal/modal";
 import { useState, type ChangeEvent } from "react";
-import { allowedPDSDomains } from "@/lib/config/gainforest-sdk";
-import { toBlobRefGenerator, toFileGenerator } from "gainforest-sdk/zod";
+import { allowedPDSDomains } from "@/lib/config/pds";
 import { Button } from "@/components/ui/button";
-import { trpcApi } from "@/components/providers/TrpcProvider";
-import {
-  AppGainforestOrganizationDefaultSite,
-  AppCertifiedLocation,
-} from "gainforest-sdk/lex-api";
-import { getBlobUrl, parseAtUri } from "gainforest-sdk/utilities/atproto";
+import { getBlobUrl, type BlobInput } from "@/lib/atproto/blobs";
+import { parseAtUri, toSerializableFile } from "@/lib/mutations-utils";
+import { createLocationAction, updateLocationAction } from "@/lib/actions/locations";
 import FileInput from "@/components/ui/FileInput";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, CheckIcon, Loader2, Pencil } from "lucide-react";
@@ -24,18 +20,28 @@ import { getShapefilePreviewUrl } from "../../../../../lib/shapefile";
 import DrawPolygonModal, {
   DrawPolygonModalId,
 } from "@/components/global/modals/draw-polygon";
-import { GetRecordResponse } from "gainforest-sdk/types";
 import { useAtprotoStore } from "@/components/stores/atproto";
-import { $Typed } from "gainforest-sdk/lex-api/utils";
-import { OrgHypercertsDefs as Defs } from "gainforest-sdk/lex-api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const SiteEditorModalId = "site/editor";
 
-type AllSitesData = {
-  locations: GetRecordResponse<AppCertifiedLocation.Record>[];
-  defaultLocation: GetRecordResponse<AppGainforestOrganizationDefaultSite.Record> | null;
+/**
+ * Site data type - represents a certified location record from the API.
+ * This is a simplified type since we're now using GraphQL/mutations rather than tRPC.
+ */
+type SiteData = {
+  uri: string;
+  cid: string;
+  value: {
+    name?: string;
+    description?: string;
+    location?: {
+      $type?: string;
+      uri?: string;
+      blob?: BlobInput;
+    };
+  };
 };
-type SiteData = AllSitesData["locations"][number];
 
 type SiteEditorModalProps = {
   initialData: SiteData | null;
@@ -45,17 +51,20 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
   const initialSite = initialData?.value;
   const initialName = initialSite?.name;
 
+  // Extract location URL from the initial data
   const initialLocationBlobUrl =
-    initialData?.value?.location?.$type === "org.hypercerts.defs#smallBlob"
+    initialData?.value?.location?.$type === "org.hypercerts.defs#smallBlob" &&
+    initialData?.value?.location?.blob
       ? getBlobUrl(
           parseAtUri(initialData.uri).did,
-          (initialData.value.location as $Typed<Defs.SmallBlob>).blob,
+          initialData.value.location.blob as BlobInput,
           allowedPDSDomains[0]
         )
       : null;
+
   const initialLocationURI =
-    initialSite?.location.$type === "org.hypercerts.defs#uri"
-      ? (initialSite.location as $Typed<Defs.Uri>).uri
+    initialSite?.location?.$type === "org.hypercerts.defs#uri"
+      ? initialSite.location.uri
       : initialLocationBlobUrl;
 
   const auth = useAtprotoStore((state) => state.auth);
@@ -82,54 +91,77 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
   const [isCompleted, setIsCompleted] = useState(false);
 
   const { stack, popModal, hide, pushModal, show } = useModal();
-  const utils = trpcApi.useUtils();
+  const queryClient = useQueryClient();
 
+  // Create mutation using TanStack Query with the mutations package
   const {
     mutate: handleAdd,
     isPending: isAdding,
     error: addError,
-  } = trpcApi.hypercerts.location.create.useMutation({
-    onSuccess: () => {
-      utils.hypercerts.location.getAll.invalidate({
-        did,
-        pdsDomain: allowedPDSDomains[0],
+  } = useMutation({
+    mutationFn: async ({
+      name,
+      shapefile,
+    }: {
+      name: string;
+      shapefile: File;
+    }) => {
+      const shapefileData = await toSerializableFile(shapefile);
+      return createLocationAction({
+        name,
+        shapefile: shapefileData,
       });
+    },
+    onSuccess: () => {
+      // Invalidate queries related to locations
+      queryClient.invalidateQueries({ queryKey: ["locations", did] });
+      queryClient.invalidateQueries({ queryKey: ["sites", did] });
       setIsCompleted(true);
     },
   });
 
+  // Update mutation
   const {
     mutate: handleUpdate,
     isPending: isUpdating,
     error: updateError,
-  } = trpcApi.hypercerts.location.update.useMutation({
-    onSuccess: () => {
-      utils.hypercerts.location.getAll.invalidate({
-        did,
-        pdsDomain: allowedPDSDomains[0],
+  } = useMutation({
+    mutationFn: async ({
+      rkey,
+      name,
+      shapefile,
+    }: {
+      rkey: string;
+      name: string;
+      shapefile?: File | null;
+    }) => {
+      const newShapefile = shapefile
+        ? await toSerializableFile(shapefile)
+        : undefined;
+
+      return updateLocationAction({
+        rkey,
+        data: { name },
+        newShapefile,
       });
+    },
+    onSuccess: () => {
+      // Invalidate queries related to locations
+      queryClient.invalidateQueries({ queryKey: ["locations", did] });
+      queryClient.invalidateQueries({ queryKey: ["sites", did] });
       setIsCompleted(true);
     },
   });
 
   const executeAddOrEdit = async () => {
     if (mode === "add") {
-      const shapefileInput =
-        shapefile === null ? null : await toFileGenerator(shapefile);
-
-      if (!shapefileInput) {
+      if (!shapefile) {
         throw new Error("Shapefile is required");
       }
 
-      await handleAdd({
-        did: did!,
-        site: {
-          name: name.trim(),
-        },
-        uploads: {
-          shapefile: shapefileInput,
-        },
-        pdsDomain: allowedPDSDomains[0],
+      handleAdd({
+        name: name.trim(),
+        shapefile,
       });
     } else {
       // Edit mode
@@ -137,52 +169,11 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
         throw new Error("Record key is required for editing");
       }
 
-      // If no new shapefile is provided, keep the existing one
-      if (!hasShapefileInput && initialLocationURI) {
-        const initialLocationUri =
-          initialSite?.location.$type === "org.hypercerts.defs#uri"
-            ? (initialSite.location as $Typed<Defs.Uri>).uri
-            : null;
-        const initialLocationBlob =
-          initialSite?.location.$type === "org.hypercerts.defs#smallBlob"
-            ? (initialSite.location as $Typed<Defs.SmallBlob>).blob
-            : null;
-        const sitePayload = {
-          name: name.trim(),
-          shapefile: initialLocationBlob
-            ? {
-                $type: "org.hypercerts.defs#smallBlob" as const,
-                blob: toBlobRefGenerator(initialLocationBlob),
-              }
-            : undefined,
-        };
-
-        await handleUpdate({
-          did: did!,
-          rkey,
-          site: sitePayload,
-          pdsDomain: allowedPDSDomains[0],
-        });
-      } else {
-        const shapefileInput =
-          shapefile === null ? null : await toFileGenerator(shapefile);
-
-        if (!shapefileInput) {
-          throw new Error("Shapefile is required");
-        }
-
-        await handleUpdate({
-          did: did!,
-          rkey,
-          site: {
-            name: name.trim(),
-          },
-          uploads: {
-            shapefile: shapefileInput,
-          },
-          pdsDomain: allowedPDSDomains[0],
-        });
-      }
+      handleUpdate({
+        rkey,
+        name: name.trim(),
+        shapefile: hasShapefileInput ? shapefile : null,
+      });
     }
   };
 
@@ -313,7 +304,11 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
             )}
             {error && (
               <div className="text-sm text-destructive mt-2">
-                {error.message.startsWith("[") ? "Bad Request" : error.message}
+                {error instanceof Error
+                  ? error.message.startsWith("[")
+                    ? "Bad Request"
+                    : error.message
+                  : "An error occurred"}
               </div>
             )}
           </motion.section>

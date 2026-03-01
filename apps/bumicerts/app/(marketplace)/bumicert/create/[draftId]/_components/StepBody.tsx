@@ -7,10 +7,7 @@ import { ChevronDown, EyeIcon, Lightbulb } from "lucide-react";
 import useNewBumicertStore from "../store";
 import { BumicertArt } from "./Steps/Step4/BumicertPreviewCard";
 import { useFormStore } from "../form-store";
-import { trpcApi } from "@/components/providers/TrpcProvider";
-import { allowedPDSDomains } from "@/lib/config/gainforest-sdk";
 import { useAtprotoStore } from "@/components/stores/atproto";
-import { getBlobUrl } from "gainforest-sdk/utilities/atproto";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNavbarContext } from "@/app/(marketplace)/_components/Navbar/context";
@@ -18,6 +15,26 @@ import { STEPS } from "../_data/steps";
 import { trackStepViewed, trackStepCompleted, getStepName } from "@/lib/analytics/hotjar";
 import { useParams } from "next/navigation";
 import { useUnsavedChangesWarning } from "@/hooks/use-unsaved-changes-warning";
+import { useQuery } from "@tanstack/react-query";
+import { graphqlClient } from "@/lib/graphql/client";
+import { graphql } from "@/lib/graphql/tada";
+
+// Query to get organization logo
+const OrgLogoQuery = graphql(`
+  query OrgLogoForPreview($did: String!) {
+    gainforest {
+      organization {
+        infos(where: { did: $did }, limit: 1) {
+          records {
+            logo {
+              uri
+            }
+          }
+        }
+      }
+    }
+  }
+`);
 
 const EMPTY_COVER_IMAGE = new File([], "cover-image.png");
 
@@ -110,21 +127,20 @@ const SecondaryContent = () => {
     STEPS[currentStep].previewBumicertByDefault
   );
 
-  const { data: organizationInfoResponse, isPlaceholderData: isOlderData } =
-    trpcApi.gainforest.organization.info.get.useQuery(
-      {
-        did: auth.user?.did ?? "",
-        pdsDomain: allowedPDSDomains[0],
-      },
-      {
-        enabled: !!auth.user?.did,
-      }
-    );
-  const organizationInfo = organizationInfoResponse?.value;
-  const logoFromData = isOlderData ? undefined : organizationInfo?.logo;
-  const logoUrl = logoFromData
-    ? getBlobUrl(auth.user?.did ?? "", logoFromData.image, allowedPDSDomains[0])
-    : null;
+  const { data: orgLogoData, isPlaceholderData: isOlderData } = useQuery({
+    queryKey: ["org-logo-preview", auth.user?.did],
+    queryFn: async () => {
+      if (!auth.user?.did) return null;
+      const response = await graphqlClient.request(OrgLogoQuery, {
+        did: auth.user.did,
+      });
+      return response.gainforest?.organization?.infos?.records?.[0]?.logo?.uri ?? null;
+    },
+    enabled: !!auth.user?.did,
+    staleTime: 60 * 1000,
+  });
+
+  const logoUrl = isOlderData ? null : (orgLogoData ?? null);
 
   return (
     <div className="w-full min-h-full flex flex-col bg-muted/50 rounded-xl">

@@ -5,26 +5,37 @@
  * user's OAuth session. Uses @gainforest/atproto-mutations-next with the auth
  * package's session management.
  *
+ * IMPORTANT: This module contains server-only code (auth session reading).
+ * It is designed to be imported in server components, route handlers, and
+ * server actions. The mutations themselves are server actions that can be
+ * called from client components via React Query.
+ *
  * @example
  * ```tsx
- * "use client";
- * import { useMutation } from "@tanstack/react-query";
+ * // In a server action file:
+ * "use server";
  * import { mutations } from "@/lib/mutations";
  *
- * function MyComponent() {
- *   const { mutate, isPending } = useMutation({
- *     mutationFn: mutations.organization.info.upsert,
- *     onSuccess: ({ uri }) => console.log("Saved:", uri),
- *   });
+ * export async function createBumicert(input) {
+ *   return mutations.claim.activity.create(input);
+ * }
+ * ```
  *
- *   return (
- *     <button onClick={() => mutate({ displayName: "My Org" })}>
- *       Save
- *     </button>
- *   );
+ * @example
+ * ```tsx
+ * // In a client component (via wrapper action):
+ * "use client";
+ * import { useMutation } from "@tanstack/react-query";
+ * import { createBumicertAction } from "@/actions/bumicerts";
+ *
+ * function MyComponent() {
+ *   const { mutate } = useMutation({ mutationFn: createBumicertAction });
+ *   // ...
  * }
  * ```
  */
+
+import "server-only";
 
 import { createMutations } from "@gainforest/atproto-mutations-next/client";
 import { makeUserAgentLayer } from "@gainforest/atproto-mutations-next/server";
@@ -46,17 +57,3 @@ import { auth } from "@/lib/auth";
  * - `mutations.blob.*` - Blob uploads
  */
 export const mutations = createMutations(makeUserAgentLayer(auth));
-
-// Re-export useful types and utilities
-export { MutationError } from "@gainforest/atproto-mutations-next/client";
-export {
-  toSerializableFile,
-  parseAtUri,
-  computePolygonMetrics,
-} from "@gainforest/atproto-mutations-next";
-export type {
-  SerializableFile,
-  FileOrBlobRef,
-  AtUri,
-  PolygonMetrics,
-} from "@gainforest/atproto-mutations-next";

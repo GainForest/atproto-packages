@@ -7,9 +7,7 @@ import {
   ShieldCheck,
   Map,
   PlusCircle,
-  Trash2,
   Loader2,
-  Loader2Icon,
   CircleDashed,
   Check,
   ChevronRight,
@@ -17,26 +15,21 @@ import {
 import { useFormStore } from "../../form-store";
 import { Checkbox } from "@/components/ui/checkbox";
 import useNewBumicertStore from "../../store";
-import { allowedPDSDomains } from "@/lib/config/gainforest-sdk";
 import { useAtprotoStore } from "@/components/stores/atproto";
-import { trpcApi } from "@/components/providers/TrpcProvider";
 import { useModal } from "@/components/ui/modal/context";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { SiteEditorModalId } from "@/components/global/modals/upload/site/editor";
 import dynamic from "next/dynamic";
-import { computePolygonMetrics } from "gainforest-sdk/utilities/geojson";
-import { GetRecordResponse } from "gainforest-sdk/types";
-import { AppCertifiedLocation } from "gainforest-sdk/lex-api";
-import useBlob from "@/hooks/use-blob";
-import { $Typed } from "gainforest-sdk/lex-api/utils";
-import { OrgHypercertsDefs as Defs } from "gainforest-sdk/lex-api";
+import { computePolygonMetrics, parseAtUri } from "@gainforest/atproto-mutations-next";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { getBlobUrl, parseAtUri } from "gainforest-sdk/utilities/atproto";
 import { links } from "@/lib/links";
 import { ContributorRow } from "./ContributorRow";
 import { ContributorSelector } from "./ContributorSelector";
 import QuerySuspense from "@/components/query-suspense";
+import { graphqlClient } from "@/lib/graphql/client";
+import { graphql } from "@/lib/graphql/tada";
+import { allowedPDSDomains } from "@/lib/config/pds";
 
 const SiteEditorModal = dynamic(
   () =>
@@ -45,6 +38,42 @@ const SiteEditorModal = dynamic(
     })),
   { ssr: false }
 );
+
+// Query to get certified locations for the user
+const CertifiedLocationsQuery = graphql(`
+  query CertifiedLocations($did: String!) {
+    certified {
+      locations(where: { did: $did }, order: DESC, sortBy: CREATED_AT) {
+        records {
+          meta {
+            did
+            uri
+            rkey
+            cid
+          }
+          name
+          description
+          location
+          locationType
+        }
+      }
+    }
+  }
+`);
+
+interface LocationRecord {
+  meta: {
+    did: string | null;
+    uri: string | null;
+    rkey: string | null;
+    cid: string | null;
+  } | null;
+  name: string | null;
+  description: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  location: any;
+  locationType: string | null;
+}
 
 const formatCoordinate = (coordinate: string) => {
   const num = parseFloat(coordinate);
@@ -92,20 +121,27 @@ const Step3 = () => {
     );
     show();
   };
+
   const {
     data: sitesResponse,
     isPending: isSitesPending,
     isPlaceholderData: isOlderSites,
     error: sitesFetchError,
-  } = trpcApi.hypercerts.location.getAll.useQuery(
-    {
-      did: auth.user?.did ?? "",
-      pdsDomain: allowedPDSDomains[0],
+  } = useQuery({
+    queryKey: ["certified-locations", auth.user?.did],
+    queryFn: async () => {
+      if (!auth.user?.did) return { locations: [] };
+      const response = await graphqlClient.request(CertifiedLocationsQuery, {
+        did: auth.user.did,
+      });
+      return {
+        locations: (response.certified?.locations?.records ?? []) as LocationRecord[],
+      };
     },
-    {
-      enabled: !!auth.user?.did,
-    }
-  );
+    enabled: !!auth.user?.did,
+    staleTime: 30 * 1000,
+  });
+
   const sites = sitesResponse?.locations;
   const isSitesLoading = isSitesPending || isOlderSites;
 
@@ -209,12 +245,12 @@ const Step3 = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-1 p-2">
                     {sites.map((site) => {
-                      if (typeof site.cid !== "string") return null;
-                      const cid = site.cid;
-                      const uri = site.uri;
+                      const cid = site.meta?.cid;
+                      const uri = site.meta?.uri;
+                      if (!cid || !uri) return null;
                       return (
                         <QuerySuspense
-                          key={site.cid}
+                          key={cid}
                           loadingFallback={
                             <div className="h-12 rounded-md bg-muted animate-pulse"></div>
                           }
@@ -317,29 +353,41 @@ const SiteItem = ({
   isSelected,
   onSelectChange,
 }: {
-  site: GetRecordResponse<AppCertifiedLocation.Main>;
+  site: LocationRecord;
   isSelected: boolean;
   onSelectChange: (value: boolean) => void;
 }) => {
-  const locationRef = site.value.location;
-  const locationBlob =
-    locationRef.$type === "org.hypercerts.defs#smallBlob"
-      ? (locationRef as $Typed<Defs.SmallBlob>).blob
-      : null;
-  const locationURI =
-    locationRef.$type === "org.hypercerts.defs#uri"
-      ? (locationRef as $Typed<Defs.Uri>).uri
-      : null;
-  const locationBlobURL = locationBlob
-    ? getBlobUrl(parseAtUri(site.uri).did, locationBlob, allowedPDSDomains[0])
-    : null;
-  const urlToFetch = locationBlobURL ?? locationURI ?? null;
+  const locationRef = site.location;
+  const uri = site.meta?.uri ?? "";
+  const did = site.meta?.did ?? "";
+  const pdsDomain = allowedPDSDomains[0];
+
+  // Try to get URL from location data
+  // The location field can be a blob reference or a URI
+  let urlToFetch: string | null = null;
+
+  if (locationRef) {
+    if (typeof locationRef === "object") {
+      // Check for URI type
+      if (locationRef.$type?.includes("uri") && locationRef.uri) {
+        urlToFetch = locationRef.uri;
+      }
+      // Check for blob type - construct blob URL
+      else if (locationRef.$type?.includes("Blob") && locationRef.blob) {
+        const blobRef = locationRef.blob;
+        const cid = blobRef?.ref?.$link ?? blobRef?.cid;
+        if (cid && did) {
+          urlToFetch = `https://${pdsDomain}/xrpc/com.atproto.sync.getBlob?did=${encodeURIComponent(did)}&cid=${encodeURIComponent(cid)}`;
+        }
+      }
+    }
+  }
 
   const { data: locationData } = useSuspenseQuery({
     queryKey: ["location", urlToFetch],
     queryFn: async () => {
       if (!urlToFetch) {
-        console.error("Invalid urlToFetch while fetching Location. Location for debugging:", locationRef)
+        console.error("Invalid urlToFetch while fetching Location. Location for debugging:", locationRef);
         throw new Error("A valid location could not be found.");
       }
       const response = await fetch(urlToFetch);
@@ -366,7 +414,7 @@ const SiteItem = ({
 
   return (
     <Button
-      key={site.cid}
+      key={site.meta?.cid}
       variant={"outline"}
       size="sm"
       className={cn(
@@ -383,7 +431,7 @@ const SiteItem = ({
         <CircleDashed className="size-5 text-muted-foreground" />
       )}
       <div className="flex flex-col items-start justify-start">
-        <span className="text-base font-medium">{site.value.name}</span>
+        <span className="text-base font-medium">{site.name ?? "Unnamed Site"}</span>
         <div className="flex items-center gap-1">
           {locationValidity.valid ? (
             <>

@@ -1,7 +1,10 @@
-import { gainforestSdk } from "@/lib/config/gainforest-sdk.server";
-import { allowedPDSDomains } from "@/lib/config/gainforest-sdk";
-import { tryCatch } from "@/lib/tryCatch";
-import { claimsToOrganizationDataArray } from "@/lib/adapters";
+import { graphqlClient } from "@/lib/graphql/client";
+import { AllOrganizationsQuery } from "@/lib/graphql/queries";
+import {
+  orgInfosToOrganizationDataArray,
+  type GraphQLOrgInfo,
+  type GraphQLHcActivity,
+} from "@/lib/adapters";
 import { AllOrgsClient } from "./_components/AllOrgsClient";
 
 export const metadata = {
@@ -11,15 +14,26 @@ export const metadata = {
 };
 
 export default async function AllOrganizationsPage() {
-  const caller = gainforestSdk.getServerCaller();
+  try {
+    // Fetch all organizations
+    const response = await graphqlClient.request(AllOrganizationsQuery, {
+      limit: 1000,
+    });
 
-  const [data, error] = await tryCatch(
-    caller.hypercerts.claim.activity.getAllAcrossOrgs({
-      pdsDomain: allowedPDSDomains[0],
-    })
-  );
+    const orgInfos = (response.gainforest?.organization?.infos?.records ?? []) as GraphQLOrgInfo[];
 
-  if (error) {
+    // We need activity counts per org - for now we'll set to 0 and let the client refetch
+    // A more complete solution would be to query activities in parallel
+    const activityCountByDid = new Map<string, number>();
+
+    const organizations = orgInfosToOrganizationDataArray(orgInfos, activityCountByDid);
+
+    return (
+      <div className="w-full">
+        <AllOrgsClient organizations={organizations} />
+      </div>
+    );
+  } catch (error) {
     console.error("Failed to fetch organizations:", error);
     return (
       <div className="w-full pt-20 flex items-center justify-center">
@@ -31,14 +45,4 @@ export default async function AllOrganizationsPage() {
       </div>
     );
   }
-
-  const organizations = claimsToOrganizationDataArray(
-    data as Parameters<typeof claimsToOrganizationDataArray>[0]
-  );
-
-  return (
-    <div className="w-full">
-      <AllOrgsClient organizations={organizations} />
-    </div>
-  );
 }

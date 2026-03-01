@@ -173,7 +173,7 @@ export type AuthSetupConfig = {
 
 // ─── Output types ─────────────────────────────────────────────────────────────
 
-type RouteHandler = (req: NextRequest) => Promise<unknown>;
+type RouteHandler = (req: NextRequest) => Promise<Response | void>;
 type NoopHandler = () => never;
 
 export type AuthSetup = {
@@ -191,9 +191,9 @@ export type AuthSetup = {
     /** Mount at: /api/oauth/logout (POST) */
     logout: { POST: RouteHandler };
     /** Mount at: /client-metadata.json (GET) */
-    clientMetadata: { GET: () => unknown };
+    clientMetadata: { GET: () => Response };
     /** Mount at: /.well-known/jwks.json (GET) */
-    jwks: { GET: () => unknown };
+    jwks: { GET: () => Response };
     /**
      * ePDS handlers. Only operational when `epds.url` is configured.
      * If ePDS is not configured, calling these handlers throws an error.

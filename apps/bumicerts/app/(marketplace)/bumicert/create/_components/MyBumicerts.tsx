@@ -1,61 +1,71 @@
 "use client";
 
-import { trpcApi } from "@/components/providers/TrpcProvider";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { Button } from "@/components/ui/button";
-import { allowedPDSDomains } from "@/lib/config/gainforest-sdk";
 import { links } from "@/lib/links";
-import { parseAtUri } from "gainforest-sdk/utilities/atproto";
-import { getEcocertsFromClaimActivities as getBumicertsFromClaimActivities } from "gainforest-sdk/utilities/hypercerts";
+import { parseAtUri } from "@gainforest/atproto-mutations-next";
 import { ArrowUpRight, Inbox, Loader2 } from "lucide-react";
 import Link from "next/link";
 import React, { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { graphqlClient } from "@/lib/graphql/client";
+import { graphql } from "@/lib/graphql/tada";
+
+// Query to get activities for current user
+const MyActivitiesQuery = graphql(`
+  query MyActivities($did: String!) {
+    hypercerts {
+      activities(where: { did: $did }, order: DESC, sortBy: CREATED_AT) {
+        records {
+          meta {
+            did
+            uri
+            rkey
+          }
+          title
+        }
+      }
+    }
+  }
+`);
+
+interface ActivityRecord {
+  meta: {
+    did: string | null;
+    uri: string | null;
+    rkey: string | null;
+  } | null;
+  title: string | null;
+}
 
 const MyBumicerts = () => {
   const auth = useAtprotoStore((state) => state.auth);
+
   const {
-    data: activityClaims,
+    data: activitiesData,
     isPending: isPendingActivityClaims,
     error: errorActivityClaims,
-  } = trpcApi.hypercerts.claim.activity.getAll.useQuery(
-    {
-      did: auth.authenticated ? auth.user.did : "",
-      pdsDomain: allowedPDSDomains[0],
+  } = useQuery({
+    queryKey: ["my-activities", auth.authenticated ? auth.user.did : ""],
+    queryFn: async () => {
+      if (!auth.authenticated) return { records: [] };
+      const response = await graphqlClient.request(MyActivitiesQuery, {
+        did: auth.user.did,
+      });
+      return {
+        records: (response.hypercerts?.activities?.records ?? []) as ActivityRecord[],
+      };
     },
-    {
-      enabled: auth.authenticated,
-    }
-  );
-  const {
-    data: organizationInfo,
-    isPending: isPendingOrganizationInfo,
-    error: errorOrganizationInfo,
-  } = trpcApi.gainforest.organization.info.get.useQuery(
-    {
-      did: auth.authenticated ? auth.user.did : "",
-      pdsDomain: allowedPDSDomains[0],
-    },
-    {
-      enabled: auth.authenticated,
-    }
-  );
+    enabled: auth.authenticated,
+    staleTime: 30 * 1000, // 30 seconds
+  });
+
   const bumicerts = useMemo(() => {
     if (!auth.authenticated) return undefined;
-    if (!activityClaims || !organizationInfo) return undefined;
-    const bumicerts = getBumicertsFromClaimActivities(
-      [
-        {
-          activities: activityClaims.activities,
-          organizationInfo: organizationInfo.value,
-          repo: {
-            did: auth.user.did,
-          },
-        },
-      ],
-      allowedPDSDomains[0]
-    );
-    return bumicerts;
-  }, [activityClaims, organizationInfo, auth]);
+    if (!activitiesData) return undefined;
+    return activitiesData.records;
+  }, [activitiesData, auth]);
+
   return (
     <section className="mt-4 flex flex-col rounded-xl gap-2">
       <div className="flex items-center justify-between">
@@ -85,25 +95,25 @@ const MyBumicerts = () => {
         </div>
       ) : (
         <div className="flex flex-col divide-y divide-border border border-border rounded-xl p-1 mt-2">
-          {bumicerts.map((bumicert) => (
-            <div
-              key={bumicert.claimActivity.uri}
-              className="flex items-center justify-between p-1"
-            >
-              <span className="ml-2">{bumicert.claimActivity.value.title}</span>
-              <Link
-                href={links.bumicert.view(
-                  `${bumicert.repo.did}-${
-                    parseAtUri(bumicert.claimActivity.uri).rkey
-                  }`
-                )}
+          {bumicerts.map((bumicert) => {
+            const did = bumicert.meta?.did ?? "";
+            const rkey = bumicert.meta?.rkey ?? "";
+            const uri = bumicert.meta?.uri ?? "";
+
+            return (
+              <div
+                key={uri}
+                className="flex items-center justify-between p-1"
               >
-                <Button variant="link" size={"sm"}>
-                  View <ArrowUpRight />
-                </Button>
-              </Link>
-            </div>
-          ))}
+                <span className="ml-2">{bumicert.title ?? "Untitled"}</span>
+                <Link href={links.bumicert.view(`${did}-${rkey}`)}>
+                  <Button variant="link" size={"sm"}>
+                    View <ArrowUpRight />
+                  </Button>
+                </Link>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>

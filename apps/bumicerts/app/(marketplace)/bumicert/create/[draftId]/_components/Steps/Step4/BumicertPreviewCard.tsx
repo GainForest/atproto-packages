@@ -1,16 +1,33 @@
 "use client";
-import { trpcApi } from "@/components/providers/TrpcProvider";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { useModal } from "@/components/ui/modal/context";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
-import { allowedPDSDomains } from "@/lib/config/gainforest-sdk";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { getBlobUrl } from "gainforest-sdk/utilities/atproto";
 import { Loader2, UploadIcon } from "lucide-react";
 import Image from "next/image";
 import { useFormStore } from "../../../form-store";
 import { UploadLogoModal, UploadLogoModalId } from "./UploadLogoModal";
+import { useQuery } from "@tanstack/react-query";
+import { graphqlClient } from "@/lib/graphql/client";
+import { graphql } from "@/lib/graphql/tada";
+
+// Query to get organization logo
+const OrgLogoQuery = graphql(`
+  query OrgLogoForCard($did: String!) {
+    gainforest {
+      organization {
+        infos(where: { did: $did }, limit: 1) {
+          records {
+            logo {
+              uri
+            }
+          }
+        }
+      }
+    }
+  }
+`);
 
 export const BumicertArt = ({
   logoUrl,
@@ -110,23 +127,24 @@ const BumicertPreviewCard = () => {
   const auth = useAtprotoStore((state) => state.auth);
   const { show, pushModal } = useModal();
   const {
-    data: organizationInfoResponse,
+    data: orgLogoData,
     isPending: isPendingOrganizationInfo,
     isPlaceholderData: isOlderData,
-  } = trpcApi.gainforest.organization.info.get.useQuery(
-    {
-      did: auth.user?.did ?? "",
-      pdsDomain: allowedPDSDomains[0],
+  } = useQuery({
+    queryKey: ["org-logo-card", auth.user?.did],
+    queryFn: async () => {
+      if (!auth.user?.did) return null;
+      const response = await graphqlClient.request(OrgLogoQuery, {
+        did: auth.user.did,
+      });
+      return response.gainforest?.organization?.infos?.records?.[0]?.logo?.uri ?? null;
     },
-    {
-      enabled: !!auth.user?.did,
-    }
-  );
-  const organizationInfo = organizationInfoResponse?.value;
-  const logoFromData = isOlderData ? undefined : organizationInfo?.logo;
-  const logoUrl = logoFromData
-    ? getBlobUrl(auth.user?.did ?? "", logoFromData.image, allowedPDSDomains[0])
-    : null;
+    enabled: !!auth.user?.did,
+    staleTime: 60 * 1000,
+  });
+
+  const logoFromData = isOlderData ? undefined : orgLogoData;
+  const logoUrl = logoFromData ?? null;
 
   const isLoadingOrganizationInfo = isPendingOrganizationInfo || isOlderData;
 

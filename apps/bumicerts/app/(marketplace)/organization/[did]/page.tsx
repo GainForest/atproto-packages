@@ -1,21 +1,23 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { gainforestSdk } from "@/lib/config/gainforest-sdk.server";
-import { allowedPDSDomains } from "@/lib/config/gainforest-sdk";
-import { tryCatch } from "@/lib/tryCatch";
-import { TRPCError } from "@trpc/server";
-import { orgInfoToOrganizationData, claimsToBumicertDataArray } from "@/lib/adapters";
+import { graphqlClient } from "@/lib/graphql/client";
+import { OrganizationByDidQuery } from "@/lib/graphql/queries";
+import {
+  orgInfoToOrganizationData,
+  activitiesToBumicertDataArray,
+  type GraphQLOrgInfo,
+  type GraphQLHcActivity,
+} from "@/lib/adapters";
 import Container from "@/components/ui/container";
 import { OrgPageClient } from "./OrgPageClient";
 
-const pdsDomain = allowedPDSDomains[0];
-
-const getOrgInfo = cache(async (did: string) => {
-  const caller = gainforestSdk.getServerCaller();
-  type OrgInfoResponse = Awaited<ReturnType<typeof caller.gainforest.organization.info.get>>;
-  return tryCatch<OrgInfoResponse>(
-    caller.gainforest.organization.info.get({ did, pdsDomain })
-  );
+const getOrgData = cache(async (did: string) => {
+  try {
+    const response = await graphqlClient.request(OrganizationByDidQuery, { did, orgDid: did });
+    return { data: response, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
 });
 
 export async function generateMetadata({
@@ -26,14 +28,26 @@ export async function generateMetadata({
   const { did: encodedDid } = await params;
   const did = decodeURIComponent(encodedDid);
 
-  const [response, error] = await getOrgInfo(did);
+  const { data, error } = await getOrgData(did);
 
-  if (error || !response) return { title: "Organization — Bumicerts" };
+  if (error || !data) return { title: "Organization — Bumicerts" };
 
-  const org = response.value;
+  const orgInfos = data.gainforest?.organization?.infos?.records ?? [];
+  const orgInfo = orgInfos[0] as GraphQLOrgInfo | undefined;
+
+  if (!orgInfo) return { title: "Organization — Bumicerts" };
+
+  // Extract short description text
+  const shortDesc = orgInfo.shortDescription;
+  const descText = typeof shortDesc === "object" && shortDesc?.text
+    ? shortDesc.text
+    : typeof shortDesc === "string"
+      ? shortDesc
+      : "";
+
   return {
-    title: `${org.displayName} — Bumicerts`,
-    description: org.shortDescription?.text ?? "",
+    title: `${orgInfo.displayName ?? "Organization"} — Bumicerts`,
+    description: descText,
   };
 }
 
@@ -45,40 +59,35 @@ export default async function OrganizationPage({
   const { did: encodedDid } = await params;
   const did = decodeURIComponent(encodedDid);
 
-  const caller = gainforestSdk.getServerCaller();
+  const { data, error } = await getOrgData(did);
 
-  type AllClaimsResponse = Awaited<ReturnType<typeof caller.hypercerts.claim.activity.getAllAcrossOrgs>>;
-  // Fetch org info and all bumicerts in parallel
-  const [[orgInfoResponse, orgInfoError], [allClaims, allClaimsError]] = await Promise.all([
-    getOrgInfo(did),
-    tryCatch<AllClaimsResponse>(caller.hypercerts.claim.activity.getAllAcrossOrgs({ pdsDomain })),
-  ]);
-
-  const fetchError = orgInfoError ?? allClaimsError;
-  if (fetchError) {
-    if (fetchError instanceof TRPCError && fetchError.code === "BAD_REQUEST") {
-      notFound();
-    }
-    if (fetchError instanceof TRPCError && fetchError.code === "NOT_FOUND") {
-      notFound();
-    }
-    console.error("Error fetching org page", did, fetchError);
+  if (error) {
+    console.error("Error fetching org page", did, error);
     throw new Error("Failed to load organization. Please try again.");
   }
 
-  const orgInfo = orgInfoResponse!.value;
+  const orgInfos = (data?.gainforest?.organization?.infos?.records ?? []) as GraphQLOrgInfo[];
+  const orgInfo = orgInfos[0];
 
-  // Visibility check — if Unlisted, only the owner can see it (we don't gate for now)
-  if ((orgInfo.visibility as string) === "Unlisted") {
+  if (!orgInfo) {
     notFound();
   }
 
-  // Count bumicerts for this org
-  const orgClaims = allClaims!.filter(
-    (c: { repo: { did: string } }) => c.repo.did === did
-  );
-  const organization = orgInfoToOrganizationData(did, orgInfo, orgClaims.length);
-  const bumicerts = claimsToBumicertDataArray(orgClaims);
+  // Visibility check — if Unlisted, only the owner can see it (we don't gate for now)
+  if (orgInfo.visibility === "Unlisted") {
+    notFound();
+  }
+
+  // Get activities for this org
+  const activities = (data?.hypercerts?.activities?.records ?? []) as GraphQLHcActivity[];
+
+  // Build org info map for adapter
+  const orgInfoByDid = new Map<string, GraphQLOrgInfo>();
+  orgInfoByDid.set(did, orgInfo);
+
+  // Transform data
+  const organization = orgInfoToOrganizationData(orgInfo, activities.length);
+  const bumicerts = activitiesToBumicertDataArray(activities, orgInfoByDid);
 
   return (
     <Container className="pt-4">
