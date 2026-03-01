@@ -12,5 +12,5 @@ const REQUIRED_FIELDS: ReadonlySet<string> = new Set([
 export const applyPatch = <T extends object>(
   existing: T,
   data: Partial<T>,
-  unset?: ReadonlyArray<keyof T>
+  unset?: readonly string[]
 ): T => genericApplyPatch(existing, data, unset, REQUIRED_FIELDS);

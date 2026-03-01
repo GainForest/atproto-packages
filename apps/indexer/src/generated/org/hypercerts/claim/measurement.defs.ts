@@ -31,7 +31,7 @@ type Main = {
   unit: string
 
   /**
-   * The measured numeric value.
+   * The measured value as a numeric string (e.g. '1234.56')
    */
   value: string
 
@@ -41,7 +41,7 @@ type Main = {
   startDate?: l.DatetimeString
 
   /**
-   * The end date and time when the measurement ended. If it was a one time measurement, the endDate should be equal to the startDate.
+   * The end date and time when the measurement ended. For one-time measurements, this should equal the start date.
    */
   endDate?: l.DatetimeString
 
@@ -66,7 +66,7 @@ type Main = {
   evidenceURI?: l.UriString[]
 
   /**
-   * DIDs of the entity (or entities) that measured this data
+   * DIDs of the entities that performed this measurement
    */
   measurers?: CertifiedDefs.Did[]
 

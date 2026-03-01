@@ -212,7 +212,9 @@ describe("updateOrganizationInfo", () => {
     expect(result._tag).toBe("Left");
     if (result._tag === "Left") {
       expect(result.left).toBeInstanceOf(OrganizationInfoNotFoundError);
-      console.log(`[ok] Got expected OrganizationInfoNotFoundError for repo: ${result.left.repo}`);
+      if (result.left._tag === "OrganizationInfoNotFoundError") {
+        console.log(`[ok] Got expected OrganizationInfoNotFoundError for repo: ${result.left.repo}`);
+      }
     }
   });
 
@@ -342,7 +344,8 @@ describe("updateOrganizationInfo", () => {
       updateOrganizationInfo({
         data: {
           logo: {
-            // @ts-expect-error — deliberately wrong type for the test
+            // TypeScript accepts this because WithFileInputs transforms BlobRef -> FileOrBlobRef,
+            // but runtime validation will catch the invalid MIME type
             $type: "org.hypercerts.defs#smallImage",
             image: makeTinyPng({ type: "video/mp4" }),
           },
@@ -369,7 +372,8 @@ describe("updateOrganizationInfo", () => {
       updateOrganizationInfo({
         data: {
           coverImage: {
-            // @ts-expect-error
+            // TypeScript accepts this because WithFileInputs transforms BlobRef -> FileOrBlobRef,
+            // but runtime validation will catch the oversized file
             $type: "org.hypercerts.defs#smallImage",
             image: makeTinyPng({ size: 5 * 1024 * 1024 + 1 }),
           },
@@ -404,7 +408,7 @@ describe("updateOrganizationInfo", () => {
       updateOrganizationInfo({
         data: {
           logo: {
-            // @ts-expect-error — type widening for test
+            // WithFileInputs allows SerializableFile here (transformed from BlobRef)
             $type: "org.hypercerts.defs#smallImage",
             image: makeTinyPng(),
           },

@@ -52,8 +52,7 @@ export type {
   UpsertClaimActivityInput,
   ClaimActivityMutationResult,
   ClaimActivityRecord,
-  WorkScope,
-  ActivityWeight,
+  WorkScopeString,
   StrongRef,
   RichtextFacet,
 } from "@gainforest/atproto-mutations-core";

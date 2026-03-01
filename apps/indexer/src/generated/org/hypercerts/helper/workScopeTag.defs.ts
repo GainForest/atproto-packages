@@ -25,7 +25,7 @@ type Main = {
   key: string
 
   /**
-   * Human-readable label for this scope.
+   * Human-readable display label for this scope (e.g. 'IPFS', 'Go Programming', 'Climate Action')
    */
   label: string
 

@@ -219,7 +219,8 @@ describe("upsertOrganizationInfo", () => {
       upsertOrganizationInfo({
         ...fullInput,
         logo: {
-          // @ts-expect-error — deliberately wrong type for the test
+          // TypeScript accepts this because WithFileInputs transforms BlobRef -> FileOrBlobRef,
+          // but runtime validation will catch the invalid MIME type
           $type: "org.hypercerts.defs#smallImage",
           image: makeTinyPng({ type: "application/octet-stream" }),
         },
@@ -245,7 +246,8 @@ describe("upsertOrganizationInfo", () => {
       upsertOrganizationInfo({
         ...fullInput,
         coverImage: {
-          // @ts-expect-error
+          // TypeScript accepts this because WithFileInputs transforms BlobRef -> FileOrBlobRef,
+          // but runtime validation will catch the oversized file
           $type: "org.hypercerts.defs#smallImage",
           image: makeTinyPng({ size: 5 * 1024 * 1024 + 100 }),
         },
@@ -272,7 +274,7 @@ describe("upsertOrganizationInfo", () => {
       upsertOrganizationInfo({
         ...fullInput,
         logo: {
-          // @ts-expect-error — type widening for test
+          // WithFileInputs allows SerializableFile here (transformed from BlobRef)
           $type: "org.hypercerts.defs#smallImage",
           image: makeTinyPng(),
         },

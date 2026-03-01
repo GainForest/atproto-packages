@@ -54,7 +54,7 @@ const main = l.record<'tid', Main>(
       ],
       false,
     ),
-    note: l.optional(l.string()),
+    note: l.optional(l.string({ maxLength: 500 })),
     createdAt: l.string({ format: 'datetime' }),
   }),
 )

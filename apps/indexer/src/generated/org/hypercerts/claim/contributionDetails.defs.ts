@@ -18,17 +18,17 @@ type Main = {
   role?: string
 
   /**
-   * What the contribution concretely was.
+   * Description of what the contribution concretely involved.
    */
   contributionDescription?: string
 
   /**
-   * When this contribution started. This should be a subset of the hypercert timeframe.
+   * When this contribution started. Should fall within the parent hypercert's timeframe.
    */
   startDate?: l.DatetimeString
 
   /**
-   * When this contribution finished. This should be a subset of the hypercert timeframe.
+   * When this contribution finished. Should fall within the parent hypercert's timeframe.
    */
   endDate?: l.DatetimeString
 

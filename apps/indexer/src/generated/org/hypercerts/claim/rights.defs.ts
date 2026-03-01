@@ -14,17 +14,17 @@ type Main = {
   $type: 'org.hypercerts.claim.rights'
 
   /**
-   * Full name of the rights
+   * Human-readable name for these rights (e.g. 'All Rights Reserved', 'CC BY-SA 4.0')
    */
   rightsName: string
 
   /**
-   * Short rights identifier for easier search
+   * Short identifier code for this rights type (e.g. 'ARR', 'CC-BY-SA') to facilitate filtering and search
    */
   rightsType: string
 
   /**
-   * Description of the rights of this hypercert
+   * Detailed explanation of the rights holders' permissions, restrictions, and conditions
    */
   rightsDescription: string
 
@@ -51,7 +51,7 @@ const main = l.record<'tid', Main>(
   l.object({
     rightsName: l.string({ maxLength: 100 }),
     rightsType: l.string({ maxLength: 10 }),
-    rightsDescription: l.string(),
+    rightsDescription: l.string({ maxLength: 10000, maxGraphemes: 1000 }),
     attachment: l.optional(
       l.typedUnion(
         [

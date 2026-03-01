@@ -24,7 +24,7 @@ type Main = {
   to: string
 
   /**
-   * Amount of funding received.
+   * Amount of funding received as a numeric string (e.g. '1000.50').
    */
   amount: string
 
@@ -77,12 +77,12 @@ const main = l.record<'tid', Main>(
   $nsid,
   l.object({
     from: l.ref<CertifiedDefs.Did>((() => CertifiedDefs.did) as any),
-    to: l.string(),
-    amount: l.string(),
-    currency: l.string(),
-    paymentRail: l.optional(l.string()),
-    paymentNetwork: l.optional(l.string()),
-    transactionId: l.optional(l.string()),
+    to: l.string({ maxLength: 2048 }),
+    amount: l.string({ maxLength: 50 }),
+    currency: l.string({ maxLength: 10 }),
+    paymentRail: l.optional(l.string({ maxLength: 50 })),
+    paymentNetwork: l.optional(l.string({ maxLength: 50 })),
+    transactionId: l.optional(l.string({ maxLength: 256 })),
     for: l.optional(l.string({ format: 'at-uri' })),
     notes: l.optional(l.string({ maxLength: 500 })),
     occurredAt: l.optional(l.string({ format: 'datetime' })),

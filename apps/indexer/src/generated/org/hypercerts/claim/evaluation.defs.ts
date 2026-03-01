@@ -47,7 +47,7 @@ type Main = {
   $type: 'org.hypercerts.claim.evaluation'
 
   /**
-   * A strong reference to what is being evaluated. (e.g activity, measurement, contribution, etc.)
+   * A strong reference to what is being evaluated (e.g. activity, measurement, contribution, etc.)
    */
   subject?: RepoStrongRef.Main
 

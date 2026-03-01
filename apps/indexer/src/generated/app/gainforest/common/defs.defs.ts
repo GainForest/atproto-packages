@@ -179,6 +179,7 @@ const audio = l.typedObject<Audio>(
     file: l.blob({
       accept: [
         'audio/wav',
+        'audio/vnd.wave',
         'audio/x-wav',
         'audio/mpeg',
         'audio/mp3',

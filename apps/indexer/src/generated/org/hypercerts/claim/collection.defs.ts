@@ -21,7 +21,7 @@ type Main = {
   type?: string
 
   /**
-   * The title of this collection
+   * Display name for this collection (e.g. 'Q1 2025 Impact Projects')
    */
   title: string
 
@@ -74,7 +74,7 @@ const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    type: l.optional(l.string()),
+    type: l.optional(l.string({ maxLength: 64 })),
     title: l.string({ maxLength: 800, maxGraphemes: 80 }),
     shortDescription: l.optional(
       l.string({ maxLength: 3000, maxGraphemes: 300 }),
@@ -104,7 +104,7 @@ const main = l.record<'tid', Main>(
         false,
       ),
     ),
-    items: l.array(l.ref<Item>((() => item) as any)),
+    items: l.array(l.ref<Item>((() => item) as any), { maxLength: 1000 }),
     location: l.optional(
       l.ref<RepoStrongRef.Main>((() => RepoStrongRef.main) as any),
     ),
@@ -150,7 +150,7 @@ const item = l.typedObject<Item>(
     itemIdentifier: l.ref<RepoStrongRef.Main>(
       (() => RepoStrongRef.main) as any,
     ),
-    itemWeight: l.optional(l.string()),
+    itemWeight: l.optional(l.string({ maxLength: 100 })),
   }),
 )
 

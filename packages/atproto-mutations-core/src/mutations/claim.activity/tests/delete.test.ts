@@ -106,10 +106,12 @@ describe("deleteClaimActivity", () => {
     if (result._tag === "Left") {
       expect(result.left).toBeInstanceOf(ClaimActivityNotFoundError);
       expect(result.left._tag).toBe("ClaimActivityNotFoundError");
-      expect(result.left.rkey).toBe("nonexistent-rkey-that-will-never-exist");
-      console.log(
-        `[ok] Got expected ClaimActivityNotFoundError for rkey: "${result.left.rkey}"`
-      );
+      if (result.left._tag === "ClaimActivityNotFoundError") {
+        expect(result.left.rkey).toBe("nonexistent-rkey-that-will-never-exist");
+        console.log(
+          `[ok] Got expected ClaimActivityNotFoundError for rkey: "${result.left.rkey}"`
+        );
+      }
     }
   });
 });

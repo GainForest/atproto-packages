@@ -47,12 +47,12 @@ type Main = {
     | l.Unknown$TypedObject
 
   /**
-   * Optional name for this location
+   * Human-readable name for this location (e.g. 'Golden Gate Park', 'San Francisco Bay Area')
    */
   name?: string
 
   /**
-   * Optional description for this location
+   * Additional context about this location, such as its significance to the work or specific boundaries
    */
   description?: string
 

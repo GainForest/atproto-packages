@@ -16,7 +16,7 @@ type Main = {
   $type: 'org.hypercerts.claim.activity'
 
   /**
-   * Title of the hypercert.
+   * Display title summarizing the impact work (e.g. 'Reforestation in Amazon Basin 2024')
    */
   title: string
 
@@ -126,13 +126,17 @@ const main = l.record<'any', Main>(
     startDate: l.optional(l.string({ format: 'datetime' })),
     endDate: l.optional(l.string({ format: 'datetime' })),
     contributors: l.optional(
-      l.array(l.ref<Contributor>((() => contributor) as any)),
+      l.array(l.ref<Contributor>((() => contributor) as any), {
+        maxLength: 1000,
+      }),
     ),
     rights: l.optional(
       l.ref<RepoStrongRef.Main>((() => RepoStrongRef.main) as any),
     ),
     locations: l.optional(
-      l.array(l.ref<RepoStrongRef.Main>((() => RepoStrongRef.main) as any)),
+      l.array(l.ref<RepoStrongRef.Main>((() => RepoStrongRef.main) as any), {
+        maxLength: 1000,
+      }),
     ),
     createdAt: l.string({ format: 'datetime' }),
   }),
@@ -191,7 +195,7 @@ const contributor = l.typedObject<Contributor>(
       ],
       false,
     ),
-    contributionWeight: l.optional(l.string()),
+    contributionWeight: l.optional(l.string({ maxLength: 100 })),
     contributionDetails: l.optional(
       l.typedUnion(
         [

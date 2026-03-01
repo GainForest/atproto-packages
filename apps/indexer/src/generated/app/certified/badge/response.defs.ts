@@ -21,7 +21,7 @@ type Main = {
   /**
    * The recipient’s response for the badge (accepted or rejected).
    */
-  response: 'accepted' | 'rejected'
+  response: 'accepted' | 'rejected' | l.UnknownString
 
   /**
    * Optional relative weight for accepted badges, assigned by the recipient.
@@ -42,8 +42,8 @@ const main = l.record<'tid', Main>(
   $nsid,
   l.object({
     badgeAward: l.ref<BadgeAward.Main>((() => BadgeAward.main) as any),
-    response: l.enum(['accepted', 'rejected']),
-    weight: l.optional(l.string()),
+    response: l.string<{ knownValues: ['accepted', 'rejected'] }>(),
+    weight: l.optional(l.string({ maxLength: 50 })),
     createdAt: l.string({ format: 'datetime' }),
   }),
 )

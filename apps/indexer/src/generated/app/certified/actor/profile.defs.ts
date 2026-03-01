@@ -12,6 +12,10 @@ export { $nsid }
 /** A declaration of a Hypercert account profile. */
 type Main = {
   $type: 'app.certified.actor.profile'
+
+  /**
+   * Display name for the account
+   */
   displayName?: string
 
   /**
@@ -23,6 +27,10 @@ type Main = {
    * Free-form pronouns text.
    */
   pronouns?: string
+
+  /**
+   * Account website URL
+   */
   website?: l.UriString
 
   /**
@@ -40,6 +48,10 @@ type Main = {
     | l.$Typed<HypercertsDefs.Uri>
     | l.$Typed<HypercertsDefs.LargeImage>
     | l.Unknown$TypedObject
+
+  /**
+   * Client-declared timestamp when this record was originally created
+   */
   createdAt?: l.DatetimeString
 }
 

@@ -35,7 +35,7 @@ type Main = {
   )[]
 
   /**
-   * Title of this attachment.
+   * Display title for this attachment (e.g. 'Impact Assessment Report', 'Audit Findings')
    */
   title: string
 

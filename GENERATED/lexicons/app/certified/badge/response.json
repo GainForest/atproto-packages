@@ -21,7 +21,7 @@
                     },
                     "response": {
                         "type": "string",
-                        "enum": [
+                        "knownValues": [
                             "accepted",
                             "rejected"
                         ],
@@ -29,7 +29,8 @@
                     },
                     "weight": {
                         "type": "string",
-                        "description": "Optional relative weight for accepted badges, assigned by the recipient."
+                        "description": "Optional relative weight for accepted badges, assigned by the recipient.",
+                        "maxLength": 50
                     },
                     "createdAt": {
                         "type": "string",

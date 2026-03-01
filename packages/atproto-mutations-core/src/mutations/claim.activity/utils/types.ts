@@ -4,7 +4,8 @@
 
 export type { Main as ClaimActivityRecord } from "@gainforest/generated/org/hypercerts/claim/activity.defs";
 
-export type { WorkScope, ActivityWeight } from "@gainforest/generated/org/hypercerts/claim/activity.defs";
+// WorkScopeString is the inline string variant for work scope (the other option is a strongRef)
+export type { WorkScopeString } from "@gainforest/generated/org/hypercerts/claim/activity.defs";
 export type { SmallImage, Uri } from "@gainforest/generated/org/hypercerts/defs.defs";
 export type { Main as StrongRef } from "@gainforest/generated/com/atproto/repo/strongRef.defs";
 export type { Main as RichtextFacet } from "@gainforest/generated/app/bsky/richtext/facet.defs";

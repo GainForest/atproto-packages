@@ -155,7 +155,9 @@ describe("updateClaimActivity", () => {
     if (result._tag === "Left") {
       expect(result.left).toBeInstanceOf(ClaimActivityNotFoundError);
       expect(result.left._tag).toBe("ClaimActivityNotFoundError");
-      console.log(`[ok] Got expected ClaimActivityNotFoundError for rkey: ${result.left.rkey}`);
+      if (result.left._tag === "ClaimActivityNotFoundError") {
+        console.log(`[ok] Got expected ClaimActivityNotFoundError for rkey: ${result.left.rkey}`);
+      }
     }
   });
 

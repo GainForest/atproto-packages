@@ -51,16 +51,18 @@ const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    badgeType: l.string(),
-    title: l.string(),
+    badgeType: l.string({ maxLength: 100 }),
+    title: l.string({ maxLength: 256 }),
     icon: l.blob({
       accept: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'],
       maxSize: 1048576,
       allowLegacy: false,
     }),
-    description: l.optional(l.string()),
+    description: l.optional(l.string({ maxLength: 5000, maxGraphemes: 500 })),
     allowedIssuers: l.optional(
-      l.array(l.ref<CertifiedDefs.Did>((() => CertifiedDefs.did) as any)),
+      l.array(l.ref<CertifiedDefs.Did>((() => CertifiedDefs.did) as any), {
+        maxLength: 100,
+      }),
     ),
     createdAt: l.string({ format: 'datetime' }),
   }),

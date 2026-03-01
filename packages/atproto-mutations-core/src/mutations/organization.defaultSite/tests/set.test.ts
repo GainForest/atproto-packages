@@ -177,7 +177,8 @@ describe("setDefaultSite", () => {
     );
 
     expect(result.uri).toMatch(/^at:\/\//);
-    expect(result.record.site).toBe(location.uri);
+    // Cast to string for comparison since site is a branded AtUriString
+    expect(result.record.site as string).toBe(location.uri as string);
     console.log(`[ok] Set default site to ${location.uri}, record at ${result.uri}`);
   });
 
@@ -210,7 +211,8 @@ describe("setDefaultSite", () => {
       setDefaultSite({ locationUri: loc2.uri }).pipe(Effect.provide(layer))
     );
 
-    expect(updated.record.site).toBe(loc2.uri);
+    // Cast to string for comparison since site is a branded AtUriString
+    expect(updated.record.site as string).toBe(loc2.uri as string);
     console.log(`[ok] Default site updated from ${loc1.uri} to ${loc2.uri}`);
   }, 15000);
 });

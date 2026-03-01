@@ -14,12 +14,12 @@ type Main = {
   $type: 'org.hypercerts.claim.contributorInformation'
 
   /**
-   * DID or a URI to a social profile of the contributor.
+   * DID (did:plc:...) or URI to a social profile of the contributor.
    */
   identifier?: string
 
   /**
-   * Display name of the contributor.
+   * Human-readable name for the contributor as it should appear in UI.
    */
   displayName?: string
 
@@ -44,7 +44,7 @@ const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    identifier: l.optional(l.string()),
+    identifier: l.optional(l.string({ maxLength: 2048 })),
     displayName: l.optional(l.string({ maxLength: 100 })),
     image: l.optional(
       l.typedUnion(

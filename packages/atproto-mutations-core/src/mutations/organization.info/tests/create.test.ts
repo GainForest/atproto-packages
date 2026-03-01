@@ -193,9 +193,10 @@ describe("createOrganizationInfo", () => {
     const inputWithBadMime: CreateOrganizationInfoInput = {
       ...minimalInput,
       logo: {
-        // @ts-expect-error — deliberately wrong type for the test
+        // TypeScript accepts this because WithFileInputs transforms BlobRef -> FileOrBlobRef,
+        // but runtime validation will catch the invalid MIME type
         $type: "org.hypercerts.defs#smallImage",
-        image: makeTinyPng({ type: "application/pdf" }), // wrong MIME
+        image: makeTinyPng({ type: "application/pdf" }), // wrong MIME — caught at runtime
       },
     };
 
@@ -229,7 +230,8 @@ describe("createOrganizationInfo", () => {
     const inputWithOversizedLogo: CreateOrganizationInfoInput = {
       ...minimalInput,
       logo: {
-        // @ts-expect-error — deliberately wrong type for the test
+        // TypeScript accepts this because WithFileInputs transforms BlobRef -> FileOrBlobRef,
+        // but runtime validation will catch the oversized file
         $type: "org.hypercerts.defs#smallImage",
         image: oversizedFile,
       },
@@ -261,7 +263,7 @@ describe("createOrganizationInfo", () => {
     const inputWithLogo: CreateOrganizationInfoInput = {
       ...minimalInput,
       logo: {
-        // @ts-expect-error — type widening for test
+        // WithFileInputs allows SerializableFile here (transformed from BlobRef)
         $type: "org.hypercerts.defs#smallImage",
         image: makeTinyPng(),
       },

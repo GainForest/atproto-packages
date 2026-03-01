@@ -24,7 +24,7 @@ export type { Uri }
 const uri = l.typedObject<Uri>(
   $nsid,
   'uri',
-  l.object({ uri: l.string({ format: 'uri', maxGraphemes: 1024 }) }),
+  l.object({ uri: l.string({ format: 'uri' }) }),
 )
 
 export { uri }

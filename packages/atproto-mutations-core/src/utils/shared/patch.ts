@@ -14,15 +14,15 @@
 export function applyPatch<T extends object>(
   existing: T,
   data: Partial<T>,
-  unset: ReadonlyArray<keyof T> | undefined,
+  unset: readonly string[] | undefined,
   requiredFields: ReadonlySet<string>
 ): T {
   const result = { ...existing } as Record<string, unknown>;
 
   if (unset) {
     for (const key of unset) {
-      if (!requiredFields.has(key as string)) {
-        delete result[key as string];
+      if (!requiredFields.has(key)) {
+        delete result[key];
       }
     }
   }

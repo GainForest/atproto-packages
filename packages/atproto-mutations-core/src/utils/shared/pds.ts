@@ -40,7 +40,7 @@ export const fetchRecord = <TRecord, TPdsError>(
  */
 export const createRecord = <TPdsError>(
   collection: string,
-  record: unknown,
+  record: Record<string, unknown>,
   rkey: string | undefined,
   makePdsError: (message: string, cause: unknown) => TPdsError
 ): Effect.Effect<{ uri: string; cid: string }, TPdsError, AtprotoAgent> =>
@@ -71,7 +71,7 @@ export const createRecord = <TPdsError>(
 export const putRecord = <TPdsError>(
   collection: string,
   rkey: string,
-  record: unknown,
+  record: Record<string, unknown>,
   makePdsError: (message: string, cause: unknown) => TPdsError
 ): Effect.Effect<{ uri: string; cid: string }, TPdsError, AtprotoAgent> =>
   Effect.gen(function* () {

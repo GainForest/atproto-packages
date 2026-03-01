@@ -176,8 +176,7 @@ export type {
   UpsertClaimActivityInput,
   ClaimActivityMutationResult,
   ClaimActivityRecord,
-  WorkScope,
-  ActivityWeight,
+  WorkScopeString,
   StrongRef,
   RichtextFacet,
 } from "./mutations/claim.activity/utils/types";
