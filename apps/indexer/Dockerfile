@@ -25,6 +25,8 @@ WORKDIR /repo
 COPY package.json bun.lock* ./
 COPY apps/indexer/package.json apps/indexer/
 COPY apps/indexer/patches/ apps/indexer/patches/
+# GENERATED workspace package.json is needed so bun can resolve the workspace
+COPY GENERATED/package.json GENERATED/
 
 # Install only the indexer's dependencies (hoisted into /repo/node_modules)
 RUN bun install --frozen-lockfile --filter @gainforest/indexer
