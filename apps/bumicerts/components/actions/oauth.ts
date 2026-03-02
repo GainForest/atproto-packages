@@ -29,9 +29,6 @@
 import { auth } from "@/lib/auth";
 import type { ProfileData, ProfileAuthError } from "@gainforest/atproto-auth-next/client";
 
-// Re-export types (types are allowed in "use server" files)
-export type { ProfileData, ProfileAuthError };
-
 /**
  * Initiates the OAuth authorization flow.
  *

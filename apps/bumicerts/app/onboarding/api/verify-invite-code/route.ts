@@ -1,6 +1,6 @@
 import {
-  allowedPDSDomains,
-  defaultPdsDomain,
+  signupPDSDomains,
+  defaultSignupPdsDomain,
 } from "@/lib/config/pds";
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -20,9 +20,9 @@ const requestSchema = z.object({
     .trim()
     .toLowerCase()
     .optional()
-    .default(defaultPdsDomain)
+    .default(defaultSignupPdsDomain)
     .refine(
-      (value) => ([...allowedPDSDomains] as string[]).includes(value),
+      (value) => ([...signupPDSDomains] as string[]).includes(value),
       { message: "Unsupported pdsDomain" }
     ),
 });

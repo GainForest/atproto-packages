@@ -3,32 +3,13 @@ import Container from "@/components/ui/container";
 import ErrorPage from "@/components/error-page";
 import React from "react";
 import { useAtprotoStore } from "@/components/stores/atproto";
-import { BuildingIcon, Loader2 } from "lucide-react";
+import { BuildingIcon, Loader2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AtprotoSignInButton from "@/components/global/Header/AtprotoSignInButton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
-import { graphqlClient } from "@/lib/graphql/client";
-import { graphql } from "@/lib/graphql/tada";
-import { queryKeys } from "@/lib/query-keys";
-
-// Query to check if organization info exists
-const OrgInfoCheckQuery = graphql(`
-  query OrgInfoCheck($did: String!) {
-    gainforest {
-      organization {
-        infos(where: { did: $did }, limit: 1) {
-          records {
-            meta { did }
-            displayName
-          }
-        }
-      }
-    }
-  }
-`);
+import { queries } from "@/lib/graphql/queries/index";
 
 const AuthWrapper = ({
   children,
@@ -46,22 +27,7 @@ const AuthWrapper = ({
     error: organizationInfoError,
     data: orgData,
     isPlaceholderData: isOlderData,
-  } = useQuery({
-    queryKey: queryKeys.org.info(auth.user?.did),
-    queryFn: async () => {
-      if (!auth.user?.did) return null;
-      const response = await graphqlClient.request(OrgInfoCheckQuery, {
-        did: auth.user.did,
-      });
-      const records = response.gainforest?.organization?.infos?.records ?? [];
-      if (records.length === 0) {
-        throw new Error("Organization not found");
-      }
-      return records[0];
-    },
-    enabled: !!auth.user?.did,
-    staleTime: 60 * 1000, // 1 minute
-  });
+  } = queries.organization.useQuery({ did: auth.user?.did ?? "" });
 
   const isLoadingOrganizationInfo = isPendingOrganizationInfo || isOlderData;
   const isAuthenticated = auth.status === "AUTHENTICATED";
@@ -106,7 +72,7 @@ const AuthWrapper = ({
     if (isResuming || isLoadingOrganizationInfo) {
       return (
         <div className="flex flex-col items-center justify-center">
-          <Loader2 className="animate-spin text-primary" />
+          <Loader2Icon className="animate-spin text-primary" />
           <span className="text-muted-foreground font-medium mt-2">
             Please wait...
           </span>

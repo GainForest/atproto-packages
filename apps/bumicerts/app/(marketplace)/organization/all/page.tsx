@@ -1,9 +1,7 @@
-import { graphqlClient } from "@/lib/graphql/client";
-import { AllOrganizationsQuery } from "@/lib/graphql/queries";
+import { queries, type OrgInfo } from "@/lib/graphql/queries/index";
 import {
-  orgInfosToOrganizationDataArray,
-  type GraphQLOrgInfo,
-  type GraphQLHcActivity,
+  orgInfoToOrganizationData,
+  type GraphQLOrgInfoItem,
 } from "@/lib/adapters";
 import { AllOrgsClient } from "./_components/AllOrgsClient";
 
@@ -16,17 +14,12 @@ export const metadata = {
 export default async function AllOrganizationsPage() {
   try {
     // Fetch all organizations
-    const response = await graphqlClient.request(AllOrganizationsQuery, {
-      limit: 1000,
-    });
+    const response = await queries.organization.fetch({ limit: 1000 }) as { data: OrgInfo[]; pageInfo: unknown };
 
-    const orgInfos = (response.gainforest?.organization?.infos?.records ?? []) as GraphQLOrgInfo[];
+    const orgInfos = response.data as GraphQLOrgInfoItem[];
 
-    // We need activity counts per org - for now we'll set to 0 and let the client refetch
-    // A more complete solution would be to query activities in parallel
-    const activityCountByDid = new Map<string, number>();
-
-    const organizations = orgInfosToOrganizationDataArray(orgInfos, activityCountByDid);
+    // Convert each org info item to OrganizationData — bumicertCount not available here, default to 0
+    const organizations = orgInfos.map((item) => orgInfoToOrganizationData(item, 0));
 
     return (
       <div className="w-full">

@@ -1,21 +1,12 @@
-import { allowedPDSDomains } from "@/lib/config/pds";
-import { getBlobUrl, type BlobInput } from "@/lib/atproto/blobs";
-
-export const getShapefilePreviewUrl = (
-  shapefile:
-    | string
-    | {
-        blob: BlobInput;
-        did: string;
-      }
-) => {
-  const suffix = "https://gainforest.app/geo/view?source-value=";
-  if (typeof shapefile === "string") {
-    return `${suffix}${encodeURIComponent(shapefile)}`;
-  }
-  const blobUrl = getBlobUrl(shapefile.did, shapefile.blob, allowedPDSDomains[0]);
-  if (!blobUrl) {
-    return `${suffix}`;
-  }
-  return `${suffix}${encodeURIComponent(blobUrl)}`;
-};
+/**
+ * Build a GainForest geo-viewer URL for a shapefile/GeoJSON.
+ *
+ * The indexer resolves all blob references to absolute URIs before returning
+ * them via GraphQL, so callers always have a fetchable string URL to pass here.
+ *
+ * @param uri - A fully-resolved URL to a GeoJSON / shapefile blob.
+ */
+export function getShapefilePreviewUrl(uri: string): string {
+  const base = "https://gainforest.app/geo/view?source-value=";
+  return `${base}${encodeURIComponent(uri)}`;
+}

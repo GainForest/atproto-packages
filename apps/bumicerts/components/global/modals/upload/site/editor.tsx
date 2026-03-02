@@ -7,15 +7,13 @@ import {
   ModalTitle,
 } from "@/components/ui/modal/modal";
 import { useState, type ChangeEvent } from "react";
-import { allowedPDSDomains } from "@/lib/config/pds";
 import { Button } from "@/components/ui/button";
-import { getBlobUrl, type BlobInput } from "@/lib/atproto/blobs";
 import { parseAtUri, toSerializableFile } from "@/lib/mutations-utils";
 import { createLocationAction, updateLocationAction } from "@/lib/actions/locations";
-import { queryKeys } from "@/lib/query-keys";
+import { queries } from "@/lib/graphql/queries/index";
 import FileInput from "@/components/ui/FileInput";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, CheckIcon, Loader2, Pencil } from "lucide-react";
+import { ArrowLeftIcon, CheckIcon, Loader2Icon, PencilIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getShapefilePreviewUrl } from "../../../../../lib/shapefile";
 import DrawPolygonModal, {
@@ -38,8 +36,13 @@ type SiteData = {
     description?: string;
     location?: {
       $type?: string;
+      /** URI variant — the location is already a fetchable URL. */
       uri?: string;
-      blob?: BlobInput;
+      /**
+       * Blob variant — the indexer always injects a `uri` field into blob
+       * objects, so we read `uri` from here too instead of constructing it.
+       */
+      blob?: { uri?: string; [key: string]: unknown };
     };
   };
 };
@@ -52,21 +55,15 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
   const initialSite = initialData?.value;
   const initialName = initialSite?.name;
 
-  // Extract location URL from the initial data
-  const initialLocationBlobUrl =
-    initialData?.value?.location?.$type === "org.hypercerts.defs#smallBlob" &&
-    initialData?.value?.location?.blob
-      ? getBlobUrl(
-          parseAtUri(initialData.uri).did,
-          initialData.value.location.blob as BlobInput,
-          allowedPDSDomains[0]
-        )
-      : null;
-
+  // Extract location URL from the initial data.
+  // The indexer always injects a `uri` field into blob objects, so we can read
+  // it directly regardless of whether the location is a URI or blob variant.
   const initialLocationURI =
     initialSite?.location?.$type === "org.hypercerts.defs#uri"
       ? initialSite.location.uri
-      : initialLocationBlobUrl;
+      : initialSite?.location?.$type === "org.hypercerts.defs#smallBlob"
+      ? initialSite.location.blob?.uri
+      : undefined;
 
   const auth = useAtprotoStore((state) => state.auth);
   const did = auth.user?.did;
@@ -78,7 +75,7 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
 
   const previewUrl = initialLocationURI
     ? getShapefilePreviewUrl(initialLocationURI)
-    : null;
+    : undefined;
 
   const [name, setName] = useState(initialName ?? "");
   const [shapefile, setShapefile] = useState<File | null>(null);
@@ -114,7 +111,7 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.locations.byDid(did) });
+      queryClient.invalidateQueries({ queryKey: queries.locations.key() });
       setIsCompleted(true);
     },
   });
@@ -145,7 +142,7 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.locations.byDid(did) });
+      queryClient.invalidateQueries({ queryKey: queries.locations.key() });
       setIsCompleted(true);
     },
   });
@@ -244,7 +241,7 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
                       variant={"ghost"}
                       onClick={() => setShowEditor(false)}
                     >
-                      <ArrowLeft />
+                      <ArrowLeftIcon />
                     </Button>
                   )}
                 </div>
@@ -293,7 +290,7 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
                       show();
                     }}
                   >
-                    <Pencil className="size-4 mr-2" />
+                    <PencilIcon className="size-4 mr-2" />
                     Draw a site
                   </Button>
                 </div>
@@ -341,7 +338,7 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
             onClick={() => executeAddOrEdit()}
             disabled={disableSubmission || isPending}
           >
-            {isPending && <Loader2 className="animate-spin mr-2" />}
+            {isPending && <Loader2Icon className="animate-spin mr-2" />}
             {mode === "edit"
               ? isPending
                 ? "Saving..."

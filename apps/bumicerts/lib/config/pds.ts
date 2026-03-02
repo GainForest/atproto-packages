@@ -1,34 +1,85 @@
 /**
  * PDS Configuration
  *
- * Defines the allowed PDS domains for this app.
- * Used for handle normalization and API routing.
+ * Two separate concerns:
+ *
+ * 1. SIGN-UP domains  — PDSes we control; we can mint invite codes for these.
+ *    - Production:        gainforest.id
+ *    - Non-prod (dev/staging/preview): gainforest.id, climateai.org
+ *
+ * 2. SIGN-IN domains  — dropdown options shown in the login modal.
+ *    Users may authenticate from any ATProto PDS; we show the most common ones
+ *    and also allow a custom "type your own" entry.
+ *    - Production:        gainforest.id, certified.app, hypercerts.org, bsky.social
+ *    - Non-prod:          same + climateai.org (for internal testing accounts)
+ *
+ * Rule: "climateai.org" is NEVER shown to production users in any dropdown.
+ * However it is a valid PDS domain and will work fine if a user types it.
  */
+
+const isProduction = process.env.NEXT_PUBLIC_VERCEL_ENV === "production";
+
+// ─── Sign-up (invite-code PDSes we own) ──────────────────────────────────────
+
+const PRODUCTION_SIGNUP_DOMAINS = ["gainforest.id"] as const;
+const DEV_SIGNUP_DOMAINS = ["gainforest.id", "climateai.org"] as const;
+
+export const signupPDSDomains = isProduction
+  ? PRODUCTION_SIGNUP_DOMAINS
+  : DEV_SIGNUP_DOMAINS;
+
+export type SignupPDSDomain = (typeof signupPDSDomains)[number];
+
+/** The PDS we create new accounts on by default (always gainforest.id). */
+export const defaultSignupPdsDomain: string = signupPDSDomains[0];
+
+// ─── Sign-in (dropdown options shown in the login modal) ─────────────────────
+
+const COMMON_LOGIN_DOMAINS = [
+  "gainforest.id",
+  "certified.app",
+  "hypercerts.org",
+  "bsky.social",
+] as const;
+
+const DEV_LOGIN_DOMAINS = [
+  "gainforest.id",
+  "climateai.org",
+  "certified.app",
+  "hypercerts.org",
+  "bsky.social",
+] as const;
+
+export const loginPDSDomains = isProduction
+  ? COMMON_LOGIN_DOMAINS
+  : DEV_LOGIN_DOMAINS;
+
+export type LoginPDSDomain = (typeof loginPDSDomains)[number];
+
+// ─── Deprecated shims (kept so existing imports don't break immediately) ──────
 
 /**
- * Supported PDS domains based on environment.
- * - Production: gainforest.id
- * - Development/Preview: climateai.org
+ * @deprecated Use `signupPDSDomains` for sign-up, or `loginPDSDomains` for
+ * the sign-in dropdown. Will be removed once all callsites are migrated.
  */
-const PRODUCTION_DOMAINS = ["gainforest.id"] as const;
-const DEV_DOMAINS = ["climateai.org"] as const;
+export const allowedPDSDomains = signupPDSDomains;
 
-export const allowedPDSDomains =
-  process.env.NEXT_PUBLIC_VERCEL_ENV === "production"
-    ? PRODUCTION_DOMAINS
-    : DEV_DOMAINS;
+/** @deprecated Use `SignupPDSDomain` instead. */
+export type AllowedPDSDomain = SignupPDSDomain;
 
-export type AllowedPDSDomain = (typeof allowedPDSDomains)[number];
+/** @deprecated Use `defaultSignupPdsDomain` instead. */
+export const defaultPdsDomain: string = defaultSignupPdsDomain;
+
+// ─── Utility ──────────────────────────────────────────────────────────────────
+
+/** Returns true when running in a non-production environment. */
+export const isDevEnvironment = !isProduction;
 
 /**
- * The default PDS domain (first entry in allowedPDSDomains).
- * Used for handle normalization when user enters just a username.
+ * Validates a custom PDS domain string entered by the user.
+ * Must be of the form `something.tld` — at least one dot, no spaces,
+ * only valid hostname characters.
  */
-export const defaultPdsDomain = allowedPDSDomains[0] as AllowedPDSDomain;
-
-/**
- * Get the PDS service URL for a given domain.
- */
-export function getPdsServiceUrl(domain: AllowedPDSDomain): string {
-  return `https://${domain}`;
+export function isValidPdsDomain(domain: string): boolean {
+  return /^[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/.test(domain.trim());
 }

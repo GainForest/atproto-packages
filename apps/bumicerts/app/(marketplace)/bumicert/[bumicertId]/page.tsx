@@ -1,31 +1,30 @@
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { graphqlClient } from "@/lib/graphql/client";
-import { ActivityByUriQuery } from "@/lib/graphql/queries";
-import {
-  activityToBumicertData,
-  type GraphQLOrgInfo,
-  type GraphQLHcActivity,
-} from "@/lib/adapters";
-import type { BumicertData } from "@/lib/types";
-import { BumicertHero } from "./_components/Hero";
-import { BumicertBody } from "./_components/Body";
-import { BumicertDetailHeader } from "./_components/BumicertDetailHeader";
+import type { Metadata } from "next";
+import { queries, type Activity, type ActivityOrgInfo } from "@/lib/graphql/queries/index";
+import { activityToBumicertData } from "@/lib/adapters";
+import { BumicertDetail } from "./_components/BumicertDetail";
+import ErrorPage from "@/components/error-page";
+import Container from "@/components/ui/container";
+
+const BASE_URL = "https://bumicerts.com";
 
 const getActivityData = cache(async (did: string) => {
   try {
-    const response = await graphqlClient.request(ActivityByUriQuery, { did, orgDid: did });
-    return { data: response, error: null };
+    const data = await queries.activities.fetch({ did, orgDid: did }) as { activities: Activity[]; org: ActivityOrgInfo | null };
+    return { data, error: null };
   } catch (error) {
     return { data: null, error };
   }
 });
 
+// ── Metadata ──────────────────────────────────────────────────────────────────
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ bumicertId: string }>;
-}) {
+}): Promise<Metadata> {
   const { bumicertId } = await params;
   const id = decodeURIComponent(bumicertId);
   const parsed = id.includes("-") ? id.split("-") : null;
@@ -33,24 +32,38 @@ export async function generateMetadata({
 
   const [did, rkey] = parsed;
   const { data, error } = await getActivityData(did);
-
   if (error || !data) return { title: "Bumicert Not Found" };
 
-  const activities = (data.hypercerts?.activities?.records ?? []) as GraphQLHcActivity[];
-  const activity = activities.find((a) => a.meta?.rkey === rkey);
-
+  const activity = (data.activities ?? []).find((a) => a.metadata?.rkey === rkey);
   if (!activity) return { title: "Bumicert Not Found" };
 
+  const bumicert = activityToBumicertData(activity);
+  const pageUrl = `${BASE_URL}/bumicert/${encodeURIComponent(id)}`;
+  const description = bumicert.shortDescription || bumicert.description.slice(0, 160) || "";
+
   return {
-    title: `${activity.title ?? "Bumicert"} — Bumicerts`,
-    description: activity.shortDescription ?? activity.description?.slice(0, 160) ?? "",
+    title: `${bumicert.title} — Bumicerts`,
+    description,
+    alternates: { canonical: pageUrl },
     openGraph: {
-      title: `${activity.title ?? "Bumicert"} — Bumicerts`,
-      description: activity.shortDescription ?? "",
+      title: bumicert.title,
+      description,
+      url: pageUrl,
+      siteName: "Bumicerts",
       type: "article",
+      ...(bumicert.coverImageUrl
+        ? { images: [{ url: bumicert.coverImageUrl, width: 1200, height: 630, alt: bumicert.title }] }
+        : {}),
+    },
+    twitter: {
+      card: bumicert.coverImageUrl ? "summary_large_image" : "summary",
+      title: bumicert.title,
+      description,
     },
   };
 }
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function BumicertDetailPage({
   params,
@@ -64,31 +77,57 @@ export default async function BumicertDetailPage({
   if (!parsed) notFound();
 
   const [did, rkey] = parsed;
-
   const { data, error } = await getActivityData(did);
 
   if (error) {
     console.error("Error fetching Bumicert", did, rkey, error);
-    throw new Error("Failed to load this bumicert. Please try again.");
+    return (
+      <Container className="pt-4">
+        <ErrorPage
+          title="Couldn't load this bumicert"
+          description="We had trouble fetching this bumicert's data. Please try again or go back to the homepage."
+          error={error}
+        />
+      </Container>
+    );
   }
 
-  const activities = (data?.hypercerts?.activities?.records ?? []) as GraphQLHcActivity[];
-  const activity = activities.find((a) => a.meta?.rkey === rkey);
+  const activity = (data?.activities ?? []).find((a) => a.metadata?.rkey === rkey);
+  if (!activity) notFound();
 
-  if (!activity) {
-    notFound();
-  }
+  const bumicert = activityToBumicertData(activity);
+  const pageUrl = `${BASE_URL}/bumicert/${encodeURIComponent(id)}`;
 
-  const orgInfos = (data?.gainforest?.organization?.infos?.records ?? []) as GraphQLOrgInfo[];
-  const orgInfo = orgInfos[0];
-
-  const bumicert = activityToBumicertData(activity, orgInfo);
+  // ── JSON-LD structured data ─────────────────────────────────────────────────
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": pageUrl,
+    headline: bumicert.title,
+    description: bumicert.shortDescription || bumicert.description.slice(0, 160) || undefined,
+    author: {
+      "@type": "Organization",
+      name: bumicert.organizationName,
+      url: `${BASE_URL}/organization/${encodeURIComponent(bumicert.organizationDid)}`,
+    },
+    ...(bumicert.coverImageUrl
+      ? { image: { "@type": "ImageObject", url: bumicert.coverImageUrl } }
+      : {}),
+    ...(bumicert.startDate ? { datePublished: bumicert.startDate } : {}),
+    ...(bumicert.createdAt ? { dateCreated: bumicert.createdAt } : {}),
+  };
 
   return (
-    <div className="w-full">
-      <BumicertDetailHeader bumicertId={id} />
-      <BumicertHero bumicert={bumicert} />
-      <BumicertBody bumicert={bumicert} />
-    </div>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <main className="w-full">
+        <Container className="pt-3 pb-12">
+          <BumicertDetail bumicert={bumicert} />
+        </Container>
+      </main>
+    </>
   );
 }

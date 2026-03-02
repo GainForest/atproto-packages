@@ -1,55 +1,65 @@
-import { cache } from "react";
 import { notFound } from "next/navigation";
-import { graphqlClient } from "@/lib/graphql/client";
-import { OrganizationByDidQuery } from "@/lib/graphql/queries";
-import {
-  orgInfoToOrganizationData,
-  activitiesToBumicertDataArray,
-  type GraphQLOrgInfo,
-  type GraphQLHcActivity,
-} from "@/lib/adapters";
+import type { Metadata } from "next";
+import { getOrgData, transformOrgData, type GraphQLOrgInfoItem } from "./_data";
+import ErrorPage from "@/components/error-page";
+import { OrgHero } from "./_components/OrgHero";
+import { OrgTabBar } from "./_components/OrgTabBar";
+import { OrgAbout } from "./_components/OrgAbout";
+import { OrgSetupPage } from "./_components/OrgSetupPage";
+import { auth } from "@/lib/auth";
 import Container from "@/components/ui/container";
-import { OrgPageClient } from "./OrgPageClient";
 
-const getOrgData = cache(async (did: string) => {
-  try {
-    const response = await graphqlClient.request(OrganizationByDidQuery, { did, orgDid: did });
-    return { data: response, error: null };
-  } catch (error) {
-    return { data: null, error };
-  }
-});
+const BASE_URL = "https://bumicerts.com";
+
+// ── Metadata ─────────────────────────────────────────────────────────────────
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ did: string }>;
-}) {
+}): Promise<Metadata> {
   const { did: encodedDid } = await params;
   const did = decodeURIComponent(encodedDid);
 
   const { data, error } = await getOrgData(did);
+  if (error || !data?.org) return { title: "Organization — Bumicerts" };
 
-  if (error || !data) return { title: "Organization — Bumicerts" };
+  const orgInfo = data.org as GraphQLOrgInfoItem;
+  const record = orgInfo.record;
+  const displayName = record?.displayName ?? "Organization";
 
-  const orgInfos = data.gainforest?.organization?.infos?.records ?? [];
-  const orgInfo = orgInfos[0] as GraphQLOrgInfo | undefined;
+  const shortDescRaw = record?.shortDescription;
+  const description: string =
+    typeof shortDescRaw === "string"
+      ? shortDescRaw
+      : typeof shortDescRaw === "object" && shortDescRaw?.text
+        ? shortDescRaw.text
+        : `${displayName} on Bumicerts — verified regenerative impact organization.`;
 
-  if (!orgInfo) return { title: "Organization — Bumicerts" };
-
-  // Extract short description text
-  const shortDesc = orgInfo.shortDescription;
-  const descText = typeof shortDesc === "object" && shortDesc?.text
-    ? shortDesc.text
-    : typeof shortDesc === "string"
-      ? shortDesc
-      : "";
+  const coverImageUrl = record?.coverImage?.uri ?? null;
+  const orgUrl = `${BASE_URL}/organization/${encodedDid}`;
 
   return {
-    title: `${orgInfo.displayName ?? "Organization"} — Bumicerts`,
-    description: descText,
+    title: `${displayName} — Bumicerts`,
+    description,
+    alternates: { canonical: orgUrl },
+    openGraph: {
+      title: displayName,
+      description,
+      url: orgUrl,
+      siteName: "Bumicerts",
+      type: "profile",
+      ...(coverImageUrl ? { images: [{ url: coverImageUrl, width: 1200, height: 630, alt: displayName }] } : {}),
+    },
+    twitter: {
+      card: coverImageUrl ? "summary_large_image" : "summary",
+      title: displayName,
+      description,
+    },
   };
 }
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function OrganizationPage({
   params,
@@ -59,39 +69,67 @@ export default async function OrganizationPage({
   const { did: encodedDid } = await params;
   const did = decodeURIComponent(encodedDid);
 
-  const { data, error } = await getOrgData(did);
+  const [{ data, error }, session] = await Promise.all([
+    getOrgData(did),
+    auth.session.getSession(),
+  ]);
 
   if (error) {
-    console.error("Error fetching org page", did, error);
-    throw new Error("Failed to load organization. Please try again.");
+    console.error("[OrganizationPage] Error fetching org", did, error);
+    return (
+      <Container className="pt-4">
+        <ErrorPage
+          title="Couldn't load this organization"
+          description="We had trouble fetching this organization's data. Please try again."
+          error={error}
+        />
+      </Container>
+    );
   }
 
-  const orgInfos = (data?.gainforest?.organization?.infos?.records ?? []) as GraphQLOrgInfo[];
-  const orgInfo = orgInfos[0];
+  const orgInfo = data?.org as GraphQLOrgInfoItem | undefined;
 
-  if (!orgInfo) {
-    notFound();
+  if (!orgInfo && session.isLoggedIn && session.did === did) {
+    return (
+      <Container className="pt-4">
+        <OrgSetupPage did={did} />
+      </Container>
+    );
   }
 
-  // Visibility check — if Unlisted, only the owner can see it (we don't gate for now)
-  if (orgInfo.visibility === "Unlisted") {
-    notFound();
-  }
+  if (!orgInfo) notFound();
 
-  // Get activities for this org
-  const activities = (data?.hypercerts?.activities?.records ?? []) as GraphQLHcActivity[];
+  const { organization } = transformOrgData(orgInfo, []);
 
-  // Build org info map for adapter
-  const orgInfoByDid = new Map<string, GraphQLOrgInfo>();
-  orgInfoByDid.set(did, orgInfo);
+  // ── JSON-LD structured data ───────────────────────────────────────────────
 
-  // Transform data
-  const organization = orgInfoToOrganizationData(orgInfo, activities.length);
-  const bumicerts = activitiesToBumicertDataArray(activities, orgInfoByDid);
+  const orgUrl = `${BASE_URL}/organization/${encodedDid}`;
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": orgUrl,
+    name: organization.displayName,
+    description: organization.shortDescription || undefined,
+    url: organization.website || orgUrl,
+    ...(organization.startDate ? { foundingDate: organization.startDate.slice(0, 10) } : {}),
+    ...(organization.country ? { address: { "@type": "PostalAddress", addressCountry: organization.country } } : {}),
+    ...(organization.website ? { sameAs: [organization.website] } : {}),
+    ...(organization.logoUrl ? { logo: { "@type": "ImageObject", url: organization.logoUrl } } : {}),
+  };
 
   return (
-    <Container className="pt-4">
-      <OrgPageClient organization={organization} bumicerts={bumicerts} />
-    </Container>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <main className="w-full">
+        <Container className="pt-4 pb-8">
+          <OrgHero organization={organization} />
+          <OrgTabBar did={organization.did} />
+          <OrgAbout organization={organization} />
+        </Container>
+      </main>
+    </>
   );
 }

@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import { graphqlClient } from "@/lib/graphql/client";
-import { ExploreActivitiesQuery } from "@/lib/graphql/queries";
+import { graphql } from "@/lib/graphql/tada";
+import { HcActivityFragment } from "@/lib/graphql/fragments";
 import {
   activitiesToBumicertDataArray,
-  type GraphQLHcActivity,
-  type GraphQLOrgInfo,
+  type GraphQLHcActivityItem,
 } from "@/lib/adapters";
 import type { BumicertData } from "@/lib/types";
 import { ExploreClient } from "./_components/ExploreClient";
@@ -15,36 +15,49 @@ export const metadata = {
     "Browse verified environmental impact certificates from nature stewards around the world. Filter by country, organization, and impact area.",
 };
 
+/**
+ * Combined activity query — org info comes from `creatorInfo` inline on each
+ * activity item (resolved server-side by the indexer), so no separate
+ * gainforest.organization.info sub-query is needed.
+ *
+ * Same query used by ExploreHydrator on the client for consistent data shape.
+ */
+const ExploreActivitiesQuery = graphql(
+  `
+    query ExploreActivities($limit: Int, $cursor: String, $labelTier: String, $where: ActivityWhereInput) {
+      hypercerts {
+        activity(limit: $limit, cursor: $cursor, labelTier: $labelTier, where: $where, order: DESC, sortBy: CREATED_AT) {
+          data {
+            ...HcActivityFields
+          }
+          pageInfo {
+            endCursor
+            hasNextPage
+            count
+          }
+        }
+      }
+    }
+  `,
+  [HcActivityFragment]
+);
+
 export default async function ExplorePage() {
   let initialBumicerts: BumicertData[] = [];
 
   try {
     const response = await graphqlClient.request(ExploreActivitiesQuery, {
       limit: 1000,
-      labelTier: "high-quality",
+      where: { hasImage: true, hasOrganizationInfoRecord: true },
     });
 
-    // Extract activities and org infos from the response
-    const activities = (response.hypercerts?.activities?.records ?? []) as GraphQLHcActivity[];
-    const orgInfos = (response.gainforest?.organization?.infos?.records ?? []) as GraphQLOrgInfo[];
-
-    // Build a map of org info by DID for quick lookup
-    const orgInfoByDid = new Map<string, GraphQLOrgInfo>();
-    for (const org of orgInfos) {
-      const did = org.meta?.did;
-      if (did) {
-        orgInfoByDid.set(did, org);
-      }
-    }
-
-    // Transform to UI types
-    initialBumicerts = activitiesToBumicertDataArray(activities, orgInfoByDid);
+    const activities = (response.hypercerts?.activity?.data ?? []) as GraphQLHcActivityItem[];
+    initialBumicerts = activitiesToBumicertDataArray(activities);
   } catch (error) {
-    // On error, pass an empty array — the client will retry via GraphQL
+    // On error, pass empty array — the client will retry via GraphQL
     console.error("Failed to fetch initial bumicerts:", error);
   }
 
-  // Structured data for search engines
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",

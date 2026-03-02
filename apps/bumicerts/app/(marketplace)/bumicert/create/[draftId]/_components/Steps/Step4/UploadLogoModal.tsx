@@ -7,14 +7,14 @@ import {
 } from "@/components/ui/modal/modal";
 import FileInput from "../../../../../../../../components/ui/FileInput";
 import { useState } from "react";
-import { Loader2, UploadIcon } from "lucide-react";
+import { Loader2Icon, UploadIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { useModal } from "@/components/ui/modal/context";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toSerializableFile } from "@/lib/mutations-utils";
 import { updateOrganizationInfoAction } from "@/lib/actions/organizations";
-import { queryKeys } from "@/lib/query-keys";
+import { queries } from "@/lib/graphql/queries/index";
 
 export const UploadLogoModalId = "upload/organization/logo";
 
@@ -45,7 +45,7 @@ export const UploadLogoModal = () => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.org.all() });
+      queryClient.invalidateQueries({ queryKey: queries.organization.key() });
     },
   });
 
@@ -99,7 +99,7 @@ export const UploadLogoModal = () => {
             onClick={() => uploadLogo()}
           >
             {isUploadingLogo ? (
-              <Loader2 className="animate-spin" />
+              <Loader2Icon className="animate-spin" />
             ) : (
               <UploadIcon />
             )}

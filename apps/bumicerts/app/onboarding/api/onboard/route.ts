@@ -29,13 +29,13 @@
 import { NextRequest, after } from "next/server";
 import { z } from "zod";
 import {
-  allowedPDSDomains,
-  defaultPdsDomain,
-  type AllowedPDSDomain,
+  signupPDSDomains,
+  defaultSignupPdsDomain,
 } from "@/lib/config/pds";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { checkRateLimit, recordRateLimitAttempt, getClientIp, RATE_LIMITS } from "@/lib/rate-limit";
 import { organizationInfoSchema } from "./schema";
+import { plainTextToLinearDocument } from "@/lib/utils/linearDocument";
 import { Effect } from "effect";
 import {
   mutations,
@@ -56,9 +56,9 @@ const requestSchema = z.object({
     .trim()
     .toLowerCase()
     .optional()
-    .default(defaultPdsDomain)
+    .default(defaultSignupPdsDomain)
     .refine(
-      (value) => ([...allowedPDSDomains] as string[]).includes(value),
+      (value) => ([...signupPDSDomains] as string[]).includes(value),
       { message: "Unsupported pdsDomain" }
     ),
   displayName: z.string().min(1).max(100),
@@ -91,21 +91,6 @@ async function fileToBase64(file: File): Promise<{ name: string; type: string; d
 }
 
 
-/**
- * Convert a plain text string to a LinearDocument format expected by the SDK.
- * Splits by double newlines into separate text blocks for paragraph separation.
- */
-function plainTextToLinearDocument(text: string) {
-  const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 0);
-  return {
-    blocks: paragraphs.map(paragraph => ({
-      block: {
-        $type: "pub.leaflet.blocks.text" as const,
-        plaintext: paragraph.trim(),
-      },
-    })),
-  };
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -149,7 +134,7 @@ export async function POST(req: NextRequest) {
       password: formData.get("password") as string,
       handle: formData.get("handle") as string,
       inviteCode: formData.get("inviteCode") as string,
-      pdsDomain: (formData.get("pdsDomain") as string) || defaultPdsDomain,
+      pdsDomain: (formData.get("pdsDomain") as string) || defaultSignupPdsDomain,
       displayName: formData.get("displayName") as string,
       shortDescription: formData.get("shortDescription") as string,
       longDescription: formData.get("longDescription") as string,

@@ -3,15 +3,41 @@
 import React, { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { graphqlClient } from "@/lib/graphql/client";
-import { ExploreActivitiesQuery } from "@/lib/graphql/queries";
+import { graphql } from "@/lib/graphql/tada";
+import { HcActivityFragment } from "@/lib/graphql/fragments";
 import { useExploreStore } from "../store";
-import { queryKeys } from "@/lib/query-keys";
 import {
   activitiesToBumicertDataArray,
   orgInfosToOrganizationDataArray,
-  type GraphQLHcActivity,
-  type GraphQLOrgInfo,
+  type GraphQLHcActivityItem,
 } from "@/lib/adapters";
+
+/**
+ * Activities-only query — org info comes from `creatorInfo` inline on each
+ * activity item (resolved server-side by the indexer). No separate
+ * gainforest.organization.info sub-query needed.
+ *
+ * Same combined query shape used by ExplorePage (server) for SSR.
+ */
+const ExploreActivitiesQuery = graphql(
+  `
+    query ExploreActivities($limit: Int, $cursor: String, $labelTier: String, $where: ActivityWhereInput) {
+      hypercerts {
+        activity(limit: $limit, cursor: $cursor, labelTier: $labelTier, where: $where, order: DESC, sortBy: CREATED_AT) {
+          data {
+            ...HcActivityFields
+          }
+          pageInfo {
+            endCursor
+            hasNextPage
+            count
+          }
+        }
+      }
+    }
+  `,
+  [HcActivityFragment]
+);
 
 /**
  * ExploreHydrator fetches data from the GraphQL indexer and populates
@@ -19,24 +45,29 @@ import {
  */
 const ExploreHydrator = ({ children }: { children?: React.ReactNode }) => {
   const { data, isLoading, error, isPlaceholderData } = useQuery({
-    queryKey: queryKeys.activities.explore(),
-    queryFn: async () => {
-      const response = await graphqlClient.request(ExploreActivitiesQuery, {
+    queryKey: ["explore-activities"],
+    queryFn: () =>
+      graphqlClient.request(ExploreActivitiesQuery, {
         limit: 1000,
-        labelTier: "high-quality",
-      });
-      return response;
-    },
-    staleTime: 60 * 1000, // 1 minute
+        where: { hasImage: true, hasOrganizationInfoRecord: true },
+      }),
+    staleTime: 60 * 1000,
   });
 
-  const update = useExploreStore((state) => state.update);
-
   useEffect(() => {
+    // Read update directly from the store singleton so it never appears in deps.
+    // Adding it via useExploreStore((s) => s.update) would cause an infinite loop:
+    //   store write → re-render → new update ref → effect fires → store write → ...
+    const update = useExploreStore.getState().update;
+
     if (isPlaceholderData) return;
 
     if (isLoading || data === undefined) {
-      update(null);
+      // Guard: don't write if already in loading state — avoids a redundant
+      // store write → re-render → effect cycle while the query is in-flight.
+      if (!useExploreStore.getState().loading) {
+        update(null);
+      }
       return;
     }
 
@@ -46,31 +77,12 @@ const ExploreHydrator = ({ children }: { children?: React.ReactNode }) => {
     }
 
     try {
-      // Extract activities and org infos from the response
-      const activities = (data.hypercerts?.activities?.records ?? []) as GraphQLHcActivity[];
-      const orgInfos = (data.gainforest?.organization?.infos?.records ?? []) as GraphQLOrgInfo[];
+      const activities = (data.hypercerts?.activity?.data ?? []) as GraphQLHcActivityItem[];
 
-      // Build a map of org info by DID for quick lookup
-      const orgInfoByDid = new Map<string, GraphQLOrgInfo>();
-      for (const org of orgInfos) {
-        const did = org.meta?.did;
-        if (did) {
-          orgInfoByDid.set(did, org);
-        }
-      }
-
-      // Count activities per organization
-      const activityCountByDid = new Map<string, number>();
-      for (const activity of activities) {
-        const did = activity.meta?.did;
-        if (did) {
-          activityCountByDid.set(did, (activityCountByDid.get(did) ?? 0) + 1);
-        }
-      }
-
-      // Transform to UI types
-      const bumicerts = activitiesToBumicertDataArray(activities, orgInfoByDid);
-      const organizations = orgInfosToOrganizationDataArray(orgInfos, activityCountByDid);
+      // Build organizations list from the creatorInfo on each activity item.
+      // The indexer resolves org name + logo inline — no separate org query needed.
+      const bumicerts = activitiesToBumicertDataArray(activities);
+      const organizations = orgInfosToOrganizationDataArray(activities);
 
       update({ organizations, bumicerts });
     } catch (transformError) {
@@ -82,7 +94,7 @@ const ExploreHydrator = ({ children }: { children?: React.ReactNode }) => {
         )
       );
     }
-  }, [data, isLoading, error, isPlaceholderData, update]);
+  }, [data, isLoading, error, isPlaceholderData]); // `update` intentionally omitted — see comment above
 
   return children;
 };

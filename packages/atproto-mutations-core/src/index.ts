@@ -22,9 +22,15 @@ export type { Mutations } from "./namespace";
 // ---------------------------------------------------------------------------
 // Core primitives
 // ---------------------------------------------------------------------------
-export type { MutationResult } from "./result";
+export type { MutationResult, ValidationIssue } from "./result";
 export { ok, err } from "./result";
 export { MutationError } from "./error";
+
+// ---------------------------------------------------------------------------
+// Error formatting utilities
+// ---------------------------------------------------------------------------
+export { formatMutationError, formatMutationErrorMessage } from "./utils/formatError";
+export type { FormattedError, FieldLabels } from "./utils/formatError";
 export { adapt } from "./adapt";
 
 // Effect-based agent abstraction

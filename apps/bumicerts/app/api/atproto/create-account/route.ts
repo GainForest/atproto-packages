@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { headers } from "next/headers";
 import postgres from "postgres";
-import { allowedPDSDomains } from "@/lib/config/pds";
+import { signupPDSDomains } from "@/lib/config/pds";
 import { env } from "process";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit";
 
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const service = allowedPDSDomains[0];
+    const service = signupPDSDomains[0];
 
     const response = await fetch(
       `https://${service}/xrpc/com.atproto.server.createAccount`,

@@ -3,41 +3,10 @@
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
-import { parseAtUri } from "@gainforest/atproto-mutations-next";
-import { ArrowUpRight, Inbox, Loader2 } from "lucide-react";
+import { ArrowUpRightIcon, InboxIcon, Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import React, { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { graphqlClient } from "@/lib/graphql/client";
-import { graphql } from "@/lib/graphql/tada";
-import { queryKeys } from "@/lib/query-keys";
-
-// Query to get activities for current user
-const MyActivitiesQuery = graphql(`
-  query MyActivities($did: String!) {
-    hypercerts {
-      activities(where: { did: $did }, order: DESC, sortBy: CREATED_AT) {
-        records {
-          meta {
-            did
-            uri
-            rkey
-          }
-          title
-        }
-      }
-    }
-  }
-`);
-
-interface ActivityRecord {
-  meta: {
-    did: string | null;
-    uri: string | null;
-    rkey: string | null;
-  } | null;
-  title: string | null;
-}
+import { queries, type Activity } from "@/lib/graphql/queries/index";
 
 const MyBumicerts = () => {
   const auth = useAtprotoStore((state) => state.auth);
@@ -46,25 +15,13 @@ const MyBumicerts = () => {
     data: activitiesData,
     isPending: isPendingActivityClaims,
     error: errorActivityClaims,
-  } = useQuery({
-    queryKey: queryKeys.activities.byDid(auth.authenticated ? auth.user.did : undefined),
-    queryFn: async () => {
-      if (!auth.authenticated) return { records: [] };
-      const response = await graphqlClient.request(MyActivitiesQuery, {
-        did: auth.user.did,
-      });
-      return {
-        records: (response.hypercerts?.activities?.records ?? []) as ActivityRecord[],
-      };
-    },
-    enabled: auth.authenticated,
-    staleTime: 30 * 1000, // 30 seconds
-  });
+  } = queries.activities.useQuery({ did: auth.authenticated ? auth.user.did : "" });
 
   const bumicerts = useMemo(() => {
     if (!auth.authenticated) return undefined;
     if (!activitiesData) return undefined;
-    return activitiesData.records;
+    // activitiesData is Activity[] when params contain { did }
+    return Array.isArray(activitiesData) ? activitiesData as Activity[] : [];
   }, [activitiesData, auth]);
 
   return (
@@ -82,14 +39,14 @@ const MyBumicerts = () => {
 
       {bumicerts === undefined ? (
         <div className="mt-2 flex flex-col items-center justify-center py-12 text-center rounded-lg border border-border/50 bg-muted/50">
-          <Loader2 className="size-5 text-primary animate-spin opacity-50" />
+          <Loader2Icon className="size-5 text-primary animate-spin opacity-50" />
           <span className="mt-2 text-muted-foreground">
             Loading bumicerts...
           </span>
         </div>
       ) : bumicerts.length === 0 ? (
         <div className="mt-2 flex flex-col items-center justify-center py-12 text-center rounded-lg border border-border/50 bg-muted/50">
-          <Inbox className="size-8 text-muted-foreground opacity-50" />
+          <InboxIcon className="size-8 text-muted-foreground opacity-50" />
           <span className="mt-2 text-muted-foreground">
             No bumicerts found.
           </span>
@@ -97,19 +54,19 @@ const MyBumicerts = () => {
       ) : (
         <div className="flex flex-col divide-y divide-border border border-border rounded-xl p-1 mt-2">
           {bumicerts.map((bumicert) => {
-            const did = bumicert.meta?.did ?? "";
-            const rkey = bumicert.meta?.rkey ?? "";
-            const uri = bumicert.meta?.uri ?? "";
+            const did = bumicert.metadata?.did ?? "";
+            const rkey = bumicert.metadata?.rkey ?? "";
+            const uri = bumicert.metadata?.uri ?? "";
 
             return (
               <div
                 key={uri}
                 className="flex items-center justify-between p-1"
               >
-                <span className="ml-2">{bumicert.title ?? "Untitled"}</span>
+                <span className="ml-2">{bumicert.record?.title ?? "Untitled"}</span>
                 <Link href={links.bumicert.view(`${did}-${rkey}`)}>
                   <Button variant="link" size={"sm"}>
-                    View <ArrowUpRight />
+                    View <ArrowUpRightIcon />
                   </Button>
                 </Link>
               </div>

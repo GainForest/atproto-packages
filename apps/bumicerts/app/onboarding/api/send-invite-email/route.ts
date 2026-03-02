@@ -21,7 +21,7 @@
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { allowedPDSDomains, defaultPdsDomain, type AllowedPDSDomain } from "@/lib/config/pds";
+import { signupPDSDomains, defaultSignupPdsDomain, type SignupPDSDomain } from "@/lib/config/pds";
 import { InviteCodeEmail } from "@/email-templates/InviteCodeEmail";
 import {
   getOrCreateInviteCode,
@@ -38,9 +38,9 @@ const requestSchema = z.object({
     .trim()
     .toLowerCase()
     .optional()
-    .default(defaultPdsDomain)
+    .default(defaultSignupPdsDomain)
     .refine(
-      (value) => ([...allowedPDSDomains] as string[]).includes(value),
+      (value) => ([...signupPDSDomains] as string[]).includes(value),
       { message: "Unsupported pdsDomain" }
     ),
 });
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     }
 
     const email = parsed.data.email;
-    const pdsDomain = parsed.data.pdsDomain as AllowedPDSDomain;
+    const pdsDomain = parsed.data.pdsDomain as SignupPDSDomain;
 
     const clientIp = getClientIp(req.headers);
 

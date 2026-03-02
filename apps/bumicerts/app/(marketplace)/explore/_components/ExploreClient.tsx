@@ -24,18 +24,20 @@ export function ExploreClient({ initialData = [] }: ExploreClientProps) {
   const [sort, setSort] = useState("newest");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
 
-  // Get live data from the store (populated by ExploreHydrator via GraphQL)
-  const storeState = useExploreStore();
+  // Fine-grained selectors — each returns a primitive/stable ref, no new object on every render
+  const storeBumicerts = useExploreStore((s) => s.bumicerts);
+  const storeLoading = useExploreStore((s) => s.loading);
+  const storeError = useExploreStore((s) => s.error);
 
   // Prefer live store data once loaded; fall back to server-rendered initial data
   const allBumicerts: BumicertData[] = useMemo(() => {
-    if (!storeState.loading && !storeState.error && storeState.bumicerts) {
-      return storeState.bumicerts;
+    if (!storeLoading && !storeError && storeBumicerts) {
+      return storeBumicerts;
     }
     return initialData;
-  }, [storeState, initialData]);
+  }, [storeLoading, storeError, storeBumicerts, initialData]);
 
-  const isLoading = storeState.loading && initialData.length === 0;
+  const isLoading = storeLoading && initialData.length === 0;
 
   // Toggle a filter value (add if not present, remove if present)
   const toggleFilter = useCallback((category: keyof Filters, value: string) => {

@@ -6,38 +6,16 @@ import BiokoHoldingLoudspeakerImage from "@/app/(marketplace)/bumicert/create/[d
 import BiokoHoldingEarthImage from "@/app/(marketplace)/bumicert/create/[draftId]/_assets/bioko-holding-earth.png";
 import BiokoHoldingMagnifierImage from "@/app/(marketplace)/bumicert/create/[draftId]/_assets/bioko-holding-magnifier.png";
 import BiokoHoldingConfettiImage from "@/app/(marketplace)/bumicert/create/[draftId]/_assets/bioko-holding-confetti.png";
-import { getStripedBackground } from "@/lib/getStripedBackground";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, EyeIcon, Lightbulb } from "lucide-react";
+import { ChevronDownIcon, EyeIcon, LightbulbIcon } from "lucide-react";
 import useNewBumicertStore from "../store";
-import BumicertPreviewCard, {
-  BumicertArt,
-} from "./Steps/Step4/BumicertPreviewCard";
+import BumicertPreviewCard from "./Steps/Step4/BumicertPreviewCard";
+import { BumicertCardVisual } from "@/app/(marketplace)/explore/_components/BumicertCard";
 import { useFormStore } from "../form-store";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
-import { graphqlClient } from "@/lib/graphql/client";
-import { graphql } from "@/lib/graphql/tada";
-import { queryKeys } from "@/lib/query-keys";
-
-// Query to get organization logo
-const OrgLogoQuery = graphql(`
-  query OrgLogo($did: String!) {
-    gainforest {
-      organization {
-        infos(where: { did: $did }, limit: 1) {
-          records {
-            logo {
-              uri
-            }
-          }
-        }
-      }
-    }
-  }
-`);
+import { queries } from "@/lib/graphql/queries/index";
 
 const stepImages = [
   {
@@ -102,18 +80,9 @@ const SecondaryContent = () => {
     stepImages[currentStep].previewBumicertByDefault
   );
 
-  const { data: orgLogoData, isPlaceholderData: isOlderData } = useQuery({
-    queryKey: queryKeys.org.logo(auth.user?.did),
-    queryFn: async () => {
-      if (!auth.user?.did) return null;
-      const response = await graphqlClient.request(OrgLogoQuery, {
-        did: auth.user.did,
-      });
-      return response.gainforest?.organization?.infos?.records?.[0]?.logo?.uri ?? null;
-    },
-    enabled: !!auth.user?.did,
-    staleTime: 60 * 1000,
-  });
+  const { data: orgLogoData, isPlaceholderData: isOlderData } = queries.organization.logo.useQuery(
+    { did: auth.user?.did ?? "" }
+  );
 
   const logoUrl = isOlderData ? null : (orgLogoData ?? null);
 
@@ -130,7 +99,7 @@ const SecondaryContent = () => {
             variant={"ghost"}
             onClick={() => setIsBumicertPreviewOpen(prev => !prev)}
           >
-            <ChevronDown
+            <ChevronDownIcon
               className={cn(
                 "size-5 transition-transform duration-200",
                 isBumicertPreviewOpen ? "rotate-180" : ""
@@ -158,18 +127,18 @@ const SecondaryContent = () => {
             >
               {step1Progress === 100 ? (
                 <div className="flex items-center justify-center">
-                  <BumicertArt
+                  <BumicertCardVisual
                     logoUrl={logoUrl}
                     coverImage={
                       step1FormValues.coverImage ??
                       EMPTY_COVER_IMAGE
                     }
                     title={step1FormValues.projectName}
+                    organizationName=""
                     objectives={step1FormValues.workType}
-                    startDate={step1FormValues.projectDateRange[0]}
-                    endDate={step1FormValues.projectDateRange[1]}
                     className="w-min"
                   />
+
                 </div>
               ) : (
                 <div className="w-full flex items-center justify-center p-4">
@@ -184,7 +153,7 @@ const SecondaryContent = () => {
       </div>
       <div className="w-full p-2">
         <span className="flex items-center gap-1 text-lg font-medium text-muted-foreground">
-          <Lightbulb className="size-5" />
+          <LightbulbIcon className="size-5" />
           Tips for this section
         </span>
         <hr className="my-2" />

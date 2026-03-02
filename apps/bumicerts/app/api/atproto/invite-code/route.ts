@@ -1,6 +1,6 @@
 "use server";
 
-import { allowedPDSDomains } from "@/lib/config/pds";
+import { signupPDSDomains } from "@/lib/config/pds";
 import { NextRequest } from "next/server";
 import postgres from "postgres";
 
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const service = process.env.NEXT_PUBLIC_ATPROTO_SERVICE_URL || `https://${allowedPDSDomains[0]}`;
+    const service = process.env.NEXT_PUBLIC_ATPROTO_SERVICE_URL || `https://${signupPDSDomains[0]}`;
     const adminUsername = process.env.PDS_ADMIN_IDENTIFIER!;
     const adminPassword = process.env.PDS_ADMIN_PASSWORD!;
     const adminBasic = Buffer.from(`${adminUsername}:${adminPassword}`).toString("base64");
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
           const inviteCode = minted[i];
           await sql`
             INSERT INTO invites (email, invite_token, pds_domain)
-            VALUES (${email}, ${inviteCode}, ${allowedPDSDomains[0]})
+            VALUES (${email}, ${inviteCode}, ${signupPDSDomains[0]})
           `;
           return { email, inviteCode };
         })

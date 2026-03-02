@@ -13,8 +13,12 @@ export { mutations } from "@gainforest/atproto-mutations-core";
 export type { Mutations } from "@gainforest/atproto-mutations-core";
 
 // Core primitives — safe everywhere
-export type { MutationResult } from "@gainforest/atproto-mutations-core";
+export type { MutationResult, ValidationIssue } from "@gainforest/atproto-mutations-core";
 export { ok, err, MutationError, adapt, AtprotoAgent } from "@gainforest/atproto-mutations-core";
+
+// Error formatting utilities — safe everywhere
+export { formatMutationError, formatMutationErrorMessage } from "@gainforest/atproto-mutations-core";
+export type { FormattedError, FieldLabels } from "@gainforest/atproto-mutations-core";
 export { makeCredentialAgentLayer, CredentialLoginError } from "@gainforest/atproto-mutations-core";
 export type { CredentialConfig } from "@gainforest/atproto-mutations-core";
 

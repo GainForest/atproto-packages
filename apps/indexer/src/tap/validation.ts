@@ -29,7 +29,11 @@ import type { IndexedCollection } from "./collections.ts";
 // ============================================================
 
 type LexSchema = {
-  $safeValidate: (data: unknown) => { success: boolean; error?: unknown };
+  // NOTE: @atproto/lex-schema safeValidate() returns { success: true, value }
+  // or { success: false, reason: ValidationError } — the failure field is
+  // `reason`, NOT `error`. Accessing result.error always yields undefined.
+  // DO NOT change `reason` back to `error` here — that is the bug this comment exists to prevent.
+  $safeValidate: (data: unknown) => { success: true; value: unknown } | { success: false; reason: unknown };
 };
 
 const SCHEMA_REGISTRY: Record<IndexedCollection, LexSchema> = {
@@ -96,7 +100,9 @@ export function validateRecord(
 
   const result = schema.$safeValidate(record);
   if (result.success) return { ok: true };
-  return { ok: false, error: formatError(result.error) };
+  // NOTE: the failure field is `reason`, NOT `error` — see LexSchema type above.
+  // DO NOT change result.reason back to result.error — that silently produces "undefined" in logs.
+  return { ok: false, error: formatError(result.reason) };
 }
 
 // ============================================================

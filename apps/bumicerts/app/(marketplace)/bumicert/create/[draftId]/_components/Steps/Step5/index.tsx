@@ -6,10 +6,10 @@ import {
   ArrowRightIcon,
   CircleAlertIcon,
   CircleCheckIcon,
-  Hand,
-  Loader2,
+  HandIcon,
+  Loader2Icon,
   LucideIcon,
-  PartyPopper,
+  PartyPopperIcon,
   ShieldCheckIcon,
   ShieldXIcon,
 } from "lucide-react";
@@ -21,13 +21,18 @@ import { useStep5Store } from "./store";
 import { links } from "@/lib/links";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { toSerializableFile, parseAtUri } from "@/lib/mutations-utils";
+import { toSerializableFile, parseAtUri, toStrongRefs } from "@/lib/mutations-utils";
 import type { SerializableFile } from "@/lib/mutations-utils";
 import { createBumicertAction } from "@/lib/actions/bumicerts";
-import { queryKeys } from "@/lib/query-keys";
+import { queryKeys } from "@/lib/query-keys"; // drafts key only
 import { usePathname } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { trackBumicertPublished, getFlowDurationSeconds } from "@/lib/analytics/hotjar";
+import {
+  MutationError,
+  formatMutationErrorMessage,
+} from "@gainforest/atproto-mutations-next";
+import { claimActivityLabels } from "@/lib/config/fieldLabels";
 import dynamic from "next/dynamic";
 const FeedbackModal = dynamic(() => import("./FeedbackModal"), { ssr: false });
 
@@ -97,10 +102,10 @@ const ProgressItem = ({
           iconset.Input ? (
             <iconset.Input className="size-8 text-muted-foreground animate-pulse" />
           ) : (
-            <Hand className="size-8 text-muted-foreground animate-pulse" />
+            <HandIcon className="size-8 text-muted-foreground animate-pulse" />
           )
         ) : (
-          <Loader2 className="size-8 animate-spin text-primary" />
+          <Loader2Icon className="size-8 animate-spin text-primary" />
         )}
       </div>
 
@@ -202,8 +207,7 @@ const Step5 = () => {
         })),
         // locations are strongRefs to app.certified.location records
         // The URIs come from certified location records already in the correct format
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        locations: data.locations as any,
+        locations: toStrongRefs(data.locations),
         image: {
           $type: "org.hypercerts.defs#smallImage" as const,
           image: imageFile,
@@ -258,8 +262,18 @@ const Step5 = () => {
       setOverallStatus("success");
     },
     onError: (error) => {
-      console.error(error);
-      setCreateBumicertError(error instanceof Error ? error.message : "An error occurred");
+      console.error("Failed to publish bumicert:", error);
+
+      if (MutationError.is(error)) {
+        console.error(
+          "[dev] MutationError code:", error.code,
+          "| issues:", error.issues ?? error.message
+        );
+        setCreateBumicertError(formatMutationErrorMessage(error, claimActivityLabels));
+      } else {
+        setCreateBumicertError(error instanceof Error ? error.message : "An error occurred");
+      }
+
       setHasClickedPublish(false);
     },
     onMutate: () => {
@@ -348,7 +362,7 @@ const Step5 = () => {
           iconset={{
             Error: CircleAlertIcon,
             Success: CircleCheckIcon,
-            Input: Hand,
+            Input: HandIcon,
           }}
           title={
             createBumicertError
@@ -395,7 +409,7 @@ const Step5 = () => {
               filter: "blur(0px)",
             }}
             className="mt-4 flex flex-col items-center border border-border rounded-lg p-6">
-            <PartyPopper className="size-10 text-primary" />
+            <PartyPopperIcon className="size-10 text-primary" />
             <span className="mt-1">
               Your bumicert was published successfully!
             </span>
