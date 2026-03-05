@@ -58,3 +58,24 @@ export function resolvePublicUrl(explicitUrl?: string): string {
 export function isLoopback(url: string): boolean {
   return url.includes("127.0.0.1") || url.includes("localhost");
 }
+
+/**
+ * Derives the public base URL from an incoming NextRequest.
+ *
+ * Uses the request's own URL (which Vercel sets correctly per-deployment),
+ * falling back to the configured publicUrl. This ensures that OAuth
+ * redirect_uris and client_ids always match the deployment the user is
+ * actually on, not a hardcoded URL baked in at build time.
+ */
+export function resolveRequestPublicUrl(
+  req: { url: string },
+  fallbackPublicUrl: string,
+): string {
+  try {
+    const parsed = new URL(req.url);
+    // Use the origin (protocol + host) of the actual incoming request
+    return parsed.origin;
+  } catch {
+    return fallbackPublicUrl;
+  }
+}

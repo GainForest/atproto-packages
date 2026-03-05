@@ -51,12 +51,17 @@ function getAuth() {
   // process.env.VERCEL_URL inside the package gets statically replaced with
   // undefined at build time, causing "placeholder.invalid" on Vercel preview.
   // Reading it here (in a non-transpiled server file) is safe.
+  // For OAuth redirect_uris and client_ids, the actual per-request URL is used
+  // (derived from the Host header in each handler). This setup-time publicUrl
+  // is only used for branding URIs (logo, tos, policy) which don't affect
+  // OAuth correctness. Prefer VERCEL_URL (per-deployment) over VERCEL_BRANCH_URL
+  // (stable branch alias) so branding links at least point somewhere sensible.
   const publicUrl =
     clientEnv.NEXT_PUBLIC_BASE_URL ??
-    (process.env.VERCEL_BRANCH_URL
-      ? `https://${process.env.VERCEL_BRANCH_URL}`
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.VERCEL_BRANCH_URL
+        ? `https://${process.env.VERCEL_BRANCH_URL}`
         : undefined);
 
   _auth = createAuthSetup({

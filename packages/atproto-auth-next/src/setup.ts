@@ -191,7 +191,7 @@ export type AuthSetup = {
     /** Mount at: /api/oauth/logout (POST) */
     logout: { POST: RouteHandler };
     /** Mount at: /client-metadata.json (GET) */
-    clientMetadata: { GET: () => Response };
+    clientMetadata: { GET: (req: NextRequest) => Response };
     /** Mount at: /.well-known/jwks.json (GET) */
     jwks: { GET: () => Response };
     /**

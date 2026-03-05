@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_OAUTH_SCOPE } from "../oauth-client";
-import { isLoopback } from "../utils/url";
+import { isLoopback, resolveRequestPublicUrl } from "../utils/url";
 
 export type ClientMetadataOptions = {
   clientName: string;
@@ -36,37 +36,44 @@ export function createClientMetadataHandler(
   publicUrl: string,
   options: ClientMetadataOptions
 ) {
-  const url = publicUrl.replace(/\/$/, "");
   const loopback = isLoopback(publicUrl);
   const scope = options.scope ?? DEFAULT_OAUTH_SCOPE;
 
-  const redirectUris = [
-    `${url}/api/oauth/callback`,
-    ...(options.extraRedirectUris ?? []),
-  ];
+  return function GET(req: NextRequest) {
+    // Derive base URL from the actual incoming request so that each Vercel
+    // preview deployment serves redirect_uris that match its own hostname.
+    const url = resolveRequestPublicUrl(req, publicUrl);
 
-  // Common fields for both loopback and web clients
-  const commonFields: Record<string, unknown> = {
-    client_name: options.clientName,
-    client_uri: url,
-    redirect_uris: redirectUris,
-    grant_types: ["authorization_code", "refresh_token"],
-    response_types: ["code"],
-    scope,
-    dpop_bound_access_tokens: true,
-    jwks_uri: `${url}/.well-known/jwks.json`,
-  };
+    const redirectUris = [
+      `${url}/api/oauth/callback`,
+      ...(options.extraRedirectUris?.map((u) =>
+        // extraRedirectUris may be absolute (loopback) or path-relative — keep absolute as-is
+        u.startsWith("http") ? u.replace(/^https?:\/\/[^/]+/, url) : `${url}${u}`
+      ) ?? []),
+    ];
 
-  // Optional branding fields
-  if (options.logoUri) commonFields.logo_uri = options.logoUri;
-  if (options.brandColor) commonFields.brand_color = options.brandColor;
-  if (options.backgroundColor) commonFields.background_color = options.backgroundColor;
-  if (options.emailTemplateUri) commonFields.email_template_uri = options.emailTemplateUri;
-  if (options.emailSubjectTemplate) commonFields.email_subject_template = options.emailSubjectTemplate;
-  if (options.tosUri) commonFields.tos_uri = options.tosUri;
-  if (options.policyUri) commonFields.policy_uri = options.policyUri;
+    // Common fields for both loopback and web clients
+    const commonFields: Record<string, unknown> = {
+      client_name: options.clientName,
+      client_uri: url,
+      redirect_uris: redirectUris,
+      grant_types: ["authorization_code", "refresh_token"],
+      response_types: ["code"],
+      scope,
+      dpop_bound_access_tokens: true,
+      jwks_uri: `${url}/.well-known/jwks.json`,
+    };
 
-  return function GET() {
+    // Optional branding fields (these can stay as the setup-time publicUrl —
+    // they don't affect OAuth correctness, only consent screen appearance)
+    if (options.logoUri) commonFields.logo_uri = options.logoUri;
+    if (options.brandColor) commonFields.brand_color = options.brandColor;
+    if (options.backgroundColor) commonFields.background_color = options.backgroundColor;
+    if (options.emailTemplateUri) commonFields.email_template_uri = options.emailTemplateUri;
+    if (options.emailSubjectTemplate) commonFields.email_subject_template = options.emailSubjectTemplate;
+    if (options.tosUri) commonFields.tos_uri = options.tosUri;
+    if (options.policyUri) commonFields.policy_uri = options.policyUri;
+
     if (loopback) {
       // Loopback/native client (RFC 8252)
       // client_id embeds scope and redirect URIs
@@ -83,7 +90,7 @@ export function createClientMetadataHandler(
           token_endpoint_auth_method: "none",
           application_type: "native",
         },
-        { headers: { "Cache-Control": "public, max-age=60" } }
+        { headers: { "Cache-Control": "no-store" } }
       );
     }
 
@@ -96,7 +103,7 @@ export function createClientMetadataHandler(
         token_endpoint_auth_signing_alg: "ES256",
         application_type: "web",
       },
-      { headers: { "Cache-Control": "public, max-age=3600" } }
+      { headers: { "Cache-Control": "no-store" } }
     );
   };
 }

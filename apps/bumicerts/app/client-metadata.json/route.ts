@@ -10,6 +10,7 @@
  */
 
 import { auth } from "@/lib/auth";
+import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
-export function GET() { return auth.handlers.clientMetadata.GET(); }
+export function GET(req: NextRequest) { return auth.handlers.clientMetadata.GET(req); }

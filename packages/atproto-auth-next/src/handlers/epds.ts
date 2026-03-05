@@ -29,7 +29,7 @@ import {
   getEpdsClientId,
   getEpdsRedirectUri,
 } from "../epds/config";
-import { isLoopback } from "../utils/url";
+import { isLoopback, resolveRequestPublicUrl } from "../utils/url";
 import { createEpdsStateStore } from "../epds/state-store";
 import type { NodeSavedSessionStore } from "@atproto/oauth-client-node";
 import { saveSession } from "../session/cookie";
@@ -85,6 +85,10 @@ export function createEpdsLoginHandler(config: EpdsHandlerConfig) {
     try {
       const email = req.nextUrl.searchParams.get("email");
 
+      // Derive publicUrl from the actual request so each Vercel preview
+      // deployment uses its own hostname for redirect_uri and client_id.
+      const publicUrl = resolveRequestPublicUrl(req, config.publicUrl);
+
       const { privateKey, publicJwk, privateJwk } = generateDpopKeyPair();
       const codeVerifier = generateCodeVerifier();
       const codeChallenge = generateCodeChallenge(codeVerifier);
@@ -94,11 +98,11 @@ export function createEpdsLoginHandler(config: EpdsHandlerConfig) {
         url: config.epdsUrl,
       });
       const clientId = getEpdsClientId(
-        config.publicUrl,
+        publicUrl,
         config.devClientId,
         config.scope,
       );
-      const redirectUri = getEpdsRedirectUri(config.publicUrl);
+      const redirectUri = getEpdsRedirectUri(publicUrl);
 
       debug.log("[epds/login] Starting ePDS flow", {
         email: !!email,
@@ -119,7 +123,7 @@ export function createEpdsLoginHandler(config: EpdsHandlerConfig) {
         code_challenge_method: "S256",
       });
 
-      if (!isLoopback(config.publicUrl)) {
+      if (!isLoopback(publicUrl)) {
         parBody.set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
         parBody.set("client_assertion", createClientAssertion(config.privateKeyJwk, clientId, issuer));
       }
@@ -140,7 +144,7 @@ export function createEpdsLoginHandler(config: EpdsHandlerConfig) {
         return NextResponse.redirect(
           new URL(
             config.errorRedirectTo ?? "/?error=auth_failed",
-            config.publicUrl,
+            publicUrl,
           ),
         );
       }
@@ -170,7 +174,7 @@ export function createEpdsLoginHandler(config: EpdsHandlerConfig) {
       return NextResponse.redirect(
         new URL(
           config.errorRedirectTo ?? "/?error=auth_failed",
-          config.publicUrl,
+          resolveRequestPublicUrl(req, config.publicUrl),
         ),
       );
     }
@@ -198,6 +202,10 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
   return async function GET(request: NextRequest): Promise<void> {
     let success = false;
 
+    // Derive publicUrl from the actual request so the redirect_uri and
+    // client_id match the deployment the user's browser is on.
+    const publicUrl = resolveRequestPublicUrl(request, config.publicUrl);
+
     try {
       const code = request.nextUrl.searchParams.get("code");
       const state = request.nextUrl.searchParams.get("state");
@@ -222,11 +230,11 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
 
       const { tokenEndpoint, issuer: epdsIssuer } = getEpdsEndpoints({ url: config.epdsUrl });
       const clientId = getEpdsClientId(
-        config.publicUrl,
+        publicUrl,
         config.devClientId,
         config.scope,
       );
-      const redirectUri = getEpdsRedirectUri(config.publicUrl);
+      const redirectUri = getEpdsRedirectUri(publicUrl);
 
       // Exchange authorization code for tokens.
       // Production clients use private_key_jwt auth: add client_assertion.
@@ -238,7 +246,7 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
         code_verifier: codeVerifier,
       });
 
-      if (!isLoopback(config.publicUrl)) {
+      if (!isLoopback(publicUrl)) {
         tokenBody.set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
         tokenBody.set("client_assertion", createClientAssertion(config.privateKeyJwk, clientId, epdsIssuer));
       }
