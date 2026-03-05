@@ -367,6 +367,12 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
   const jwksHandler = createJwksHandler(privateKeyJwk);
 
   // ─── ePDS handlers ───────────────────────────────────────────────────────────
+  // Extract the raw key object from the JWK env var (may be a keyset wrapper).
+  const parsedJwk = JSON.parse(privateKeyJwk);
+  const rawKeyJwk: Record<string, unknown> = Array.isArray(parsedJwk?.keys)
+    ? parsedJwk.keys[0]
+    : parsedJwk;
+
   const epdsHandlerConfig = isEpdsEnabled
     ? {
         epdsUrl: epdsConfig!.url,
@@ -378,6 +384,7 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
         sessionStore,
         sessionConfig,
         successRedirectTo: onCallback?.redirectTo,
+        privateKeyJwk: rawKeyJwk,
       }
     : null;
 

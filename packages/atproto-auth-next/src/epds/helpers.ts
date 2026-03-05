@@ -136,6 +136,43 @@ export function createDpopProof(opts: {
   return `${signingInput}.${derToRaw(sig).toString("base64url")}`;
 }
 
+// ─── Client assertion (private_key_jwt) ──────────────────────────────────────
+
+/**
+ * Creates a client_assertion JWT signed with the app's private key.
+ *
+ * Required for private_key_jwt client authentication on PAR and token
+ * endpoints. The JWT is signed with the same EC P-256 key used for JWKS.
+ *
+ * @param privateKeyJwk - Raw JWK object (single key, not a keyset wrapper)
+ * @param clientId      - The client_id (e.g. https://app.com/client-metadata.json)
+ * @param audience      - The token/PAR endpoint URL (used as `aud` claim)
+ */
+export function createClientAssertion(
+  privateKeyJwk: Record<string, unknown>,
+  clientId: string,
+  audience: string,
+): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const privateKey = crypto.createPrivateKey({ key: privateKeyJwk as any, format: "jwk" });
+  const kid = privateKeyJwk.kid as string | undefined;
+  const header = { alg: "ES256", typ: "JWT", ...(kid ? { kid } : {}) };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: clientId,
+    sub: clientId,
+    aud: audience,
+    jti: crypto.randomUUID(),
+    iat: now,
+    exp: now + 60,
+  };
+  const headerB64 = Buffer.from(JSON.stringify(header)).toString("base64url");
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signingInput = `${headerB64}.${payloadB64}`;
+  const sig = crypto.sign("sha256", Buffer.from(signingInput), privateKey);
+  return `${signingInput}.${derToRaw(sig).toString("base64url")}`;
+}
+
 // ─── Nonce-retry fetch ────────────────────────────────────────────────────────
 
 /**

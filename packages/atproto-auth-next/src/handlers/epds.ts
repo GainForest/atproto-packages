@@ -22,6 +22,7 @@ import {
   generateState,
   fetchWithDpopRetry,
   restoreDpopKeyPair,
+  createClientAssertion,
 } from "../epds/helpers";
 import {
   getEpdsEndpoints,
@@ -44,6 +45,12 @@ export type EpdsHandlerConfig = {
   devClientId: string;
   /** OAuth scope. */
   scope: string;
+  /**
+   * The app's private key JWK (single key object, not a keyset wrapper).
+   * Used to sign client_assertion JWTs for private_key_jwt authentication
+   * on the PAR and token endpoints (production only; loopback uses "none").
+   */
+  privateKeyJwk: Record<string, unknown>;
   /** Supabase client for ephemeral state storage. */
   supabase: SupabaseClient;
   /** App ID used to namespace the ePDS state store (e.g. "myapp-epds"). */
@@ -100,7 +107,8 @@ export function createEpdsLoginHandler(config: EpdsHandlerConfig) {
         parEndpoint,
       });
 
-      // Build PAR body — login_hint does NOT go in PAR, only in the auth URL
+      // Build PAR body — login_hint does NOT go in PAR, only in the auth URL.
+      // Production clients use private_key_jwt auth: add client_assertion.
       const parBody = new URLSearchParams({
         client_id: clientId,
         redirect_uri: redirectUri,
@@ -110,6 +118,11 @@ export function createEpdsLoginHandler(config: EpdsHandlerConfig) {
         code_challenge: codeChallenge,
         code_challenge_method: "S256",
       });
+
+      if (!isLoopback(config.publicUrl)) {
+        parBody.set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+        parBody.set("client_assertion", createClientAssertion(config.privateKeyJwk, clientId, parEndpoint));
+      }
 
       const parResponse = await fetchWithDpopRetry(
         parEndpoint,
@@ -215,7 +228,8 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
       );
       const redirectUri = getEpdsRedirectUri(config.publicUrl);
 
-      // Exchange authorization code for tokens
+      // Exchange authorization code for tokens.
+      // Production clients use private_key_jwt auth: add client_assertion.
       const tokenBody = new URLSearchParams({
         grant_type: "authorization_code",
         code: code!,
@@ -223,6 +237,11 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
         client_id: clientId,
         code_verifier: codeVerifier,
       });
+
+      if (!isLoopback(config.publicUrl)) {
+        tokenBody.set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+        tokenBody.set("client_assertion", createClientAssertion(config.privateKeyJwk, clientId, tokenEndpoint));
+      }
 
       const tokenResponse = await fetchWithDpopRetry(
         tokenEndpoint,
