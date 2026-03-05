@@ -7,6 +7,4 @@ dist/
 .env.*.local
 .env.test-credentials
 
-# Generated TypeScript types for packages — populated by `bun run gen:types`, derived from lexicons
-# NOTE: apps/indexer/src/generated/ is intentionally committed (the indexer's own lex types)
-GENERATED/types/
+# GENERATED/types/ is intentionally committed — required for Vercel builds.
