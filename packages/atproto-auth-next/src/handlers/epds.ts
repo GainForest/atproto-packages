@@ -13,7 +13,6 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   generateDpopKeyPair,
@@ -32,7 +31,7 @@ import {
 import { isLoopback, resolveRequestPublicUrl } from "../utils/url";
 import { createEpdsStateStore } from "../epds/state-store";
 import type { NodeSavedSessionStore } from "@atproto/oauth-client-node";
-import { saveSession } from "../session/cookie";
+import { saveSessionToResponse } from "../session/cookie";
 import type { SessionConfig } from "../session/config";
 import { debug } from "../utils/debug";
 
@@ -199,12 +198,14 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
     config.epdsStateAppId,
   );
 
-  return async function GET(request: NextRequest): Promise<void> {
-    let success = false;
-
+  return async function GET(request: NextRequest): Promise<NextResponse> {
     // Derive publicUrl from the actual request so the redirect_uri and
     // client_id match the deployment the user's browser is on.
     const publicUrl = resolveRequestPublicUrl(request, config.publicUrl);
+
+    const errorRedirect = () => NextResponse.redirect(
+      new URL(config.errorRedirectTo ?? "/?error=auth_failed", publicUrl),
+    );
 
     try {
       const code = request.nextUrl.searchParams.get("code");
@@ -212,35 +213,31 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
 
       if (!code || !state) {
         debug.error("[epds/callback] Missing code or state params");
-        redirect(config.errorRedirectTo ?? "/?error=auth_failed");
+        return errorRedirect();
       }
 
       // Retrieve + consume ephemeral state (atomic delete-on-read)
-      const oauthState = await epdsStateStore.get(state!);
+      const oauthState = await epdsStateStore.get(state);
       if (!oauthState) {
         debug.error("[epds/callback] No OAuth state found", { state });
-        redirect(config.errorRedirectTo ?? "/?error=auth_failed");
+        return errorRedirect();
       }
 
-      const { codeVerifier, dpopPrivateJwk } = oauthState!;
+      const { codeVerifier, dpopPrivateJwk } = oauthState;
       // Cast: EpdsOAuthState.dpopPrivateJwk is JsonWebKey (from node:crypto),
       // which is structurally identical but branded differently. Safe to cast.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { privateKey, publicJwk } = restoreDpopKeyPair(dpopPrivateJwk as any);
 
       const { tokenEndpoint, issuer: epdsIssuer } = getEpdsEndpoints({ url: config.epdsUrl });
-      const clientId = getEpdsClientId(
-        publicUrl,
-        config.devClientId,
-        config.scope,
-      );
+      const clientId = getEpdsClientId(publicUrl, config.devClientId, config.scope);
       const redirectUri = getEpdsRedirectUri(publicUrl);
 
       // Exchange authorization code for tokens.
       // Production clients use private_key_jwt auth: add client_assertion.
       const tokenBody = new URLSearchParams({
         grant_type: "authorization_code",
-        code: code!,
+        code,
         redirect_uri: redirectUri,
         client_id: clientId,
         code_verifier: codeVerifier,
@@ -259,14 +256,12 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
       );
 
       if (!tokenResponse.ok) {
-        const errorBody = await tokenResponse
-          .text()
-          .catch(() => tokenResponse.statusText);
+        const errorBody = await tokenResponse.text().catch(() => tokenResponse.statusText);
         debug.error("[epds/callback] Token exchange failed", {
           status: tokenResponse.status,
           body: errorBody,
         });
-        redirect(config.errorRedirectTo ?? "/?error=auth_failed");
+        return errorRedirect();
       }
 
       const tokenData = (await tokenResponse.json()) as {
@@ -281,34 +276,18 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
       // Validate token_type is DPoP
       if (tokenData.token_type?.toLowerCase() !== "dpop") {
         debug.error("[epds/callback] Expected DPoP token, got", tokenData.token_type);
-        redirect(config.errorRedirectTo ?? "/?error=auth_failed");
+        return errorRedirect();
       }
 
       // Validate sub is a DID
-      if (
-        !tokenData.sub ||
-        !(
-          tokenData.sub.startsWith("did:plc:") ||
-          tokenData.sub.startsWith("did:web:")
-        )
-      ) {
+      if (!tokenData.sub || !(tokenData.sub.startsWith("did:plc:") || tokenData.sub.startsWith("did:web:"))) {
         debug.error("[epds/callback] Invalid sub in token response", tokenData.sub);
-        redirect(config.errorRedirectTo ?? "/?error=auth_failed");
+        return errorRedirect();
       }
 
       // Construct NodeSavedSession compatible with the OAuth client's session store.
-      //
-      // NodeSavedSession = Omit<Session, 'dpopKey'> & { dpopJwk: Jwk }
-      //   where Session = { dpopKey: Key; authMethod: ClientAuthMethod; tokenSet: TokenSet }
-      //
-      // We cast the whole object via `unknown as any` because:
-      // - dpopJwk: node:crypto JsonWebKey vs @atproto/jwk Jwk (structurally identical)
-      // - sub: string vs branded AtprotoDid
-      // - scope: string vs branded OAuthScope
-      // - authMethod: we set it to match the configured token_endpoint_auth_method
-      const issuer = new URL(tokenEndpoint).origin;
-      const isLoopbackClient = isLoopback(config.publicUrl);
-      const authMethod = isLoopbackClient
+      const tokenIssuer = new URL(tokenEndpoint).origin;
+      const authMethod = isLoopback(publicUrl)
         ? { method: "none" as const }
         : { method: "private_key_jwt" as const, kid: "default" };
 
@@ -317,9 +296,9 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
         dpopJwk: dpopPrivateJwk,
         authMethod,
         tokenSet: {
-          iss: issuer,
+          iss: tokenIssuer,
           sub: tokenData.sub,
-          aud: issuer,
+          aud: tokenIssuer,
           scope: tokenData.scope ?? config.scope,
           access_token: tokenData.access_token,
           token_type: "DPoP" as const,
@@ -330,10 +309,9 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
         },
       };
 
-      // Write to the shared session store (same as the standard OAuth flow)
+      // Write to the shared session store
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await config.sessionStore.set(tokenData.sub, nodeSavedSession as unknown as any);
-
       debug.log("[epds/callback] Session saved", { sub: tokenData.sub });
 
       // Resolve handle from DID via describeRepo (public, unauthenticated)
@@ -350,32 +328,25 @@ export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
         }
       } catch (handleError) {
         debug.warn("[epds/callback] Handle resolution failed, falling back to DID", handleError);
-        // resolvedHandle stays as tokenData.sub (the DID)
       }
 
-      // Save app session cookie
-      await saveSession(
+      // Build the success redirect response first, then set the cookie on it.
+      // We MUST NOT use next/navigation redirect() here — it throws a control-flow
+      // exception before the Set-Cookie header can be flushed to the response.
+      const successUrl = new URL(config.successRedirectTo ?? "/", publicUrl);
+      const response = NextResponse.redirect(successUrl);
+
+      await saveSessionToResponse(
         { did: tokenData.sub, handle: resolvedHandle, isLoggedIn: true },
         config.sessionConfig,
+        request,
+        response,
       );
 
-      success = true;
+      return response;
     } catch (error) {
-      // Don't catch Next.js redirect() — it throws a control-flow exception
-      if (
-        error instanceof Error &&
-        error.message === "NEXT_REDIRECT"
-      ) {
-        throw error;
-      }
       debug.error("[epds/callback] Unexpected error", error);
-    }
-
-    // All redirects outside try/catch — Next.js redirect() throws internally
-    if (success) {
-      redirect(config.successRedirectTo ?? "/");
-    } else {
-      redirect(config.errorRedirectTo ?? "/?error=auth_failed");
+      return errorRedirect();
     }
   };
 }
