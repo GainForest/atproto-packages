@@ -1,4 +1,3 @@
 {
-  "buildCommand": "cd ../.. && bun run gen:types && cd apps/bumicerts && bun run build",
-  "installCommand": "cd ../.. && bun install"
+  "buildCommand": "bun run build"
 }
