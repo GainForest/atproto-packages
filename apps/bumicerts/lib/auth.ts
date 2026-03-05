@@ -46,6 +46,19 @@ let _auth: ReturnType<typeof createAuthSetup> | null = null;
 
 function getAuth() {
   if (_auth) return _auth;
+  // Resolve publicUrl here in app code (server-only) so it survives Next.js
+  // bundling. When the auth package is in transpilePackages, bare
+  // process.env.VERCEL_URL inside the package gets statically replaced with
+  // undefined at build time, causing "placeholder.invalid" on Vercel preview.
+  // Reading it here (in a non-transpiled server file) is safe.
+  const publicUrl =
+    clientEnv.NEXT_PUBLIC_BASE_URL ??
+    (process.env.VERCEL_BRANCH_URL
+      ? `https://${process.env.VERCEL_BRANCH_URL}`
+      : process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : undefined);
+
   _auth = createAuthSetup({
     privateKeyJwk: env.ATPROTO_JWK_PRIVATE,
     cookieSecret: env.COOKIE_SECRET,
@@ -54,6 +67,7 @@ function getAuth() {
     clientName: "Bumicerts",
     cookieName: "bumicerts_session",
     defaultPdsDomain: defaultSignupPdsDomain,
+    publicUrl,
     epds: clientEnv.NEXT_PUBLIC_EPDS_URL
       ? { url: clientEnv.NEXT_PUBLIC_EPDS_URL }
       : undefined,
