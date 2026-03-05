@@ -72,13 +72,13 @@ function getAuth() {
       ? { url: clientEnv.NEXT_PUBLIC_EPDS_URL }
       : undefined,
     onCallback: { redirectTo: "/" },
-    logoUri: `${clientEnv.NEXT_PUBLIC_BASE_URL ?? ""}/assets/media/images/logo.png`,
+    logoUri: publicUrl ? `${publicUrl}/assets/media/images/logo.png` : undefined,
     brandColor: "#2FCE8A",
     backgroundColor: "#FFFFFF",
-    emailTemplateUri: `${clientEnv.NEXT_PUBLIC_BASE_URL ?? ""}/assets/email/otp-template.html`,
+    emailTemplateUri: publicUrl ? `${publicUrl}/assets/email/otp-template.html` : undefined,
     emailSubjectTemplate: "{{code}} - Your {{app_name}} sign-in code",
-    tosUri: `${clientEnv.NEXT_PUBLIC_BASE_URL ?? ""}/terms`,
-    policyUri: `${clientEnv.NEXT_PUBLIC_BASE_URL ?? ""}/privacy`,
+    tosUri: publicUrl ? `${publicUrl}/terms` : undefined,
+    policyUri: publicUrl ? `${publicUrl}/privacy` : undefined,
   });
   return _auth;
 }
