@@ -1,5 +1,5 @@
 import { S3Client } from "@aws-sdk/client-s3";
-import { env } from "@/lib/env";
+import { serverEnv as env } from "@/lib/env/server";
 
 // Initialize S3 client with credentials from environment
 export const s3Client = new S3Client({

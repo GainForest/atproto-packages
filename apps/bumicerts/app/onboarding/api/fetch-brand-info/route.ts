@@ -15,7 +15,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { checkRateLimit, recordRateLimitAttempt, getClientIp, RATE_LIMITS } from "@/lib/rate-limit";
-import { env } from "@/lib/env";
+import { serverEnv as env } from "@/lib/env/server";
 
 const requestSchema = z.object({
   domain: z.string().min(1).transform((val) => {

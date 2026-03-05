@@ -16,7 +16,7 @@ import { z } from "zod";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { countries } from "@/lib/countries";
 import { checkRateLimit, recordRateLimitAttempt, getClientIp, RATE_LIMITS } from "@/lib/rate-limit";
-import { env } from "@/lib/env";
+import { serverEnv as env } from "@/lib/env/server";
 
 const VALID_OBJECTIVES = ["Conservation", "Research", "Education", "Community", "Other"] as const;
 type Objective = (typeof VALID_OBJECTIVES)[number];

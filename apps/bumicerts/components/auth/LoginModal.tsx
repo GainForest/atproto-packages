@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRightIcon, LoaderIcon, ChevronDownIcon, CheckIcon } from "lucide-react";
 import { authorize } from "@/components/actions/oauth";
 import { loginPDSDomains, isValidPdsDomain } from "@/lib/config/pds";
-import { env } from "@/lib/env";
+import { clientEnv as env } from "@/lib/env/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";

@@ -6,7 +6,7 @@
  */
 
 import { GraphQLClient } from "graphql-request";
-import { env } from "@/lib/env";
+import { clientEnv as env } from "@/lib/env/client";
 
 /**
  * The indexer GraphQL endpoint URL.

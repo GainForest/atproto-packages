@@ -1,4 +1,5 @@
-import "./lib/env"; // Validate environment variables at build time
+import "./lib/env/server"; // Validate server env vars at build time
+import "./lib/env/client"; // Validate client env vars at build time
 
 import type { NextConfig } from "next";
 

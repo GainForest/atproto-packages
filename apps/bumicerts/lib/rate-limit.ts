@@ -1,6 +1,6 @@
 import { createHmac } from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-import { env } from "@/lib/env";
+import { serverEnv as env } from "@/lib/env/server";
 
 /**
  * Hash an identifier (email/IP) with HMAC-SHA256 to avoid storing PII in the rate_limits table.

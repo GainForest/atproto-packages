@@ -23,7 +23,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SignupPDSDomain } from "@/lib/config/pds";
-import { env } from "@/lib/env";
+import { serverEnv as env } from "@/lib/env/server";
 
 interface InviteCodeError extends Error {
   status: number;

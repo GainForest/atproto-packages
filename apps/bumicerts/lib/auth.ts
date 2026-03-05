@@ -25,7 +25,8 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { createAuthSetup } from "@gainforest/atproto-auth-next";
-import { env } from "@/lib/env";
+import { serverEnv as env } from "@/lib/env/server";
+import { clientEnv } from "@/lib/env/client";
 import { defaultSignupPdsDomain } from "@/lib/config/pds";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,17 +54,17 @@ function getAuth() {
     clientName: "Bumicerts",
     cookieName: "bumicerts_session",
     defaultPdsDomain: defaultSignupPdsDomain,
-    epds: env.NEXT_PUBLIC_EPDS_URL
-      ? { url: env.NEXT_PUBLIC_EPDS_URL }
+    epds: clientEnv.NEXT_PUBLIC_EPDS_URL
+      ? { url: clientEnv.NEXT_PUBLIC_EPDS_URL }
       : undefined,
     onCallback: { redirectTo: "/" },
-    logoUri: `${env.NEXT_PUBLIC_BASE_URL ?? ""}/assets/media/images/logo.png`,
+    logoUri: `${clientEnv.NEXT_PUBLIC_BASE_URL ?? ""}/assets/media/images/logo.png`,
     brandColor: "#2FCE8A",
     backgroundColor: "#FFFFFF",
-    emailTemplateUri: `${env.NEXT_PUBLIC_BASE_URL ?? ""}/assets/email/otp-template.html`,
+    emailTemplateUri: `${clientEnv.NEXT_PUBLIC_BASE_URL ?? ""}/assets/email/otp-template.html`,
     emailSubjectTemplate: "{{code}} - Your {{app_name}} sign-in code",
-    tosUri: `${env.NEXT_PUBLIC_BASE_URL ?? ""}/terms`,
-    policyUri: `${env.NEXT_PUBLIC_BASE_URL ?? ""}/privacy`,
+    tosUri: `${clientEnv.NEXT_PUBLIC_BASE_URL ?? ""}/terms`,
+    policyUri: `${clientEnv.NEXT_PUBLIC_BASE_URL ?? ""}/privacy`,
   });
   return _auth;
 }

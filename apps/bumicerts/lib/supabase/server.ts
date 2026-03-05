@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { env } from "@/lib/env";
+import { serverEnv as env } from "@/lib/env/server";
 
 /**
  * Supabase admin client for server-side usage.

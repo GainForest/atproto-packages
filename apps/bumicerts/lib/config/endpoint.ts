@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { clientEnv as env } from "@/lib/env/client";
 
 const localhost = "http://localhost:3000";
 

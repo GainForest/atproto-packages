@@ -17,7 +17,7 @@
  * However it is a valid PDS domain and will work fine if a user types it.
  */
 
-import { env } from "@/lib/env";
+import { clientEnv as env } from "@/lib/env/client";
 
 const isProduction = env.NEXT_PUBLIC_VERCEL_ENV === "production";
 

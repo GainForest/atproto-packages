@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { s3Client, S3_BUCKET } from "@/lib/config/s3";
 import { auth } from "@/lib/auth";
-import { env } from "@/lib/env";
+import { serverEnv as env } from "@/lib/env/server";
 
 // Allowed image MIME types
 const ALLOWED_MIME_TYPES = [
