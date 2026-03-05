@@ -1,5 +1,6 @@
 import { NodeOAuthClient } from "@atproto/oauth-client-node";
 import type { NodeOAuthClientOptions } from "@atproto/oauth-client-node";
+import { JoseKey } from "@atproto/jwk-jose";
 import { isLoopback } from "./utils/url";
 
 export const DEFAULT_OAUTH_SCOPE = "atproto transition:generic";
@@ -48,6 +49,12 @@ export function createOAuthClient({
   ];
   const loopback = isLoopback(url);
 
+  // Wrap the raw JWK in a proper JoseKey instance so the Keyset constructor
+  // gets a real Key object (with isActive, matches, etc.) rather than a plain
+  // object. Passing a plain object works in Bun/dev but fails on Vercel's
+  // webpack bundle because the Keyset constructor does not auto-wrap raw JWKs.
+  const key = new JoseKey(JSON.parse(privateKeyJwk));
+
   if (loopback) {
     // RFC 8252 loopback client — client_id embeds scope + all redirect_uris
     const params = new URLSearchParams();
@@ -70,7 +77,7 @@ export function createOAuthClient({
         application_type: "native",
         dpop_bound_access_tokens: true,
       },
-      keyset: [JSON.parse(privateKeyJwk)],
+      keyset: [key],
       stateStore,
       sessionStore,
     });
@@ -92,7 +99,7 @@ export function createOAuthClient({
       dpop_bound_access_tokens: true,
       jwks_uri: `${url}/.well-known/jwks.json`,
     },
-    keyset: [JSON.parse(privateKeyJwk)],
+    keyset: [key],
     stateStore,
     sessionStore,
   });

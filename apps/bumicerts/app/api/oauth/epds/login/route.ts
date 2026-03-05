@@ -13,19 +13,8 @@
  */
 
 import { auth } from "@/lib/auth";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-export async function GET(req: NextRequest) {
-  try {
-    return await auth.handlers.epds.login.GET(req);
-  } catch (err) {
-    console.error("[epds/login] UNHANDLED ERROR:", err);
-    return NextResponse.json(
-      { error: String(err), stack: err instanceof Error ? err.stack : undefined },
-      { status: 500 }
-    );
-  }
-}
+export function GET(req: NextRequest) { return auth.handlers.epds.login.GET(req); }
