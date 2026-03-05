@@ -33,6 +33,6 @@
     "typescript": "^5.7.2"
   },
   "patchedDependencies": {
-    "@atproto/ws-client@0.0.4": "patches/@atproto%2Fws-client@0.0.4.patch"
+    "@atproto/ws-client@0.0.4": "apps/indexer/patches/@atproto%2Fws-client@0.0.4.patch"
   }
 }
