@@ -23,6 +23,7 @@
     "@radix-ui/react-dialog": "^1.1.15",
     "@react-email/render": "^2.0.4",
     "@supabase/supabase-js": "^2.97.0",
+    "@t3-oss/env-nextjs": "^0.13.10",
     "@tanstack/react-query": "^5.90.21",
     "bsky-richtext-react": "^2.0.0",
     "class-variance-authority": "^0.7.1",

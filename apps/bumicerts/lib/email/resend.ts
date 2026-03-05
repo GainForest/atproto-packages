@@ -1,9 +1,7 @@
 import { Resend } from "resend";
+import { env } from "@/lib/env";
 
-// Validated at runtime in each handler; empty string at build time is fine
-const resendApiKey = process.env.RESEND_API_KEY ?? "";
-
-export const resend = new Resend(resendApiKey || "placeholder");
+export const resend = new Resend(env.RESEND_API_KEY);
 
 export const getInviteEmailConfig = () => {
   const from = "noreply@gainforest.id";

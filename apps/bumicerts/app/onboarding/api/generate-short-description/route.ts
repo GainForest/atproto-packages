@@ -16,6 +16,7 @@ import { z } from "zod";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { countries } from "@/lib/countries";
 import { checkRateLimit, recordRateLimitAttempt, getClientIp, RATE_LIMITS } from "@/lib/rate-limit";
+import { env } from "@/lib/env";
 
 const VALID_OBJECTIVES = ["Conservation", "Research", "Education", "Community", "Other"] as const;
 type Objective = (typeof VALID_OBJECTIVES)[number];
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
     const countryName = country ? countries[country]?.name : undefined;
     const countryContext = countryName ? ` based in ${countryName}` : "";
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = env.GEMINI_API_KEY;
     if (!apiKey) {
       console.warn("GEMINI_API_KEY not configured, using fallback");
       const fallback = createFallbackResponse(organizationName, countryName);

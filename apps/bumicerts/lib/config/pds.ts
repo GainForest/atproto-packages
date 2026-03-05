@@ -17,7 +17,9 @@
  * However it is a valid PDS domain and will work fine if a user types it.
  */
 
-const isProduction = process.env.NEXT_PUBLIC_VERCEL_ENV === "production";
+import { env } from "@/lib/env";
+
+const isProduction = env.NEXT_PUBLIC_VERCEL_ENV === "production";
 
 // ─── Sign-up (invite-code PDSes we own) ──────────────────────────────────────
 

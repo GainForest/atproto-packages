@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { env } from "@/lib/env";
 import {
   useOnboardingStore,
   calculatePasswordStrength,
@@ -121,7 +122,7 @@ export function StepCredentials() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const isDev = process.env.NODE_ENV !== "production";
+  const isDev = env.NODE_ENV !== "production";
 
   // Ensure selectedPdsDomain is initialised
   useEffect(() => {

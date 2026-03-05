@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { s3Client, S3_BUCKET } from "@/lib/config/s3";
 import { auth } from "@/lib/auth";
+import { env } from "@/lib/env";
 
 // Allowed image MIME types
 const ALLOWED_MIME_TYPES = [
@@ -113,8 +114,7 @@ export async function POST(
     await s3Client.send(command);
 
     // Construct public URL
-    const region = process.env.AWS_REGION || "us-east-1";
-    const url = `https://${S3_BUCKET}.s3.${region}.amazonaws.com/${key}`;
+    const url = `https://${S3_BUCKET}.s3.${env.AWS_REGION}.amazonaws.com/${key}`;
 
     return NextResponse.json({ url }, { status: 200 });
   } catch (error) {

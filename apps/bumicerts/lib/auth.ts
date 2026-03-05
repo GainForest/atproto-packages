@@ -25,58 +25,45 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { createAuthSetup } from "@gainforest/atproto-auth-next";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Environment — validated at runtime, not at module load, so Next.js can
-// collect page data without all env vars being present (e.g. in CI build).
-// ─────────────────────────────────────────────────────────────────────────────
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-const cookieSecret = process.env.COOKIE_SECRET ?? "";
-
-// ATPROTO_JWK_PRIVATE is a JSON string; keep it as-is (may be "" at build time).
-// createAuthSetup is called lazily below so JSON.parse only runs at request time.
-const privateKeyJwk = process.env.ATPROTO_JWK_PRIVATE ?? "";
+import { env } from "@/lib/env";
+import { defaultSignupPdsDomain } from "@/lib/config/pds";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Supabase client (server-side with service role)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const supabase = createClient(
-  supabaseUrl || "https://placeholder.supabase.co",
-  supabaseServiceKey || "placeholder"
+  env.SUPABASE_URL,
+  env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Auth setup — lazy so JSON.parse(privateKeyJwk) only runs at request time
 // ─────────────────────────────────────────────────────────────────────────────
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
-
 let _auth: ReturnType<typeof createAuthSetup> | null = null;
 
 function getAuth() {
   if (_auth) return _auth;
   _auth = createAuthSetup({
-    privateKeyJwk,
-    cookieSecret,
+    privateKeyJwk: env.ATPROTO_JWK_PRIVATE,
+    cookieSecret: env.COOKIE_SECRET,
     supabase,
     appId: "bumicerts",
     clientName: "Bumicerts",
     cookieName: "bumicerts_session",
-    defaultPdsDomain: process.env.NEXT_PUBLIC_DEFAULT_PDS_DOMAIN,
-    epds: process.env.NEXT_PUBLIC_EPDS_URL
-      ? { url: process.env.NEXT_PUBLIC_EPDS_URL }
+    defaultPdsDomain: defaultSignupPdsDomain,
+    epds: env.NEXT_PUBLIC_EPDS_URL
+      ? { url: env.NEXT_PUBLIC_EPDS_URL }
       : undefined,
     onCallback: { redirectTo: "/" },
-    logoUri: `${baseUrl}/assets/media/images/logo.png`,
+    logoUri: `${env.NEXT_PUBLIC_BASE_URL ?? ""}/assets/media/images/logo.png`,
     brandColor: "#2FCE8A",
     backgroundColor: "#FFFFFF",
-    emailTemplateUri: `${baseUrl}/assets/email/otp-template.html`,
+    emailTemplateUri: `${env.NEXT_PUBLIC_BASE_URL ?? ""}/assets/email/otp-template.html`,
     emailSubjectTemplate: "{{code}} - Your {{app_name}} sign-in code",
-    tosUri: `${baseUrl}/terms`,
-    policyUri: `${baseUrl}/privacy`,
+    tosUri: `${env.NEXT_PUBLIC_BASE_URL ?? ""}/terms`,
+    policyUri: `${env.NEXT_PUBLIC_BASE_URL ?? ""}/privacy`,
   });
   return _auth;
 }
@@ -101,6 +88,7 @@ export const auth = new Proxy({} as ReturnType<typeof createAuthSetup>, {
 
 /**
  * Default PDS domain used for handle normalization.
- * When set, "alice" becomes "alice.{defaultPdsDomain}".
+ * Derived from the app's known signup PDS list — not an env variable.
+ * "alice" becomes "alice.{defaultPdsDomain}".
  */
-export const defaultPdsDomain = process.env.NEXT_PUBLIC_DEFAULT_PDS_DOMAIN;
+export const defaultPdsDomain = defaultSignupPdsDomain;

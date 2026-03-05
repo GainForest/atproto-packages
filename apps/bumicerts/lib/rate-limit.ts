@@ -1,21 +1,13 @@
 import { createHmac } from "crypto";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-
-const RATE_LIMIT_HMAC_KEY = process.env.RATE_LIMIT_HMAC_KEY ?? "";
-
-if (!RATE_LIMIT_HMAC_KEY && process.env.NODE_ENV === "production") {
-  console.warn(
-    "[rate-limit] RATE_LIMIT_HMAC_KEY is not set — PII hashing is weakened. " +
-    "Set this env var in production to protect email/IP privacy in the rate_limits table."
-  );
-}
+import { env } from "@/lib/env";
 
 /**
  * Hash an identifier (email/IP) with HMAC-SHA256 to avoid storing PII in the rate_limits table.
  * Lookups remain deterministic because the same key + identifier always produce the same hash.
  */
 function hashIdentifier(identifier: string): string {
-  return createHmac("sha256", RATE_LIMIT_HMAC_KEY)
+  return createHmac("sha256", env.RATE_LIMIT_HMAC_KEY)
     .update(identifier)
     .digest("hex");
 }
@@ -45,26 +37,8 @@ export async function checkRateLimit(
 ): Promise<RateLimitResult> {
   const supabase = getSupabaseAdmin();
   const failOpen =
-    process.env.RATE_LIMIT_FAIL_OPEN === "true" ||
-    process.env.NODE_ENV !== "production";
-
-  if (!supabase) {
-    if (!failOpen) {
-      return {
-        allowed: false,
-        remaining: 0,
-        resetAt: new Date(Date.now() + config.windowMs),
-      };
-    }
-    console.warn(
-      "[RateLimit] Supabase not configured, skipping rate limit check"
-    );
-    return {
-      allowed: true,
-      remaining: config.maxAttempts,
-      resetAt: new Date(),
-    };
-  }
+    env.RATE_LIMIT_FAIL_OPEN === "true" ||
+    env.NODE_ENV !== "production";
 
   const windowStart = new Date(Date.now() - config.windowMs);
   const hashedIdentifier = hashIdentifier(identifier);
@@ -112,9 +86,6 @@ export async function recordRateLimitAttempt(
   endpoint: string
 ): Promise<void> {
   const supabase = getSupabaseAdmin();
-
-  if (!supabase) return;
-
   const hashedIdentifier = hashIdentifier(identifier);
   const { error } = await supabase
     .from("rate_limits")

@@ -15,6 +15,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { checkRateLimit, recordRateLimitAttempt, getClientIp, RATE_LIMITS } from "@/lib/rate-limit";
+import { env } from "@/lib/env";
 
 const requestSchema = z.object({
   domain: z.string().min(1).transform((val) => {
@@ -141,7 +142,7 @@ export async function POST(req: NextRequest) {
 
     const { domain } = parsed.data;
 
-    const apiKey = process.env.BRANDFETCH_API_KEY;
+    const apiKey = env.BRANDFETCH_API_KEY;
     if (!apiKey) {
       console.warn("BRANDFETCH_API_KEY not configured");
       return Response.json({ found: false }, { status: 200 });

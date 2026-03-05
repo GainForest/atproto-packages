@@ -1,4 +1,5 @@
 import { signupPDSDomains } from "@/lib/config/pds";
+import { env } from "@/lib/env";
 import { NextRequest } from "next/server";
 import postgres from "postgres";
 
@@ -10,27 +11,7 @@ type XrpcInviteResponse = {
 };
 
 export async function POST(req: NextRequest) {
-  // Env var checks at runtime, not module level
-  if (!process.env.POSTGRES_URL_NON_POOLING_ATPROTO_AUTH_MAPPING) {
-    return new Response(JSON.stringify({ error: "Server misconfiguration: missing DB URL" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-  if (!process.env.INVITE_CODES_PASSWORD) {
-    return new Response(JSON.stringify({ error: "Server misconfiguration: missing admin password" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-  if (!process.env.PDS_ADMIN_IDENTIFIER || !process.env.PDS_ADMIN_PASSWORD) {
-    return new Response(JSON.stringify({ error: "Server misconfiguration: missing PDS credentials" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const sql = postgres(process.env.POSTGRES_URL_NON_POOLING_ATPROTO_AUTH_MAPPING, { ssl: "require" });
+  const sql = postgres(env.POSTGRES_URL_NON_POOLING_ATPROTO_AUTH_MAPPING, { ssl: "require" });
 
   try {
     // --- Parse & normalize body ---
@@ -65,7 +46,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const isAdmin = process.env.INVITE_CODES_PASSWORD === (body.password ?? "");
+    const isAdmin = env.INVITE_CODES_PASSWORD === (body.password ?? "");
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: "Unauthorized", message: "Invalid admin credentials" }), {
         status: 401,
@@ -73,10 +54,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const service = process.env.NEXT_PUBLIC_ATPROTO_SERVICE_URL || `https://${signupPDSDomains[0]}`;
-    const adminUsername = process.env.PDS_ADMIN_IDENTIFIER;
-    const adminPassword = process.env.PDS_ADMIN_PASSWORD;
-    const adminBasic = Buffer.from(`${adminUsername}:${adminPassword}`).toString("base64");
+    const service = env.NEXT_PUBLIC_ATPROTO_SERVICE_URL ?? `https://${signupPDSDomains[0]}`;
+    const adminBasic = Buffer.from(
+      `${env.PDS_ADMIN_IDENTIFIER}:${env.PDS_ADMIN_PASSWORD}`
+    ).toString("base64");
 
     // so N codes for N emails with use count being 1
     const codeCount = emails.length;

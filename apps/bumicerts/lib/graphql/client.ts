@@ -6,13 +6,13 @@
  */
 
 import { GraphQLClient } from "graphql-request";
+import { env } from "@/lib/env";
 
 /**
  * The indexer GraphQL endpoint URL.
  * Set via NEXT_PUBLIC_INDEXER_URL environment variable.
  */
-export const INDEXER_URL =
-  process.env.NEXT_PUBLIC_INDEXER_URL ?? "http://localhost:4000/graphql";
+export const INDEXER_URL = env.NEXT_PUBLIC_INDEXER_URL;
 
 /**
  * GraphQL client for making queries to the indexer.

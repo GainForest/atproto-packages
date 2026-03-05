@@ -23,6 +23,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SignupPDSDomain } from "@/lib/config/pds";
+import { env } from "@/lib/env";
 
 interface InviteCodeError extends Error {
   status: number;
@@ -43,17 +44,9 @@ function throwInviteError(
 const resolvePdsServiceUrl = (pdsDomain: SignupPDSDomain) => `https://${pdsDomain}`;
 
 const getAdminBasicAuth = () => {
-  if (!process.env.PDS_ADMIN_IDENTIFIER || !process.env.PDS_ADMIN_PASSWORD) {
-    throwInviteError(
-      500,
-      "ServerMisconfigured",
-      "Missing PDS_ADMIN_IDENTIFIER / PDS_ADMIN_PASSWORD env vars"
-    );
-  }
-
-  const adminUsername = process.env.PDS_ADMIN_IDENTIFIER;
-  const adminPassword = process.env.PDS_ADMIN_PASSWORD;
-  return Buffer.from(`${adminUsername}:${adminPassword}`).toString("base64");
+  return Buffer.from(
+    `${env.PDS_ADMIN_IDENTIFIER}:${env.PDS_ADMIN_PASSWORD}`
+  ).toString("base64");
 };
 
 type XrpcInviteResponse = {
