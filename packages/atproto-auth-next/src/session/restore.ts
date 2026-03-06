@@ -33,7 +33,7 @@ export async function restoreSession(
     console.log("SESSION========", JSON.stringify(session));
     return session;
   } catch (error) {
-    console.log("ERROR_SESSION_RESTORE========", JSON.stringify(error));
+    console.log("ERROR_SESSION_RESTORE========", error);
     debug.warn("[restore-session] Failed to restore session", {
       did,
       error: error instanceof Error ? error.message : String(error),
