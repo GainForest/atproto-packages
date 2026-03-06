@@ -48,7 +48,12 @@ import { createAuthorizeHandler } from "./handlers/routes";
 import { createCallbackHandler } from "./handlers/routes";
 import { createLogoutHandler } from "./handlers/routes";
 import { createClientMetadataHandler, createJwksHandler } from "./handlers/metadata";
-import { createEpdsLoginHandler, createEpdsCallbackHandler } from "./handlers/epds";
+import {
+  createEpdsLoginHandler,
+  createEpdsCallbackHandler,
+  type EpdsLoginHandlerConfig,
+  type EpdsCallbackHandlerConfig,
+} from "./handlers/epds";
 import { createAuthActions } from "./actions";
 import type { AuthActions } from "./actions";
 import type { AnySession } from "./session/types";
@@ -321,22 +326,6 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     clientName,
   });
 
-  // ─── Dev client ID for ePDS ─────────────────────────────────────────────────
-  // When loopback, the main OAuth client_id embeds redirect_uris in the query.
-  // We need to reconstruct the same client_id for ePDS requests.
-  const devClientId = (() => {
-    const allRedirectUris = [
-      `${publicUrl}/api/oauth/callback`,
-      ...extraRedirectUris,
-    ];
-    const params = new URLSearchParams();
-    params.set("scope", scope);
-    for (const uri of allRedirectUris) {
-      params.append("redirect_uri", uri);
-    }
-    return `http://localhost?${params.toString()}`;
-  })();
-
   // ─── Route handlers ──────────────────────────────────────────────────────────
   const authorizeHandler = createAuthorizeHandler(oauthClient, {
     defaultPdsDomain,
@@ -367,27 +356,9 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
   const jwksHandler = createJwksHandler(privateKeyJwk);
 
   // ─── ePDS handlers ───────────────────────────────────────────────────────────
-  // Extract the raw key object from the JWK env var (may be a keyset wrapper).
-  const parsedJwk = JSON.parse(privateKeyJwk);
-  const rawKeyJwk: Record<string, unknown> = Array.isArray(parsedJwk?.keys)
-    ? parsedJwk.keys[0]
-    : parsedJwk;
-
-  const epdsHandlerConfig = isEpdsEnabled
-    ? {
-        epdsUrl: epdsConfig!.url,
-        publicUrl,
-        devClientId,
-        scope,
-        supabase,
-        epdsStateAppId: `${appId}-epds`,
-        sessionStore,
-        sessionConfig,
-        successRedirectTo: onCallback?.redirectTo,
-        privateKeyJwk: rawKeyJwk,
-      }
-    : null;
-
+  // Both handlers use the shared oauthClient. The SDK handles all OAuth
+  // complexity (PKCE, DPoP, PAR, token exchange, session storage) internally
+  // via client.authorize(epdsUrl) and client.callback(params).
   const noopEpdsHandler = (): never => {
     throw new Error(
       "[atproto-auth] ePDS is not configured. " +
@@ -395,12 +366,30 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     );
   };
 
-  const epdsLoginHandler = epdsHandlerConfig
-    ? createEpdsLoginHandler(epdsHandlerConfig)
+  const epdsLoginHandlerConfig: EpdsLoginHandlerConfig | null = isEpdsEnabled
+    ? {
+        oauthClient,
+        epdsUrl: epdsConfig!.url,
+        scope,
+        errorRedirectTo: "/?error=auth_failed",
+      }
+    : null;
+
+  const epdsCallbackHandlerConfig: EpdsCallbackHandlerConfig | null = isEpdsEnabled
+    ? {
+        oauthClient,
+        sessionConfig,
+        successRedirectTo: onCallback?.redirectTo,
+        errorRedirectTo: "/?error=auth_failed",
+      }
+    : null;
+
+  const epdsLoginHandler = epdsLoginHandlerConfig
+    ? createEpdsLoginHandler(epdsLoginHandlerConfig)
     : noopEpdsHandler;
 
-  const epdsCallbackHandler = epdsHandlerConfig
-    ? createEpdsCallbackHandler(epdsHandlerConfig)
+  const epdsCallbackHandler = epdsCallbackHandlerConfig
+    ? createEpdsCallbackHandler(epdsCallbackHandlerConfig)
     : noopEpdsHandler;
 
   // ─── Server actions ──────────────────────────────────────────────────────────

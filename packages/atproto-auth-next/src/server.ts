@@ -38,7 +38,10 @@ export {
   createEpdsLoginHandler,
   createEpdsCallbackHandler,
 } from "./handlers/epds";
-export type { EpdsHandlerConfig } from "./handlers/epds";
+export type {
+  EpdsLoginHandlerConfig,
+  EpdsCallbackHandlerConfig,
+} from "./handlers/epds";
 
 // ─── Server actions factory ───────────────────────────────────────────────────
 export { createAuthActions } from "./actions";

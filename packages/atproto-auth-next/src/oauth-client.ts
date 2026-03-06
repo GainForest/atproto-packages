@@ -56,6 +56,13 @@ export function createOAuthClient({
   // but fails on Vercel's webpack bundle.
   const parsed = JSON.parse(privateKeyJwk);
   const rawJwk = Array.isArray(parsed?.keys) ? parsed.keys[0] : parsed;
+  // Ensure the key has a `kid`. The @atproto/oauth-client-node SDK uses `kid`
+  // to match a private key when restoring sessions (keyset.findPrivateKey).
+  // If the stored JWK has no `kid`, sessions saved with authMethod.kid can
+  // never be resolved, causing restoreSession to throw ERR_JWK_NOT_FOUND.
+  if (!rawJwk.kid) {
+    rawJwk.kid = "default";
+  }
   const key = new JoseKey(rawJwk);
 
   if (loopback) {

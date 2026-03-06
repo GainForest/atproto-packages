@@ -1,14 +1,9 @@
 // ePDS (email-based PDS) OAuth support
-export type { EpdsConfig, EpdsEndpoints } from "./config";
-export { getEpdsEndpoints, getEpdsClientId, getEpdsRedirectUri } from "./config";
-export type { EpdsOAuthState } from "./state-store";
-export { createEpdsStateStore } from "./state-store";
+// All OAuth complexity is handled by the @atproto/oauth-client-node SDK.
+// The handler factories are exported from the handlers layer.
 export {
-  generateCodeVerifier,
-  generateCodeChallenge,
-  generateState,
-  generateDpopKeyPair,
-  restoreDpopKeyPair,
-  createDpopProof,
-  fetchWithDpopRetry,
-} from "./helpers";
+  createEpdsLoginHandler,
+  createEpdsCallbackHandler,
+  type EpdsLoginHandlerConfig,
+  type EpdsCallbackHandlerConfig,
+} from "../handlers/epds";

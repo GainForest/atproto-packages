@@ -10,52 +10,37 @@
  * 2. createEpdsCallbackHandler — handles the ePDS callback
  *    Mount at: /api/oauth/epds/callback
  *    Called by the ePDS server with: GET /api/oauth/epds/callback?code=...&state=...
+ *
+ * Both handlers delegate all OAuth complexity (PKCE, DPoP, PAR, token exchange,
+ * session construction) to the @atproto/oauth-client-node SDK via:
+ *   - client.authorize(epdsUrl)  — login
+ *   - client.callback(params)    — callback
+ *
+ * The SDK stores state and sessions in the shared stateStore / sessionStore,
+ * so no separate ePDS-specific stores are needed.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  generateDpopKeyPair,
-  generateCodeVerifier,
-  generateCodeChallenge,
-  generateState,
-  fetchWithDpopRetry,
-  restoreDpopKeyPair,
-  createClientAssertion,
-} from "../epds/helpers";
-import {
-  getEpdsEndpoints,
-  getEpdsClientId,
-  getEpdsRedirectUri,
-} from "../epds/config";
-import { isLoopback, resolveRequestPublicUrl } from "../utils/url";
-import { createEpdsStateStore } from "../epds/state-store";
-import type { NodeSavedSessionStore } from "@atproto/oauth-client-node";
+import { Agent } from "@atproto/api";
+import type { NodeOAuthClient } from "@atproto/oauth-client-node";
 import { saveSessionToResponse } from "../session/cookie";
 import type { SessionConfig } from "../session/config";
 import { debug } from "../utils/debug";
 
-export type EpdsHandlerConfig = {
-  /** ePDS base URL (e.g. https://climateai.org). */
+export type EpdsLoginHandlerConfig = {
+  /** The shared NodeOAuthClient (same instance used for handle login). */
+  oauthClient: NodeOAuthClient;
+  /** ePDS base URL (e.g. https://climateai.org). Passed to client.authorize(). */
   epdsUrl: string;
-  /** Resolved public URL of this app. */
-  publicUrl: string;
-  /** The loopback dev client_id (used when publicUrl is loopback). */
-  devClientId: string;
   /** OAuth scope. */
   scope: string;
-  /**
-   * The app's private key JWK (single key object, not a keyset wrapper).
-   * Used to sign client_assertion JWTs for private_key_jwt authentication
-   * on the PAR and token endpoints (production only; loopback uses "none").
-   */
-  privateKeyJwk: Record<string, unknown>;
-  /** Supabase client for ephemeral state storage. */
-  supabase: SupabaseClient;
-  /** App ID used to namespace the ePDS state store (e.g. "myapp-epds"). */
-  epdsStateAppId: string;
-  /** The shared session store (same as the main OAuth flow). */
-  sessionStore: NodeSavedSessionStore;
+  /** Path to redirect to on error. Defaults to "/?error=auth_failed". */
+  errorRedirectTo?: string;
+};
+
+export type EpdsCallbackHandlerConfig = {
+  /** The shared NodeOAuthClient (same instance used for handle login). */
+  oauthClient: NodeOAuthClient;
   /** iron-session config for saving the app cookie. */
   sessionConfig: SessionConfig;
   /** Path to redirect to after successful login. Defaults to "/". */
@@ -67,114 +52,40 @@ export type EpdsHandlerConfig = {
 /**
  * Creates a GET handler that initiates the ePDS email-based OAuth flow.
  *
- * Steps:
- * 1. Read optional ?email query param for login_hint
- * 2. Generate PKCE + DPoP key pair
- * 3. Send PAR (Pushed Authorization Request) to ePDS
- * 4. Store PKCE verifier + DPoP private JWK in ephemeral state store
- * 5. Redirect user to ePDS authorization page with login_hint
+ * Delegates entirely to client.authorize(epdsUrl) — the SDK handles
+ * well-known discovery, PKCE, DPoP key generation, and the PAR request.
+ * State is stored in the shared stateStore (same as handle login).
  */
-export function createEpdsLoginHandler(config: EpdsHandlerConfig) {
-  const epdsStateStore = createEpdsStateStore(
-    config.supabase,
-    config.epdsStateAppId,
-  );
-
+export function createEpdsLoginHandler(config: EpdsLoginHandlerConfig) {
   return async function GET(req: NextRequest): Promise<NextResponse> {
     try {
-      const email = req.nextUrl.searchParams.get("email");
+      const email = req.nextUrl.searchParams.get("email") ?? undefined;
 
-      // Derive publicUrl from the actual request so each Vercel preview
-      // deployment uses its own hostname for redirect_uri and client_id.
-      const publicUrl = resolveRequestPublicUrl(req, config.publicUrl);
+      debug.log("[epds/login] Starting ePDS flow", { email: !!email, epdsUrl: config.epdsUrl });
 
-      const { privateKey, publicJwk, privateJwk } = generateDpopKeyPair();
-      const codeVerifier = generateCodeVerifier();
-      const codeChallenge = generateCodeChallenge(codeVerifier);
-      const state = generateState();
-
-      const { parEndpoint, authEndpoint, issuer } = getEpdsEndpoints({
-        url: config.epdsUrl,
-      });
-      const clientId = getEpdsClientId(
-        publicUrl,
-        config.devClientId,
-        config.scope,
-      );
-      const redirectUri = getEpdsRedirectUri(publicUrl);
-
-      debug.log("[epds/login] Starting ePDS flow", {
-        email: !!email,
-        clientId,
-        redirectUri,
-        parEndpoint,
-      });
-
-      // Build PAR body — login_hint does NOT go in PAR, only in the auth URL.
-      // Production clients use private_key_jwt auth: add client_assertion.
-      const parBody = new URLSearchParams({
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        response_type: "code",
+      // client.authorize() accepts a PDS URL directly. The SDK fetches
+      // /.well-known/oauth-authorization-server, generates PKCE + DPoP,
+      // sends a PAR request, and returns the authorization URL.
+      // This is identical to handle login — the SDK is agnostic to input type.
+      const authUrl = await config.oauthClient.authorize(config.epdsUrl, {
         scope: config.scope,
-        state,
-        code_challenge: codeChallenge,
-        code_challenge_method: "S256",
       });
 
-      if (!isLoopback(publicUrl)) {
-        parBody.set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
-        parBody.set("client_assertion", createClientAssertion(config.privateKeyJwk, clientId, issuer));
-      }
-
-      const parResponse = await fetchWithDpopRetry(
-        parEndpoint,
-        parBody,
-        privateKey,
-        publicJwk,
-      );
-
-      if (!parResponse.ok) {
-        const errorBody = await parResponse.text().catch(() => "(unreadable)");
-        debug.error("[epds/login] PAR failed", {
-          status: parResponse.status,
-          body: errorBody,
-        });
-        return NextResponse.redirect(
-          new URL(
-            config.errorRedirectTo ?? "/?error=auth_failed",
-            publicUrl,
-          ),
-        );
-      }
-
-      const { request_uri } = (await parResponse.json()) as {
-        request_uri: string;
-      };
-
-      // Store ephemeral state (delete-on-read in callback)
-      await epdsStateStore.set(state, { codeVerifier, dpopPrivateJwk: privateJwk });
-
-      // Build auth URL — login_hint goes HERE (not in PAR)
-      const authUrl = new URL(authEndpoint);
-      authUrl.searchParams.set("client_id", clientId);
-      authUrl.searchParams.set("request_uri", request_uri);
+      // Append login_hint so the ePDS can pre-fill the email field.
+      // This goes in the auth URL (not PAR) per the ePDS spec.
+      const url = new URL(authUrl.toString());
       if (email) {
-        authUrl.searchParams.set("login_hint", email);
+        url.searchParams.set("login_hint", email);
       }
 
-      debug.log("[epds/login] Redirecting to ePDS auth", {
-        authUrl: authUrl.toString(),
-      });
+      debug.log("[epds/login] Redirecting to ePDS auth", { url: url.toString() });
 
-      return NextResponse.redirect(authUrl.toString());
+      return NextResponse.redirect(url.toString());
     } catch (error) {
       debug.error("[epds/login] Unexpected error", error);
+      const base = new URL(req.url).origin;
       return NextResponse.redirect(
-        new URL(
-          config.errorRedirectTo ?? "/?error=auth_failed",
-          resolveRequestPublicUrl(req, config.publicUrl),
-        ),
+        new URL(config.errorRedirectTo ?? "/?error=auth_failed", base),
       );
     }
   };
@@ -183,165 +94,59 @@ export function createEpdsLoginHandler(config: EpdsHandlerConfig) {
 /**
  * Creates a GET handler that processes the ePDS OAuth callback.
  *
- * Steps:
- * 1. Read code + state from query params
- * 2. Retrieve ephemeral state from store (delete-on-read)
- * 3. Exchange code for DPoP-bound tokens
- * 4. Construct NodeSavedSession and write to the shared session store
- * 5. Resolve handle from DID via describeRepo
- * 6. Save app session cookie
- * 7. Redirect to success path
+ * Delegates entirely to client.callback(params) — the SDK matches the state
+ * param to the stored context from client.authorize(), exchanges the code for
+ * tokens (with DPoP proofs), and writes the NodeSavedSession to the shared
+ * sessionStore. No manual token exchange or session construction needed.
  */
-export function createEpdsCallbackHandler(config: EpdsHandlerConfig) {
-  const epdsStateStore = createEpdsStateStore(
-    config.supabase,
-    config.epdsStateAppId,
-  );
-
-  return async function GET(request: NextRequest): Promise<NextResponse> {
-    // Derive publicUrl from the actual request so the redirect_uri and
-    // client_id match the deployment the user's browser is on.
-    const publicUrl = resolveRequestPublicUrl(request, config.publicUrl);
-
-    const errorRedirect = () => NextResponse.redirect(
-      new URL(config.errorRedirectTo ?? "/?error=auth_failed", publicUrl),
-    );
-
-    try {
-      const code = request.nextUrl.searchParams.get("code");
-      const state = request.nextUrl.searchParams.get("state");
-
-      if (!code || !state) {
-        debug.error("[epds/callback] Missing code or state params");
-        return errorRedirect();
-      }
-
-      // Retrieve + consume ephemeral state (atomic delete-on-read)
-      const oauthState = await epdsStateStore.get(state);
-      if (!oauthState) {
-        debug.error("[epds/callback] No OAuth state found", { state });
-        return errorRedirect();
-      }
-
-      const { codeVerifier, dpopPrivateJwk } = oauthState;
-      // Cast: EpdsOAuthState.dpopPrivateJwk is JsonWebKey (from node:crypto),
-      // which is structurally identical but branded differently. Safe to cast.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { privateKey, publicJwk } = restoreDpopKeyPair(dpopPrivateJwk as any);
-
-      const { tokenEndpoint, issuer: epdsIssuer } = getEpdsEndpoints({ url: config.epdsUrl });
-      const clientId = getEpdsClientId(publicUrl, config.devClientId, config.scope);
-      const redirectUri = getEpdsRedirectUri(publicUrl);
-
-      // Exchange authorization code for tokens.
-      // Production clients use private_key_jwt auth: add client_assertion.
-      const tokenBody = new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: redirectUri,
-        client_id: clientId,
-        code_verifier: codeVerifier,
-      });
-
-      if (!isLoopback(publicUrl)) {
-        tokenBody.set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
-        tokenBody.set("client_assertion", createClientAssertion(config.privateKeyJwk, clientId, epdsIssuer));
-      }
-
-      const tokenResponse = await fetchWithDpopRetry(
-        tokenEndpoint,
-        tokenBody,
-        privateKey,
-        publicJwk,
+export function createEpdsCallbackHandler(config: EpdsCallbackHandlerConfig) {
+  return async function GET(req: NextRequest): Promise<NextResponse> {
+    const base = new URL(req.url).origin;
+    const errorRedirect = () =>
+      NextResponse.redirect(
+        new URL(config.errorRedirectTo ?? "/?error=auth_failed", base),
       );
 
-      if (!tokenResponse.ok) {
-        const errorBody = await tokenResponse.text().catch(() => tokenResponse.statusText);
-        debug.error("[epds/callback] Token exchange failed", {
-          status: tokenResponse.status,
-          body: errorBody,
-        });
-        return errorRedirect();
-      }
+    try {
+      debug.log("[epds/callback] Processing ePDS callback");
 
-      const tokenData = (await tokenResponse.json()) as {
-        access_token: string;
-        token_type: string;
-        scope?: string;
-        expires_in?: number;
-        sub: string;
-        refresh_token?: string;
-      };
+      // client.callback() matches the state param to the context stored by
+      // client.authorize(), exchanges the authorization code for tokens using
+      // the correct DPoP key and PKCE verifier, and writes a properly-formed
+      // NodeSavedSession to the shared sessionStore. Works identically for
+      // both handle login and ePDS login callbacks.
+      const { session } = await config.oauthClient.callback(req.nextUrl.searchParams);
 
-      // Validate token_type is DPoP
-      if (tokenData.token_type?.toLowerCase() !== "dpop") {
-        debug.error("[epds/callback] Expected DPoP token, got", tokenData.token_type);
-        return errorRedirect();
-      }
+      debug.log("[epds/callback] OAuth callback succeeded", { did: session.did });
 
-      // Validate sub is a DID
-      if (!tokenData.sub || !(tokenData.sub.startsWith("did:plc:") || tokenData.sub.startsWith("did:web:"))) {
-        debug.error("[epds/callback] Invalid sub in token response", tokenData.sub);
-        return errorRedirect();
-      }
-
-      // Construct NodeSavedSession compatible with the OAuth client's session store.
-      const tokenIssuer = new URL(tokenEndpoint).origin;
-      const authMethod = isLoopback(publicUrl)
-        ? { method: "none" as const }
-        : { method: "private_key_jwt" as const, kid: "default" };
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const nodeSavedSession: any = {
-        dpopJwk: dpopPrivateJwk,
-        authMethod,
-        tokenSet: {
-          iss: tokenIssuer,
-          sub: tokenData.sub,
-          aud: tokenIssuer,
-          scope: tokenData.scope ?? config.scope,
-          access_token: tokenData.access_token,
-          token_type: "DPoP" as const,
-          refresh_token: tokenData.refresh_token,
-          expires_at: tokenData.expires_in
-            ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
-            : undefined,
-        },
-      };
-
-      // Write to the shared session store
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await config.sessionStore.set(tokenData.sub, nodeSavedSession as unknown as any);
-      debug.log("[epds/callback] Session saved", { sub: tokenData.sub });
-
-      // Resolve handle from DID via describeRepo (public, unauthenticated)
-      let resolvedHandle = tokenData.sub;
+      // Resolve handle from DID (optional — falls back to DID if unavailable).
+      // ePDS users may not have a bsky profile, so handle resolution can fail.
+      let resolvedHandle: string = session.did;
       try {
-        const describeRes = await fetch(
-          `${config.epdsUrl}/xrpc/com.atproto.repo.describeRepo?repo=${encodeURIComponent(tokenData.sub)}`,
-          { signal: AbortSignal.timeout(10_000) },
-        );
-        if (describeRes.ok) {
-          const repo = (await describeRes.json()) as { handle: string };
-          resolvedHandle = repo.handle;
-          debug.log("[epds/callback] Handle resolved", { handle: resolvedHandle });
-        }
+        const agent = new Agent(session);
+        const { data } = await agent.com.atproto.repo.describeRepo({
+          repo: session.did,
+        });
+        resolvedHandle = data.handle;
+        debug.log("[epds/callback] Handle resolved", { handle: resolvedHandle });
       } catch (handleError) {
-        debug.warn("[epds/callback] Handle resolution failed, falling back to DID", handleError);
+        debug.warn("[epds/callback] Handle resolution failed, using DID as fallback", handleError);
       }
 
-      // Build the success redirect response first, then set the cookie on it.
-      // We MUST NOT use next/navigation redirect() here — it throws a control-flow
-      // exception before the Set-Cookie header can be flushed to the response.
-      const successUrl = new URL(config.successRedirectTo ?? "/", publicUrl);
+      // Build the success redirect response first, then attach the cookie.
+      // We MUST NOT use next/navigation redirect() here — it throws a
+      // control-flow exception before the Set-Cookie header can be written.
+      const successUrl = new URL(config.successRedirectTo ?? "/", base);
       const response = NextResponse.redirect(successUrl);
 
       await saveSessionToResponse(
-        { did: tokenData.sub, handle: resolvedHandle, isLoggedIn: true },
+        { did: session.did, handle: resolvedHandle, isLoggedIn: true },
         config.sessionConfig,
-        request,
+        req,
         response,
       );
+
+      debug.log("[epds/callback] Session cookie saved, redirecting", { successUrl: successUrl.toString() });
 
       return response;
     } catch (error) {

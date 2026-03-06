@@ -10,6 +10,6 @@ export {
   cleanupExpiredStates,
 } from "./stores/state-store";
 
-// ePDS ephemeral state store
-export { createEpdsStateStore } from "./epds/state-store";
-export type { EpdsOAuthState } from "./epds/state-store";
+// Note: The ePDS state store has been removed. State for the ePDS flow is now
+// managed internally by the @atproto/oauth-client-node SDK via the shared
+// stateStore (createSupabaseStateStore above).

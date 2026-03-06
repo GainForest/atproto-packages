@@ -121,6 +121,11 @@ export function createJwksHandler(privateKeyJwk: string) {
   const rawKey: Record<string, unknown> = Array.isArray(parsed?.keys)
     ? (parsed.keys as Record<string, unknown>[])[0]!
     : parsed;
+  // Ensure the public JWKS includes the same `kid` the oauth-client uses.
+  // The PDS fetches this JWKS to verify client_assertion JWTs, matching by kid.
+  if (!rawKey.kid) {
+    rawKey.kid = "default";
+  }
   const { d: _d, ...publicKey } = rawKey;
 
   return function GET() {
