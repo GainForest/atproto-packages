@@ -66,6 +66,12 @@ export function isLoopback(url: string): boolean {
  * falling back to the configured publicUrl. This ensures that OAuth
  * redirect_uris and client_ids always match the deployment the user is
  * actually on, not a hardcoded URL baked in at build time.
+ *
+ * Loopback normalisation: Next.js dev server always binds to `localhost`
+ * internally, so `req.url` may contain `localhost` even when the browser
+ * navigated to `127.0.0.1`. RFC 8252 (and ePDS) require loopback
+ * redirect_uris to use `127.0.0.1`, so we replace `localhost` with
+ * `127.0.0.1` for any loopback origin.
  */
 export function resolveRequestPublicUrl(
   req: { url: string },
@@ -73,8 +79,10 @@ export function resolveRequestPublicUrl(
 ): string {
   try {
     const parsed = new URL(req.url);
-    // Use the origin (protocol + host) of the actual incoming request
-    return parsed.origin;
+    // Use the origin (protocol + host) of the actual incoming request,
+    // normalising localhost → 127.0.0.1 so ePDS redirect_uri validation passes.
+    const origin = parsed.origin.replace("localhost", "127.0.0.1");
+    return origin;
   } catch {
     return fallbackPublicUrl;
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { resolvePublicUrl, isLoopback } from "../url";
+import { resolvePublicUrl, isLoopback, resolveRequestPublicUrl } from "../url";
 
 describe("resolvePublicUrl", () => {
   const originalEnv = { ...process.env };
@@ -60,6 +60,28 @@ describe("resolvePublicUrl", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (process.env as any).NODE_ENV = "development";
     expect(resolvePublicUrl()).toBe("http://127.0.0.1:3000");
+  });
+});
+
+describe("resolveRequestPublicUrl", () => {
+  it("returns the origin of the request URL", () => {
+    expect(resolveRequestPublicUrl({ url: "http://127.0.0.1:3001/api/oauth/epds/login" }, "http://127.0.0.1:3000")).toBe("http://127.0.0.1:3001");
+  });
+
+  it("normalises localhost to 127.0.0.1 (RFC 8252 loopback requirement)", () => {
+    expect(resolveRequestPublicUrl({ url: "http://localhost:3001/api/oauth/epds/login" }, "http://127.0.0.1:3000")).toBe("http://127.0.0.1:3001");
+  });
+
+  it("normalises localhost without a port", () => {
+    expect(resolveRequestPublicUrl({ url: "http://localhost/api/oauth/epds/login" }, "http://127.0.0.1:3000")).toBe("http://127.0.0.1");
+  });
+
+  it("does not modify production URLs", () => {
+    expect(resolveRequestPublicUrl({ url: "https://bumicerts.com/api/oauth/epds/login" }, "https://bumicerts.com")).toBe("https://bumicerts.com");
+  });
+
+  it("falls back to fallbackPublicUrl on an unparseable URL", () => {
+    expect(resolveRequestPublicUrl({ url: "not-a-url" }, "http://127.0.0.1:3001")).toBe("http://127.0.0.1:3001");
   });
 });
 
