@@ -18,7 +18,7 @@ import { graphql } from "./tada";
 // ── OrgInfo ───────────────────────────────────────────────────────────────────
 
 export const OrgInfoFragment = graphql(`
-  fragment OrgInfoFields on OrgInfoItem @_unmask {
+  fragment OrgInfoFields on GainforestOrganizationInfoItem @_unmask {
     metadata {
       did
       uri
@@ -66,7 +66,7 @@ export const OrgInfoFragment = graphql(`
 // ── HcActivity ────────────────────────────────────────────────────────────────
 
 export const HcActivityFragment = graphql(`
-  fragment HcActivityFields on HcActivityItem @_unmask {
+  fragment HcActivityFields on HypercertsClaimActivityItem @_unmask {
     metadata {
       did
       uri

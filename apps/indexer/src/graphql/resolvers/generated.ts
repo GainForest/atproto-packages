@@ -1464,112 +1464,6 @@ export async function mapHypercertsContextMeasurement(row: RecordRow) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// org.hypercerts.fraction.saleEvent
-// ──────────────────────────────────────────────────────────────────────────
-
-export const HypercertsFractionSaleEventRecordType = builder.simpleObject("HypercertsFractionSaleEventRecord", {
-  description: "Pure payload for org.hypercerts.fraction.saleEvent. A single, immutable sale event for a fraction of an activity claim. Records the buyer, amount, and a reference to the funding receipt that proves the transaction.",
-  fields: (t) => ({
-        activityClaimUri: t.string({ nullable: true, description: "The AT-URI of the activity claim that this sale event is associated with." }),
-        buyer: t.field({ type: "JSON", nullable: true, description: "The DID of the buyer. Omit this field if the buyer wishes to remain anonymous." }),
-        amount: t.string({ nullable: true, description: "The amount paid for this fraction as a numeric string (e.g. '1000.50')." }),
-        currency: t.string({ nullable: true, description: "The fiat currency of the payment (e.g. USD, EUR)." }),
-        receipt: t.string({ nullable: true, description: "The AT-URI of the org.hypercerts.funding.receipt record that proves this sale transaction." }),
-        createdAt: t.field({ type: "DateTime", nullable: true, description: "Client-declared timestamp when this record was originally created." }),
-  }),
-});
-
-export const HypercertsFractionSaleEventItemType = builder.simpleObject("HypercertsFractionSaleEventItem", {
-  description: "A record from org.hypercerts.fraction.saleEvent.",
-  fields: (t) => ({
-    metadata:    t.field({ type: RecordMetaType }),
-    creatorInfo: t.field({ type: CreatorInfoType }),
-    record:      t.field({ type: HypercertsFractionSaleEventRecordType }),
-  }),
-});
-
-export const HypercertsFractionSaleEventPageType = builder.simpleObject("HypercertsFractionSaleEventPage", {
-  fields: (t) => ({
-    data:     t.field({ type: [HypercertsFractionSaleEventItemType] }),
-    pageInfo: t.field({ type: PageInfoType }),
-  }),
-});
-
-export async function mapHypercertsFractionSaleEvent(row: RecordRow) {
-  const p = payload(row);
-  return {
-    metadata:    rowToMeta(row),
-    creatorInfo: await resolveCreatorInfo(row.did),
-    record: {
-            activityClaimUri: s(p, "activityClaimUri"),
-            buyer: j(p, "buyer"),
-            amount: s(p, "amount"),
-            currency: s(p, "currency"),
-            receipt: s(p, "receipt"),
-            createdAt: s(p, "createdAt"),
-    },
-  };
-}
-
-// ──────────────────────────────────────────────────────────────────────────
-// org.hypercerts.fraction.transferEvent
-// ──────────────────────────────────────────────────────────────────────────
-
-export const HypercertsFractionTransferEventRecordType = builder.simpleObject("HypercertsFractionTransferEventRecord", {
-  description: "Pure payload for org.hypercerts.fraction.transferEvent. A single, immutable transfer event for a fraction of an activity claim. Records the sender, recipient, amount, and cryptographic proof of the transfer.",
-  fields: (t) => ({
-        activityClaimUri: t.string({ nullable: true, description: "The AT-URI of the activity claim that this transfer event is associated with." }),
-        from: t.field({ type: "JSON", nullable: true, description: "The DID of the sender. Omit this field if the sender wishes to remain anonymous." }),
-        to: t.field({ type: "JSON", nullable: true, description: "The DID of the recipient of the transfer." }),
-        amount: t.string({ nullable: true, description: "The amount transferred as a numeric string (e.g. '1000.50')." }),
-        currency: t.string({ nullable: true, description: "The fiat currency of the transfer (e.g. USD, EUR)." }),
-        signedAt: t.field({ type: "DateTime", nullable: true, description: "The timestamp embedded in the signed message payload. This value is part of the data that was cryptographically signed and must match the signing time used during signature generation." }),
-        nonce: t.string({ nullable: true, description: "The nonce included in the signed message, used to prevent replay attacks." }),
-        chainId: t.string({ nullable: true, description: "The EVM chain ID on which this transfer was signed (e.g. '1' for Ethereum mainnet, '42161' for Arbitrum)." }),
-        signerEVMAddress: t.string({ nullable: true, description: "The EVM address of the signer, in checksummed hex format with a 0x prefix (e.g. 0xAbCd...1234). Required for signature verification." }),
-        signature: t.string({ nullable: true, description: "The cryptographic signature over the transfer message payload." }),
-        createdAt: t.field({ type: "DateTime", nullable: true, description: "Client-declared timestamp when this record was originally created." }),
-  }),
-});
-
-export const HypercertsFractionTransferEventItemType = builder.simpleObject("HypercertsFractionTransferEventItem", {
-  description: "A record from org.hypercerts.fraction.transferEvent.",
-  fields: (t) => ({
-    metadata:    t.field({ type: RecordMetaType }),
-    creatorInfo: t.field({ type: CreatorInfoType }),
-    record:      t.field({ type: HypercertsFractionTransferEventRecordType }),
-  }),
-});
-
-export const HypercertsFractionTransferEventPageType = builder.simpleObject("HypercertsFractionTransferEventPage", {
-  fields: (t) => ({
-    data:     t.field({ type: [HypercertsFractionTransferEventItemType] }),
-    pageInfo: t.field({ type: PageInfoType }),
-  }),
-});
-
-export async function mapHypercertsFractionTransferEvent(row: RecordRow) {
-  const p = payload(row);
-  return {
-    metadata:    rowToMeta(row),
-    creatorInfo: await resolveCreatorInfo(row.did),
-    record: {
-            activityClaimUri: s(p, "activityClaimUri"),
-            from: j(p, "from"),
-            to: j(p, "to"),
-            amount: s(p, "amount"),
-            currency: s(p, "currency"),
-            signedAt: s(p, "signedAt"),
-            nonce: s(p, "nonce"),
-            chainId: s(p, "chainId"),
-            signerEVMAddress: s(p, "signerEVMAddress"),
-            signature: s(p, "signature"),
-            createdAt: s(p, "createdAt"),
-    },
-  };
-}
-
-// ──────────────────────────────────────────────────────────────────────────
 // org.hypercerts.funding.receipt
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -1622,54 +1516,6 @@ export async function mapHypercertsFundingReceipt(row: RecordRow) {
             for: s(p, "for"),
             notes: s(p, "notes"),
             occurredAt: s(p, "occurredAt"),
-            createdAt: s(p, "createdAt"),
-    },
-  };
-}
-
-// ──────────────────────────────────────────────────────────────────────────
-// org.hypercerts.order.listing
-// ──────────────────────────────────────────────────────────────────────────
-
-export const HypercertsOrderListingRecordType = builder.simpleObject("HypercertsOrderListingRecord", {
-  description: "Pure payload for org.hypercerts.order.listing. A sale listing for an activity claim. The record key must match the rkey of the associated activity claim record, ensuring exactly one listing per claim and automatic invalidation when the claim is deleted.",
-  fields: (t) => ({
-        goal: t.string({ nullable: true, description: "The fundraising goal amount as a numeric string in the listing's currency (e.g. '1000.50'). Use '0' for an unlimited goal." }),
-        currency: t.string({ nullable: true, description: "The fiat currency in which fractions are priced (e.g. USD, EUR). Defaults to USD." }),
-        allowOversell: t.boolean({ nullable: true, description: "Whether sales are still accepted after the goal amount is reached. Defaults to true (overselling is allowed)." }),
-        status: t.string({ nullable: true, description: "The current status of the listing. Defaults to 'open'." }),
-        updatedAt: t.field({ type: "DateTime", nullable: true, description: "Client-declared timestamp when this record was last updated." }),
-        createdAt: t.field({ type: "DateTime", nullable: true, description: "Client-declared timestamp when this record was originally created." }),
-  }),
-});
-
-export const HypercertsOrderListingItemType = builder.simpleObject("HypercertsOrderListingItem", {
-  description: "A record from org.hypercerts.order.listing.",
-  fields: (t) => ({
-    metadata:    t.field({ type: RecordMetaType }),
-    creatorInfo: t.field({ type: CreatorInfoType }),
-    record:      t.field({ type: HypercertsOrderListingRecordType }),
-  }),
-});
-
-export const HypercertsOrderListingPageType = builder.simpleObject("HypercertsOrderListingPage", {
-  fields: (t) => ({
-    data:     t.field({ type: [HypercertsOrderListingItemType] }),
-    pageInfo: t.field({ type: PageInfoType }),
-  }),
-});
-
-export async function mapHypercertsOrderListing(row: RecordRow) {
-  const p = payload(row);
-  return {
-    metadata:    rowToMeta(row),
-    creatorInfo: await resolveCreatorInfo(row.did),
-    record: {
-            goal: s(p, "goal"),
-            currency: s(p, "currency"),
-            allowOversell: b(p, "allowOversell"),
-            status: s(p, "status"),
-            updatedAt: s(p, "updatedAt"),
             createdAt: s(p, "createdAt"),
     },
   };
@@ -1834,9 +1680,7 @@ export class HyperboardsNS {}
 export class HypercertsNS {}
 export class HypercertsClaimNS {}
 export class HypercertsContextNS {}
-export class HypercertsFractionNS {}
 export class HypercertsFundingNS {}
-export class HypercertsOrderNS {}
 export class HypercertsWorkscopeNS {}
 export class ImpactindexerNS {}
 export class ImpactindexerReviewNS {}
@@ -2415,37 +2259,6 @@ builder.objectType(HypercertsContextNS, {
   }),
 });
 
-builder.objectType(HypercertsFractionNS, {
-  name: "HypercertsFractionNamespace",
-  description: "HypercertsFractionNamespace namespace (hypercerts.fraction.*).",
-  fields: (t) => ({
-    saleEvent: t.field({
-      type: HypercertsFractionSaleEventPageType,
-      description: "Paginated list of org.hypercerts.fraction.saleEvent records.",
-      args: {
-        cursor: t.arg.string(),
-        limit: t.arg.int(),
-        where: t.arg({ type: WhereInputRef, required: false }),
-        sortBy: t.arg({ type: SortFieldEnum }),
-        order: t.arg({ type: SortOrderEnum }),
-      },
-      resolve: (_, args) => fetchCollectionPage("org.hypercerts.fraction.saleEvent", args, mapHypercertsFractionSaleEvent),
-    }),
-    transferEvent: t.field({
-      type: HypercertsFractionTransferEventPageType,
-      description: "Paginated list of org.hypercerts.fraction.transferEvent records.",
-      args: {
-        cursor: t.arg.string(),
-        limit: t.arg.int(),
-        where: t.arg({ type: WhereInputRef, required: false }),
-        sortBy: t.arg({ type: SortFieldEnum }),
-        order: t.arg({ type: SortOrderEnum }),
-      },
-      resolve: (_, args) => fetchCollectionPage("org.hypercerts.fraction.transferEvent", args, mapHypercertsFractionTransferEvent),
-    }),
-  }),
-});
-
 builder.objectType(HypercertsFundingNS, {
   name: "HypercertsFundingNamespace",
   description: "HypercertsFundingNamespace namespace (hypercerts.funding.*).",
@@ -2461,25 +2274,6 @@ builder.objectType(HypercertsFundingNS, {
         order: t.arg({ type: SortOrderEnum }),
       },
       resolve: (_, args) => fetchCollectionPage("org.hypercerts.funding.receipt", args, mapHypercertsFundingReceipt),
-    }),
-  }),
-});
-
-builder.objectType(HypercertsOrderNS, {
-  name: "HypercertsOrderNamespace",
-  description: "HypercertsOrderNamespace namespace (hypercerts.order.*).",
-  fields: (t) => ({
-    listing: t.field({
-      type: HypercertsOrderListingPageType,
-      description: "Paginated list of org.hypercerts.order.listing records.",
-      args: {
-        cursor: t.arg.string(),
-        limit: t.arg.int(),
-        where: t.arg({ type: WhereInputRef, required: false }),
-        sortBy: t.arg({ type: SortFieldEnum }),
-        order: t.arg({ type: SortOrderEnum }),
-      },
-      resolve: (_, args) => fetchCollectionPage("org.hypercerts.order.listing", args, mapHypercertsOrderListing),
     }),
   }),
 });
@@ -2522,9 +2316,7 @@ builder.objectType(HypercertsNS, {
   fields: (t) => ({
     claim: t.field({ type: HypercertsClaimNS, description: "HypercertsClaimNamespace namespace.", resolve: () => new HypercertsClaimNS() }),
     context: t.field({ type: HypercertsContextNS, description: "HypercertsContextNamespace namespace.", resolve: () => new HypercertsContextNS() }),
-    fraction: t.field({ type: HypercertsFractionNS, description: "HypercertsFractionNamespace namespace.", resolve: () => new HypercertsFractionNS() }),
     funding: t.field({ type: HypercertsFundingNS, description: "HypercertsFundingNamespace namespace.", resolve: () => new HypercertsFundingNS() }),
-    order: t.field({ type: HypercertsOrderNS, description: "HypercertsOrderNamespace namespace.", resolve: () => new HypercertsOrderNS() }),
     workscope: t.field({ type: HypercertsWorkscopeNS, description: "HypercertsWorkscopeNamespace namespace.", resolve: () => new HypercertsWorkscopeNS() }),
     collection: t.field({
       type: HypercertsCollectionPageType,

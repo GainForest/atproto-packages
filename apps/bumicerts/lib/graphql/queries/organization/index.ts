@@ -33,9 +33,11 @@ const singleDocument = graphql(
         }
       }
       hypercerts {
-        activity(where: { did: $did }, order: DESC, sortBy: CREATED_AT) {
-          data {
-            ...HcActivityFields
+        claim {
+          activity(where: { did: $did }, order: DESC, sortBy: CREATED_AT) {
+            data {
+              ...HcActivityFields
+            }
           }
         }
       }
@@ -71,7 +73,7 @@ const listDocument = graphql(
 type _SingleResult = ResultOf<typeof singleDocument>;
 type _GainforestOrg = NonNullable<NonNullable<_SingleResult["gainforest"]>["organization"]>;
 type _InfoData = NonNullable<NonNullable<_GainforestOrg["info"]>["data"]>;
-type _ActivityData = NonNullable<NonNullable<NonNullable<_SingleResult["hypercerts"]>["activity"]>["data"]>;
+type _ActivityData = NonNullable<NonNullable<NonNullable<NonNullable<_SingleResult["hypercerts"]>["claim"]>["activity"]>["data"]>;
 
 export type OrgInfo = NonNullable<_InfoData[number]>;
 export type OrgActivity = NonNullable<_ActivityData[number]>;
@@ -94,7 +96,7 @@ export async function fetch<P extends Params>(params: P): Promise<Result<P>> {
   if ("did" in params) {
     const res = await graphqlClient.request(singleDocument, { did: params.did });
     const org = (res.gainforest?.organization?.info?.data?.[0] ?? null) as OrgInfo | null;
-    const activities = (res.hypercerts?.activity?.data ?? []) as OrgActivity[];
+    const activities = (res.hypercerts?.claim?.activity?.data ?? []) as OrgActivity[];
     return { org, activities } as Result<P>;
   }
 

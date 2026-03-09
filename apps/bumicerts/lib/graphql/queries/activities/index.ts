@@ -9,7 +9,7 @@
  * Leaf: queries.activities
  *
  * Schema shape (post-redesign):
- *   hypercerts.activity(...) { data { metadata { ... } creatorInfo { ... } record { ... } } pageInfo { ... } }
+ *   hypercerts.claim.activity(...) { data { metadata { ... } creatorInfo { ... } record { ... } } pageInfo { ... } }
  */
 
 import { graphqlClient } from "@/lib/graphql/client";
@@ -25,9 +25,11 @@ const byDidDocument = graphql(
   `
     query ActivitiesByDid($did: String!) {
       hypercerts {
-        activity(where: { did: $did }, order: DESC, sortBy: CREATED_AT) {
-          data {
-            ...HcActivityFields
+        claim {
+          activity(where: { did: $did }, order: DESC, sortBy: CREATED_AT) {
+            data {
+              ...HcActivityFields
+            }
           }
         }
       }
@@ -41,9 +43,11 @@ const byDidAndOrgDocument = graphql(
   `
     query ActivityByDidAndOrg($did: String!, $orgDid: String!) {
       hypercerts {
-        activity(where: { did: $did }, limit: 100, order: DESC, sortBy: CREATED_AT) {
-          data {
-            ...HcActivityFields
+        claim {
+          activity(where: { did: $did }, limit: 100, order: DESC, sortBy: CREATED_AT) {
+            data {
+              ...HcActivityFields
+            }
           }
         }
       }
@@ -66,14 +70,16 @@ const listDocument = graphql(
   `
     query ActivitiesList($limit: Int, $cursor: String, $labelTier: String, $where: ActivityWhereInput) {
       hypercerts {
-        activity(limit: $limit, cursor: $cursor, labelTier: $labelTier, where: $where, order: DESC, sortBy: CREATED_AT) {
-          data {
-            ...HcActivityFields
-          }
-          pageInfo {
-            endCursor
-            hasNextPage
-            count
+        claim {
+          activity(limit: $limit, cursor: $cursor, labelTier: $labelTier, where: $where, order: DESC, sortBy: CREATED_AT) {
+            data {
+              ...HcActivityFields
+            }
+            pageInfo {
+              endCursor
+              hasNextPage
+              count
+            }
           }
         }
       }
@@ -85,7 +91,7 @@ const listDocument = graphql(
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type _ByDidResult = ResultOf<typeof byDidDocument>;
-type _ActivityData = NonNullable<NonNullable<NonNullable<_ByDidResult["hypercerts"]>["activity"]>["data"]>;
+type _ActivityData = NonNullable<NonNullable<NonNullable<NonNullable<_ByDidResult["hypercerts"]>["claim"]>["activity"]>["data"]>;
 export type Activity = NonNullable<_ActivityData[number]>;
 
 type _ByDidAndOrgResult = ResultOf<typeof byDidAndOrgDocument>;
@@ -127,7 +133,7 @@ export async function fetch<P extends Params>(params: P): Promise<Result<P>> {
       did: params.did,
       orgDid: params.orgDid,
     });
-    const activities = (res.hypercerts?.activity?.data ?? []) as Activity[];
+    const activities = (res.hypercerts?.claim?.activity?.data ?? []) as Activity[];
     const org = (res.gainforest?.organization?.info?.data?.[0] ?? null) as ActivityOrgInfo | null;
     return { activities, org } as Result<P>;
   }
@@ -135,7 +141,7 @@ export async function fetch<P extends Params>(params: P): Promise<Result<P>> {
   // ByDid
   if ("did" in params) {
     const res = await graphqlClient.request(byDidDocument, { did: params.did });
-    return ((res.hypercerts?.activity?.data ?? []) as Activity[]) as Result<P>;
+    return ((res.hypercerts?.claim?.activity?.data ?? []) as Activity[]) as Result<P>;
   }
 
   // List (explore)
@@ -149,8 +155,8 @@ export async function fetch<P extends Params>(params: P): Promise<Result<P>> {
     labelTier: params.labelTier,
     where: Object.keys(where).length > 0 ? where : undefined,
   });
-  const data = (res.hypercerts?.activity?.data ?? []) as Activity[];
-  const pageInfo = res.hypercerts?.activity?.pageInfo ?? { endCursor: null, hasNextPage: false, count: 0 };
+  const data = (res.hypercerts?.claim?.activity?.data ?? []) as Activity[];
+  const pageInfo = res.hypercerts?.claim?.activity?.pageInfo ?? { endCursor: null, hasNextPage: false, count: 0 };
   return { data, pageInfo } as Result<P>;
 }
 

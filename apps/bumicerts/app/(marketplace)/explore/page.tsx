@@ -18,14 +18,16 @@ const ExploreActivitiesQuery = graphql(
   `
     query ExploreActivities($limit: Int, $cursor: String, $labelTier: String, $where: ActivityWhereInput) {
       hypercerts {
-        activity(limit: $limit, cursor: $cursor, labelTier: $labelTier, where: $where, order: DESC, sortBy: CREATED_AT) {
-          data {
-            ...HcActivityFields
-          }
-          pageInfo {
-            endCursor
-            hasNextPage
-            count
+        claim {
+          activity(limit: $limit, cursor: $cursor, labelTier: $labelTier, where: $where, order: DESC, sortBy: CREATED_AT) {
+            data {
+              ...HcActivityFields
+            }
+            pageInfo {
+              endCursor
+              hasNextPage
+              count
+            }
           }
         }
       }
@@ -42,7 +44,7 @@ export default async function ExplorePage() {
       limit: 1000,
       where: { hasImage: true, hasOrganizationInfoRecord: true },
     });
-    const activities = (response.hypercerts?.activity?.data ?? []) as GraphQLHcActivityItem[];
+    const activities = (response.hypercerts?.claim?.activity?.data ?? []) as GraphQLHcActivityItem[];
     bumicerts = activitiesToBumicertDataArray(activities);
   } catch (error) {
     console.error("Failed to fetch bumicerts:", error);
