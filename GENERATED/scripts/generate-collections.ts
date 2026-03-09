@@ -231,8 +231,11 @@ function generateValidationTs(collections: CollectionInfo[]): string {
  * Each generated schema exposes \`$safeValidate(data)\` which:
  *   - Validates the record against the full lexicon definition
  *     (grapheme limits, required fields, enum values, formats, etc.)
- *   - Returns { success: true, value } or { success: false, error }
+ *   - Returns { success: true, value } or { success: false, reason: ValidationError }
  *   - Does NOT apply defaults or coerce types (unlike $safeParse)
+ *
+ * IMPORTANT: the failure field is \`reason\`, NOT \`error\`. Do not change this.
+ * See @atproto/lex-schema ResultFailure<E> — { success: false; reason: E }
  */
 
 import * as generated from "@/generated/index.ts";
@@ -244,7 +247,8 @@ import type { IndexedCollection } from "./collections.ts";
 // ============================================================
 
 type LexSchema = {
-  $safeValidate: (data: unknown) => { success: boolean; error?: unknown };
+  // NOTE: the failure field is \`reason\`, not \`error\` — matches @atproto/lex-schema ResultFailure<E>
+  $safeValidate: (data: unknown) => { success: boolean; reason?: unknown };
 };
 
 const SCHEMA_REGISTRY: Record<IndexedCollection, LexSchema> = {
@@ -277,7 +281,8 @@ export function validateRecord(
 
   const result = schema.$safeValidate(record);
   if (result.success) return { ok: true };
-  return { ok: false, error: formatError(result.error) };
+  // \`reason\` is the correct field — @atproto/lex-schema ResultFailure<E> uses { success: false, reason: E }
+  return { ok: false, error: formatError(result.reason) };
 }
 
 // ============================================================

@@ -19,10 +19,8 @@
  *   - Returns { success: true, value } or { success: false, reason: ValidationError }
  *   - Does NOT apply defaults or coerce types (unlike $safeParse)
  *
- * ⚠️  IMPORTANT — do NOT read `result.error` on a $safeValidate result.
- *     The failure property is `result.reason` (a ValidationError), NOT `result.error`.
- *     Reading `.error` returns `undefined` and silently swallows the real message.
- *     The LexSchema type below enforces this — keep it as a discriminated union.
+ * IMPORTANT: the failure field is `reason`, NOT `error`. Do not change this.
+ * See @atproto/lex-schema ResultFailure<E> — { success: false; reason: E }
  */
 
 import * as generated from "@/generated/index.ts";
@@ -33,12 +31,9 @@ import type { IndexedCollection } from "./collections.ts";
 // Maps every indexed collection NSID → its generated schema object.
 // ============================================================
 
-// ⚠️  The failure branch is `{ success: false, reason }` — NOT `{ success: false, error }`.
-//     `@atproto/lex-schema` ValidationResult uses `reason`, not `error`.
-//     This type is intentionally a strict discriminated union so TypeScript
-//     will catch any future attempt to read `.error` on the failure branch.
 type LexSchema = {
-  $safeValidate: (data: unknown) => { success: true } | { success: false; reason: unknown };
+  // NOTE: the failure field is `reason`, not `error` — matches @atproto/lex-schema ResultFailure<E>
+  $safeValidate: (data: unknown) => { success: boolean; reason?: unknown };
 };
 
 const SCHEMA_REGISTRY: Record<IndexedCollection, LexSchema> = {
@@ -75,10 +70,7 @@ const SCHEMA_REGISTRY: Record<IndexedCollection, LexSchema> = {
   "org.hypercerts.context.attachment":                     generated.org.hypercerts.context.attachment,
   "org.hypercerts.context.evaluation":                     generated.org.hypercerts.context.evaluation,
   "org.hypercerts.context.measurement":                    generated.org.hypercerts.context.measurement,
-  "org.hypercerts.fraction.saleEvent":                     generated.org.hypercerts.fraction.saleEvent,
-  "org.hypercerts.fraction.transferEvent":                 generated.org.hypercerts.fraction.transferEvent,
   "org.hypercerts.funding.receipt":                        generated.org.hypercerts.funding.receipt,
-  "org.hypercerts.order.listing":                          generated.org.hypercerts.order.listing,
   "org.hypercerts.workscope.tag":                          generated.org.hypercerts.workscope.tag,
   "org.impactindexer.link.attestation":                    generated.org.impactindexer.link.attestation,
   "org.impactindexer.review.comment":                      generated.org.impactindexer.review.comment,
@@ -111,6 +103,7 @@ export function validateRecord(
 
   const result = schema.$safeValidate(record);
   if (result.success) return { ok: true };
+  // `reason` is the correct field — @atproto/lex-schema ResultFailure<E> uses { success: false, reason: E }
   return { ok: false, error: formatError(result.reason) };
 }
 
