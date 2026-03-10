@@ -58,8 +58,7 @@ jobs:
         run: |
           echo "Updating TAP_COLLECTION_FILTERS on Tap service..."
           railway variables set "TAP_COLLECTION_FILTERS=${{ steps.filters.outputs.value }}" \
-            --service tap \
-            --environment production \
+            -s tap \
             || echo "Warning: Could not update Tap variables. Service may not exist yet."
 
       - name: Redeploy Tap service (to pick up new filters)
@@ -68,7 +67,7 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           echo "Redeploying Tap service to apply new collection filters..."
-          railway redeploy --service tap --environment production --yes \
+          railway redeploy -s tap -y \
             || echo "Warning: Could not redeploy Tap. It may need manual restart."
 
       - name: Deploy Indexer
@@ -78,7 +77,7 @@ jobs:
           echo "Deploying Indexer service..."
           # Railway's GitHub integration handles the actual deployment
           # This just triggers a redeploy if the auto-deploy didn't catch it
-          railway redeploy --service indexer --environment production --yes \
+          railway redeploy -s indexer -y \
             || echo "Note: Indexer may already be deploying via GitHub integration."
 
       - name: Deployment Summary
