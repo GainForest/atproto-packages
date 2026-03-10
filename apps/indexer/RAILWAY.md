@@ -154,20 +154,37 @@ query {
 
 ## Updating
 
-When you push changes to your repository:
+### Automatic Updates via GitHub Actions
 
-1. Railway automatically triggers a new deployment
-2. The indexer rebuilds with the latest code
-3. Tap continues running (no rebuild needed unless you change its config)
+When you push changes to the repository, a GitHub Action automatically:
 
-### Updating Collection Filters
+1. ✅ Validates the indexer code (typecheck)
+2. ✅ Generates `TAP_COLLECTION_FILTERS` from your indexed collections
+3. ✅ Syncs the filter to the Tap service on Railway
+4. ✅ Triggers redeployment of both services
 
-If you add new lexicons:
+**This means adding new lexicons is fully automated!** Just:
+1. Add your lexicon
+2. Run `bun run gen:indexer` locally
+3. Commit and push
 
-1. Run locally: `bun run sync:filters` to generate the new filter string
-2. Copy the new `TAP_COLLECTION_FILTERS` value
-3. Update the Tap service variables in Railway
-4. Restart the Tap service
+The GitHub Action handles updating Railway.
+
+### Required Secrets
+
+Add these secrets to your GitHub repository (Settings → Secrets → Actions):
+
+| Secret | Description | How to get it |
+|--------|-------------|---------------|
+| `RAILWAY_TOKEN` | Railway API token | [Railway Dashboard](https://railway.com/account/tokens) → Create token for your workspace |
+
+### Manual Updates
+
+If you need to update manually:
+
+1. Run locally: `bun run sync:filters` to see the new filter string
+2. Update `TAP_COLLECTION_FILTERS` in Railway Tap service variables
+3. Restart the Tap service
 
 ## Troubleshooting
 

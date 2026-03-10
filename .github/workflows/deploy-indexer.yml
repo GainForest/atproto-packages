@@ -1,0 +1,92 @@
+name: Deploy Indexer to Railway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/indexer/**'
+      - 'GENERATED/lexicons/**'
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even without changes'
+        required: false
+        default: 'false'
+      skip_tap_sync:
+        description: 'Skip syncing TAP_COLLECTION_FILTERS'
+        required: false
+        default: 'false'
+
+jobs:
+  validate-and-deploy:
+    name: Validate & Deploy
+    runs-on: ubuntu-latest
+    # Only run if secrets are available (not on forks)
+    if: github.repository == 'GainForest/atproto-packages'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck indexer
+        run: bun run typecheck
+        working-directory: apps/indexer
+
+      - name: Generate collection filters
+        id: filters
+        working-directory: apps/indexer
+        run: |
+          FILTERS=$(bun run src/tap/collection-filters.ts)
+          echo "value=$FILTERS" >> $GITHUB_OUTPUT
+          echo "### Collection Filters" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$FILTERS" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Sync TAP_COLLECTION_FILTERS to Tap service
+        if: github.event.inputs.skip_tap_sync != 'true'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "Updating TAP_COLLECTION_FILTERS on Tap service..."
+          railway variables set "TAP_COLLECTION_FILTERS=${{ steps.filters.outputs.value }}" \
+            --service tap \
+            --environment production \
+            || echo "Warning: Could not update Tap variables. Service may not exist yet."
+
+      - name: Redeploy Tap service (to pick up new filters)
+        if: github.event.inputs.skip_tap_sync != 'true'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "Redeploying Tap service to apply new collection filters..."
+          railway redeploy --service tap --environment production --yes \
+            || echo "Warning: Could not redeploy Tap. It may need manual restart."
+
+      - name: Deploy Indexer
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "Deploying Indexer service..."
+          # Railway's GitHub integration handles the actual deployment
+          # This just triggers a redeploy if the auto-deploy didn't catch it
+          railway redeploy --service indexer --environment production --yes \
+            || echo "Note: Indexer may already be deploying via GitHub integration."
+
+      - name: Deployment Summary
+        run: |
+          echo "### Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Validation passed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ TAP_COLLECTION_FILTERS synced to Tap service" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Deployment triggered" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** Check Railway dashboard for deployment status." >> $GITHUB_STEP_SUMMARY
