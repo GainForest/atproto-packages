@@ -295,13 +295,24 @@ curl http://localhost:2480/stats/outbox-buffer   # Backlog (0 = caught up)
 
 ## Production Deployment
 
-### Build
+### Railway (Recommended)
+
+See **[RAILWAY.md](./RAILWAY.md)** for a complete guide to deploying on Railway with:
+- Postgres database
+- Tap service with persistent volume
+- Indexer with GraphQL API
+
+The guide includes all environment variables and step-by-step instructions.
+
+### Docker Compose
+
+For self-hosted deployments:
+
 ```bash
 # From monorepo root
-docker build -f apps/indexer/Dockerfile -t gainforest-indexer .
+docker build -f apps/indexer/Dockerfile.railway -t gainforest-indexer .
 ```
 
-### Deploy
 ```yaml
 services:
   indexer:
@@ -321,10 +332,13 @@ services:
       - tap_data:/data
     environment:
       TAP_DATABASE_URL: sqlite:///data/tap.db
+      TAP_RELAY_URL: https://bsky.network
       TAP_SIGNAL_COLLECTION: org.hypercerts.claim.activity
-      TAP_COLLECTION_FILTERS: "app.gainforest.*,org.hypercerts.*,app.certified.*"
+      TAP_COLLECTION_FILTERS: ${TAP_COLLECTION_FILTERS}
       TAP_ADMIN_PASSWORD: ${TAP_ADMIN_PASSWORD}
 ```
+
+**Important:** Run `bun run sync:filters` to generate `TAP_COLLECTION_FILTERS` from your indexed collections.
 
 ---
 
