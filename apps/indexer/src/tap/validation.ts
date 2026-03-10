@@ -37,6 +37,8 @@ type LexSchema = {
 };
 
 const SCHEMA_REGISTRY: Record<IndexedCollection, LexSchema> = {
+  "app.bumicerts.funding.config":                          generated.app.bumicerts.funding.config,
+  "app.bumicerts.link.evm":                                generated.app.bumicerts.link.evm,
   "app.certified.actor.organization":                      generated.app.certified.actor.organization,
   "app.certified.actor.profile":                           generated.app.certified.actor.profile,
   "app.certified.badge.award":                             generated.app.certified.badge.award,

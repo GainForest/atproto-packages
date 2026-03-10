@@ -9,6 +9,7 @@
  *   gainforestOrganizationRecordingsAudio - Nested OrgAudioMetadata sub-type
  *   gainforestDwcOccurrence        - Typed BlobRefType for evidence fields
  *   impactIndexerLinkAttestation   - Nested EIP-712 message sub-type
+ *   bumicertsLinkEvm               - EIP-712 sig verification + valid metadata + EvmLinkWhereInput
  *
  * Imported for their side-effects: each file calls builder.objectType() to
  * attach custom fields to the namespace classes declared in generated.ts.
@@ -32,4 +33,7 @@ export * from "./gainforestOrganizationRecordingsAudio.ts";
 export * from "./gainforestDwcOccurrence.ts";
 
 // 5. Creates ImpactindexerLinkNS, adds `link` to generated ImpactindexerNS
-export * from "./impactIndexerLinkAttestation.ts";
+
+
+// 6. Creates BumicertsLinkNS, adds `link` (with `evm`) to generated BumicertsNS
+export * from "./bumicertsLinkEvm.ts";

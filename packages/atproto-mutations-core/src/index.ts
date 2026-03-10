@@ -120,6 +120,26 @@ export {
   ClaimActivityPdsError,
 } from "./mutations/claim.activity/utils/errors";
 
+// funding.receipt
+export {
+  FundingReceiptValidationError,
+  FundingReceiptPdsError,
+} from "./mutations/funding.receipt/utils/errors";
+
+// link.evm
+export {
+  LinkEvmValidationError,
+  LinkEvmNotFoundError,
+  LinkEvmPdsError,
+} from "./mutations/link.evm/utils/errors";
+
+// funding.config
+export {
+  FundingConfigValidationError,
+  FundingConfigNotFoundError,
+  FundingConfigPdsError,
+} from "./mutations/funding.config/utils/errors";
+
 // organization.info
 export {
   OrganizationInfoAlreadyExistsError,
@@ -185,6 +205,34 @@ export type {
   RichtextFacet,
   LinearDocument as ClaimActivityLinearDocument,
 } from "./mutations/claim.activity/utils/types";
+
+// funding.receipt
+export type {
+  FundingReceiptRecord,
+  FundingReceiptMutationResult,
+  CreateFundingReceiptInput,
+} from "./mutations/funding.receipt/utils/types";
+
+// link.evm
+export type {
+  LinkEvmRecord,
+  LinkEvmMutationResult,
+  CreateLinkEvmInput,
+  UpdateLinkEvmInput,
+  Eip712Proof,
+  Eip712Message as LinkEvmEip712Message,
+  Eip712PlatformAttestation,
+} from "./mutations/link.evm/utils/types";
+
+// funding.config
+export type {
+  FundingConfigRecord,
+  FundingConfigMutationResult,
+  CreateFundingConfigInput,
+  UpdateFundingConfigInput,
+  UpsertFundingConfigInput,
+  EvmLinkRef,
+} from "./mutations/funding.config/utils/types";
 
 // organization.info
 export type {

@@ -58,6 +58,15 @@ import {
   AudioRecordingValidationError,
   AudioRecordingNotFoundError,
   AudioRecordingPdsError,
+  FundingReceiptValidationError,
+  FundingReceiptPdsError,
+
+  LinkEvmValidationError,
+  LinkEvmNotFoundError,
+  LinkEvmPdsError,
+  FundingConfigValidationError,
+  FundingConfigNotFoundError,
+  FundingConfigPdsError,
 } from "@gainforest/atproto-mutations-core";
 import type {
   MutationResult,
@@ -92,6 +101,15 @@ import type {
   CreateAudioRecordingInput,
   UpdateAudioRecordingInput,
   UpsertAudioRecordingInput,
+  FundingReceiptMutationResult,
+  CreateFundingReceiptInput,
+  LinkEvmMutationResult,
+  CreateLinkEvmInput,
+  UpdateLinkEvmInput,
+  FundingConfigMutationResult,
+  CreateFundingConfigInput,
+  UpdateFundingConfigInput,
+  UpsertFundingConfigInput,
 } from "@gainforest/atproto-mutations-core";
 import { UnauthorizedError, SessionExpiredError } from "../server";
 
@@ -795,20 +813,243 @@ export async function uploadBlobAction(
 }
 
 // ---------------------------------------------------------------------------
-// Re-export error code types so callers don't need a separate import
+// funding.receipt error types + actions
 // ---------------------------------------------------------------------------
-export type {
-  OrgInfoErrorCode,
-  ClaimActivityErrorCode,
-  BlobErrorCode,
-  CertifiedLocationErrorCode,
-  DefaultSiteErrorCode,
-  LayerErrorCode,
-  LayerType,
-  AudioRecordingErrorCode,
-  AudioTechnicalMetadata,
-  CertifiedLocationRecord,
-  DefaultSiteRecord,
-  LayerRecord,
-  AudioRecordingRecord,
-};
+
+type FundingReceiptErrorCode =
+  | "UNAUTHORIZED"
+  | "SESSION_EXPIRED"
+  | "INVALID_RECORD"
+  | "PDS_ERROR";
+
+type FundingReceiptEffectError =
+  | FundingReceiptValidationError
+  | FundingReceiptPdsError
+  | BlobUploadError
+  | UnauthorizedError
+  | SessionExpiredError;
+
+function mapFundingReceiptError(
+  e: FundingReceiptEffectError
+): MutationResult<never, FundingReceiptErrorCode> {
+  switch (e._tag) {
+    case "UnauthorizedError":
+      return err("UNAUTHORIZED", e.message ?? "Not logged in");
+    case "SessionExpiredError":
+      return err("SESSION_EXPIRED", e.message ?? "Session expired, please log in again");
+    case "FundingReceiptValidationError":
+      return err("INVALID_RECORD", e.message, extractValidationIssues(e.cause));
+    case "BlobUploadError":
+      return err("PDS_ERROR", e.message);
+    case "FundingReceiptPdsError":
+      return err("PDS_ERROR", e.message);
+    default:
+      return err("PDS_ERROR", "Unknown error");
+  }
+}
+
+export async function createFundingReceiptAction(
+  input: CreateFundingReceiptInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<FundingReceiptMutationResult, FundingReceiptErrorCode>> {
+  return Effect.runPromise(
+    mutations.funding.receipt.create(input).pipe(
+      Effect.map((result) => ok(serializeForClient(result) as typeof result)),
+      Effect.catchAll((e: FundingReceiptEffectError) =>
+        Effect.succeed(mapFundingReceiptError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// link.evm error types + actions
+// ---------------------------------------------------------------------------
+
+type LinkEvmErrorCode =
+  | "UNAUTHORIZED"
+  | "SESSION_EXPIRED"
+  | "NOT_FOUND"
+  | "INVALID_RECORD"
+  | "PDS_ERROR";
+
+type LinkEvmEffectError =
+  | LinkEvmValidationError
+  | LinkEvmNotFoundError
+  | LinkEvmPdsError
+  | BlobUploadError
+  | UnauthorizedError
+  | SessionExpiredError;
+
+function mapLinkEvmError(
+  e: LinkEvmEffectError
+): MutationResult<never, LinkEvmErrorCode> {
+  switch (e._tag) {
+    case "UnauthorizedError":
+      return err("UNAUTHORIZED", e.message ?? "Not logged in");
+    case "SessionExpiredError":
+      return err("SESSION_EXPIRED", e.message ?? "Session expired, please log in again");
+    case "LinkEvmNotFoundError":
+      return err("NOT_FOUND", `link.evm record not found: ${e.rkey}`);
+    case "LinkEvmValidationError":
+      return err("INVALID_RECORD", e.message, extractValidationIssues(e.cause));
+    case "BlobUploadError":
+      return err("PDS_ERROR", e.message);
+    case "LinkEvmPdsError":
+      return err("PDS_ERROR", e.message);
+    default:
+      return err("PDS_ERROR", "Unknown error");
+  }
+}
+
+export async function createLinkEvmAction(
+  input: CreateLinkEvmInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<LinkEvmMutationResult, LinkEvmErrorCode>> {
+  return Effect.runPromise(
+    mutations.link.evm.create(input).pipe(
+      Effect.map((result) => ok(serializeForClient(result) as typeof result)),
+      Effect.catchAll((e: LinkEvmEffectError) =>
+        Effect.succeed(mapLinkEvmError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function updateLinkEvmAction(
+  input: UpdateLinkEvmInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<LinkEvmMutationResult, LinkEvmErrorCode>> {
+  return Effect.runPromise(
+    mutations.link.evm.update(input).pipe(
+      Effect.map((result) => ok(serializeForClient(result) as typeof result)),
+      Effect.catchAll((e: LinkEvmEffectError) =>
+        Effect.succeed(mapLinkEvmError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function deleteLinkEvmAction(
+  input: DeleteRecordInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<DeleteRecordResult, LinkEvmErrorCode>> {
+  return Effect.runPromise(
+    mutations.link.evm.delete(input).pipe(
+      Effect.map((result) => ok(serializeForClient(result) as typeof result)),
+      Effect.catchAll((e: LinkEvmEffectError) =>
+        Effect.succeed(mapLinkEvmError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// ---------------------------------------------------------------------------
+// funding.config error types + actions
+// ---------------------------------------------------------------------------
+
+type FundingConfigErrorCode =
+  | "UNAUTHORIZED"
+  | "SESSION_EXPIRED"
+  | "NOT_FOUND"
+  | "INVALID_RECORD"
+  | "PDS_ERROR";
+
+type FundingConfigEffectError =
+  | FundingConfigValidationError
+  | FundingConfigNotFoundError
+  | FundingConfigPdsError
+  | BlobUploadError
+  | UnauthorizedError
+  | SessionExpiredError;
+
+function mapFundingConfigError(
+  e: FundingConfigEffectError
+): MutationResult<never, FundingConfigErrorCode> {
+  switch (e._tag) {
+    case "UnauthorizedError":
+      return err("UNAUTHORIZED", e.message ?? "Not logged in");
+    case "SessionExpiredError":
+      return err("SESSION_EXPIRED", e.message ?? "Session expired, please log in again");
+    case "FundingConfigNotFoundError":
+      return err("NOT_FOUND", `funding.config not found at rkey: ${e.rkey}`);
+    case "FundingConfigValidationError":
+      return err("INVALID_RECORD", e.message, extractValidationIssues(e.cause));
+    case "BlobUploadError":
+      return err("PDS_ERROR", e.message);
+    case "FundingConfigPdsError":
+      return err("PDS_ERROR", e.message);
+    default:
+      return err("PDS_ERROR", "Unknown error");
+  }
+}
+
+export async function createFundingConfigAction(
+  input: CreateFundingConfigInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<FundingConfigMutationResult, FundingConfigErrorCode>> {
+  return Effect.runPromise(
+    mutations.funding.config.create(input).pipe(
+      Effect.map((result) => ok(serializeForClient(result) as typeof result)),
+      Effect.catchAll((e: FundingConfigEffectError) =>
+        Effect.succeed(mapFundingConfigError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function updateFundingConfigAction(
+  input: UpdateFundingConfigInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<FundingConfigMutationResult, FundingConfigErrorCode>> {
+  return Effect.runPromise(
+    mutations.funding.config.update(input).pipe(
+      Effect.map((result) => ok(serializeForClient(result) as typeof result)),
+      Effect.catchAll((e: FundingConfigEffectError) =>
+        Effect.succeed(mapFundingConfigError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function upsertFundingConfigAction(
+  input: UpsertFundingConfigInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<FundingConfigMutationResult & { created: boolean }, FundingConfigErrorCode>> {
+  return Effect.runPromise(
+    mutations.funding.config.upsert(input).pipe(
+      Effect.map((result) => ok(serializeForClient(result) as typeof result)),
+      Effect.catchAll((e: FundingConfigEffectError) =>
+        Effect.succeed(mapFundingConfigError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+export async function deleteFundingConfigAction(
+  input: DeleteRecordInput,
+  agentLayer: AgentLayer
+): Promise<MutationResult<DeleteRecordResult, FundingConfigErrorCode>> {
+  return Effect.runPromise(
+    mutations.funding.config.delete(input).pipe(
+      Effect.map((result) => ok(serializeForClient(result) as typeof result)),
+      Effect.catchAll((e: FundingConfigEffectError) =>
+        Effect.succeed(mapFundingConfigError(e))
+      ),
+      Effect.provide(agentLayer)
+    )
+  );
+}
+
+// NOTE: Do NOT add `export type { ... }` blocks to this file.
+// This file is marked "use server" and Turbopack incorrectly tries to resolve
+// all names in `export type { ... }` as runtime values during module evaluation,
+// causing ReferenceErrors for TypeScript-only type aliases that have no runtime
+// representation. Import types directly from @gainforest/atproto-mutations-core.

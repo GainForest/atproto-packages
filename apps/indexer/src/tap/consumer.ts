@@ -30,6 +30,7 @@ export class TapConsumer {
 
   async start(): Promise<void> {
     this.status = "running";
+    console.log("[tap] Starting WebSocket channel to Tap...");
 
     const indexer = new SimpleIndexer();
 
@@ -54,9 +55,11 @@ export class TapConsumer {
     });
 
     this.channel = this.tap.channel(indexer);
+    console.log("[tap] WebSocket channel created, starting event stream...");
 
     // This promise resolves when the channel is destroyed (on stop())
     await this.channel.start();
+    console.log("[tap] WebSocket channel closed.");
   }
 
   async stop(): Promise<void> {

@@ -12,7 +12,7 @@
 
 import { builder } from "../../builder.ts";
 import {
-  StrongRefType, CreatorInfoType,
+  RecordMetaType, StrongRefType, CreatorInfoType,
   SortOrderEnum, SortFieldEnum,
   ActivityWhereInputRef, activityWhereToFilter, activityWhereHasText,
   rowToMeta, payload, extractStrongRef, extractStrongRefs,
@@ -22,6 +22,7 @@ import {
 import type { ActivityWhereInput } from "../../types.ts";
 import {
   getRecordsByCollection, getLabelsByDids, getActivityLabelDids, searchActivities,
+  getRecordsByDidRkeyPairs,
 } from "@/db/queries.ts";
 import { resolveActorToDid } from "../../identity.ts";
 import { getPdsHostsBatch } from "@/identity/pds.ts";
@@ -30,7 +31,7 @@ import type { RecordRow } from "@/db/types.ts";
 
 // Import the generated NS class token — Pothos merges multiple objectType()
 // calls on the same class so we can attach `activity` here without conflicts.
-import { HypercertsClaimNS } from "../generated.ts";
+import { HypercertsClaimNS, BumicertsFundingConfigRecordType, mapBumicertsFundingConfig } from "../generated.ts";
 
 // JSONB accessors
 const s = (p: Record<string, unknown>, k: string): string | null => {
@@ -39,20 +40,24 @@ const s = (p: Record<string, unknown>, k: string): string | null => {
 };
 const j = (p: Record<string, unknown>, k: string): unknown => p[k] ?? null;
 
-// ── Custom metadata type (envelope + Hyperlabel extras) ──────────────────────
+// ── Special metadata type — Hyperlabel extras beyond the standard envelope ───
 
-const HypercertsClaimActivityMetadataType = builder.simpleObject("HypercertsClaimActivityMetadata", {
-  description:
-    "AT Protocol envelope fields for an activity record, including optional Hyperlabel quality metadata.",
+const HypercertsClaimActivityLabelType = builder.simpleObject("HypercertsClaimActivityLabel", {
+  description: "Quality label from the Hyperlabel labeller (einstein.climateai.org).",
   fields: (t) => ({
-    uri:        t.string({ description: "Full AT-URI (at://did/collection/rkey)" }),
-    did:        t.string({ description: "DID of the record author" }),
-    collection: t.string({ description: "Lexicon collection NSID" }),
-    rkey:       t.string({ description: "Record key (TID or literal)" }),
-    cid:        t.string({ description: "Content hash (CID)" }),
-    indexedAt:  t.field({ type: "DateTime", description: "When the indexer stored this record" }),
-    createdAt:  t.field({ type: "DateTime", nullable: true, description: "Creation time from record payload" }),
-    labelTier:  t.string({
+    tier:      t.string({ description: "Quality tier: high-quality | standard | draft | likely-test" }),
+    labeler:   t.string({ description: "DID of the labeller that issued this label" }),
+    labeledAt: t.field({ type: "DateTime", nullable: true, description: "When the labeller applied this label" }),
+    syncedAt:  t.field({ type: "DateTime", description: "When the indexer last synced this label" }),
+  }),
+});
+
+const HypercertsClaimActivitySpecialMetadataType = builder.simpleObject("HypercertsClaimActivitySpecialMetadata", {
+  description:
+    "Hyperlabel quality metadata for an activity record. " +
+    "Only present when the author has been labelled by the Hyperlabel labeller.",
+  fields: (t) => ({
+    labelTier: t.string({
       nullable: true,
       description:
         "Hyperlabel quality tier for this record's author: " +
@@ -60,15 +65,7 @@ const HypercertsClaimActivityMetadataType = builder.simpleObject("HypercertsClai
         "Null if the author has not been labelled yet.",
     }),
     label: t.field({
-      type: builder.simpleObject("HypercertsClaimActivityLabel", {
-        description: "Quality label from the Hyperlabel labeller (einstein.climateai.org).",
-        fields: (t) => ({
-          tier:      t.string({ description: "Quality tier: high-quality | standard | draft | likely-test" }),
-          labeler:   t.string({ description: "DID of the labeller that issued this label" }),
-          labeledAt: t.field({ type: "DateTime", nullable: true, description: "When the labeller applied this label" }),
-          syncedAt:  t.field({ type: "DateTime", description: "When the indexer last synced this label" }),
-        }),
-      }),
+      type: HypercertsClaimActivityLabelType,
       nullable: true,
       description: "Full quality label object from Hyperlabel (null if author not yet labelled).",
     }),
@@ -100,9 +97,24 @@ const HypercertsClaimActivityRecordType = builder.simpleObject("HypercertsClaimA
 const HypercertsClaimActivityItemType = builder.simpleObject("HypercertsClaimActivityItem", {
   description: "A Hypercerts claim activity (org.hypercerts.claim.activity).",
   fields: (t) => ({
-    metadata:    t.field({ type: HypercertsClaimActivityMetadataType }),
-    creatorInfo: t.field({ type: CreatorInfoType }),
-    record:      t.field({ type: HypercertsClaimActivityRecordType }),
+    metadata:        t.field({ type: RecordMetaType }),
+    specialMetadata: t.field({
+      type: HypercertsClaimActivitySpecialMetadataType,
+      nullable: true,
+      description:
+        "Optional Hyperlabel quality metadata for this activity. " +
+        "Null when the author has not been labelled by the Hyperlabel labeller.",
+    }),
+    creatorInfo:   t.field({ type: CreatorInfoType }),
+    record:        t.field({ type: HypercertsClaimActivityRecordType }),
+    fundingConfig: t.field({
+      type: BumicertsFundingConfigRecordType,
+      nullable: true,
+      description:
+        "The associated funding / donations configuration for this activity " +
+        "(app.bumicerts.funding.config record with the same rkey). " +
+        "Null if no funding configuration has been created for this activity.",
+    }),
   }),
 });
 
@@ -120,14 +132,14 @@ export async function mapHypercertsClaimActivity(
   label: {
     tier: string; labeler: string; labeledAt: string | null; syncedAt: string;
   } | null = null,
+  fundingConfigRecord: Awaited<ReturnType<typeof mapBumicertsFundingConfig>>["record"] | null = null,
 ) {
   const p = payload(row);
   return {
-    metadata: {
-      ...rowToMeta(row),
-      labelTier: label?.tier ?? null,
-      label,
-    },
+    metadata:        rowToMeta(row),
+    specialMetadata: label
+      ? { labelTier: label.tier, label }
+      : null,
     creatorInfo: await resolveCreatorInfo(row.did),
     record: {
       title:                  s(p, "title"),
@@ -143,6 +155,7 @@ export async function mapHypercertsClaimActivity(
       locations:              extractStrongRefs(j(p, "locations")),
       createdAt:              s(p, "createdAt"),
     },
+    fundingConfig: fundingConfigRecord,
   };
 }
 
@@ -162,22 +175,21 @@ builder.objectFields(HypercertsClaimNS, (t) => ({
         "(sortBy/order are ignored; results ordered by indexed_at DESC). " +
         "Combine with `labelTier` to intersect label and text filters.",
       args: {
-        cursor:    t.arg.string(),
-        limit:     t.arg.int(),
-        where:     t.arg({ type: ActivityWhereInputRef, required: false }),
-        sortBy:    t.arg({ type: SortFieldEnum, description: "Sort field when no text filter is present." }),
-        order:     t.arg({ type: SortOrderEnum, description: "Sort direction when no text filter is present." }),
-        labelTier: t.arg.string({
-          description: "Filter by Hyperlabel quality tier: high-quality | standard | draft | likely-test",
-        }),
+        cursor: t.arg.string(),
+        limit:  t.arg.int(),
+        where:  t.arg({ type: ActivityWhereInputRef, required: false }),
+        sortBy: t.arg({ type: SortFieldEnum, description: "Sort field when no text filter is present." }),
+        order:  t.arg({ type: SortOrderEnum, description: "Sort direction when no text filter is present." }),
       },
       resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order, labelTier } = args;
+        const { cursor, limit, where, sortBy, order } = args;
+        const labelTier = where?.labelTier ?? null;
 
         // ── 1. Resolve actor to DID ──────────────────────────────────────────
         let resolvedDid: string | undefined;
         if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
         else if (where?.did) resolvedDid = where.did;
+        const resolvedRkey = where?.rkey ?? undefined;
 
         // ── 2. Optional labelTier pre-filter ─────────────────────────────────
         let allowedDids: Set<string> | null = null;
@@ -215,6 +227,7 @@ builder.objectFields(HypercertsClaimNS, (t) => ({
           if (allowedDids !== null && allowedDids.size > 1) {
             const page = await getRecordsByCollection("org.hypercerts.claim.activity", {
               cursor: cursor ?? undefined, limit: safeLimit,
+              rkey:      resolvedRkey,
               sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
               sortOrder: (order  as "asc" | "desc")            ?? undefined,
             });
@@ -224,6 +237,7 @@ builder.objectFields(HypercertsClaimNS, (t) => ({
             const singleDid = allowedDids?.size === 1 ? [...allowedDids][0] : resolvedDid;
             const page = await getRecordsByCollection("org.hypercerts.claim.activity", {
               cursor: cursor ?? undefined, limit: safeLimit, did: singleDid,
+              rkey:      resolvedRkey,
               sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
               sortOrder: (order  as "asc" | "desc")            ?? undefined,
             });
@@ -232,11 +246,18 @@ builder.objectFields(HypercertsClaimNS, (t) => ({
           }
         }
 
-        // ── 4. Attach labels ──────────────────────────────────────────────────
+        // ── 4. Attach labels + batch-load funding configs ─────────────────────
         const authorDids = [...new Set(rows.map((r) => r.did))];
         await getPdsHostsBatch(authorDids);
         const labelMap = await getLabelsByDids(authorDids, HYPERLABEL_DID);
-        const data = await Promise.all(rows.map((row) => {
+
+        // Batch-load funding configs: one DB query for all (did, rkey) pairs on this page.
+        const fundingConfigMap = await getRecordsByDidRkeyPairs(
+          "app.bumicerts.funding.config",
+          rows.map((r) => ({ did: r.did, rkey: r.rkey }))
+        );
+
+        const data = await Promise.all(rows.map(async (row) => {
           const lRow = labelMap.get(row.did) ?? null;
           const label = lRow ? {
             tier:      lRow.label_value,
@@ -244,7 +265,12 @@ builder.objectFields(HypercertsClaimNS, (t) => ({
             labeledAt: lRow.labeled_at?.toISOString() ?? null,
             syncedAt:  lRow.synced_at.toISOString(),
           } : null;
-          return mapHypercertsClaimActivity(row, label);
+
+          // Resolve the funding config record for this activity (same did + rkey)
+          const fcRow = fundingConfigMap.get(`${row.did}:${row.rkey}`) ?? null;
+          const fcRecord = fcRow ? (await mapBumicertsFundingConfig(fcRow)).record : null;
+
+          return mapHypercertsClaimActivity(row, label, fcRecord);
         }));
 
         // ── 5. Post-fetch boolean where filters ───────────────────────────────

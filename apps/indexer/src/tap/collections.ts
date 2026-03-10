@@ -15,6 +15,8 @@
 // ============================================================
 
 export const INDEXED_COLLECTIONS = [
+  "app.bumicerts.funding.config",
+  "app.bumicerts.link.evm",
   "app.certified.actor.organization",
   "app.certified.actor.profile",
   "app.certified.badge.award",
@@ -80,6 +82,8 @@ export function isIndexedCollection(
 export type RecordKeyType = "tid" | "literal:self" | "any";
 
 export const COLLECTION_KEY_TYPE: Record<IndexedCollection, RecordKeyType> = {
+  "app.bumicerts.funding.config":                            "any",
+  "app.bumicerts.link.evm":                                  "any",
   "app.certified.actor.organization":                        "literal:self",
   "app.certified.actor.profile":                             "literal:self",
   "app.certified.badge.award":                               "tid",

@@ -101,6 +101,12 @@ export class EventHandler {
 
     this.stats.lastEventAt = new Date();
 
+    // Log event processing for debugging
+    const isLive = "live" in event ? (event as { live?: boolean }).live : undefined;
+    if (process.env.LOG_LEVEL === "debug") {
+      console.log(`[handler] Create: ${collection}/${rkey} (live: ${isLive ?? "unknown"})`);
+    }
+
     if (this.validateRecords) {
       // Prepare blobs as proper BlobRef objects (CID instances) for validation
       const recordForValidation = prepareBlobsForValidation(record);
@@ -146,6 +152,12 @@ export class EventHandler {
 
     this.stats.lastEventAt = new Date();
 
+    // Log event processing for debugging
+    const isLive = "live" in event ? (event as { live?: boolean }).live : undefined;
+    if (process.env.LOG_LEVEL === "debug") {
+      console.log(`[handler] Update: ${collection}/${rkey} (live: ${isLive ?? "unknown"})`);
+    }
+
     if (this.validateRecords) {
       // Prepare blobs as proper BlobRef objects (CID instances) for validation
       const recordForValidation = prepareBlobsForValidation(record);
@@ -189,6 +201,12 @@ export class EventHandler {
     }
 
     this.stats.lastEventAt = new Date();
+
+    // Log event processing for debugging
+    const isLive = "live" in event ? (event as { live?: boolean }).live : undefined;
+    if (process.env.LOG_LEVEL === "debug") {
+      console.log(`[handler] Delete: ${collection}/${rkey} (live: ${isLive ?? "unknown"})`);
+    }
 
     const uri = `at://${did}/${collection}/${rkey}`;
     this.pending.push({ kind: "delete", uri });

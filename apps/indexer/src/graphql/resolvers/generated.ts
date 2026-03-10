@@ -64,6 +64,58 @@ const j = (p: Record<string, unknown>, k: string): unknown => p[k] ?? null;
 // ════════════════════════════════════════════════════════════════════════════
 
 // ──────────────────────────────────────────────────────────────────────────
+// app.bumicerts.funding.config
+// ──────────────────────────────────────────────────────────────────────────
+
+export const BumicertsFundingConfigRecordType = builder.simpleObject("BumicertsFundingConfigRecord", {
+  description: "Pure payload for app.bumicerts.funding.config. The funding / donations configuration for a given bumicert.",
+  fields: (t) => ({
+        receivingWallet: t.field({ type: "JSON", nullable: true, description: "Reference to the wallet link record where funds should be received. Open union to support future wallet types (e.g. Solana, Cosmos)." }),
+        goalInUSD: t.string({ nullable: true, description: "An optional field to set a fundraising goal in USD (e.g. '1000.50')." }),
+        minDonationInUSD: t.string({ nullable: true, description: "Optional minimum donation amount in USD (e.g. '1.00'). Donations below this amount will be rejected." }),
+        maxDonationInUSD: t.string({ nullable: true, description: "Optional maximum donation amount in USD (e.g. '10000.00'). Donations above this amount will be rejected." }),
+        allowOversell: t.boolean({ nullable: true, description: "An optional field to determine if donations are accepted post the goal reach. Defaults to true (overselling is allowed)." }),
+        status: t.string({ nullable: true, description: "The current status of the listing. Defaults to 'open'." }),
+        updatedAt: t.field({ type: "DateTime", nullable: true, description: "Client-declared timestamp when this record was last updated." }),
+        createdAt: t.field({ type: "DateTime", nullable: true, description: "Client-declared timestamp when this record was originally created." }),
+  }),
+});
+
+export const BumicertsFundingConfigItemType = builder.simpleObject("BumicertsFundingConfigItem", {
+  description: "A record from app.bumicerts.funding.config.",
+  fields: (t) => ({
+    metadata:    t.field({ type: RecordMetaType }),
+    creatorInfo: t.field({ type: CreatorInfoType }),
+    record:      t.field({ type: BumicertsFundingConfigRecordType }),
+  }),
+});
+
+export const BumicertsFundingConfigPageType = builder.simpleObject("BumicertsFundingConfigPage", {
+  fields: (t) => ({
+    data:     t.field({ type: [BumicertsFundingConfigItemType] }),
+    pageInfo: t.field({ type: PageInfoType }),
+  }),
+});
+
+export async function mapBumicertsFundingConfig(row: RecordRow) {
+  const p = payload(row);
+  return {
+    metadata:    rowToMeta(row),
+    creatorInfo: await resolveCreatorInfo(row.did),
+    record: {
+            receivingWallet: j(p, "receivingWallet"),
+            goalInUSD: s(p, "goalInUSD"),
+            minDonationInUSD: s(p, "minDonationInUSD"),
+            maxDonationInUSD: s(p, "maxDonationInUSD"),
+            allowOversell: b(p, "allowOversell"),
+            status: s(p, "status"),
+            updatedAt: s(p, "updatedAt"),
+            createdAt: s(p, "createdAt"),
+    },
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // app.certified.actor.organization
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -1667,6 +1719,8 @@ export async function mapImpactindexerReviewLike(row: RecordRow) {
 // NAMESPACE CLASSES
 // ════════════════════════════════════════════════════════════════════════════
 
+export class BumicertsNS {}
+export class BumicertsFundingNS {}
 export class CertifiedNS {}
 export class CertifiedActorNS {}
 export class CertifiedBadgeNS {}
@@ -1688,6 +1742,33 @@ export class ImpactindexerReviewNS {}
 // ════════════════════════════════════════════════════════════════════════════
 // NAMESPACE OBJECTTYPES  (children declared before parents)
 // ════════════════════════════════════════════════════════════════════════════
+
+builder.objectType(BumicertsFundingNS, {
+  name: "BumicertsFundingNamespace",
+  description: "BumicertsFundingNamespace namespace (bumicerts.funding.*).",
+  fields: (t) => ({
+    config: t.field({
+      type: BumicertsFundingConfigPageType,
+      description: "Paginated list of app.bumicerts.funding.config records.",
+      args: {
+        cursor: t.arg.string(),
+        limit: t.arg.int(),
+        where: t.arg({ type: WhereInputRef, required: false }),
+        sortBy: t.arg({ type: SortFieldEnum }),
+        order: t.arg({ type: SortOrderEnum }),
+      },
+      resolve: (_, args) => fetchCollectionPage("app.bumicerts.funding.config", args, mapBumicertsFundingConfig),
+    }),
+  }),
+});
+
+builder.objectType(BumicertsNS, {
+  name: "BumicertsNamespace",
+  description: "BumicertsNamespace namespace (bumicerts.*).",
+  fields: (t) => ({
+    funding: t.field({ type: BumicertsFundingNS, description: "BumicertsFundingNamespace namespace.", resolve: () => new BumicertsFundingNS() }),
+  }),
+});
 
 builder.objectType(CertifiedActorNS, {
   name: "CertifiedActorNamespace",
@@ -2390,6 +2471,11 @@ builder.objectType(ImpactindexerNS, {
 // ════════════════════════════════════════════════════════════════════════════
 
 builder.queryFields((t) => ({
+  bumicerts: t.field({
+    type: BumicertsNS,
+    description: "All BumicertsNamespace indexed records.",
+    resolve: () => new BumicertsNS(),
+  }),
   certified: t.field({
     type: CertifiedNS,
     description: "All CertifiedNamespace indexed records.",

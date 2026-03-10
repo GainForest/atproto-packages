@@ -56,6 +56,11 @@ export interface PaginationParams {
    */
   did?: string;
   /**
+   * Filter by record key (rkey).
+   * Useful for fetching a specific record when combined with `did`.
+   */
+  rkey?: string;
+  /**
    * Which timestamp column to sort/page on.
    * - "createdAt"  → `created_at`  column (default)
    * - "indexedAt"  → `indexed_at`  column

@@ -264,6 +264,7 @@ export async function fetchCollectionPage<T>(
     cursor:    cursor ?? undefined,
     limit:     limit  ?? undefined,
     did:       resolvedDid,
+    rkey:      where?.rkey ?? undefined,
     sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
     sortOrder: (order  as "asc" | "desc")            ?? undefined,
   });
@@ -476,11 +477,13 @@ export type { StringFilterInput };
  * Identity filter accepted by every paginated collection query.
  * Use `did` to restrict to a specific author DID.
  * Use `handle` to resolve an AT Protocol handle to its DID (takes precedence over `did`).
+ * Use `rkey` to filter by record key — combine with `did` to fetch a specific record.
  * Boolean combinators (`and` / `or` / `not`) allow composing multiple identity conditions.
  */
 interface WhereInput {
   did?:    string | null;
   handle?: string | null;
+  rkey?:   string | null;
   and?: WhereInput[] | null;
   or?:  WhereInput[] | null;
   not?: WhereInput  | null;
@@ -490,8 +493,9 @@ const WhereInputRef = builder.inputRef<WhereInput>("WhereInput");
 
 WhereInputRef.implement({
   description:
-    "Filter records by author identity. " +
+    "Filter records by author identity and/or record key. " +
     "`handle` takes precedence over `did` if both are supplied. " +
+    "Use `rkey` to fetch a specific record by key (combine with `did` for an exact lookup). " +
     "Combine conditions with `and` / `or` / `not`.",
   fields: (t) => ({
     did: t.string({
@@ -504,6 +508,12 @@ WhereInputRef.implement({
         "Filter by AT Protocol handle (e.g. gainforest.bsky.social). " +
         "Resolved to a DID via the Bluesky AppView API (cached 10 min). " +
         "Takes precedence over `did` if both are supplied.",
+    }),
+    rkey: t.string({
+      required: false,
+      description:
+        "Filter by record key (rkey). " +
+        "Combine with `did` to fetch a single specific record (e.g. where: { did: \"did:plc:...\", rkey: \"3jzfcijpj2z2a\" }).",
     }),
     and: t.field({
       type: [WhereInputRef],
@@ -539,6 +549,7 @@ interface ActivityWhereInput {
   // identity
   did?:    string | null;
   handle?: string | null;
+  rkey?:   string | null;
   // text field filters
   title?:            StringFilterInput | null;
   shortDescription?: StringFilterInput | null;
@@ -550,6 +561,11 @@ interface ActivityWhereInput {
   hasImage?:                   boolean | null;
   /** If true, only return activities whose author DID has an indexed app.gainforest.organization.info record with a non-null displayName. */
   hasOrganizationInfoRecord?:  boolean | null;
+  /**
+   * Filter by Hyperlabel quality tier: high-quality | standard | draft | likely-test.
+   * Null means no label filter (return all records regardless of label).
+   */
+  labelTier?: string | null;
   // boolean combinators
   and?: ActivityWhereInput[] | null;
   or?:  ActivityWhereInput[] | null;
@@ -562,14 +578,22 @@ ActivityWhereInputRef.implement({
   description:
     "Filter for activity records. " +
     "Use `did` / `handle` to filter by author. " +
+    "Use `rkey` to fetch a specific activity by key. " +
     "Use `title`, `shortDescription`, `description` (StringFilter) for field-level search, " +
     "or `text` for full-text search across all three fields at once. " +
+    "Use `labelTier` to filter by Hyperlabel quality tier. " +
     "Combine with `and` / `or` / `not` for boolean logic.",
   fields: (t) => ({
     did: t.string({ required: false, description: "Filter to records authored by this DID." }),
     handle: t.string({
       required: false,
       description: "Filter by AT Protocol handle. Resolved to a DID (takes precedence over `did`).",
+    }),
+    rkey: t.string({
+      required: false,
+      description:
+        "Filter by record key (rkey). " +
+        "Combine with `did` to fetch a single specific activity.",
     }),
     title: t.field({
       type: StringFilterInputRef, required: false,
@@ -601,6 +625,12 @@ ActivityWhereInputRef.implement({
         "If true, only return activities whose author DID has an indexed " +
         "app.gainforest.organization.info record with a non-null displayName. " +
         "Determined from the inline-resolved creatorInfo (zero extra DB cost).",
+    }),
+    labelTier: t.string({
+      required: false,
+      description:
+        "Filter by Hyperlabel quality tier: high-quality | standard | draft | likely-test. " +
+        "Only returns activities whose author has been assigned this label by the Hyperlabel labeller.",
     }),
     and: t.field({ type: [ActivityWhereInputRef], required: false, description: "All child filters must match." }),
     or:  t.field({ type: [ActivityWhereInputRef], required: false, description: "At least one child filter must match." }),

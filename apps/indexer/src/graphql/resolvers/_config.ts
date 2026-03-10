@@ -37,9 +37,10 @@ export const EXCLUDED_COLLECTIONS = new Set<string>([
   // evidence field.  Keep manual so that distinction is preserved.
   "app.gainforest.dwc.occurrence",
 
-  // Custom: attestation has a nested eip712Message sub-object that needs its
-  // own GraphQL type (IiEip712MessageType).
-  "org.impactindexer.link.attestation",
+  // Custom: EVM wallet link has nested EIP-712 proof sub-objects, a `valid`
+  // boolean metadata field computed at query time from cryptographic verification,
+  // and a custom EvmLinkWhereInput with a `valid` filter.
+  "app.bumicerts.link.evm",
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────────

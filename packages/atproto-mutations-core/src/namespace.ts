@@ -59,6 +59,26 @@ import { upsertCertifiedLocation } from "./mutations/certified.location/upsert";
 import { deleteCertifiedLocation } from "./mutations/certified.location/delete";
 
 // ---------------------------------------------------------------------------
+// funding.receipt
+// ---------------------------------------------------------------------------
+import { createFundingReceipt } from "./mutations/funding.receipt/create";
+
+// ---------------------------------------------------------------------------
+// funding.config
+// ---------------------------------------------------------------------------
+import { createFundingConfig } from "./mutations/funding.config/create";
+import { updateFundingConfig } from "./mutations/funding.config/update";
+import { upsertFundingConfig } from "./mutations/funding.config/upsert";
+import { deleteFundingConfig } from "./mutations/funding.config/delete";
+
+// ---------------------------------------------------------------------------
+// link.evm
+// ---------------------------------------------------------------------------
+import { createLinkEvm } from "./mutations/link.evm/create";
+import { updateLinkEvm } from "./mutations/link.evm/update";
+import { deleteLinkEvm } from "./mutations/link.evm/delete";
+
+// ---------------------------------------------------------------------------
 // blob
 // ---------------------------------------------------------------------------
 import { uploadBlob } from "./blob/upload";
@@ -106,6 +126,24 @@ export const mutations = {
       update: updateCertifiedLocation,
       upsert: upsertCertifiedLocation,
       delete: deleteCertifiedLocation,
+    },
+  },
+  funding: {
+    receipt: {
+      create: createFundingReceipt,
+    },
+    config: {
+      create: createFundingConfig,
+      update: updateFundingConfig,
+      upsert: upsertFundingConfig,
+      delete: deleteFundingConfig,
+    },
+  },
+  link: {
+    evm: {
+      create: createLinkEvm,
+      update: updateLinkEvm,
+      delete: deleteLinkEvm,
     },
   },
   blob: {

@@ -28,8 +28,9 @@ services:
     environment:
       TAP_DATABASE_URL: sqlite:///data/tap.db
       TAP_BIND: ":2480"
+      TAP_RELAY_URL: "https://bsky.network"
       TAP_SIGNAL_COLLECTION: org.hypercerts.claim.activity
-      TAP_COLLECTION_FILTERS: "app.gainforest.*,org.hypercerts.*,org.impactindexer.*,app.certified.*"
+      TAP_COLLECTION_FILTERS: "${TAP_COLLECTION_FILTERS}"
       TAP_DISABLE_ACKS: "false"
       TAP_ADMIN_PASSWORD: ${TAP_ADMIN_PASSWORD}
       TAP_LOG_LEVEL: info

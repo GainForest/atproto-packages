@@ -10,9 +10,10 @@
     "start": "bun run src/index.ts",
     "typecheck": "tsc --noEmit",
     "db:migrate": "bun run src/db/migrate.ts",
-    "docker:up": "docker compose up -d db tap",
+    "sync:filters": "bun run scripts/sync-collection-filters.ts",
+    "docker:up": "bun run sync:filters && docker compose up -d db tap",
     "docker:down": "docker compose down",
-    "docker:reset": "docker compose down -v && docker compose up -d db tap",
+    "docker:reset": "docker compose down -v && bun run sync:filters && docker compose up -d db tap",
     "setup": "bun run docker:up && sleep 3 && bun run db:migrate",
     "tap:add-repo": "curl -X POST http://localhost:2480/repos/add -H 'Content-Type: application/json' -u admin:$TAP_ADMIN_PASSWORD -d",
     "tap:stats": "curl http://localhost:2480/stats/repo-count && curl http://localhost:2480/stats/record-count"
@@ -26,7 +27,8 @@
     "graphql": "^16.9.0",
     "graphql-yoga": "^5.10.11",
     "multiformats": "^13.4.2",
-    "postgres": "^3.4.5"
+    "postgres": "^3.4.5",
+    "viem": "^2.47.1"
   },
   "devDependencies": {
     "@types/bun": "^1.1.14",

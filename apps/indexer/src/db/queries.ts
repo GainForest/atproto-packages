@@ -122,6 +122,7 @@ async function queryRecords(
     cursor,
     limit = 50,
     did,
+    rkey,
     sortField = "createdAt",
     sortOrder = "desc",
   }: PaginationParams
@@ -138,6 +139,7 @@ async function queryRecords(
     SELECT * FROM records
     WHERE collection = ${collection}
       ${did ? sql`AND did = ${did}` : sql``}
+      ${rkey ? sql`AND rkey = ${rkey}` : sql``}
       ${cursorDate
         ? isDesc
           ? sql`AND ${sql(col)} < ${cursorDate}`
@@ -160,6 +162,42 @@ export async function getRecordsByCollection(
   params: PaginationParams = {}
 ): Promise<PageResult<RecordRow>> {
   return queryRecords(collection, params);
+}
+
+/**
+ * Batch-fetch records from a single collection by DID + rkey pairs.
+ *
+ * Used for join-style lookups, e.g. fetching all `app.bumicerts.funding.config`
+ * records that share an rkey with a set of `org.hypercerts.claim.activity` rows.
+ *
+ * Returns a Map keyed by `"${did}:${rkey}"` for O(1) lookup.
+ *
+ * @param collection  The Lexicon NSID to query.
+ * @param pairs       Array of { did, rkey } pairs to look up.
+ */
+export async function getRecordsByDidRkeyPairs(
+  collection: string,
+  pairs: Array<{ did: string; rkey: string }>
+): Promise<Map<string, RecordRow>> {
+  if (pairs.length === 0) return new Map();
+
+  const dids  = pairs.map((p) => p.did);
+  const rkeys = pairs.map((p) => p.rkey);
+
+  // Fetch all rows where collection matches AND (did, rkey) is in the pair set.
+  // PostgreSQL unnest trick turns parallel arrays into a set of (did, rkey) tuples.
+  const rows = await sql<RecordRow[]>`
+    SELECT r.* FROM records r
+    JOIN unnest(${dids}::text[], ${rkeys}::text[]) AS pairs(did, rkey)
+      ON r.did = pairs.did AND r.rkey = pairs.rkey
+    WHERE r.collection = ${collection}
+  `;
+
+  const map = new Map<string, RecordRow>();
+  for (const row of rows) {
+    map.set(`${row.did}:${row.rkey}`, row);
+  }
+  return map;
 }
 
 /**

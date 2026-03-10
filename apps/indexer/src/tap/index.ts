@@ -184,10 +184,50 @@ export class TapSync {
       console.log(`  Seeding complete.`);
     }
 
+    // Verify Tap connection status before starting consumer
+    await this.verifyTapConnection();
+
     console.log();
 
     // Start consuming events (blocks until channel is destroyed)
     await this.consumer.start();
+  }
+
+  /**
+   * Verify Tap is connected to the relay and log cursor status.
+   * Helps diagnose issues where Tap isn't receiving live events.
+   */
+  private async verifyTapConnection(): Promise<void> {
+    const tapUrl = process.env["TAP_URL"] ?? "http://localhost:2480";
+    const adminPassword = process.env["TAP_ADMIN_PASSWORD"];
+
+    console.log("  Verifying Tap firehose connection...");
+
+    try {
+      const headers: Record<string, string> = {};
+      if (adminPassword) {
+        headers["Authorization"] = `Basic ${Buffer.from(`admin:${adminPassword}`).toString("base64")}`;
+      }
+
+      const [cursorsRes, repoCountRes] = await Promise.all([
+        fetch(`${tapUrl}/stats/cursors`, { headers, signal: AbortSignal.timeout(5000) }),
+        fetch(`${tapUrl}/stats/repo-count`, { headers, signal: AbortSignal.timeout(5000) }),
+      ]);
+
+      if (cursorsRes.ok) {
+        const cursors = await cursorsRes.json();
+        console.log(`  Tap cursors: firehose=${cursors.firehose ?? "none"}, listRepos=${cursors.listRepos ?? "none"}`);
+      } else {
+        console.warn(`  Could not fetch Tap cursors: ${cursorsRes.status}`);
+      }
+
+      if (repoCountRes.ok) {
+        const repoCount = await repoCountRes.json();
+        console.log(`  Tap is tracking ${repoCount.count ?? repoCount} repos`);
+      }
+    } catch (err) {
+      console.warn("  Could not verify Tap connection:", err instanceof Error ? err.message : err);
+    }
   }
 
   async stop(): Promise<void> {
