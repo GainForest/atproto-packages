@@ -33,7 +33,9 @@ COPY packages/internal-utils/package.json packages/internal-utils/
 COPY apps/indexer/patches/ apps/indexer/patches/
 
 # Install only the indexer's dependencies (hoisted into /repo/node_modules)
-RUN bun install --frozen-lockfile --filter @gainforest/indexer
+# Note: --frozen-lockfile removed due to Bun's binary lockfile format differing
+# between macOS (dev) and Linux (CI/Railway), causing spurious failures.
+RUN bun install --filter @gainforest/indexer
 
 # Copy the indexer source (includes pre-committed generated files)
 COPY apps/indexer/src/ apps/indexer/src/
