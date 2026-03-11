@@ -1,6 +1,5 @@
 import { signupPDSDomains } from "@/lib/config/pds";
 import { serverEnv as env } from "@/lib/env/server";
-import { clientEnv } from "@/lib/env/client";
 import { NextRequest } from "next/server";
 import postgres from "postgres";
 
@@ -55,7 +54,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const service = clientEnv.NEXT_PUBLIC_ATPROTO_SERVICE_URL ?? `https://${signupPDSDomains[0]}`;
+    const service = `https://${signupPDSDomains[0]}`;
     const adminBasic = Buffer.from(
       `${env.PDS_ADMIN_IDENTIFIER}:${env.PDS_ADMIN_PASSWORD}`
     ).toString("base64");
