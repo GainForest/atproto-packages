@@ -24,7 +24,7 @@ export function UserOptionCards() {
             Choose Your Path
           </h2>
           <p className="mt-3 text-muted-foreground text-base max-w-md mx-auto">
-            Whether you're here to fund impact or showcase your work, there's a place for you.
+            Whether you&apos;re here to fund impact or showcase your work, there&apos;s a place for you.
           </p>
         </motion.div>
 

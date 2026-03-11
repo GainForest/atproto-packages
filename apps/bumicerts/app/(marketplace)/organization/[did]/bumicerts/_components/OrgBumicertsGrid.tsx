@@ -35,7 +35,7 @@ export function OrgBumicertsGrid({ bumicerts }: OrgBumicertsGridProps) {
           className="text-lg text-foreground/60 max-w-sm"
           style={{ fontFamily: "var(--font-instrument-serif-var)", fontStyle: "italic" }}
         >
-          This organization hasn't published any Bumicerts yet.
+          This organization hasn&apos;t published any Bumicerts yet.
         </p>
       </div>
     );

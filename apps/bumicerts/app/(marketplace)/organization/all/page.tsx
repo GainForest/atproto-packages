@@ -17,6 +17,7 @@ export default async function AllOrganizationsPage() {
     const orgInfos = response.data as GraphQLOrgInfoItem[];
     const organizations = orgInfos.map((item) => orgInfoToOrganizationData(item, 0));
 
+    // eslint-disable-next-line react-hooks/error-boundaries
     return <AllOrgsShell organizations={organizations} animate={false} />;
   } catch (error) {
     console.error("Failed to fetch organizations:", error);

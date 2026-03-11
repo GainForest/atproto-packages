@@ -11,7 +11,7 @@ export default function NotFound() {
         404
       </h1>
       <p className="text-lg text-muted-foreground max-w-md">
-        This page doesn't exist. Maybe it was moved, or maybe it never existed at all.
+        This page doesn&apos;t exist. Maybe it was moved, or maybe it never existed at all.
       </p>
       <Link
         href={links.home}
