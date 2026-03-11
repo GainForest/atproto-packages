@@ -8,21 +8,17 @@ on:
       - 'GENERATED/lexicons/**'
   workflow_dispatch:
     inputs:
-      force_deploy:
-        description: 'Force deployment even without changes'
-        required: false
-        default: 'false'
-      skip_tap_sync:
-        description: 'Skip syncing TAP_COLLECTION_FILTERS'
+      skip_railway:
+        description: 'Skip Railway deployment (validation only)'
         required: false
         default: 'false'
 
 jobs:
-  validate-and-deploy:
-    name: Validate & Deploy
+  validate:
+    name: Validate
     runs-on: ubuntu-latest
-    # Only run if secrets are available (not on forks)
-    if: github.repository == 'GainForest/atproto-packages'
+    outputs:
+      collection_filters: ${{ steps.filters.outputs.value }}
     steps:
       - uses: actions/checkout@v4
 
@@ -43,49 +39,109 @@ jobs:
         run: |
           FILTERS=$(bun run src/tap/collection-filters.ts)
           echo "value=$FILTERS" >> $GITHUB_OUTPUT
-          echo "### Collection Filters" >> $GITHUB_STEP_SUMMARY
+          echo "### Validation Passed ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**TAP_COLLECTION_FILTERS:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "$FILTERS" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
+  deploy:
+    name: Deploy to Railway
+    needs: validate
+    runs-on: ubuntu-latest
+    # Only run if:
+    # 1. Not skipped via workflow input
+    # 2. RAILWAY_TOKEN secret exists
+    # 3. On the main repo (not forks)
+    if: |
+      github.event.inputs.skip_railway != 'true' &&
+      github.repository == 'GainForest/atproto-packages'
+    steps:
+      - name: Check RAILWAY_TOKEN
+        id: check_token
+        run: |
+          if [ -z "${{ secrets.RAILWAY_TOKEN }}" ]; then
+            echo "has_token=false" >> $GITHUB_OUTPUT
+            echo "::warning::RAILWAY_TOKEN secret is not set. Skipping Railway deployment."
+          else
+            echo "has_token=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install Railway CLI
+        if: steps.check_token.outputs.has_token == 'true'
         run: npm i -g @railway/cli
 
+      - name: Verify Railway connection
+        if: steps.check_token.outputs.has_token == 'true'
+        id: verify
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "Verifying Railway connection..."
+          if railway whoami 2>/dev/null; then
+            echo "connected=true" >> $GITHUB_OUTPUT
+          else
+            echo "connected=false" >> $GITHUB_OUTPUT
+            echo "::warning::Could not connect to Railway. Check your RAILWAY_TOKEN."
+          fi
+
       - name: Sync TAP_COLLECTION_FILTERS to Tap service
-        if: github.event.inputs.skip_tap_sync != 'true'
+        if: steps.verify.outputs.connected == 'true'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           echo "Updating TAP_COLLECTION_FILTERS on Tap service..."
-          railway variables set "TAP_COLLECTION_FILTERS=${{ steps.filters.outputs.value }}" \
-            -s tap \
-            || echo "Warning: Could not update Tap variables. Service may not exist yet."
+          if railway variables set "TAP_COLLECTION_FILTERS=${{ needs.validate.outputs.collection_filters }}" -s tap 2>&1; then
+            echo "✅ Updated TAP_COLLECTION_FILTERS"
+          else
+            echo "::warning::Could not update Tap variables. The 'tap' service may not exist yet."
+            echo "Follow the setup guide: https://github.com/GainForest/atproto-packages/blob/main/apps/indexer/RAILWAY.md"
+          fi
 
-      - name: Redeploy Tap service (to pick up new filters)
-        if: github.event.inputs.skip_tap_sync != 'true'
+      - name: Redeploy Tap service
+        if: steps.verify.outputs.connected == 'true'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          echo "Redeploying Tap service to apply new collection filters..."
-          railway redeploy -s tap -y \
-            || echo "Warning: Could not redeploy Tap. It may need manual restart."
+          echo "Redeploying Tap service..."
+          if railway redeploy -s tap -y 2>&1; then
+            echo "✅ Tap redeployment triggered"
+          else
+            echo "::warning::Could not redeploy Tap. It may need manual restart."
+          fi
 
-      - name: Deploy Indexer
+      - name: Redeploy Indexer service
+        if: steps.verify.outputs.connected == 'true'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          echo "Deploying Indexer service..."
-          # Railway's GitHub integration handles the actual deployment
-          # This just triggers a redeploy if the auto-deploy didn't catch it
-          railway redeploy -s indexer -y \
-            || echo "Note: Indexer may already be deploying via GitHub integration."
+          echo "Redeploying Indexer service..."
+          if railway redeploy -s indexer -y 2>&1; then
+            echo "✅ Indexer redeployment triggered"
+          else
+            echo "::notice::Could not redeploy Indexer. Railway's GitHub integration may handle this automatically."
+          fi
 
       - name: Deployment Summary
+        if: always()
         run: |
-          echo "### Deployment Status" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Validation passed" >> $GITHUB_STEP_SUMMARY
-          echo "✅ TAP_COLLECTION_FILTERS synced to Tap service" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Deployment triggered" >> $GITHUB_STEP_SUMMARY
+          echo "### Railway Deployment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Note:** Check Railway dashboard for deployment status." >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.check_token.outputs.has_token }}" != "true" ]; then
+            echo "⚠️ **Skipped:** RAILWAY_TOKEN secret not configured" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To enable automatic deployment:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Create a Railway token at https://railway.app/account/tokens" >> $GITHUB_STEP_SUMMARY
+            echo "2. Add it as \`RAILWAY_TOKEN\` in GitHub Secrets" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.verify.outputs.connected }}" != "true" ]; then
+            echo "⚠️ **Skipped:** Could not connect to Railway" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Check that your RAILWAY_TOKEN is valid and has workspace access." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Deployment triggered" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Check [Railway Dashboard](https://railway.app) for deployment status." >> $GITHUB_STEP_SUMMARY
+          fi

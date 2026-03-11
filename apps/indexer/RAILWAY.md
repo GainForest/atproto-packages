@@ -2,6 +2,12 @@
 
 This guide walks you through deploying the GainForest Indexer stack to Railway.
 
+## Prerequisites
+
+- A [Railway](https://railway.app) account
+- This repository connected to your GitHub account
+- ~10 minutes for initial setup
+
 ## Architecture
 
 The indexer requires three services:
@@ -28,28 +34,65 @@ The indexer requires three services:
                   (bsky.network)
 ```
 
-## Quick Deploy (Recommended)
+**Data flow:**
+1. **Tap** connects to the AT Protocol relay (bsky.network) and syncs records
+2. **Indexer** connects to Tap via WebSocket and processes events
+3. **Indexer** writes to **Postgres** and serves a GraphQL API
 
-### Step 1: Create a new Railway project
+---
 
-1. Go to [railway.app](https://railway.app) and create a new project
-2. Choose "Empty Project"
+## Step-by-Step Setup
 
-### Step 2: Add PostgreSQL
+### Step 1: Create a Railway Project
 
-1. Click **+ New** → **Database** → **PostgreSQL**
-2. Wait for it to provision (takes ~30 seconds)
-3. No configuration needed - Railway handles everything
+1. Go to [railway.app](https://railway.app) and log in
+2. Click **"New Project"** in the top right
+3. Select **"Empty Project"**
+4. Give it a name like `gainforest-indexer`
+
+You should now see an empty project canvas.
+
+---
+
+### Step 2: Add PostgreSQL Database
+
+1. Click **"+ New"** button (top right of canvas)
+2. Select **"Database"**
+3. Choose **"PostgreSQL"**
+4. Wait for it to provision (~30 seconds)
+
+A PostgreSQL service will appear on the canvas. **No configuration needed** - Railway automatically sets up the database.
+
+---
 
 ### Step 3: Add Tap Service
 
-1. Click **+ New** → **GitHub Repo**
-2. Select your this repository
-3. Railway will auto-detect the monorepo. Click **Add Service** anyway.
-4. Go to **Settings** tab:
-   - **Root Directory**: Leave empty (monorepo root)
-   - **Config Path**: `apps/indexer/railway/tap.railway.json`
-5. Go to **Variables** tab and add:
+Tap is the AT Protocol sync service that handles firehose connections and backfilling.
+
+#### 3.1: Create the service
+
+1. Click **"+ New"** → **"GitHub Repo"**
+2. Select **this repository** (`GainForest/atproto-packages`)
+3. Railway will show "We found a monorepo" - click **"Add Service"** anyway
+
+#### 3.2: Configure the service
+
+1. Click on the new service to open its settings
+2. Go to the **Settings** tab
+3. Set these values:
+
+| Setting | Value |
+|---------|-------|
+| **Service Name** | `tap` (important - must be exactly this!) |
+| **Root Directory** | *(leave empty)* |
+| **Config Path** | `apps/indexer/railway/tap.railway.json` |
+
+4. Click **"Save"** if prompted
+
+#### 3.3: Add environment variables
+
+1. Go to the **Variables** tab
+2. Click **"+ New Variable"** and add each of these:
 
 ```bash
 TAP_DATABASE_URL=sqlite:///data/tap.db
@@ -58,85 +101,145 @@ TAP_RELAY_URL=https://bsky.network
 TAP_SIGNAL_COLLECTION=org.hypercerts.claim.activity
 TAP_COLLECTION_FILTERS=app.bumicerts.*,app.certified.*,app.gainforest.*,org.hyperboards.*,org.hypercerts.*,org.impactindexer.*
 TAP_DISABLE_ACKS=false
-TAP_ADMIN_PASSWORD=${{secret(32)}}
 TAP_LOG_LEVEL=info
 ```
 
-6. Go to **Volumes** tab:
-   - Click **+ New Volume**
-   - Mount path: `/data`
-   - This persists Tap's SQLite database and cursor
+3. For `TAP_ADMIN_PASSWORD`, click **"+ New Variable"** and:
+   - Name: `TAP_ADMIN_PASSWORD`
+   - Click the **"Generate"** button (or type `${{secret(32)}}`)
+   - This creates a secure random password
 
-7. **Important**: Do NOT expose Tap publicly (no need for a domain)
+#### 3.4: Add a volume for persistent storage
+
+1. Go to the **Volumes** tab (or right-click service → "Add Volume")
+2. Click **"+ New Volume"**
+3. Set **Mount Path**: `/data`
+4. Click **"Create"**
+
+This volume stores Tap's SQLite database and sync cursor.
+
+#### 3.5: Verify (do NOT expose publicly)
+
+- Do **NOT** add a domain to Tap - it only needs internal networking
+- The Indexer will connect to it via Railway's private network
+
+---
 
 ### Step 4: Add Indexer Service
 
-1. Click **+ New** → **GitHub Repo**
-2. Select the repository again
-3. Go to **Settings** tab:
-   - **Root Directory**: Leave empty
-   - **Config Path**: `apps/indexer/railway.json`
-4. Go to **Variables** tab and add:
+The Indexer processes events from Tap, stores them in Postgres, and serves a GraphQL API.
 
-```bash
-# Database - uses Railway reference variable
+#### 4.1: Create the service
+
+1. Click **"+ New"** → **"GitHub Repo"**
+2. Select **this repository** again (`GainForest/atproto-packages`)
+3. Click **"Add Service"**
+
+#### 4.2: Configure the service
+
+1. Click on the new service to open settings
+2. Go to the **Settings** tab
+3. Set these values:
+
+| Setting | Value |
+|---------|-------|
+| **Service Name** | `indexer` (important - must be exactly this!) |
+| **Root Directory** | *(leave empty)* |
+| **Config Path** | `apps/indexer/railway.json` |
+
+#### 4.3: Add environment variables
+
+1. Go to the **Variables** tab
+2. Add these variables:
+
+**Database connection** (uses Railway reference variable):
+```
 DATABASE_URL=${{Postgres.DATABASE_URL}}
+```
 
-# Tap connection - uses Railway private networking
+**Tap connection** (uses private networking):
+```
 TAP_URL=http://${{tap.RAILWAY_PRIVATE_DOMAIN}}:2480
 TAP_ADMIN_PASSWORD=${{tap.TAP_ADMIN_PASSWORD}}
+```
 
-# Discovery
+**Discovery settings**:
+```
 ENABLE_DISCOVERY=true
 DISCOVERY_COLLECTIONS=app.certified.actor.profile,app.gainforest.organization.info,org.hypercerts.claim.activity
 DISCOVERY_RELAY_URL=https://bsky.network
 DISCOVERY_BATCH_SIZE=500
+```
 
-# Ports
+**Server configuration**:
+```
 GRAPHQL_PORT=4000
 HEALTH_PORT=4001
 HOST=0.0.0.0
-
-# Performance
 LOG_LEVEL=info
+```
+
+**Performance settings**:
+```
 BATCH_SIZE=100
 BATCH_TIMEOUT_MS=5000
 VALIDATE_RECORDS=true
 LOG_VALIDATION_ERRORS=true
 PDS_HOST_CACHE_TTL_SECONDS=3600
+```
 
-# Hyperlabel
+**Hyperlabel integration**:
+```
 HYPERLABEL_URL=https://hyperlabel-production.up.railway.app
 HYPERLABEL_DID=did:plc:5rw6of6lry7ihmyhm323ycwn
 ```
 
-5. Go to **Networking** tab:
-   - Click **Generate Domain** for public GraphQL access
-   - Or use a custom domain
+#### 4.4: Add a public domain
+
+1. Go to the **Networking** tab
+2. Click **"Generate Domain"**
+3. Railway will create a URL like `indexer-production-xxxx.up.railway.app`
+
+This is your public GraphQL API endpoint!
+
+---
 
 ### Step 5: Deploy
 
-1. Railway will automatically build and deploy all services
-2. Check the **Deployments** tab to monitor progress
-3. First deploy takes ~5 minutes (building + initial backfill)
+1. Both services should start building automatically
+2. Watch the **Deployments** tab on each service
+3. First deploy takes ~3-5 minutes
+
+**Build order matters!** If Indexer deploys before Tap is ready, it will fail to connect. Just redeploy the Indexer once Tap is healthy.
+
+---
 
 ## Verifying the Deployment
 
 ### Check Tap is running
-```bash
-# From your local machine (replace with your Tap internal URL)
-# You can't access this externally - use Railway's shell
-railway run -s tap -- wget -qO- http://localhost:2480/health
+
+In Railway, click on the Tap service → **Deployments** → latest deployment → **View Logs**
+
+You should see logs like:
+```
+{"level":"INFO","msg":"starting tap server","bind":":2480"}
+{"level":"INFO","msg":"connected to relay","url":"https://bsky.network"}
 ```
 
 ### Check Indexer is running
+
 ```bash
-curl https://your-indexer.up.railway.app/health
-# Should return: {"status":"ok"}
+curl https://your-indexer-xxxx.up.railway.app/health
 ```
 
-### Check GraphQL API
-Open `https://your-indexer.up.railway.app/graphql` in your browser.
+Should return:
+```json
+{"status":"ok"}
+```
+
+### Test the GraphQL API
+
+Open `https://your-indexer-xxxx.up.railway.app/graphql` in your browser.
 
 Try this query:
 ```graphql
@@ -145,90 +248,129 @@ query {
     activities(limit: 5) {
       records {
         title
-        meta { uri }
+        shortDescription
+        meta { uri did }
       }
     }
   }
 }
 ```
 
+---
+
+## Setting Up GitHub Actions (Optional but Recommended)
+
+The GitHub Action automatically syncs `TAP_COLLECTION_FILTERS` when you add new lexicons.
+
+### Step 1: Create a Railway API Token
+
+1. Go to [Railway Tokens](https://railway.app/account/tokens)
+2. Click **"Create Token"**
+3. Select your **workspace** (not a specific project)
+4. Name it something like `github-actions`
+5. Copy the token
+
+### Step 2: Add Token to GitHub
+
+1. Go to your repo: `https://github.com/GainForest/atproto-packages/settings/secrets/actions`
+2. Click **"New repository secret"**
+3. Name: `RAILWAY_TOKEN`
+4. Value: paste the token from step 1
+5. Click **"Add secret"**
+
+### Step 3: Verify the Workflow
+
+The workflow at `.github/workflows/deploy-indexer.yml` will now:
+- Automatically sync `TAP_COLLECTION_FILTERS` when lexicons change
+- Trigger redeployment of Tap and Indexer services
+
+---
+
 ## Updating
 
-### Automatic Updates via GitHub Actions
+### When you add new lexicons:
 
-When you push changes to the repository, a GitHub Action automatically:
-
-1. ✅ Validates the indexer code (typecheck)
-2. ✅ Generates `TAP_COLLECTION_FILTERS` from your indexed collections
-3. ✅ Syncs the filter to the Tap service on Railway
-4. ✅ Triggers redeployment of both services
-
-**This means adding new lexicons is fully automated!** Just:
-1. Add your lexicon
+1. Add your lexicon files
 2. Run `bun run gen:indexer` locally
 3. Commit and push
 
-The GitHub Action handles updating Railway.
+The GitHub Action will automatically:
+- Generate new `TAP_COLLECTION_FILTERS`
+- Update the Tap service on Railway
+- Trigger redeployment
 
-### Required Secrets
+### Manual updates (if GitHub Action isn't set up):
 
-Add these secrets to your GitHub repository (Settings → Secrets → Actions):
+1. Run locally: `bun run sync:filters`
+2. Copy the output filter string
+3. Update `TAP_COLLECTION_FILTERS` in Railway → Tap service → Variables
+4. Click "Redeploy" on the Tap service
 
-| Secret | Description | How to get it |
-|--------|-------------|---------------|
-| `RAILWAY_TOKEN` | Railway API token | [Railway Dashboard](https://railway.com/account/tokens) → Create token for your workspace |
-
-### Manual Updates
-
-If you need to update manually:
-
-1. Run locally: `bun run sync:filters` to see the new filter string
-2. Update `TAP_COLLECTION_FILTERS` in Railway Tap service variables
-3. Restart the Tap service
+---
 
 ## Troubleshooting
 
+### "Invalid RAILWAY_TOKEN" in GitHub Actions
+
+- Make sure you created a **workspace token**, not a project token
+- Verify the token is added to GitHub Secrets correctly
+- Check the token hasn't expired
+
 ### Indexer can't connect to Tap
 
-1. Check that Tap is running (green status)
-2. Verify `TAP_URL` uses the correct private domain
-3. Check Tap logs for errors
+1. Verify Tap service name is exactly `tap` (lowercase)
+2. Check Tap is running (green status in Railway)
+3. Verify `TAP_URL` uses `${{tap.RAILWAY_PRIVATE_DOMAIN}}`
+4. Check Tap logs for errors
 
-### No data appearing
+### No data appearing after deployment
 
-1. Check Tap logs - should see "backfill" messages
+1. Check Tap logs for "backfill" messages
 2. Verify `TAP_COLLECTION_FILTERS` includes your collections
-3. Check `DISCOVERY_COLLECTIONS` includes your signal collections
+3. Make sure `DISCOVERY_COLLECTIONS` has at least one collection
+4. Wait for initial backfill to complete (~5-10 minutes)
 
-### Tap cursor is stale
-
-If Tap stops syncing after a while:
+### Tap cursor is stale (stops syncing)
 
 1. Go to Tap service → Volumes
-2. Delete the volume (this resets Tap's state)
+2. Delete the volume
 3. Create a new volume at `/data`
-4. Redeploy Tap
+4. Redeploy Tap (this triggers a fresh backfill)
 
 ### Database connection errors
 
-1. Check Postgres is running
-2. Verify `DATABASE_URL` reference variable is correct
-3. Try redeploying the indexer
+1. Check Postgres service is running
+2. Verify `DATABASE_URL` is set to `${{Postgres.DATABASE_URL}}`
+3. Try redeploying the Indexer
+
+---
 
 ## Cost Estimation
 
-Typical monthly costs on Railway:
-
-| Service | Usage | ~Cost |
-|---------|-------|-------|
+| Service | Typical Usage | ~Monthly Cost |
+|---------|---------------|---------------|
 | Postgres | 1GB storage, low CPU | $5-10 |
 | Tap | Low CPU, 1GB volume | $5-10 |
-| Indexer | Medium CPU during backfill, low after | $10-20 |
+| Indexer | Medium CPU during backfill | $10-20 |
 | **Total** | | **$20-40/month** |
 
 Costs scale with usage. Initial backfill uses more resources.
 
+---
+
 ## Environment Variable Reference
+
+### Tap Service
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `TAP_DATABASE_URL` | Yes | SQLite path: `sqlite:///data/tap.db` |
+| `TAP_BIND` | Yes | Listen address: `:2480` |
+| `TAP_RELAY_URL` | Yes | AT Protocol relay: `https://bsky.network` |
+| `TAP_COLLECTION_FILTERS` | Yes | Collections to sync (wildcards) |
+| `TAP_ADMIN_PASSWORD` | Yes | Admin API password |
+| `TAP_SIGNAL_COLLECTION` | No | Auto-discover DIDs with this collection |
+| `TAP_LOG_LEVEL` | No | `debug`, `info`, `warn`, `error` |
 
 ### Indexer Service
 
@@ -241,17 +383,9 @@ Costs scale with usage. Initial backfill uses more resources.
 | `DISCOVERY_COLLECTIONS` | No | Collections to discover DIDs from |
 | `GRAPHQL_PORT` | No | GraphQL port (default: 4000) |
 | `HEALTH_PORT` | No | Health check port (default: 4001) |
+| `LOG_LEVEL` | No | `debug`, `info`, `warn`, `error` |
 
-### Tap Service
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `TAP_DATABASE_URL` | Yes | SQLite path (use volume) |
-| `TAP_BIND` | Yes | Listen address |
-| `TAP_RELAY_URL` | Yes | AT Protocol relay URL |
-| `TAP_SIGNAL_COLLECTION` | No | Auto-discover DIDs with this collection |
-| `TAP_COLLECTION_FILTERS` | Yes | Collections to sync (comma-separated wildcards) |
-| `TAP_ADMIN_PASSWORD` | Yes | Admin API password |
+---
 
 ## Support
 
