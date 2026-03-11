@@ -1,7 +1,11 @@
 {
   "name": "atproto-packages",
   "private": true,
-  "workspaces": ["packages/*", "apps/*", "GENERATED"],
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "GENERATED"
+  ],
   "scripts": {
     "build": "bun run --filter '@gainforest/*' build",
     "dev": "bun run --filter '@gainforest/*' dev",
@@ -25,9 +29,11 @@
     "bumicerts:build": "bun run --cwd apps/bumicerts build",
     "bumicerts:start": "bun run --cwd apps/bumicerts start",
     "bumicerts:typecheck": "bun run --cwd apps/bumicerts typecheck",
+    "bumicerts:lint": "bun run --cwd apps/bumicerts lint",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "bun run build && changeset publish"
+    "release": "bun run build && changeset publish",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@atproto/lex": "^0.0.19",
