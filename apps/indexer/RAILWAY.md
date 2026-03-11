@@ -72,20 +72,22 @@ Tap is the AT Protocol sync service that handles firehose connections and backfi
 #### 3.1: Create the service
 
 1. Click **"+ New"** → **"GitHub Repo"**
-2. Select **this repository** (`GainForest/atproto-packages`)
-3. Railway will show "We found a monorepo" - click **"Add Service"** anyway
+2. Search for and select **this repository** (`atproto-packages`)
+3. A service will appear on the canvas named `atproto-packages`
 
-#### 3.2: Configure the service
+#### 3.2: Rename and configure the service
 
-1. Click on the new service to open its settings
+1. Click on the `atproto-packages` service to open its settings
 2. Go to the **Settings** tab
-3. Set these values:
+3. **IMPORTANT: Rename the service first!** Set these values:
 
 | Setting | Value |
 |---------|-------|
-| **Service Name** | `tap` (important - must be exactly this!) |
+| **Service Name** | `tap` ⚠️ **Must be exactly this name!** |
 | **Root Directory** | *(leave empty)* |
 | **Config Path** | `apps/indexer/railway/tap.railway.json` |
+
+> **Why the name matters:** The Indexer connects to Tap using `${{tap.RAILWAY_PRIVATE_DOMAIN}}`. If the service isn't named `tap`, this reference won't work.
 
 4. Click **"Save"** if prompted
 
@@ -95,6 +97,7 @@ Tap is the AT Protocol sync service that handles firehose connections and backfi
 2. Click **"+ New Variable"** and add each of these:
 
 ```bash
+PORT=2480
 TAP_DATABASE_URL=sqlite:///data/tap.db
 TAP_BIND=:2480
 TAP_RELAY_URL=https://bsky.network
@@ -103,6 +106,8 @@ TAP_COLLECTION_FILTERS=app.bumicerts.*,app.certified.*,app.gainforest.*,org.hype
 TAP_DISABLE_ACKS=false
 TAP_LOG_LEVEL=info
 ```
+
+> **Note:** `PORT=2480` is required so Railway's healthcheck knows which port to check. Without this, the healthcheck will fail with "service unavailable".
 
 3. For `TAP_ADMIN_PASSWORD`, click **"+ New Variable"** and:
    - Name: `TAP_ADMIN_PASSWORD`
@@ -310,6 +315,17 @@ The GitHub Action will automatically:
 
 ## Troubleshooting
 
+### Tap healthcheck failing ("service unavailable")
+
+If you see this in the Tap deployment logs:
+```
+Attempt #1 failed with service unavailable. Continuing to retry for 4m49s
+```
+
+**Cause:** Railway's healthcheck doesn't know which port to check.
+
+**Fix:** Add `PORT=2480` to Tap's environment variables. This tells Railway to check port 2480 for the healthcheck.
+
 ### "Invalid RAILWAY_TOKEN" in GitHub Actions
 
 - Make sure you created a **workspace token**, not a project token
@@ -364,6 +380,7 @@ Costs scale with usage. Initial backfill uses more resources.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
+| `PORT` | Yes | Healthcheck port: `2480` (must match TAP_BIND) |
 | `TAP_DATABASE_URL` | Yes | SQLite path: `sqlite:///data/tap.db` |
 | `TAP_BIND` | Yes | Listen address: `:2480` |
 | `TAP_RELAY_URL` | Yes | AT Protocol relay: `https://bsky.network` |
