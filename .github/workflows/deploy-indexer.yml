@@ -7,6 +7,13 @@ on:
       - 'apps/indexer/**'
       - 'packages/internal-utils/**'
       - 'GENERATED/lexicons/**'
+      - 'GENERATED/scripts/generate-collections.ts'
+  pull_request:
+    paths:
+      - 'apps/indexer/**'
+      - 'packages/internal-utils/**'
+      - 'GENERATED/lexicons/**'
+      - 'GENERATED/scripts/generate-collections.ts'
   workflow_dispatch:
     inputs:
       skip_railway:
@@ -47,11 +54,35 @@ jobs:
           echo "$FILTERS" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build local dev Dockerfile (smoke test)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/indexer/Dockerfile
+          push: false
+          tags: gainforest-indexer:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Railway Dockerfile (smoke test)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/indexer/Dockerfile.railway
+          push: false
+          tags: gainforest-indexer-railway:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   deploy:
     name: Deploy to Railway
     needs: validate
     runs-on: ubuntu-latest
     if: |
+      github.event_name == 'push' &&
       github.event.inputs.skip_railway != 'true' &&
       github.repository == 'GainForest/atproto-packages'
     env:
