@@ -159,11 +159,19 @@ jobs:
       # Then merges in the freshly generated TAP_COLLECTION_FILTERS.
       - name: Sync Tap environment variables
         if: steps.check.outputs.ready == 'true'
+        env:
+          FILTERS: ${{ needs.validate.outputs.collection_filters }}
+          RESOLVED_ENV_ID: ${{ steps.resolve.outputs.env_id }}
+          RESOLVED_TAP_ID: ${{ steps.resolve.outputs.tap_id }}
         run: |
+          # Build the Railway reference prefix as a shell variable so GitHub
+          # Actions never sees a raw reference-open token in this script.
+          RAILWAY_REF_PREFIX='$'"{{" # dollar + double-brace: matches Railway refs in env files
           # Parse static vars from tap.env.railway
+          # Skip comments, blank lines, and Railway reference/secret lines
           VARS_JSON=$(grep -v '^\s*#' apps/indexer/railway/tap.env.railway \
             | grep -v '^\s*$' \
-            | grep -v '\${{' \
+            | grep -v "$RAILWAY_REF_PREFIX" \
             | awk -F'=' '{key=$1; $1=""; val=substr($0,2); gsub(/^[ \t]+|[ \t]+$/, "", val); print key "=" val}' \
             | jq -R -s '
                 split("\n")
@@ -177,7 +185,6 @@ jobs:
               ')
 
           # Override TAP_COLLECTION_FILTERS with the freshly generated value
-          FILTERS="${{ needs.validate.outputs.collection_filters }}"
           VARS_JSON=$(echo "$VARS_JSON" | jq --arg v "$FILTERS" '. + {"TAP_COLLECTION_FILTERS": $v}')
 
           echo "Syncing Tap vars: $(echo "$VARS_JSON" | jq 'keys')"
@@ -187,8 +194,8 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$(jq -n \
               --arg projectId     "$RAILWAY_PROJECT_ID" \
-              --arg environmentId "${{ steps.resolve.outputs.env_id }}" \
-              --arg serviceId     "${{ steps.resolve.outputs.tap_id }}" \
+              --arg environmentId "$RESOLVED_ENV_ID" \
+              --arg serviceId     "$RESOLVED_TAP_ID" \
               --argjson variables "$VARS_JSON" \
               '{
                 query: "mutation($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }",
@@ -201,10 +208,14 @@ jobs:
       # Same logic as above but reads apps/indexer/.env.railway
       - name: Sync Indexer environment variables
         if: steps.check.outputs.ready == 'true'
+        env:
+          RESOLVED_ENV_ID: ${{ steps.resolve.outputs.env_id }}
+          RESOLVED_INDEXER_ID: ${{ steps.resolve.outputs.indexer_id }}
         run: |
+          RAILWAY_REF_PREFIX='$'"{{" # dollar + double-brace: matches Railway refs in env files
           VARS_JSON=$(grep -v '^\s*#' apps/indexer/.env.railway \
             | grep -v '^\s*$' \
-            | grep -v '\${{' \
+            | grep -v "$RAILWAY_REF_PREFIX" \
             | awk -F'=' '{key=$1; $1=""; val=substr($0,2); gsub(/^[ \t]+|[ \t]+$/, "", val); print key "=" val}' \
             | jq -R -s '
                 split("\n")
@@ -224,8 +235,8 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$(jq -n \
               --arg projectId     "$RAILWAY_PROJECT_ID" \
-              --arg environmentId "${{ steps.resolve.outputs.env_id }}" \
-              --arg serviceId     "${{ steps.resolve.outputs.indexer_id }}" \
+              --arg environmentId "$RESOLVED_ENV_ID" \
+              --arg serviceId     "$RESOLVED_INDEXER_ID" \
               --argjson variables "$VARS_JSON" \
               '{
                 query: "mutation($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }",
@@ -237,13 +248,16 @@ jobs:
       # ── Trigger redeployments ─────────────────────────────────────────────
       - name: Redeploy Tap service
         if: steps.check.outputs.ready == 'true'
+        env:
+          RESOLVED_TAP_ID: ${{ steps.resolve.outputs.tap_id }}
+          RESOLVED_ENV_ID: ${{ steps.resolve.outputs.env_id }}
         run: |
           RESPONSE=$(curl -sf -X POST "$RAILWAY_API" \
             -H "Authorization: Bearer $RAILWAY_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$(jq -n \
-              --arg serviceId     "${{ steps.resolve.outputs.tap_id }}" \
-              --arg environmentId "${{ steps.resolve.outputs.env_id }}" \
+              --arg serviceId     "$RESOLVED_TAP_ID" \
+              --arg environmentId "$RESOLVED_ENV_ID" \
               '{
                 query: "mutation($serviceId: String!, $environmentId: String!) { serviceInstanceDeploy(serviceId: $serviceId, environmentId: $environmentId) }",
                 variables: { serviceId: $serviceId, environmentId: $environmentId }
@@ -253,13 +267,16 @@ jobs:
 
       - name: Redeploy Indexer service
         if: steps.check.outputs.ready == 'true'
+        env:
+          RESOLVED_INDEXER_ID: ${{ steps.resolve.outputs.indexer_id }}
+          RESOLVED_ENV_ID: ${{ steps.resolve.outputs.env_id }}
         run: |
           RESPONSE=$(curl -sf -X POST "$RAILWAY_API" \
             -H "Authorization: Bearer $RAILWAY_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$(jq -n \
-              --arg serviceId     "${{ steps.resolve.outputs.indexer_id }}" \
-              --arg environmentId "${{ steps.resolve.outputs.env_id }}" \
+              --arg serviceId     "$RESOLVED_INDEXER_ID" \
+              --arg environmentId "$RESOLVED_ENV_ID" \
               '{
                 query: "mutation($serviceId: String!, $environmentId: String!) { serviceInstanceDeploy(serviceId: $serviceId, environmentId: $environmentId) }",
                 variables: { serviceId: $serviceId, environmentId: $environmentId }
