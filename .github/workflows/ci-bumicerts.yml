@@ -6,11 +6,17 @@ on:
     branches: [main]
     paths:
       - 'apps/bumicerts/**'
-      - 'packages/**'  # Rebuild if packages change
+      - '!apps/bumicerts/**/*.md'          # ignore .md changes...
+      - 'apps/bumicerts/app/**/*.md'       # ...unless they're inside app/
+      - 'apps/bumicerts/public/**/*.md'    # ...or inside public/
+      - 'packages/**'
       - 'GENERATED/**'
   pull_request:
     paths:
       - 'apps/bumicerts/**'
+      - '!apps/bumicerts/**/*.md'
+      - 'apps/bumicerts/app/**/*.md'
+      - 'apps/bumicerts/public/**/*.md'
       - 'packages/**'
       - 'GENERATED/**'
 
