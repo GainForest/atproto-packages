@@ -56,29 +56,29 @@ function countryCodeToFlag(code: string): string {
 
 // ISO 3166-1 alpha-2 → display name
 const COUNTRY_NAMES: Record<string, string> = {
-  AF:"Afghanistan",AL:"Albania",DZ:"Algeria",AR:"Argentina",AU:"Australia",
-  AT:"Austria",BD:"Bangladesh",BE:"Belgium",BO:"Bolivia",BR:"Brazil",
-  KH:"Cambodia",CM:"Cameroon",CA:"Canada",CL:"Chile",CN:"China",
-  CO:"Colombia",CD:"Congo (DRC)",CR:"Costa Rica",HR:"Croatia",CU:"Cuba",
-  CZ:"Czech Republic",DK:"Denmark",DO:"Dominican Republic",EC:"Ecuador",
-  EG:"Egypt",SV:"El Salvador",ET:"Ethiopia",FI:"Finland",FR:"France",
-  GA:"Gabon",GH:"Ghana",DE:"Germany",GT:"Guatemala",HN:"Honduras",
-  HU:"Hungary",IN:"India",ID:"Indonesia",IR:"Iran",IQ:"Iraq",IE:"Ireland",
-  IL:"Israel",IT:"Italy",JM:"Jamaica",JP:"Japan",JO:"Jordan",KZ:"Kazakhstan",
-  KE:"Kenya",KR:"South Korea",KW:"Kuwait",LA:"Laos",LB:"Lebanon",LR:"Liberia",
-  LY:"Libya",MG:"Madagascar",MW:"Malawi",MY:"Malaysia",MV:"Maldives",
-  ML:"Mali",MX:"Mexico",MA:"Morocco",MZ:"Mozambique",MM:"Myanmar",
-  NA:"Namibia",NP:"Nepal",NL:"Netherlands",NZ:"New Zealand",NI:"Nicaragua",
-  NE:"Niger",NG:"Nigeria",NO:"Norway",PK:"Pakistan",PA:"Panama",
-  PG:"Papua New Guinea",PY:"Paraguay",PE:"Peru",PH:"Philippines",PL:"Poland",
-  PT:"Portugal",QA:"Qatar",RO:"Romania",RU:"Russia",RW:"Rwanda",
-  SA:"Saudi Arabia",SN:"Senegal",SL:"Sierra Leone",SG:"Singapore",
-  SO:"Somalia",ZA:"South Africa",SS:"South Sudan",ES:"Spain",LK:"Sri Lanka",
-  SD:"Sudan",SE:"Sweden",CH:"Switzerland",SY:"Syria",TW:"Taiwan",
-  TZ:"Tanzania",TH:"Thailand",TG:"Togo",TT:"Trinidad and Tobago",
-  TN:"Tunisia",TR:"Turkey",UG:"Uganda",UA:"Ukraine",AE:"United Arab Emirates",
-  GB:"United Kingdom",US:"United States",UY:"Uruguay",UZ:"Uzbekistan",
-  VE:"Venezuela",VN:"Vietnam",YE:"Yemen",ZM:"Zambia",ZW:"Zimbabwe",
+  AF: "Afghanistan", AL: "Albania", DZ: "Algeria", AR: "Argentina", AU: "Australia",
+  AT: "Austria", BD: "Bangladesh", BE: "Belgium", BO: "Bolivia", BR: "Brazil",
+  KH: "Cambodia", CM: "Cameroon", CA: "Canada", CL: "Chile", CN: "China",
+  CO: "Colombia", CD: "Congo (DRC)", CR: "Costa Rica", HR: "Croatia", CU: "Cuba",
+  CZ: "Czech Republic", DK: "Denmark", DO: "Dominican Republic", EC: "Ecuador",
+  EG: "Egypt", SV: "El Salvador", ET: "Ethiopia", FI: "Finland", FR: "France",
+  GA: "Gabon", GH: "Ghana", DE: "Germany", GT: "Guatemala", HN: "Honduras",
+  HU: "Hungary", IN: "India", ID: "Indonesia", IR: "Iran", IQ: "Iraq", IE: "Ireland",
+  IL: "Israel", IT: "Italy", JM: "Jamaica", JP: "Japan", JO: "Jordan", KZ: "Kazakhstan",
+  KE: "Kenya", KR: "South Korea", KW: "Kuwait", LA: "Laos", LB: "Lebanon", LR: "Liberia",
+  LY: "Libya", MG: "Madagascar", MW: "Malawi", MY: "Malaysia", MV: "Maldives",
+  ML: "Mali", MX: "Mexico", MA: "Morocco", MZ: "Mozambique", MM: "Myanmar",
+  NA: "Namibia", NP: "Nepal", NL: "Netherlands", NZ: "New Zealand", NI: "Nicaragua",
+  NE: "Niger", NG: "Nigeria", NO: "Norway", PK: "Pakistan", PA: "Panama",
+  PG: "Papua New Guinea", PY: "Paraguay", PE: "Peru", PH: "Philippines", PL: "Poland",
+  PT: "Portugal", QA: "Qatar", RO: "Romania", RU: "Russia", RW: "Rwanda",
+  SA: "Saudi Arabia", SN: "Senegal", SL: "Sierra Leone", SG: "Singapore",
+  SO: "Somalia", ZA: "South Africa", SS: "South Sudan", ES: "Spain", LK: "Sri Lanka",
+  SD: "Sudan", SE: "Sweden", CH: "Switzerland", SY: "Syria", TW: "Taiwan",
+  TZ: "Tanzania", TH: "Thailand", TG: "Togo", TT: "Trinidad and Tobago",
+  TN: "Tunisia", TR: "Turkey", UG: "Uganda", UA: "Ukraine", AE: "United Arab Emirates",
+  GB: "United Kingdom", US: "United States", UY: "Uruguay", UZ: "Uzbekistan",
+  VE: "Venezuela", VN: "Vietnam", YE: "Yemen", ZM: "Zambia", ZW: "Zimbabwe",
 };
 
 export function OrgHero({ organization }: OrgHeroProps) {
@@ -129,7 +129,7 @@ export function OrgHero({ organization }: OrgHeroProps) {
               }}
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/5 to-background" />
+          <div className="absolute inset-0 bg-linear-to-b from-black/25 via-black/5 to-background" />
         </motion.div>
       </div>
 

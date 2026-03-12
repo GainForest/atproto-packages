@@ -28,7 +28,7 @@ export function TopNavbar() {
       {/* Progressive blur background */}
       <div className="absolute inset-0 h-24 pointer-events-none">
         <div
-          className="absolute inset-0 z-[1]"
+          className="absolute inset-0 z-1"
           style={{
             background: "linear-gradient(to bottom, var(--background) 0%, transparent 100%)",
             opacity: 0.85,
@@ -38,7 +38,7 @@ export function TopNavbar() {
           position="top"
           height="100%"
           blurLevels={[0.5, 1, 2, 4, 8, 12]}
-          className="z-[0]"
+          className="z-0"
         />
       </div>
 

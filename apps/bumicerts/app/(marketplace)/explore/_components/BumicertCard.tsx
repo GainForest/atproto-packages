@@ -49,7 +49,7 @@ export function BumicertCardVisual({
 
   return (
     <div className={`rounded-2xl border border-border bg-card overflow-hidden w-full${className ? ` ${className}` : ""}`}>
-      <div className="relative aspect-[3/4] overflow-hidden">
+      <div className="relative aspect-3/4 overflow-hidden">
         {imageSrc ? (
           <Image src={imageSrc} alt={title} fill className="object-cover" />
         ) : (
@@ -103,9 +103,9 @@ export function BumicertCardVisual({
 export function BumicertCardSkeleton() {
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden">
-      <div className="relative aspect-[3/4]">
+      <div className="relative aspect-3/4">
         {/* Image skeleton */}
-        <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted/50 to-muted bg-[length:200%_100%] animate-shimmer" />
+        <div className="absolute inset-0 bg-linear-to-r from-muted via-muted/50 to-muted bg-size-[200%_100%] animate-shimmer" />
 
         {/* Dotted header skeleton */}
         <div

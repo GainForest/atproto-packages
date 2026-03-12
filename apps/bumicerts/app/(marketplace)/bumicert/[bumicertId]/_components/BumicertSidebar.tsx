@@ -37,7 +37,7 @@ export function BumicertSidebar({ bumicert, isOwner, fundingConfig }: BumicertSi
       <BumicertCreationMeta bumicert={bumicert} />
 
       {bumicert.coverImageUrl && (
-        <div className="rounded-2xl border border-border overflow-hidden aspect-[3/4] relative">
+        <div className="rounded-2xl border border-border overflow-hidden aspect-3/4 relative">
           <Image
             src={bumicert.coverImageUrl}
             alt={bumicert.title}

@@ -86,7 +86,7 @@ export function BumicertDetail({ bumicert, isOwner, fundingConfig }: BumicertDet
             {/* At sm+: image left, meta right. Below sm: stack vertically. */}
             <div className="flex flex-col sm:flex-row gap-4">
               {bumicert.coverImageUrl && (
-                <div className="rounded-2xl border border-border overflow-hidden relative w-full sm:w-1/2 aspect-[3/4] max-h-[50vh]">
+                <div className="rounded-2xl border border-border overflow-hidden relative w-full sm:w-1/2 aspect-3/4 max-h-[50vh]">
                   <Image src={bumicert.coverImageUrl} alt={bumicert.title} fill className="object-cover" />
                 </div>
               )}

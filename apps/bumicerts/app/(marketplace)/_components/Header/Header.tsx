@@ -18,7 +18,7 @@ export function Header() {
       <div className="absolute inset-0 pointer-events-none">
         {/* Subtle gradient overlay for readability */}
         <div
-          className="absolute inset-0 z-[1]"
+          className="absolute inset-0 z-1"
           style={{
             background: `linear-gradient(to bottom, var(--background) 0%,${subHeaderContent ? " var(--background) 80%," : ""} transparent 100%)`,
             opacity: 0.8,
@@ -29,7 +29,7 @@ export function Header() {
           position="top"
           height="100%"
           // blurLevels={[0.5, 1, 2, 4, 8, 12]}
-          className="z-[0]"
+          className="z-0"
         />
       </div>
 

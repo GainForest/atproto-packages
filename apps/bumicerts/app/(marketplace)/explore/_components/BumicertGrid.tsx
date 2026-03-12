@@ -42,28 +42,28 @@ export function BumicertGrid({
         className="flex flex-col items-center justify-center py-28 px-6 text-center"
       >
         {/* Large decorative number - editorial flair */}
-        <span 
-          className="text-7xl md:text-8xl font-light text-primary/[0.15] tracking-tight mb-4"
+        <span
+          className="text-7xl md:text-8xl font-light text-primary/15 tracking-tight mb-4"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
           0
         </span>
-        
+
         <div className="flex items-center gap-2 mb-3">
           <SearchIcon className="h-4 w-4 text-primary" />
           <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
             No Results
           </span>
         </div>
-        
-        <h3 
+
+        <h3
           className="text-2xl md:text-3xl font-light text-foreground mb-3"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
           No projects found
         </h3>
-        
-        <p 
+
+        <p
           className="text-base text-foreground/80 max-w-md leading-relaxed"
           style={{ fontFamily: "var(--font-instrument-serif-var)", fontStyle: "italic" }}
         >

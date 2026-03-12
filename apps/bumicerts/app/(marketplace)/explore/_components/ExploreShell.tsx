@@ -131,7 +131,7 @@ export function ExploreShell({
         />
 
         {/* Gradient separator */}
-        <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent my-8" />
+        <div className="h-px bg-linear-to-r from-transparent via-primary/30 to-transparent my-8" />
 
         {/*
           Main content slot.

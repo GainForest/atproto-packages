@@ -22,7 +22,7 @@ const ErrorPage = ({
   return (
     <div className="flex flex-col items-center justify-center w-full py-16 px-6 gap-8">
       {/* Gradient line top */}
-      <div className="h-px w-full max-w-xs bg-gradient-to-r from-transparent via-destructive/30 to-transparent" />
+      <div className="h-px w-full max-w-xs bg-linear-to-r from-transparent via-destructive/30 to-transparent" />
 
       <div className="flex flex-col items-center gap-6 max-w-md w-full">
         {/* Icon */}
@@ -68,7 +68,7 @@ const ErrorPage = ({
       </div>
 
       {/* Gradient line bottom */}
-      <div className="h-px w-full max-w-xs bg-gradient-to-r from-transparent via-border to-transparent" />
+      <div className="h-px w-full max-w-xs bg-linear-to-r from-transparent via-border to-transparent" />
     </div>
   );
 };
