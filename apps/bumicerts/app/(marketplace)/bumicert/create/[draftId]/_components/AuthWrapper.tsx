@@ -58,7 +58,7 @@ const AuthWrapper = ({
             isUnauthenticated ? (
               <AtprotoSignInButton />
             ) : (
-              <Link href={links.upload.organization(auth.user?.did)}>
+              <Link href={links.upload.home}>
                 <Button>
                   <BuildingIcon />
                   Manage my organization

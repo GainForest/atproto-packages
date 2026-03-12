@@ -159,7 +159,7 @@ const Step3 = () => {
             {auth.user?.did && (
               <span className="text-sm text-muted-foreground">
                 <Link
-                  href={links.upload.sites(auth.user.did)}
+                   href={links.upload.sites}
                   className="flex items-center text-primary hover:underline"
                 >
                   Manage sites <ChevronRightIcon className="size-4" />

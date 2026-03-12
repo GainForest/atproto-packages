@@ -32,6 +32,7 @@ import * as organization from "./organization";
 import * as organizationLogo from "./organization/logo";
 import * as activities from "./activities";
 import * as locations from "./locations";
+import * as audio from "./audio";
 import * as actor from "./actor";
 import * as fundingReceipts from "./fundingReceipts";
 import * as linkEvm from "./linkEvm";
@@ -57,6 +58,12 @@ export const queries = {
     key: () => ["locations"] as const,
   },
 
+  audio: {
+    ...createQuery(["audio"], audio),
+    /** Invalidates ALL audio recording queries. */
+    key: () => ["audio"] as const,
+  },
+
   actor: {
     ...createQuery(["actor"], actor),
     /** Invalidates ALL actor profile queries. */
@@ -79,6 +86,7 @@ export const queries = {
 export type { OrgInfo, OrgActivity, SingleParams as OrgSingleParams, ListParams as OrgListParams } from "./organization";
 export type { Activity, ActivityOrgInfo, ByDidParams as ActivityByDidParams, ByDidAndOrgParams as ActivityByDidAndOrgParams, ListParams as ActivityListParams } from "./activities";
 export type { CertifiedLocation } from "./locations";
+export type { AudioRecordingItem } from "./audio";
 export type { ActorProfile } from "./actor";
 export type { FundingReceiptItem } from "./fundingReceipts";
 export type { EvmLink } from "./linkEvm";

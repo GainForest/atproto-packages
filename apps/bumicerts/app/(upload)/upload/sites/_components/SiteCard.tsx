@@ -1,0 +1,279 @@
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
+import {
+  ArrowUpRightIcon,
+  BadgeCheckIcon,
+  CrosshairIcon,
+  Loader2Icon,
+  MoreVerticalIcon,
+  PencilIcon,
+  Trash2Icon,
+} from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { trpc } from "@/lib/trpc/client";
+import { useModal } from "@/components/ui/modal/context";
+import { SiteEditorModal, SiteEditorModalId } from "@/components/global/modals/upload/site/editor";
+import { getShapefilePreviewUrl } from "@/lib/shapefile";
+import { queries, type CertifiedLocation } from "@/lib/graphql/queries/index";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+
+// ── Type helpers ───────────────────────────────────────────────────────────────
+
+/** Extract a URL from the location JSON field the indexer returns. */
+function extractLocationUrl(location: unknown): string | null {
+  if (!location || typeof location !== "object") return null;
+  const loc = location as Record<string, unknown>;
+  // URI variant
+  if (typeof loc["uri"] === "string") return loc["uri"];
+  // Blob variant — indexer injects uri into blob objects
+  if (loc["blob"] && typeof loc["blob"] === "object") {
+    const blob = loc["blob"] as Record<string, unknown>;
+    if (typeof blob["uri"] === "string") return blob["uri"];
+  }
+  return null;
+}
+
+// ── SiteCard ──────────────────────────────────────────────────────────────────
+
+interface SiteCardProps {
+  site: CertifiedLocation;
+  defaultSiteUri: string | null;
+}
+
+export function SiteCard({ site, defaultSiteUri }: SiteCardProps) {
+  const queryClient = useQueryClient();
+  const { pushModal, show } = useModal();
+
+  const locationUrl = extractLocationUrl(site.record?.location);
+  const previewUrl = locationUrl ? getShapefilePreviewUrl(locationUrl) : null;
+  const isDefault = !!(site.metadata?.uri && site.metadata.uri === defaultSiteUri);
+
+  // Fetch GeoJSON to compute metrics
+  const { data: geoJson, isPending: isLoadingGeo } = useQuery({
+    queryKey: ["geojson", locationUrl],
+    queryFn: async () => {
+      if (!locationUrl) throw new Error("No location URL");
+      const res = await fetch(locationUrl);
+      return res.json() as Promise<GeoJSON.FeatureCollection>;
+    },
+    enabled: !!locationUrl,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Simple area + centroid from GeoJSON (client-side, no SDK dependency)
+  const metrics = geoJson ? computeSimpleMetrics(geoJson) : null;
+
+  // Mutations
+  const { mutate: setDefault, isPending: isSettingDefault } =
+    trpc.organization.defaultSite.set.useMutation({
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: queries.locations.key() });
+      },
+    });
+
+  const { mutate: deleteSite, isPending: isDeleting } =
+    trpc.certified.location.delete.useMutation({
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: queries.locations.key() });
+      },
+    });
+
+  const disableActions = isSettingDefault || isDeleting;
+
+  const handleEdit = () => {
+    pushModal(
+      {
+        id: SiteEditorModalId,
+        content: (
+          <SiteEditorModal
+            initialData={
+              site.metadata?.uri && site.metadata?.cid
+                ? {
+                    uri: site.metadata.uri,
+                    cid: site.metadata.cid,
+                    value: {
+                      name: site.record?.name ?? undefined,
+                      description: site.record?.description ?? undefined,
+                      location: site.record?.location as SiteEditorLocation | undefined,
+                    },
+                  }
+                : null
+            }
+          />
+        ),
+      },
+      true
+    );
+    show();
+  };
+
+  const handleSetDefault = () => {
+    if (!site.metadata?.uri) return;
+    setDefault({ locationAtUri: site.metadata.uri });
+  };
+
+  const handleDelete = () => {
+    const rkey = site.metadata?.rkey;
+    if (!rkey) return;
+    deleteSite({ rkey });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+      className="rounded-xl border border-border overflow-hidden bg-background hover:border-primary/30 hover:shadow-md transition-all duration-300"
+    >
+      {/* Preview header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+        {previewUrl ? (
+          <Link
+            href={previewUrl}
+            target="_blank"
+            className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+          >
+            Preview <ArrowUpRightIcon className="h-3 w-3" />
+          </Link>
+        ) : (
+          <span className="text-xs text-muted-foreground">No preview</span>
+        )}
+
+        <div className="flex items-center gap-1.5">
+          {isDefault && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-medium">
+              <BadgeCheckIcon className="h-3 w-3" />
+              Default
+            </span>
+          )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={disableActions}>
+                {disableActions ? (
+                  <Loader2Icon className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <MoreVerticalIcon className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleEdit} disabled={disableActions}>
+                <PencilIcon className="h-3.5 w-3.5 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleSetDefault}
+                disabled={isDefault || disableActions}
+              >
+                <BadgeCheckIcon className="h-3.5 w-3.5 mr-2" />
+                {isDefault ? "Already default" : "Make default"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDefault || disableActions}
+              >
+                <Trash2Icon className="h-3.5 w-3.5 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Card body */}
+      <div className="px-3 py-2.5">
+        <h3
+          className="font-medium text-base leading-snug"
+          style={{ fontFamily: "var(--font-garamond-var)" }}
+        >
+          {site.record?.name ?? "Unnamed site"}
+        </h3>
+
+        {isLoadingGeo ? (
+          <Loader2Icon className="h-3.5 w-3.5 animate-spin text-muted-foreground mt-1" />
+        ) : metrics ? (
+          typeof metrics === "string" ? (
+            <p className="text-xs text-destructive mt-1">{metrics}</p>
+          ) : (
+            <div className="flex items-center justify-between mt-1.5">
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <CrosshairIcon className="h-3 w-3 shrink-0" />
+                {metrics.lat.toFixed(2)}°, {metrics.lon.toFixed(2)}°
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {metrics.area.toFixed(1)} ha
+              </span>
+            </div>
+          )
+        ) : null}
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Simplified GeoJSON metrics — area in hectares + centroid. */
+function computeSimpleMetrics(
+  fc: GeoJSON.FeatureCollection
+): { area: number; lat: number; lon: number } | "Invalid" | null {
+  try {
+    let totalArea = 0;
+    let sumLat = 0;
+    let sumLon = 0;
+    let count = 0;
+
+    const processCoords = (coords: number[][][]) => {
+      for (const ring of coords) {
+        // Shoelace formula for polygon area (in deg² — approximate)
+        let area = 0;
+        for (let i = 0; i < ring.length - 1; i++) {
+          area += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+        }
+        // Convert deg² to hectares (1 deg² ≈ 111320² m² at equator)
+        totalArea += Math.abs(area / 2) * 111320 * 111320 * 0.0001;
+
+        for (const pt of ring) {
+          sumLon += pt[0];
+          sumLat += pt[1];
+          count++;
+        }
+      }
+    };
+
+    for (const feature of fc.features) {
+      if (!feature.geometry) continue;
+      if (feature.geometry.type === "Polygon") {
+        processCoords(feature.geometry.coordinates);
+      } else if (feature.geometry.type === "MultiPolygon") {
+        for (const poly of feature.geometry.coordinates) processCoords(poly);
+      }
+    }
+
+    if (count === 0) return "Invalid";
+    return { area: totalArea, lat: sumLat / count, lon: sumLon / count };
+  } catch {
+    return "Invalid";
+  }
+}
+
+// ── Narrow type for SiteEditorModal ──────────────────────────────────────────
+
+type SiteEditorLocation = {
+  $type?: string;
+  uri?: string;
+  blob?: { uri?: string; [key: string]: unknown };
+};
