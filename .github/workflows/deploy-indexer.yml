@@ -1,5 +1,11 @@
 name: Deploy Indexer to Railway
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Triggers
+# ─────────────────────────────────────────────────────────────────────────────
+# Only runs when indexer source code or its dependencies change.
+# Pure bumicerts / docs / unrelated changes never trigger this workflow.
+# ─────────────────────────────────────────────────────────────────────────────
 on:
   push:
     branches: [main]
@@ -21,7 +27,13 @@ on:
         required: false
         default: 'false'
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Jobs
+# ─────────────────────────────────────────────────────────────────────────────
 jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  # 1. Validate — typecheck + smoke-test Docker builds + generate filters
+  # ───────────────────────────────────────────────────────────────────────────
   validate:
     name: Validate
     runs-on: ubuntu-latest
@@ -77,6 +89,20 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # ───────────────────────────────────────────────────────────────────────────
+  # 2. Deploy — sync env vars + trigger Railway redeployment
+  #
+  # Only runs on pushes to main (not PRs or workflow_dispatch with skip flag).
+  #
+  # ENV VARIABLE SYNC RULES:
+  #   - Static values are parsed from .env.railway / tap.env.railway and
+  #     upserted to Railway so the file is the single source of truth.
+  #   - Lines containing ${{ are Railway reference variables or secret()
+  #     generators — these are SKIPPED so they are never overwritten.
+  #     Set them once in the Railway UI during initial project setup.
+  #   - TAP_COLLECTION_FILTERS is always overridden with the freshly
+  #     generated value from the validate job above.
+  # ───────────────────────────────────────────────────────────────────────────
   deploy:
     name: Deploy to Railway
     needs: validate
@@ -90,6 +116,8 @@ jobs:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Check secrets
         id: check
         run: |
@@ -100,6 +128,7 @@ jobs:
             echo "ready=true" >> $GITHUB_OUTPUT
           fi
 
+      # ── Resolve IDs ──────────────────────────────────────────────────────
       - name: Resolve service and environment IDs
         if: steps.check.outputs.ready == 'true'
         id: resolve
@@ -119,27 +148,93 @@ jobs:
           echo "tap_id=$TAP_ID" >> $GITHUB_OUTPUT
           echo "indexer_id=$INDEXER_ID" >> $GITHUB_OUTPUT
 
-          echo "Environment ID: $ENV_ID"
-          echo "Tap service ID: $TAP_ID"
+          echo "Environment ID : $ENV_ID"
+          echo "Tap service ID : $TAP_ID"
           echo "Indexer service ID: $INDEXER_ID"
 
-      - name: Sync TAP_COLLECTION_FILTERS to Tap service
+      # ── Tap: sync env vars ────────────────────────────────────────────────
+      # Reads apps/indexer/railway/tap.env.railway, strips comments, blank
+      # lines, and any line whose value contains ${{ (Railway references /
+      # secret generators — those must be set once in the Railway UI).
+      # Then merges in the freshly generated TAP_COLLECTION_FILTERS.
+      - name: Sync Tap environment variables
         if: steps.check.outputs.ready == 'true'
         run: |
+          # Parse static vars from tap.env.railway
+          VARS_JSON=$(grep -v '^\s*#' apps/indexer/railway/tap.env.railway \
+            | grep -v '^\s*$' \
+            | grep -v '\${{' \
+            | awk -F'=' '{key=$1; $1=""; val=substr($0,2); gsub(/^[ \t]+|[ \t]+$/, "", val); print key "=" val}' \
+            | jq -R -s '
+                split("\n")
+                | map(select(length > 0))
+                | map(
+                    . as $line
+                    | ($line | index("=")) as $i
+                    | { ($line[:$i]): $line[$i+1:] }
+                  )
+                | add // {}
+              ')
+
+          # Override TAP_COLLECTION_FILTERS with the freshly generated value
           FILTERS="${{ needs.validate.outputs.collection_filters }}"
-          VARS_JSON=$(jq -n --arg v "$FILTERS" '{"TAP_COLLECTION_FILTERS": $v}')
-          RESPONSE=$(curl -sf -X POST "$RAILWAY_API" \
+          VARS_JSON=$(echo "$VARS_JSON" | jq --arg v "$FILTERS" '. + {"TAP_COLLECTION_FILTERS": $v}')
+
+          echo "Syncing Tap vars: $(echo "$VARS_JSON" | jq 'keys')"
+
+          curl -sf -X POST "$RAILWAY_API" \
             -H "Authorization: Bearer $RAILWAY_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$(jq -n \
-              --arg projectId "$RAILWAY_PROJECT_ID" \
+              --arg projectId     "$RAILWAY_PROJECT_ID" \
               --arg environmentId "${{ steps.resolve.outputs.env_id }}" \
-              --arg serviceId "${{ steps.resolve.outputs.tap_id }}" \
+              --arg serviceId     "${{ steps.resolve.outputs.tap_id }}" \
               --argjson variables "$VARS_JSON" \
-              '{query: "mutation($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }", variables: {input: {projectId: $projectId, environmentId: $environmentId, serviceId: $serviceId, variables: $variables}}}')")
-          echo "✅ TAP_COLLECTION_FILTERS synced"
-          echo "$RESPONSE"
+              '{
+                query: "mutation($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }",
+                variables: { input: { projectId: $projectId, environmentId: $environmentId, serviceId: $serviceId, variables: $variables } }
+              }')"
 
+          echo "✅ Tap environment variables synced"
+
+      # ── Indexer: sync env vars ────────────────────────────────────────────
+      # Same logic as above but reads apps/indexer/.env.railway
+      - name: Sync Indexer environment variables
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          VARS_JSON=$(grep -v '^\s*#' apps/indexer/.env.railway \
+            | grep -v '^\s*$' \
+            | grep -v '\${{' \
+            | awk -F'=' '{key=$1; $1=""; val=substr($0,2); gsub(/^[ \t]+|[ \t]+$/, "", val); print key "=" val}' \
+            | jq -R -s '
+                split("\n")
+                | map(select(length > 0))
+                | map(
+                    . as $line
+                    | ($line | index("=")) as $i
+                    | { ($line[:$i]): $line[$i+1:] }
+                  )
+                | add // {}
+              ')
+
+          echo "Syncing Indexer vars: $(echo "$VARS_JSON" | jq 'keys')"
+
+          curl -sf -X POST "$RAILWAY_API" \
+            -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg projectId     "$RAILWAY_PROJECT_ID" \
+              --arg environmentId "${{ steps.resolve.outputs.env_id }}" \
+              --arg serviceId     "${{ steps.resolve.outputs.indexer_id }}" \
+              --argjson variables "$VARS_JSON" \
+              '{
+                query: "mutation($input: VariableCollectionUpsertInput!) { variableCollectionUpsert(input: $input) }",
+                variables: { input: { projectId: $projectId, environmentId: $environmentId, serviceId: $serviceId, variables: $variables } }
+              }')"
+
+          echo "✅ Indexer environment variables synced"
+
+      # ── Trigger redeployments ─────────────────────────────────────────────
       - name: Redeploy Tap service
         if: steps.check.outputs.ready == 'true'
         run: |
@@ -147,9 +242,12 @@ jobs:
             -H "Authorization: Bearer $RAILWAY_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$(jq -n \
-              --arg serviceId "${{ steps.resolve.outputs.tap_id }}" \
+              --arg serviceId     "${{ steps.resolve.outputs.tap_id }}" \
               --arg environmentId "${{ steps.resolve.outputs.env_id }}" \
-              '{query: "mutation($serviceId: String!, $environmentId: String!) { serviceInstanceDeploy(serviceId: $serviceId, environmentId: $environmentId) }", variables: {serviceId: $serviceId, environmentId: $environmentId}}')")
+              '{
+                query: "mutation($serviceId: String!, $environmentId: String!) { serviceInstanceDeploy(serviceId: $serviceId, environmentId: $environmentId) }",
+                variables: { serviceId: $serviceId, environmentId: $environmentId }
+              }')")
           echo "✅ Tap redeploy triggered"
           echo "$RESPONSE"
 
@@ -160,12 +258,16 @@ jobs:
             -H "Authorization: Bearer $RAILWAY_TOKEN" \
             -H "Content-Type: application/json" \
             -d "$(jq -n \
-              --arg serviceId "${{ steps.resolve.outputs.indexer_id }}" \
+              --arg serviceId     "${{ steps.resolve.outputs.indexer_id }}" \
               --arg environmentId "${{ steps.resolve.outputs.env_id }}" \
-              '{query: "mutation($serviceId: String!, $environmentId: String!) { serviceInstanceDeploy(serviceId: $serviceId, environmentId: $environmentId) }", variables: {serviceId: $serviceId, environmentId: $environmentId}}')")
+              '{
+                query: "mutation($serviceId: String!, $environmentId: String!) { serviceInstanceDeploy(serviceId: $serviceId, environmentId: $environmentId) }",
+                variables: { serviceId: $serviceId, environmentId: $environmentId }
+              }')")
           echo "✅ Indexer redeploy triggered"
           echo "$RESPONSE"
 
+      # ── Summary ───────────────────────────────────────────────────────────
       - name: Deployment Summary
         if: always()
         run: |
@@ -173,5 +275,5 @@ jobs:
           if [ "${{ steps.check.outputs.ready }}" != "true" ]; then
             echo "⚠️ **Skipped:** RAILWAY_TOKEN or RAILWAY_PROJECT_ID not configured" >> $GITHUB_STEP_SUMMARY
           else
-            echo "✅ Deployment triggered — check [Railway Dashboard](https://railway.app) for status." >> $GITHUB_STEP_SUMMARY
+            echo "✅ Env vars synced and deployment triggered — check [Railway Dashboard](https://railway.app) for status." >> $GITHUB_STEP_SUMMARY
           fi

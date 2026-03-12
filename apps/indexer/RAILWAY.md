@@ -278,21 +278,43 @@ When you push changes to:
 
 The workflow will:
 1. Validate and typecheck the indexer
-2. Generate `TAP_COLLECTION_FILTERS` from indexed collections
-3. Sync `TAP_COLLECTION_FILTERS` to the Tap service on Railway
-4. Trigger redeployment of both Tap and Indexer services
+2. Smoke-test Docker builds (both dev and Railway Dockerfiles)
+3. Generate `TAP_COLLECTION_FILTERS` from indexed collections
+4. Sync all static env variables from `.env.railway` / `railway/tap.env.railway` to their respective Railway services
+5. Trigger redeployment of both Tap and Indexer services
 
-### Step 1: Disable Railway Auto-Deploy
+Pushes that touch **only** unrelated files (e.g. `apps/bumicerts/**`) are automatically ignored — no build will be triggered.
 
-To prevent Railway's built-in auto-deploy from clashing with the GitHub Action:
+### Env Variable Sync Rules
+
+The workflow reads your `.env.railway` files and syncs every static variable to Railway. Three types of lines are **skipped** and must be set manually in the Railway UI (once, during initial setup):
+
+| Line type | Example | Why skipped |
+|-----------|---------|-------------|
+| Comments | `# PORT=2480` | Not a variable |
+| Railway references | `DATABASE_URL=${{Postgres.DATABASE_URL}}` | Railway resolves at runtime |
+| Secret generators | `TAP_ADMIN_PASSWORD=${{secret(32)}}` | Would regenerate on every deploy |
+
+Everything else (plain `KEY=value` lines) is treated as a static variable and upserted automatically.
+
+> **Tip:** To add a new env variable, add it to the relevant `.env.railway` file and push — the next deploy will sync it to Railway automatically.
+
+### Step 1: Connect Services to GitHub (with Auto-Deploy Disabled)
+
+Railway services need to be **connected** to the GitHub repo so they can read your `railway.json` Config Path for Dockerfile configuration. However, auto-deploy must be **disabled** so only the GitHub Action controls when deployments happen.
+
+> **Important:** This is different from "disconnecting" the service. You want the connection for config reading, but not for automatic deploys.
 
 1. Go to your Railway project
 2. Click on the **Tap** service → **Settings**
-3. Find "Branch connected to production" with `main` branch
-4. Click **"Disconnect"**
-5. Repeat for the **Indexer** service
+3. Under **Source**, connect to `GainForest/atproto-packages`, branch `main`
+4. Set **Config Path** to `apps/indexer/railway/tap.railway.json`
+5. Find the **"Auto-Deploy"** or **"Deploy on Push"** toggle and **disable** it
+6. Repeat for the **Indexer** service, setting Config Path to `apps/indexer/railway.json`
 
-This ensures only the GitHub Action triggers deployments.
+This ensures:
+- Railway reads your `railway.json` → uses the Dockerfile builder ✅
+- Only the GitHub Action triggers deploys (never an unrelated push) ✅
 
 ### Step 2: Create a Railway API Token
 
@@ -349,6 +371,25 @@ The GitHub Action will automatically:
 ---
 
 ## Troubleshooting
+
+### Build fails with "No start command was found" (Railpack error)
+
+If you see this in build logs:
+```
+↳ Bun runtime detected
+✖ No start command was found
+```
+
+**Cause:** Railway is using Railpack (auto-detection) instead of your Dockerfile. This happens when:
+- The service is **disconnected** from the GitHub repo, OR
+- The **Config Path** is not set / points to the wrong file
+
+**Fix:**
+1. Go to the service → **Settings** → **Source**
+2. Connect it to `GainForest/atproto-packages`, branch `main`
+3. Set the **Config Path** to the correct `railway.json` path (see CI/CD Setup above)
+4. Disable **Auto-Deploy** so only the GitHub Action triggers builds
+5. Manually redeploy once — the next build will use the Dockerfile ✅
 
 ### Tap healthcheck failing ("service unavailable")
 
