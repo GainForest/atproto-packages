@@ -56,3 +56,5 @@ jobs:
           SUPABASE_URL: https://placeholder.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
           SUPABASE_KEY: placeholder-supabase-key
+          # Resend — SDK throws at instantiation if the key is missing
+          RESEND_API_KEY: re_placeholder_key
