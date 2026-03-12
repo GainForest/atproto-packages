@@ -1,4 +1,3 @@
 {
-  "buildCommand": "bun run graphql:codegen && bun run build",
-  "ignoreCommand": "node scripts/vercel-ignore-build.mjs"
+  "buildCommand": "bun run graphql:codegen && bun run build"
 }

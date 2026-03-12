@@ -58,3 +58,7 @@ jobs:
           SUPABASE_KEY: placeholder-supabase-key
           # Resend — SDK throws at instantiation if the key is missing
           RESEND_API_KEY: re_placeholder_key
+
+      - name: Deploy to Vercel
+        if: success() && github.event_name != 'pull_request'
+        run: curl -s -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
