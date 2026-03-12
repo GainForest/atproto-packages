@@ -25,8 +25,7 @@ export function getErrorCode(error: unknown): string | undefined {
  */
 export function getEffectTag(error: unknown): string | undefined {
   if (isTRPCError(error)) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (error.data as any)?.effectTag;
+    return error.data?.effectTag;
   }
   return undefined;
 }

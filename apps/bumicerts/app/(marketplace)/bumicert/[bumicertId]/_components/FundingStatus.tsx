@@ -15,6 +15,7 @@ import { FundingConfigModal } from "@/components/global/modals/funding/config";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import { clientEnv } from "@/lib/env/client";
 import type { FundingConfigData } from "@/lib/types";
+import type { EvmLink } from "@/lib/graphql/queries/linkEvm";
 import {
   AlertTriangleIcon,
   CircleDotIcon,
@@ -203,17 +204,13 @@ export function FundingStatus({
 
 export function computeWalletFlags(
   config: FundingConfigData | null,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  evmLinks: any[]
+  evmLinks: EvmLink[]
 ): { valid: boolean; trusted: boolean } {
   if (!config?.receivingWallet?.uri) return { valid: false, trusted: false };
   const uri = config.receivingWallet.uri;
   const facilitatorAddress = clientEnv.NEXT_PUBLIC_FACILITATOR_WALLET_ADDRESS;
 
-  const match = evmLinks.find(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (l: any) => l.metadata?.uri === uri
-  );
+  const match = evmLinks.find((l) => l.metadata?.uri === uri);
   if (!match) return { valid: false, trusted: false };
 
   const cryptoValid = match.specialMetadata?.valid === true;

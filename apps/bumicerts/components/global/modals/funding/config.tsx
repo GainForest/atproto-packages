@@ -223,8 +223,7 @@ export function FundingConfigModal({
         rkey: bumicertRkey,
         receivingWallet: {
           $type: "app.bumicerts.funding.config#evmLinkRef",
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          uri: selectedWalletUri as any,
+          uri: selectedWalletUri,
         },
         status,
         updatedAt: new Date().toISOString(),

@@ -270,8 +270,7 @@ const Step5 = () => {
             block: {
               $type: "pub.leaflet.blocks.text" as const,
               plaintext: step2FormValues.description,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              facets: (step2FormValues.descriptionFacets ?? []) as any,
+              facets: step2FormValues.descriptionFacets ?? [],
             },
           },
         ],

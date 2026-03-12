@@ -79,8 +79,7 @@ export async function fetch(params: Params): Promise<EvmLink[]> {
   const res = await graphqlClient.request(byDidDocument, { did: params.did });
   const raw = res.bumicerts?.link?.evm?.data;
   if (!raw) return [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (raw as any[]) as EvmLink[];
+  return raw as EvmLink[];
 }
 
 /** Keep legacy name for any direct callers. */

@@ -83,17 +83,13 @@ export interface GraphQLHcActivityItem {
   record: {
     title: string | null;
     shortDescription: string | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    description: any; // JSON scalar — now a LinearDocument (pub.leaflet.pages.linearDocument), not a string
+    description: unknown; // JSON scalar — now a LinearDocument (pub.leaflet.pages.linearDocument), not a string
     startDate: string | null;
     endDate: string | null;
     createdAt: string | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    image: any; // JSON scalar - could be SmallImage wrapper or null
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    workScope: any; // JSON scalar
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    contributors: any; // JSON scalar — array of contributor objects
+    image: unknown; // JSON scalar - could be SmallImage wrapper or null
+    workScope: unknown; // JSON scalar
+    contributors: unknown; // JSON scalar — array of contributor objects
     locations: GraphQLStrongRef[] | null;
   } | null;
 }
@@ -107,10 +103,8 @@ export interface GraphQLOrgInfoItem {
   creatorInfo: GraphQLCreatorInfo | null;
   record: {
     displayName: string | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    shortDescription: any; // JSON scalar (Richtext)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    longDescription: any; // JSON scalar (LinearDocument)
+    shortDescription: unknown; // JSON scalar (Richtext)
+    longDescription: unknown; // JSON scalar (LinearDocument)
     logo: GraphQLBlobRef | null;
     coverImage: GraphQLBlobRef | null;
     objectives: string[] | null;
@@ -134,10 +128,7 @@ export type GraphQLOrgInfo = GraphQLOrgInfoItem;
  * Extract work scope objectives from the workScope JSON field.
  * Supports both { scope: string } and tags array formats.
  */
-function extractWorkScopeObjectives(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  workScope: any
-): string[] {
+function extractWorkScopeObjectives(workScope: unknown): string[] {
   if (!workScope) return [];
   // WorkScopeString format: { scope: string }
   if (typeof workScope === "object" && "scope" in workScope && typeof workScope.scope === "string") {
@@ -152,25 +143,28 @@ function extractWorkScopeObjectives(
 /**
  * Extract plain text from a Richtext JSON field.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractRichtext(rt: any): string {
+function extractRichtext(rt: unknown): string {
   if (!rt) return "";
   if (typeof rt === "string") return rt;
-  if (typeof rt === "object" && "text" in rt) return rt.text ?? "";
+  if (typeof rt === "object" && "text" in rt) return (rt as Record<string, unknown>)["text"] as string ?? "";
   return "";
 }
 
 /**
  * Extract plain text from a LinearDocument JSON field (array of blocks).
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractLinearDocument(doc: any): string {
+function extractLinearDocument(doc: unknown): string {
   if (!doc) return "";
   if (typeof doc === "string") return doc;
-  if (typeof doc === "object" && "blocks" in doc && Array.isArray(doc.blocks)) {
-    return doc.blocks
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((block: any) => block?.block?.plaintext ?? "")
+  if (typeof doc === "object" && "blocks" in doc && Array.isArray((doc as Record<string, unknown>)["blocks"])) {
+    return ((doc as Record<string, unknown>)["blocks"] as unknown[])
+      .map((block) => {
+        if (!block || typeof block !== "object") return "";
+        const b = (block as Record<string, unknown>)["block"];
+        if (!b || typeof b !== "object") return "";
+        const plaintext = (b as Record<string, unknown>)["plaintext"];
+        return typeof plaintext === "string" ? plaintext : "";
+      })
       .filter(Boolean)
       .join("\n\n");
   }
@@ -183,8 +177,7 @@ function extractLinearDocument(doc: any): string {
  *   { $type: "...#contributorIdentity", identity: string }  — free-text / DID string
  *   A strong ref to a contributorInformation record
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractContributors(raw: any): BumicertContributor[] {
+function extractContributors(raw: unknown): BumicertContributor[] {
   if (!Array.isArray(raw)) return [];
   const result: BumicertContributor[] = [];
   for (const item of raw) {
@@ -219,10 +212,14 @@ export function activityToBumicertData(item: GraphQLHcActivityItem): BumicertDat
   let coverImageUrl: string | null = null;
   if (record?.image) {
     if (typeof record.image === "object") {
-      if ("uri" in record.image && record.image.uri) {
-        coverImageUrl = record.image.uri;
-      } else if ("image" in record.image && record.image.image?.uri) {
-        coverImageUrl = record.image.image.uri;
+      const img = record.image as Record<string, unknown>;
+      if (typeof img["uri"] === "string" && img["uri"]) {
+        coverImageUrl = img["uri"];
+      } else if (typeof img["image"] === "object" && img["image"] !== null) {
+        const nested = img["image"] as Record<string, unknown>;
+        if (typeof nested["uri"] === "string" && nested["uri"]) {
+          coverImageUrl = nested["uri"];
+        }
       }
     }
   }

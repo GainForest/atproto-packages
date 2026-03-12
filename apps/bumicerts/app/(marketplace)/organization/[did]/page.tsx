@@ -33,8 +33,8 @@ export async function generateMetadata({
   const description: string =
     typeof shortDescRaw === "string"
       ? shortDescRaw
-      : typeof shortDescRaw === "object" && shortDescRaw?.text
-        ? shortDescRaw.text
+      : typeof shortDescRaw === "object" && shortDescRaw !== null && "text" in shortDescRaw && typeof (shortDescRaw as Record<string, unknown>)["text"] === "string"
+        ? (shortDescRaw as Record<string, unknown>)["text"] as string
         : `${displayName} on Bumicerts — verified regenerative impact organization.`;
 
   const coverImageUrl = record?.coverImage?.uri ?? null;
