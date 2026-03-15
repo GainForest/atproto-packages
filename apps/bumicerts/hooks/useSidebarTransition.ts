@@ -12,8 +12,8 @@
  *   OVERLAY_DURATION - EXIT_LEAD_MS → isExiting=true   (circle animates OUT)
  *   OVERLAY_DURATION               → switching=false   (overlay unmounts)
  *
- * Uses the same sessionStorage key as usePlatformTransitionToast so both
- * hooks agree on what counts as a platform change.
+ * Writes the current platform to sessionStorage on every pathname change so
+ * the stored value is always up to date across layout remounts.
  *
  * Triggers in exactly two scenarios:
  *   1. Entering any /upload route (from anywhere).
@@ -42,6 +42,11 @@ function readStoredPlatform(): SidebarPlatform | null {
   return null;
 }
 
+function storePlatform(platform: SidebarPlatform): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(SESSION_KEY, platform);
+}
+
 interface SidebarTransitionState {
   /** Whether the transition overlay should be shown right now. */
   switching: boolean;
@@ -62,6 +67,9 @@ export function useSidebarTransition(): SidebarTransitionState {
   useEffect(() => {
     const current = detectPlatform(pathname);
     const prev = readStoredPlatform();
+
+    // Always persist current so the next mount can compare correctly.
+    storePlatform(current);
 
     // Scenario 1: entering upload from anywhere (including first visit).
     const toUpload = current === "upload" && prev !== "upload";
