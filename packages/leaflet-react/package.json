@@ -1,0 +1,109 @@
+{
+  "name": "@gainforest/leaflet-react",
+  "version": "0.1.0",
+  "description": "React components for rendering and editing pub.leaflet.pages.linearDocument rich text documents in ATProto apps.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./renderer": {
+      "source": "./src/renderer/index.ts",
+      "types": "./dist/renderer/index.d.ts",
+      "import": "./dist/renderer/index.js",
+      "require": "./dist/renderer/index.cjs"
+    },
+    "./editor": {
+      "source": "./src/editor/index.ts",
+      "types": "./dist/editor/index.d.ts",
+      "import": "./dist/editor/index.js",
+      "require": "./dist/editor/index.cjs"
+    },
+    "./serializer": {
+      "source": "./src/serializer/index.ts",
+      "types": "./dist/serializer/index.d.ts",
+      "import": "./dist/serializer/index.js",
+      "require": "./dist/serializer/index.cjs"
+    },
+    "./utils": {
+      "source": "./src/utils/index.ts",
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.js",
+      "require": "./dist/utils/index.cjs"
+    },
+    "./schemas": {
+      "source": "./src/schemas/index.ts",
+      "types": "./dist/schemas/index.d.ts",
+      "import": "./dist/schemas/index.js",
+      "require": "./dist/schemas/index.cjs"
+    },
+    "./richtext": {
+      "source": "./src/richtext/index.ts",
+      "types": "./dist/richtext/index.d.ts",
+      "import": "./dist/richtext/index.js",
+      "require": "./dist/richtext/index.cjs"
+    },
+    "./editor.css": "./dist/editor.css"
+  },
+  "typesVersions": {
+    "*": {
+      "renderer": ["dist/renderer/index.d.ts"],
+      "editor": ["dist/editor/index.d.ts"],
+      "serializer": ["dist/serializer/index.d.ts"],
+      "utils": ["dist/utils/index.d.ts"],
+      "schemas": ["dist/schemas/index.d.ts"],
+      "richtext": ["dist/richtext/index.d.ts"]
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.16",
+    "@floating-ui/dom": "^1.6.0",
+    "@tiptap/core": "2.27.2",
+    "@tiptap/extension-document": "2.27.2",
+    "@tiptap/extension-hard-break": "2.27.2",
+    "@tiptap/extension-history": "2.27.2",
+    "@tiptap/extension-image": "2.27.2",
+    "@tiptap/extension-link": "2.27.2",
+    "@tiptap/extension-mention": "2.27.2",
+    "@tiptap/extension-paragraph": "2.27.2",
+    "@tiptap/extension-placeholder": "2.27.2",
+    "@tiptap/extension-text": "2.27.2",
+    "@tiptap/extension-underline": "2.27.2",
+    "@tiptap/extension-youtube": "2.27.2",
+    "@tiptap/pm": "2.27.2",
+    "@tiptap/react": "2.27.2",
+    "@tiptap/starter-kit": "2.27.2",
+    "@tiptap/suggestion": "2.27.2",
+    "lucide-react": "^0.513.0"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "zod": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@gainforest/generated": "*",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}
