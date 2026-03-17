@@ -42,6 +42,7 @@ jobs:
           bun run --filter '@gainforest/atproto-mutations-core' build
           bun run --filter '@gainforest/atproto-auth-next' build
           bun run --filter '@gainforest/atproto-mutations-next' build
+          bun run --filter '@gainforest/leaflet-react' build
 
       - name: Typecheck bumicerts
         run: bun run typecheck

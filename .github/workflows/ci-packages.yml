@@ -37,11 +37,13 @@ jobs:
           bun run --filter '@gainforest/atproto-mutations-core' build
           bun run --filter '@gainforest/atproto-auth-next' build
           bun run --filter '@gainforest/atproto-mutations-next' build
+          bun run --filter '@gainforest/leaflet-react' build
 
       - name: Typecheck packages
         run: |
           cd packages/atproto-mutations-core && bun run typecheck
           cd ../atproto-mutations-next && bun run typecheck
           cd ../atproto-auth-next && bun run typecheck
+          cd ../leaflet-react && bun run typecheck
 
 
