@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       skip_railway:
-        description: 'Skip Railway deployment (validation only)'
+        description: 'true = validate + Docker smoke test only (no Railway deploy) | false = full deploy'
         required: false
         default: 'false'
 
@@ -92,7 +92,10 @@ jobs:
   # ───────────────────────────────────────────────────────────────────────────
   # 2. Deploy — sync env vars + trigger Railway redeployment
   #
-  # Only runs on pushes to main (not PRs or workflow_dispatch with skip flag).
+  # Runs on:
+  #   - push to main (always deploys)
+  #   - workflow_dispatch with skip_railway = 'false' (manual deploy)
+  #   - workflow_dispatch with skip_railway = 'true'  (validate only, skipped)
   #
   # ENV VARIABLE SYNC RULES:
   #   - Static values are parsed from .env.railway / tap.env.railway and
@@ -108,9 +111,11 @@ jobs:
     needs: validate
     runs-on: ubuntu-latest
     if: |
-      github.event_name == 'push' &&
-      github.event.inputs.skip_railway != 'true' &&
-      github.repository == 'GainForest/atproto-packages'
+      github.repository == 'GainForest/atproto-packages' &&
+      (
+        github.event_name == 'push' ||
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.skip_railway != 'true')
+      )
     env:
       RAILWAY_API: https://backboard.railway.com/graphql/v2
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
