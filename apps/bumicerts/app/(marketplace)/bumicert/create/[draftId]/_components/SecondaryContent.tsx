@@ -22,8 +22,8 @@ const stepImages = [
     image: BiokoNeutralImage,
     alt: "Bioko Neutral",
     tips: [
-      "Use a short and descriptive name for your project.",
-      "Include a website or social link to your project for easy access.",
+      "Use a short and descriptive name for your bumicert.",
+      "Include a website or social link to your bumicert for easy access.",
     ],
     previewBumicertByDefault: true,
   },
@@ -126,7 +126,7 @@ const SecondaryContent = () => {
               exit={{ opacity: 0, scale: 0.3, filter: "blur(10px)", height: 0 }}
             >
               {step1Progress === 100 ? (
-                <div className="flex items-center justify-center">
+                <div className="w-full flex items-center justify-center">
                   <BumicertCardVisual
                     logoUrl={logoUrl}
                     coverImage={
@@ -136,9 +136,8 @@ const SecondaryContent = () => {
                     title={step1FormValues.projectName}
                     organizationName=""
                     objectives={step1FormValues.workType}
-                    className="w-min"
+                    className="max-w-2xs"
                   />
-
                 </div>
               ) : (
                 <div className="w-full flex items-center justify-center p-4">

@@ -1,6 +1,5 @@
 "use client";
 import React from "react";
-import dynamic from "next/dynamic";
 import ReviewStepCard from "./ReviewStepCard";
 import { STEPS as steps } from "../../../_data/steps";
 import useNewBumicertStore from "../../../store";
@@ -14,12 +13,7 @@ import { format } from "date-fns";
 import BumicertPreviewCard from "./BumicertPreviewCard";
 import { useNavbarContext } from "@/app/(marketplace)/_components/Navbar/context";
 import { cn } from "@/lib/utils";
-import { richTextDisplayClassNames } from "@/lib/richtext";
-
-const DynamicRichTextDisplay = dynamic(
-  () => import("bsky-richtext-react").then((mod) => mod.RichTextDisplay),
-  { ssr: false }
-);
+import { CheckCircle2Icon } from "lucide-react";
 
 const FormValue = ({
   label,
@@ -85,18 +79,17 @@ const Step4 = () => {
                   ? "Uploaded"
                   : "Not Uploaded";
                 break;
-              case "projectDateRange":
-                parsedValue = step1FormValues[typedKey]
-                  ? `From ${format(
-                      step1FormValues[typedKey][0],
-                      "LLL dd, y"
-                    )} to ${
-                      step1FormValues[typedKey][1]
-                        ? format(step1FormValues[typedKey][1], "LLL dd, y")
-                        : "Present"
-                    }`
-                  : "Not Uploaded";
+              case "projectDateRange": {
+                const [start, end] = step1FormValues[typedKey];
+                const endStr = step1FormValues.isOngoing || end === null
+                  ? "Ongoing"
+                  : format(end, "LLL dd, y");
+                parsedValue = `From ${format(start, "LLL dd, y")} to ${endStr}`;
                 break;
+              }
+              case "isOngoing":
+                // Shown as part of projectDateRange, skip standalone display
+                return null;
               case "workType":
                 parsedValue =
                   step1FormValues[typedKey].join(", ") || "Not Selected";
@@ -124,14 +117,9 @@ const Step4 = () => {
             <FormValue
               label="Your Impact Story"
               value={
-                <div className="whitespace-pre-wrap text-sm line-clamp-4">
-                  <DynamicRichTextDisplay
-                    value={{
-                      text: step2FormValues.description,
-                      facets: step2FormValues.descriptionFacets,
-                    }}
-                    classNames={richTextDisplayClassNames}
-                  />
+                <div className="flex items-center gap-1.5 mt-1 text-sm text-primary">
+                  <CheckCircle2Icon className="size-4 shrink-0" />
+                  <span>Impact story added</span>
                 </div>
               }
             />

@@ -28,6 +28,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { trackBumicertPublished, getFlowDurationSeconds } from "@/lib/analytics/hotjar";
 import { trpc } from "@/lib/trpc/client";
 import { formatError } from "@/lib/utils/trpc-errors";
+import type { LinearDocument } from "@gainforest/atproto-mutations-next";
 import dynamic from "next/dynamic";
 const FeedbackModal = dynamic(() => import("./FeedbackModal"), { ssr: false });
 
@@ -258,35 +259,27 @@ const Step5 = () => {
       // Convert file to serializable format (base64 + metadata)
       const imageFile = await toSerializableFile(step1FormValues.coverImage);
 
-      // Transform description string + facets into a LinearDocument.
-      // The lexicon expects pub.leaflet.pages.linearDocument.
-      // Note: bsky-richtext-react outputs app.bsky.richtext.facet but the structures
-      // are compatible at runtime.
-      const descriptionAsLinearDocument = {
-        $type: "pub.leaflet.pages.linearDocument" as const,
-        blocks: [
-          {
-            $type: "pub.leaflet.pages.linearDocument#block" as const,
-            block: {
-              $type: "pub.leaflet.blocks.text" as const,
-              plaintext: step2FormValues.description,
-              facets: step2FormValues.descriptionFacets ?? [],
-            },
-          },
-        ],
-      };
-
+      // description is a LeafletLinearDocument from the editor.
+      // The mutations package expects the generated LinearDocument type from
+      // @gainforest/generated, which differs structurally only in its image block
+      // (CID class vs plain { $link } object). Since we serialize to JSON before
+      // sending to the PDS, these are runtime-compatible. We cast through the
+      // generated LinearDocument type at this boundary.
+      const descriptionForMutation = step2FormValues.description as unknown as LinearDocument;
       setHasClickedPublish(true);
       createBumicert({
         title: step1FormValues.projectName,
         shortDescription: step2FormValues.shortDescription,
-        description: descriptionAsLinearDocument,
+        description: descriptionForMutation,
         workScope: {
           $type: "org.hypercerts.claim.activity#workScopeString" as const,
           scope: step1FormValues.workType.join(", "),
         },
         startDate: step1FormValues.projectDateRange[0].toISOString() as `${string}-${string}-${string}T${string}:${string}:${string}Z`,
-        endDate: step1FormValues.projectDateRange[1].toISOString() as `${string}-${string}-${string}T${string}:${string}:${string}Z`,
+        // endDate is null when the work is ongoing — omit it from the mutation
+        ...(step1FormValues.projectDateRange[1] !== null && {
+          endDate: step1FormValues.projectDateRange[1].toISOString() as `${string}-${string}-${string}T${string}:${string}:${string}Z`,
+        }),
         contributors: step3FormValues.contributors.map((contributor) => ({
           contributorIdentity: {
             $type: "org.hypercerts.claim.activity#contributorIdentity" as const,

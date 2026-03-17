@@ -6,6 +6,8 @@ import {
   Step3FormValues,
   useFormStore,
 } from "../form-store";
+import { textToLinearDocument } from "@/lib/utils/linearDocument";
+import { LeafletLinearDocumentSchema } from "@gainforest/leaflet-react/schemas";
 import { useModal } from "@/components/ui/modal/context";
 import {
   ModalContent,
@@ -162,11 +164,13 @@ const StoreHydrator = ({
             ? new Date(`${thisYear}-01-01`)
             : new Date(draftData.startDate)
           : new Date(`${thisYear}-01-01`);
-        const endDate = draftData.endDate
+        // endDate is null for ongoing bumicerts
+        const endDate: Date | null = draftData.endDate
           ? isNaN(new Date(draftData.endDate).getTime())
-            ? new Date()
+            ? null
             : new Date(draftData.endDate)
-          : new Date();
+          : null;
+        const isOngoing = endDate === null;
 
         // Map draft data to form values
         const step1Data: Step1FormValues = {
@@ -174,11 +178,28 @@ const StoreHydrator = ({
           coverImage: coverImageFile,
           workType: draftData.workScopes ?? [],
           projectDateRange: [startDate, endDate],
+          isOngoing,
         };
+
+        // Parse draft description — V1 drafts stored it as a plain string,
+        // V2+ store it as a LeafletLinearDocument. Handle both formats.
+        const rawDescription = draftData.description;
+        const parsedDescription = (() => {
+          // Try to parse as LinearDocument first
+          if (rawDescription && typeof rawDescription === "object") {
+            const parseResult = LeafletLinearDocumentSchema.safeParse(rawDescription);
+            if (parseResult.success) return parseResult.data;
+          }
+          // Fall back: treat as plain string (legacy V1 drafts)
+          if (typeof rawDescription === "string" && rawDescription.trim()) {
+            return textToLinearDocument(rawDescription);
+          }
+          return { blocks: [] as Step2FormValues["description"]["blocks"] };
+        })();
 
         const step2Data: Step2FormValues = {
           shortDescription: draftData.shortDescription ?? "",
-          description: draftData.description ?? "",
+          description: parsedDescription,
         };
 
         const step3Data: Step3FormValues = {

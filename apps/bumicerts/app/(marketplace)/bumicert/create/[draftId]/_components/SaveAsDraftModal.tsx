@@ -117,7 +117,7 @@ const SaveAsDraftModal = () => {
         endDate: step1.projectDateRange[1]?.toISOString(),
         workScopes: step1.workType.length > 0 ? step1.workType : undefined,
         coverImage: coverImageUrl,
-        description: step2.description || undefined,
+        description: step2.description.blocks.length > 0 ? step2.description : undefined,
         shortDescription: step2.shortDescription || undefined,
         contributors:
           step3.contributors.length > 0

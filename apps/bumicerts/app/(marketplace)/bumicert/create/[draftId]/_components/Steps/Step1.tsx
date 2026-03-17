@@ -8,7 +8,6 @@ import {
 import {
   CalendarClockIcon,
   ClubIcon,
-  GlobeIcon,
   HandHeartIcon,
   ImagePlusIcon,
 } from "lucide-react";
@@ -26,6 +25,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { CalendarRange } from "@/components/ui/calendar-range";
 import { useNavbarContext } from "@/app/(marketplace)/_components/Navbar/context";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 const Step1 = () => {
   const { viewport, openState } = useNavbarContext();
@@ -40,11 +41,21 @@ const Step1 = () => {
     (state) => state.updateErrorsAndCompletion
   );
 
-  const { projectName, coverImage, workType, projectDateRange } = formValues;
+  const { projectName, coverImage, workType, projectDateRange, isOngoing } = formValues;
+  const [startDate, endDate] = projectDateRange;
 
   useEffect(() => {
     updateErrorsAndCompletion();
   }, []);
+
+  const handleOngoingChange = (checked: boolean) => {
+    setFormValue("isOngoing", checked);
+    // When toggling ongoing on, clear the end date; when off, restore today
+    setFormValue(
+      "projectDateRange",
+      checked ? [startDate, null] : [startDate, new Date()]
+    );
+  };
 
   return (
     <div>
@@ -90,15 +101,15 @@ const Step1 = () => {
           <div className="flex flex-col gap-2">
             <FormField
               Icon={ClubIcon}
-              label="Project Title"
+              label="Bumicert Title"
               error={errors.projectName}
               showError={shouldShowValidationErrors}
-              info="You can choose more than one"
+              info="Give your bumicert a clear, descriptive title"
               required
             >
               <InputGroup className="bg-background">
                 <InputGroupInput
-                  placeholder="My Awesome Project"
+                  placeholder="My Awesome Bumicert"
                   id="project-title"
                   value={projectName}
                   onChange={(e) => setFormValue("projectName", e.target.value)}
@@ -113,14 +124,14 @@ const Step1 = () => {
             </FormField>
             <FormField
               Icon={CalendarClockIcon}
-              label="Project Date Range"
+              label="Bumicert Date Range"
               className="flex-1"
               error={errors.projectDateRange}
               showError={shouldShowValidationErrors}
               required
               info="Select the period when your work and impact took place"
             >
-              <div className="mt-1">
+              <div className="mt-1 flex flex-col gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
@@ -133,21 +144,43 @@ const Step1 = () => {
                           "text-foreground group-hover:text-primary"
                         )}
                       >
-                        {format(projectDateRange[0], "LLL dd, y")} →{" "}
-                        {format(projectDateRange[1], "LLL dd, y")}{" "}
+                        {format(startDate, "LLL dd, y")} →{" "}
+                        {isOngoing || endDate === null
+                          ? "Ongoing"
+                          : format(endDate, "LLL dd, y")}
                       </span>
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto">
                     <CalendarRange
-                      value={projectDateRange}
+                      value={[startDate, endDate ?? new Date()]}
                       onValueChange={(value) => {
                         if (!value) return;
-                        setFormValue("projectDateRange", value);
+                        setFormValue("projectDateRange", [
+                          value[0],
+                          isOngoing ? null : value[1],
+                        ]);
                       }}
                     />
                   </PopoverContent>
                 </Popover>
+
+                {/* Ongoing checkbox */}
+                <div className="flex items-center gap-2 px-1">
+                  <Checkbox
+                    id="is-ongoing"
+                    checked={isOngoing}
+                    onCheckedChange={(checked) =>
+                      handleOngoingChange(checked === true)
+                    }
+                  />
+                  <Label
+                    htmlFor="is-ongoing"
+                    className="text-sm text-muted-foreground cursor-pointer select-none"
+                  >
+                    This work is still ongoing
+                  </Label>
+                </div>
               </div>
             </FormField>
             <FormField

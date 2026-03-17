@@ -13,7 +13,6 @@ const BumicertPreviewCard = () => {
     coverImage,
     projectName: title,
     workType: objectives,
-    projectDateRange: [startDate, endDate],
   } = step1FormValues;
   const auth = useAtprotoStore((state) => state.auth);
   const { show, pushModal } = useModal();
@@ -28,8 +27,7 @@ const BumicertPreviewCard = () => {
 
   const isLoadingOrganizationInfo = isPendingOrganizationInfo || isOlderData;
 
-  const isBumicertArtReady =
-    coverImage && title && objectives.length;
+  const isBumicertArtReady = coverImage && title && objectives.length;
 
   return (
     <div className="rounded-xl border border-primary/10 shadow-lg overflow-hidden bg-primary/10 flex flex-col">
@@ -38,7 +36,7 @@ const BumicertPreviewCard = () => {
         <span className="font-medium">Preview your bumicert</span>
       </div>
 
-      <div className="bg-background p-2 rounded-xl flex-1 flex flex-col gap-2 items-center justify-center">
+      <div className="bg-background p-3 rounded-xl flex-1 flex flex-col gap-3">
         {!logoFromData && (
           <div className="w-full flex items-start gap-2 border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 rounded-lg p-2 relative">
             <button
@@ -65,24 +63,27 @@ const BumicertPreviewCard = () => {
         )}
 
         {isBumicertArtReady ? (
-          <BumicertCardVisual
-            logoUrl={logoUrl}
-            coverImage={coverImage}
-            title={title}
-            organizationName=""
-            objectives={objectives}
-          />
+          // Full-width card — max-w keeps it readable on very wide panels
+          <div className="w-full max-w-sm mx-auto">
+            <BumicertCardVisual
+              logoUrl={logoUrl}
+              coverImage={coverImage}
+              title={title}
+              organizationName=""
+              objectives={objectives}
+            />
+          </div>
         ) : isLoadingOrganizationInfo ? (
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center py-8">
             <Loader2Icon className="animate-spin" />
-            <span className="text-sm text-muted-foreground text-center text-pretty">
+            <span className="text-sm text-muted-foreground text-center text-pretty mt-2">
               Generating the preview...
             </span>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center py-8">
             <span className="text-sm text-muted-foreground text-center text-pretty">
-              You need to complete the first step to preview the bumicert.
+              Complete the first step to preview your bumicert.
             </span>
           </div>
         )}

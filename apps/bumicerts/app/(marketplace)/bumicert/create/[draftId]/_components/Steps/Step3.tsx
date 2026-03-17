@@ -109,7 +109,7 @@ const Step3 = () => {
         <FormField
           Icon={UsersIcon}
           label="List of Contributors"
-          description="Add everyone involved in this project — including your own community or organization and any collaborators. Tip: Start by adding your own group first before listing your partners or supporters."
+          description="Add everyone involved in this bumicert — including your own community or organization and any collaborators. Tip: Start by adding your own group first before listing your partners or supporters."
           error={errors.contributors}
           showError={shouldShowValidationErrors}
           required
@@ -146,7 +146,7 @@ const Step3 = () => {
         <FormField
           Icon={MapIcon}
           label="Site Boundaries"
-          description="Please upload your site boundary in GeoJSON format so we can visualize your project on the map."
+          description="Please upload your site boundary in GeoJSON format so we can visualize your bumicert on the map."
           error={errors.siteBoundaries}
           showError={shouldShowValidationErrors}
           required
@@ -159,7 +159,7 @@ const Step3 = () => {
             {auth.user?.did && (
               <span className="text-sm text-muted-foreground">
                 <Link
-                   href={links.upload.sites}
+                  href={links.upload.sites}
                   className="flex items-center text-primary hover:underline"
                 >
                   Manage sites <ChevronRightIcon className="size-4" />
@@ -235,7 +235,7 @@ const Step3 = () => {
                     })}
                     <Button
                       variant="outline"
-                      className="h-auto"
+                      className="h-auto rounded-lg"
                       onClick={onAddSite}
                     >
                       <PlusCircleIcon /> Add a site
@@ -366,7 +366,7 @@ const SiteItem = ({
       variant={"outline"}
       size="sm"
       className={cn(
-        "h-auto flex items-center justify-start px-4 pl-6 py-2 gap-3 overflow-hidden",
+        "h-auto flex items-center justify-start px-4 pl-6 py-2 gap-3 overflow-hidden rounded-lg",
         isSelected && "border-primary"
       )}
       onClick={() => onSelectChange(!isSelected)}
@@ -376,7 +376,7 @@ const SiteItem = ({
           <CheckIcon className="size-3 text-white" />
         </div>
       ) : (
-          <CircleDashedIcon className="size-5 text-muted-foreground" />
+        <CircleDashedIcon className="size-5 text-muted-foreground" />
       )}
       <div className="flex flex-col items-start justify-start">
         <span className="text-base font-medium">{site.record?.name ?? "Unnamed Site"}</span>

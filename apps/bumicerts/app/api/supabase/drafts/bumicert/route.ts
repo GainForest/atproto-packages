@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "../../client";
 import { auth } from "@/lib/auth";
+import type { Json } from "../../types";
 import {
   draftBumicertDataSchemaV0,
   getDraftBumicertRequestSchema,
@@ -151,7 +152,8 @@ export async function POST(req: NextRequest) {
 
       const validatedRequestBody = updateValidation.data;
       const updateData = {
-        data: validatedRequestBody.data,
+        // Cast to Json — LeafletLinearDocument is a plain JSON object, runtime-compatible
+        data: validatedRequestBody.data as unknown as Json,
         updated_at: new Date().toISOString(),
       };
 
@@ -204,7 +206,8 @@ export async function POST(req: NextRequest) {
       const validatedRequestBody = createValidation.data;
       const insertData = {
         ownerDid: userDid,
-        data: validatedRequestBody.data,
+        // Cast to Json — LeafletLinearDocument is a plain JSON object, runtime-compatible
+        data: validatedRequestBody.data as unknown as Json,
         version: validatedRequestBody.version ?? 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

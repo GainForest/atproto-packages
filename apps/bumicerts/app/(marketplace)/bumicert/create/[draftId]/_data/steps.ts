@@ -34,7 +34,7 @@ type StepData = {
 export const STEPS: StepData[] = [
   {
     title: "Cover Details",
-    description: "Tell us about your project.",
+    description: "Tell us about your bumicert.",
     Component: Step1,
     icon: BookImageIcon,
     tips: {
@@ -50,7 +50,7 @@ export const STEPS: StepData[] = [
   },
   {
     title: "Impact Details",
-    description: "Tell us about the impact of your project.",
+    description: "Tell us about the impact of your bumicert.",
     Component: Step2,
     icon: PenLineIcon,
     tips: {
@@ -69,7 +69,7 @@ export const STEPS: StepData[] = [
   },
   {
     title: "Site Details",
-    description: "Tell us about the site of your project.",
+    description: "Tell us about the site of your bumicert.",
     Component: Step3,
     icon: EarthLockIcon,
     tips: {
@@ -84,7 +84,7 @@ export const STEPS: StepData[] = [
   },
   {
     title: "Review",
-    description: "Review your project details.",
+    description: "Review your bumicert details.",
     Component: Step4,
     icon: ScanSearchIcon,
     tips: {
@@ -99,7 +99,7 @@ export const STEPS: StepData[] = [
   },
   {
     title: "Submit",
-    description: "Submit your project details.",
+    description: "Submit your bumicert.",
     Component: Step5,
     icon: FlagTriangleRightIcon,
     tips: {

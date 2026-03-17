@@ -1,9 +1,12 @@
 import z from "zod";
 import { create } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
+import { LeafletLinearDocumentSchema } from "@gainforest/leaflet-react/schemas";
+import type { app } from "@gainforest/generated";
 
 // Constants for localStorage persistence
-const STORAGE_KEY = "bumicert-draft-form-v1";
+// v2: description changed from string+facets (bsky-richtext) to LeafletLinearDocument
+const STORAGE_KEY = "bumicert-draft-form-v2";
 const STORAGE_EXPIRY_DAYS = 30;
 
 export const step1Schema = z.object({
@@ -11,7 +14,7 @@ export const step1Schema = z.object({
     .string()
     .min(1, "Required")
     .max(50, "No more than 50 characters allowed")
-    .describe("Project Name"),
+    .describe("Bumicert Name"),
   coverImage: z
     .instanceof(File)
     .refine((v) => v.size > 0, {
@@ -19,9 +22,17 @@ export const step1Schema = z.object({
     })
     .describe("Cover Image"),
   workType: z.array(z.string()).min(1, "Required").describe("Work Type"),
+  /**
+   * [startDate, endDate | null]
+   * endDate is null when isOngoing is true.
+   */
   projectDateRange: z
-    .tuple([z.date(), z.date()])
-    .describe("Project Date Range"),
+    .tuple([z.date(), z.date().nullable()])
+    .describe("Bumicert Date Range"),
+  /**
+   * Whether the work is still ongoing. When true, endDate is null.
+   */
+  isOngoing: z.boolean().describe("Ongoing"),
 });
 export type Step1FormValues = z.infer<typeof step1Schema>;
 const thisYear = new Date().getFullYear();
@@ -30,26 +41,57 @@ export const step1InitialValues: Step1FormValues = {
   coverImage: new File([], "cover-image.png"),
   workType: [],
   projectDateRange: [new Date(`${thisYear}-01-01`), new Date()],
+  isOngoing: false,
 };
 
+// Typed schema for a single Bluesky richtext facet.
+// Used for shortDescriptionFacets — users can't edit these yet (textarea only),
+// but the structure is ready for when we add rich-text editing for shortDescription.
+const bskyFacetSchema = z.custom<app.bsky.richtext.facet.Main>(
+  (val): val is app.bsky.richtext.facet.Main => {
+    if (!val || typeof val !== "object") return false;
+    const obj = val as Record<string, unknown>;
+    return (
+      typeof obj["index"] === "object" &&
+      obj["index"] !== null &&
+      Array.isArray(obj["features"])
+    );
+  }
+);
+
 export const step2Schema = z.object({
-  description: z
-    .string()
-    .min(50, "At least 50 characters required")
-    .max(30000, "No more than 8000 characters allowed")
-    .describe("Your Impact Story"),
-  descriptionFacets: z.array(z.any()).optional(),
+  /**
+   * Full rich-text description as a Leaflet LinearDocument.
+   * Required — must have at least one non-empty block. No length cap.
+   */
+  description: LeafletLinearDocumentSchema.refine(
+    (doc) =>
+      doc.blocks.some((w) => {
+        const b = w.block as Record<string, unknown>;
+        return typeof b["plaintext"] === "string" && (b["plaintext"] as string).trim().length >= 1;
+      }),
+    { message: "Description is required" }
+  ).describe("Your Impact Story"),
+  /**
+   * Short plain-text summary (max 3000 chars, 300 graphemes).
+   * Rich text facets are stored separately in shortDescriptionFacets.
+   */
   shortDescription: z
     .string()
     .min(1, "Required")
     .max(3000, "No more than 3000 characters allowed")
     .describe("Short Description"),
+  /**
+   * Bluesky richtext facets for shortDescription (mentions, URLs, hashtags).
+   * Currently not editable via the UI — field is reserved for future use.
+   */
+  shortDescriptionFacets: z.array(bskyFacetSchema).optional(),
 });
 export type Step2FormValues = z.infer<typeof step2Schema>;
 export const step2InitialValues: Step2FormValues = {
-  description: "",
-  descriptionFacets: [],
+  description: { blocks: [] },
   shortDescription: "",
+  shortDescriptionFacets: [],
 };
 
 const contributorSchema = z.object({
@@ -98,7 +140,8 @@ const schemas = [step1Schema, step2Schema, step3Schema];
 
 // Serializable version of form values (without File, with string dates)
 type SerializableStep1FormValues = Omit<Step1FormValues, "coverImage" | "projectDateRange"> & {
-  projectDateRange: [string, string]; // ISO strings
+  // endDate is null when isOngoing is true
+  projectDateRange: [string, string | null];
 };
 
 type SerializableFormValues = [
@@ -116,9 +159,10 @@ const serializeFormValues = (
     {
       projectName: step1.projectName,
       workType: step1.workType,
+      isOngoing: step1.isOngoing,
       projectDateRange: [
         step1.projectDateRange[0].toISOString(),
-        step1.projectDateRange[1].toISOString(),
+        step1.projectDateRange[1]?.toISOString() ?? null,
       ],
     },
     step2,
@@ -131,14 +175,17 @@ const deserializeFormValues = (
   serialized: SerializableFormValues
 ): [Step1FormValues, Step2FormValues, Step3FormValues] => {
   const [step1, step2, step3] = serialized;
+  const endDateStr = step1.projectDateRange[1];
+  const endDate: Date | null = endDateStr ? new Date(endDateStr) : null;
   return [
     {
       projectName: step1.projectName,
       coverImage: new File([], "cover-image.png"), // Empty file - user needs to re-upload
       workType: step1.workType,
+      isOngoing: step1.isOngoing ?? endDate === null,
       projectDateRange: [
         new Date(step1.projectDateRange[0]),
-        new Date(step1.projectDateRange[1]),
+        endDate,
       ],
     },
     step2,

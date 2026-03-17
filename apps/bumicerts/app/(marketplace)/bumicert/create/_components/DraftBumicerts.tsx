@@ -16,7 +16,7 @@ import TimeText from "@/components/time-text";
 import { useQuery } from "@tanstack/react-query";
 import { links } from "@/lib/links";
 import { queryKeys } from "@/lib/query-keys";
-import type { DraftBumicertDataV0, DraftBumicertResponse, GetDraftBumicertResponse } from "@/app/api/supabase/drafts/bumicert/type";
+import type { DraftBumicertData, DraftBumicertResponse, GetDraftBumicertResponse } from "@/app/api/supabase/drafts/bumicert/type";
 
 async function fetchDrafts(): Promise<DraftBumicertResponse[]> {
   const res = await fetch(links.api.drafts.bumicert.get(), { method: "GET", credentials: "include" });
@@ -31,14 +31,23 @@ async function fetchDrafts(): Promise<DraftBumicertResponse[]> {
 }
 
 // Calculate progress based on filled fields
-const calculateProgress = (data: DraftBumicertDataV0): number => {
+const calculateProgress = (data: DraftBumicertData): number => {
+  // description may be a string (V0) or a LinearDocument (V1) — both truthy when present
+  const descriptionFilled =
+    typeof data.description === "string"
+      ? data.description.trim().length > 0
+      : typeof data.description === "object" &&
+        data.description !== null &&
+        "blocks" in data.description &&
+        (data.description as { blocks: unknown[] }).blocks.length > 0;
+
   const fields = [
     data.title,
     data.startDate,
     data.endDate,
     data.workScopes?.length,
     data.coverImage,
-    data.description,
+    descriptionFilled || undefined,
     data.shortDescription,
     data.contributors?.length,
     data.siteBoundaries?.length,
