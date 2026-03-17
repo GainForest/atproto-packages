@@ -1,23 +1,53 @@
 "use client";
 
+/**
+ * UploadDashboardClient
+ *
+ * Mode is driven entirely by the `?mode=` URL param (via nuqs):
+ *
+ * /upload          → view mode  (OrgHero + OrgAbout, read-only)
+ * /upload?mode=edit → edit mode  (EditableHero + EditableAbout + EditBar)
+ *
+ * nuqs is the single source of truth — no Zustand isEditing flag, no
+ * useEffect sync, no re-trigger bugs. Cancel simply clears the param.
+ *
+ * Save uses `organization.info.update` (not upsert) because the record is
+ * guaranteed to exist when the user reaches /upload. The update mutation
+ * fetches the existing record server-side and applies a partial patch, so
+ * we only send the fields that actually changed. This means:
+ *   - logo / coverImage are preserved from the PDS record when not re-uploaded
+ *   - website / startDate are preserved unless explicitly changed
+ *
+ * On success:
+ *   1. The mode param is cleared (returns to view mode).
+ *   2. The query cache is updated immediately with the best data we have
+ *      (text fields from the mutation result + object URLs for new images).
+ *      This prevents the user seeing stale data while the indexer catches up.
+ *   3. The query is invalidated so a background refetch replaces the
+ *      optimistic data with real CDN URLs once the indexer has processed it.
+ */
+
 import { useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { PencilIcon } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc/client";
 import { queries } from "@/lib/graphql/queries/index";
 import { orgInfoToOrganizationData } from "@/lib/adapters";
 import type { GraphQLOrgInfoItem } from "@/lib/adapters";
+import type { OrganizationData } from "@/lib/types";
+import type { LinearDocument, Richtext } from "@gainforest/atproto-mutations-next";
+import { toSerializableFile } from "@gainforest/atproto-mutations-next";
 
 import Container from "@/components/ui/container";
 import ErrorPage from "@/components/error-page";
+import { OrgHero } from "@/app/(marketplace)/organization/[did]/_components/OrgHero";
+import { OrgAbout } from "@/app/(marketplace)/organization/[did]/_components/OrgAbout";
 import { EditableHero, EditBar } from "./EditableHero/index";
-import { EditableSubHero } from "./EditableSubHero/index";
 import { EditableAbout } from "./EditableAbout";
-import { SitesPreview } from "./SitesPreview";
-import { BumicertsPreview } from "./BumicertsPreview";
+import { UploadNavGrid } from "./UploadNavGrid";
 import { UploadDashboardSkeleton } from "./UploadDashboardSkeleton";
 import { useUploadDashboardStore } from "./store";
+import { useUploadMode } from "../_hooks/useUploadMode";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -30,13 +60,13 @@ interface UploadDashboardClientProps {
 
 export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
   const queryClient = useQueryClient();
+  const [mode, setMode] = useUploadMode();
+  const isEditing = mode === "edit";
 
   // ── Store ───────────────────────────────────────────────────────────────────
   const serverData = useUploadDashboardStore((s) => s.serverData);
-  const isEditing = useUploadDashboardStore((s) => s.isEditing);
   const isSaving = useUploadDashboardStore((s) => s.isSaving);
   const setServerData = useUploadDashboardStore((s) => s.setServerData);
-  const startEditing = useUploadDashboardStore((s) => s.startEditing);
   const setSaving = useUploadDashboardStore((s) => s.setSaving);
   const setSaveError = useUploadDashboardStore((s) => s.setSaveError);
   const onSaveSuccess = useUploadDashboardStore((s) => s.onSaveSuccess);
@@ -54,7 +84,6 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
     staleTime: 60 * 1000,
   });
 
-  // Sync fetched data into the store
   useEffect(() => {
     if (fetchedOrg) {
       setServerData(fetchedOrg);
@@ -62,37 +91,60 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
   }, [fetchedOrg, setServerData]);
 
   // ── Mutations ───────────────────────────────────────────────────────────────
-  const upsertMutation = trpc.organization.info.upsert.useMutation({
+  const updateMutation = trpc.organization.info.update.useMutation({
     onSuccess: (result) => {
-      // Build updated OrganizationData from the mutation result
-      // The record returned has the latest state — re-adapt it
-      const updatedOrg = orgInfoToOrganizationData(
-        {
-          metadata: { did, rkey: "self", uri: result.uri, cid: result.cid, indexedAt: null, createdAt: result.record.createdAt ?? null },
-          creatorInfo: null,
-          record: {
-            displayName: result.record.displayName ?? null,
-            shortDescription: result.record.shortDescription ?? null,
-            longDescription: result.record.longDescription ?? null,
-            logo: null,
-            coverImage: null,
-            objectives: result.record.objectives ?? null,
-            country: result.record.country ?? null,
-            website: result.record.website ?? null,
-            startDate: result.record.startDate ?? null,
-            visibility: result.record.visibility ?? null,
-            createdAt: result.record.createdAt ?? null,
-          },
-        } as GraphQLOrgInfoItem,
-        serverData?.bumicertCount ?? 0
-      );
-      onSaveSuccess(updatedOrg);
-      // Invalidate the dashboard query so next load is fresh
+      // 1. Immediately update the query cache with the best data available:
+      //    - Text/scalar fields come from the mutation result record (authoritative).
+      //    - Image URLs: if the user uploaded a new file, create a temporary object URL
+      //      for instant preview. The background refetch will replace it with the real
+      //      CDN URL once the indexer processes the new blob.
+      //    - Fields the user didn't change fall back to the existing serverData values.
+      const current = queryClient.getQueryData<OrganizationData | null>(["org-dashboard", did]);
+      if (current) {
+        const rec = result.record;
+        const shortDesc = rec.shortDescription;
+
+        // Derive optimistic image URLs: object URL if a new file was uploaded,
+        // otherwise keep whatever was already in the cache.
+        const logoUrl = edits.logo
+          ? URL.createObjectURL(edits.logo)
+          : current.logoUrl;
+        const coverImageUrl = edits.coverImage
+          ? URL.createObjectURL(edits.coverImage)
+          : current.coverImageUrl;
+
+        const optimistic: OrganizationData = {
+          ...current,
+          displayName: rec.displayName ?? current.displayName,
+          shortDescription: typeof shortDesc?.text === "string"
+            ? shortDesc.text
+            : current.shortDescription,
+          longDescription: rec.longDescription
+            ? (rec.longDescription as unknown as OrganizationData["longDescription"])
+            : current.longDescription,
+          country: rec.country ?? current.country,
+          website: rec.website ?? current.website,
+          startDate: rec.startDate ?? current.startDate,
+          visibility: (rec.visibility as OrganizationData["visibility"]) ?? current.visibility,
+          logoUrl,
+          coverImageUrl,
+        };
+        queryClient.setQueryData(["org-dashboard", did], optimistic);
+      }
+
+      // 2. Clear edit mode — return to view mode.
+      setMode(null);
+
+      // 3. Reset the store's edit state and saving flag.
+      onSaveSuccess();
+
+      // 4. Invalidate in the background so the real indexer data replaces the
+      //    optimistic state once it's available (mainly for image CDN URLs).
       void queryClient.invalidateQueries({ queryKey: ["org-dashboard", did] });
     },
-    onError: (err) => {
+    onError: (mutationErr) => {
       setSaving(false);
-      setSaveError(err.message ?? "Failed to save. Please try again.");
+      setSaveError(mutationErr.message ?? "Failed to save. Please try again.");
     },
   });
 
@@ -103,41 +155,65 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
     setSaving(true);
     setSaveError(null);
 
-    // Build the upsert input — merge edits over current server values.
-    // Upsert uses the full create input shape (not partial).
-    // Files go through the blob pipeline inside the mutation layer.
-    const input = {
-      displayName: edits.displayName ?? serverData.displayName,
-      shortDescription: edits.shortDescription ?? serverData.shortDescription
-        ? { text: edits.shortDescription ?? serverData.shortDescription }
-        : undefined,
-      longDescription: edits.longDescription ?? serverData.longDescription
-        ? edits.longDescription ?? serverData.longDescription
-        : undefined,
-      objectives: serverData.objectives,
-      country: edits.country ?? serverData.country ?? undefined,
-      website: edits.website !== null
-        ? (edits.website ?? serverData.website ?? undefined)
-        : undefined,
-      startDate: edits.startDate !== null
-        ? (edits.startDate ?? serverData.startDate ?? undefined)
-        : undefined,
-      visibility: edits.visibility ?? serverData.visibility,
-      // File inputs — passed as SerializableFile via the blob pipeline
-      ...(edits.logo ? { logo: edits.logo } : {}),
-      ...(edits.coverImage ? { coverImage: edits.coverImage } : {}),
-    };
+    // Build partial data — only include fields that were actually edited.
+    // The update mutation fetches the existing record from the PDS and merges
+    // this patch, so omitted fields are preserved automatically.
+    const data: Record<string, unknown> = {};
 
-    upsertMutation.mutate(input);
-  }, [
-    serverData,
-    edits,
-    hasChanges,
-    isSaving,
-    setSaving,
-    setSaveError,
-    upsertMutation,
-  ]);
+    if (edits.displayName !== null) {
+      data.displayName = edits.displayName;
+    }
+
+    if (edits.shortDescription !== null) {
+      const resolvedFacets = edits.shortDescriptionFacets ?? serverData.shortDescriptionFacets;
+      // Our Facet[] (from leaflet-react) and the generated RichtextFacet.Main[] are
+      // structurally identical at runtime (same app.bsky.richtext.facet JSON shape).
+      // Cast at this mutation boundary — safe by structural equivalence.
+      const shortDescriptionInput: Richtext = {
+        text: edits.shortDescription,
+        facets: resolvedFacets.length > 0
+          ? resolvedFacets as unknown as Richtext["facets"]
+          : undefined,
+      };
+      data.shortDescription = shortDescriptionInput;
+    }
+
+    if (edits.longDescription !== null) {
+      // LeafletLinearDocument is structurally compatible with the generated LinearDocument
+      // at runtime (both serialize to the same JSON). Cast at this mutation boundary.
+      data.longDescription = edits.longDescription as unknown as LinearDocument;
+    }
+
+    if (edits.country !== null) {
+      data.country = edits.country;
+    }
+
+    if (edits.visibility !== null) {
+      data.visibility = edits.visibility;
+    }
+
+    // null in store = "unchanged" — omit from the patch so the update
+    // mutation preserves the existing PDS value automatically.
+    if (edits.website !== null) {
+      data.website = edits.website as `${string}:${string}`;
+    }
+
+    if (edits.startDate !== null) {
+      data.startDate = edits.startDate as `${string}-${string}-${string}T${string}:${string}:${string}Z`;
+    }
+
+    // Images must be wrapped in SmallImage shape { image: SerializableFile }
+    // so that resolveFileInputs can upload the file and replace it with a BlobRef.
+    if (edits.logo !== null) {
+      data.logo = { image: await toSerializableFile(edits.logo) };
+    }
+
+    if (edits.coverImage !== null) {
+      data.coverImage = { image: await toSerializableFile(edits.coverImage) };
+    }
+
+    updateMutation.mutate({ data });
+  }, [serverData, edits, hasChanges, isSaving, setSaving, setSaveError, updateMutation]);
 
   // ── Render states ───────────────────────────────────────────────────────────
 
@@ -159,25 +235,21 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
     );
   }
 
-  // ── Main render ─────────────────────────────────────────────────────────────
+  // ── Edit mode ───────────────────────────────────────────────────────────────
 
-  return (
-    // Hidden form — the EditBar's save button submits this form, which
-    // triggers handleSave via the onSubmit handler.
-    <form
-      id="upload-dashboard-save-form"
-      onSubmit={(e) => {
-        e.preventDefault();
-        void handleSave();
-      }}
-    >
-      <Container className="pt-4 pb-8 space-y-2">
-        {/* Hero — editable cover image, logo, name, short description */}
-        <EditableHero organization={serverData} />
+  if (isEditing) {
+    return (
+      <form
+        id="upload-dashboard-save-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void handleSave();
+        }}
+      >
+        <Container className="pt-4 pb-8 space-y-2">
+          <EditableHero organization={serverData} />
 
-        {/* Edit bar — shown only when isEditing */}
-        <AnimatePresence>
-          {isEditing && (
+          <AnimatePresence>
             <motion.div
               key="edit-bar"
               initial={{ opacity: 0, height: 0 }}
@@ -188,42 +260,21 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
             >
               <EditBar />
             </motion.div>
-          )}
-        </AnimatePresence>
+          </AnimatePresence>
 
-        {/* SubHero chips — country, date, website, visibility */}
-        <EditableSubHero organization={serverData} />
+          <EditableAbout organization={serverData} />
+        </Container>
+      </form>
+    );
+  }
 
-        {/* Long description */}
-        <EditableAbout organization={serverData} />
+  // ── View mode ───────────────────────────────────────────────────────────────
 
-        {/* Edit button — only shown in view mode */}
-        {!isEditing && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3, delay: 0.4 }}
-          >
-            <button
-              type="button"
-              onClick={startEditing}
-              className="inline-flex items-center gap-2 h-9 px-4 rounded-full border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-            >
-              <PencilIcon className="h-3.5 w-3.5" />
-              Edit profile
-            </button>
-          </motion.div>
-        )}
-
-        {/* Divider */}
-        <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent pt-4" />
-
-        {/* Sites preview */}
-        <SitesPreview />
-
-        {/* Bumicerts preview */}
-        <BumicertsPreview organization={serverData} />
-      </Container>
-    </form>
+  return (
+    <Container className="pt-4 pb-8 space-y-2">
+      <OrgHero organization={serverData} showEditButton />
+      <OrgAbout organization={serverData} />
+      <UploadNavGrid />
+    </Container>
   );
 }

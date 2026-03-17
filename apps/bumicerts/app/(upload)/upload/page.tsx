@@ -2,10 +2,12 @@ import { auth } from "@/lib/auth";
 import { UploadDashboardClient } from "./_components/UploadDashboardClient";
 
 /**
- * /upload — Organisation management dashboard
+ * /upload — Organisation profile page (view + edit modes)
  *
- * Auth is already enforced by the (upload) layout; this page simply
- * retrieves the DID from the session and hands it to the client component.
+ * Auth is enforced by the (upload) layout. Mode (?mode=edit) is managed
+ * entirely client-side via nuqs — no searchParams needed here.
+ *
+ * SSR/SEO is intentionally not required for this route.
  */
 export default async function UploadPage() {
   const session = await auth.session.getSession();
