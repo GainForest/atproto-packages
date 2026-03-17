@@ -90,6 +90,49 @@ boundary, and reconstructed on the other side if needed.
 
 ---
 
+## ATProto Mutations: `update` vs `upsert`
+
+When calling tRPC mutations against ATProto records, always choose the right
+operation for the situation:
+
+| Situation | Use |
+|-----------|-----|
+| Record is **guaranteed to exist** (user is already authenticated and viewing the record) | `update` |
+| Record **may or may not exist** (first save after onboarding, seeding) | `upsert` |
+
+**Why this matters:**
+
+- `update` takes `{ data: Partial<RecordFields>, unset?: string[] }` — you only send
+  the fields that changed. The mutation fetches the existing record from the PDS
+  server-side and applies a patch. Fields omitted from `data` are preserved
+  automatically (including BlobRefs for images, optional fields, etc.).
+- `upsert` takes the **full** record shape — all required fields every time. If you
+  use `upsert` for a partial edit, you must re-send every field, and anything
+  accidentally omitted will be lost.
+
+**Rule of thumb for `/upload/*` routes:** always use `update`. The user can only
+reach those pages after their org record exists.
+
+**Image fields** must be wrapped in the `SmallImage` shape and the File serialized:
+```ts
+// ✅ correct
+data.logo = { image: await toSerializableFile(file) };
+
+// ❌ wrong — resolveFileInputs can't find the file inside logo directly
+data.logo = file;
+data.logo = await toSerializableFile(file);
+```
+
+**After a successful update:**
+1. Call `queryClient.setQueryData(key, optimistic)` — apply text fields from the
+   mutation result immediately; use `URL.createObjectURL(file)` for newly uploaded
+   images so the UI updates before the indexer catches up.
+2. Clear edit mode (set nuqs mode param to `null`).
+3. Call `queryClient.invalidateQueries(key)` to trigger a background refetch that
+   will replace optimistic image object URLs with real CDN URLs once indexed.
+
+---
+
 ## Complex Systems Reference
 
 Before modifying a complex or non-obvious system, check `docs/` for a reference
@@ -117,6 +160,14 @@ guidance on where to place a new modal.
 
 → See [`agents/NEW_ROUTE.md`](agents/NEW_ROUTE.md) for the SSR/SEO strategy, the
 Shell pattern, skeleton rules, caching behaviour, and the scaffold CLI.
+
+---
+
+## Upload Routes (`/upload/*`)
+
+→ See [`agents/UPLOAD_ROUTES.md`](agents/UPLOAD_ROUTES.md) for the rendering
+strategy, required files per sub-route, and mutation patterns specific to the
+upload dashboard.
 
 ---
 
