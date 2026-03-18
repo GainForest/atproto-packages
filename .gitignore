@@ -7,4 +7,5 @@ dist/
 .env.*.local
 .env.test-credentials
 
-# GENERATED/types/ is intentionally committed — required for Vercel builds.
+# GENERATED/types/ is intentionally committed — used by packages and apps.
+# packages/*/dist/ is NOT committed — CI and Vercel build packages from source.

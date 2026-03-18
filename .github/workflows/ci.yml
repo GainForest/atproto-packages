@@ -1,50 +1,204 @@
-name: Deploy Indexer to Railway
+name: CI
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Triggers
-# ─────────────────────────────────────────────────────────────────────────────
-# Only runs when indexer source code or its dependencies change.
-# Pure bumicerts / docs / unrelated changes never trigger this workflow.
-# ─────────────────────────────────────────────────────────────────────────────
 on:
   push:
     branches: [main]
-    paths:
-      - 'apps/indexer/**'
-      - 'packages/internal-utils/**'
-      - 'GENERATED/lexicons/**'
-      - 'GENERATED/scripts/generate-collections.ts'
   pull_request:
-    paths:
-      - 'apps/indexer/**'
-      - 'packages/internal-utils/**'
-      - 'GENERATED/lexicons/**'
-      - 'GENERATED/scripts/generate-collections.ts'
   workflow_dispatch:
     inputs:
-      skip_railway:
-        description: 'true = validate + Docker smoke test only (no Railway deploy) | false = full deploy'
-        required: false
-        default: 'false'
+      deploy_indexer:
+        description: 'Deploy indexer to Railway'
+        type: boolean
+        default: true
+      skip_cache:
+        description: 'Force rebuild packages (ignore cache)'
+        type: boolean
+        default: false
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Jobs
-# ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  # ───────────────────────────────────────────────────────────────────────────
-  # 1. Validate — typecheck + smoke-test Docker builds + generate filters
-  # ───────────────────────────────────────────────────────────────────────────
-  validate:
-    name: Validate
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Setup: Shared steps - detect changes, build packages (cached)
+  # ─────────────────────────────────────────────────────────────────────────────
+  setup:
+    name: Setup
     runs-on: ubuntu-latest
     outputs:
+      packages_changed: ${{ steps.changes.outputs.packages }}
+      bumicerts_changed: ${{ steps.changes.outputs.bumicerts }}
+      indexer_changed: ${{ steps.changes.outputs.indexer }}
       collection_filters: ${{ steps.filters.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            packages:
+              - 'packages/**'
+              - 'GENERATED/**'
+            bumicerts:
+              - 'apps/bumicerts/**'
+              - '!apps/bumicerts/**/*.md'
+              - 'apps/bumicerts/app/**/*.md'
+              - 'apps/bumicerts/public/**/*.md'
+            indexer:
+              - 'apps/indexer/**'
+              - 'packages/internal-utils/**'
+              - 'GENERATED/lexicons/**'
+              - 'GENERATED/scripts/generate-collections.ts'
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.7"
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-deps-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-deps-
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Restore packages dist cache
+        if: inputs.skip_cache != true
+        id: dist-cache
+        uses: actions/cache@v4
+        with:
+          path: packages/*/dist
+          key: packages-dist-${{ hashFiles('packages/*/src/**', 'packages/*/tsconfig.json', 'packages/*/tsup.config.ts') }}
+
+      - name: Generate types
+        if: steps.dist-cache.outputs.cache-hit != 'true'
+        run: bun run gen:types
+
+      - name: Build packages
+        if: steps.dist-cache.outputs.cache-hit != 'true'
+        run: |
+          bun run --filter '@gainforest/internal-utils' build
+          bun run --filter '@gainforest/atproto-mutations-core' build
+          bun run --filter '@gainforest/atproto-auth-next' build
+          bun run --filter '@gainforest/atproto-mutations-next' build
+          bun run --filter '@gainforest/leaflet-react' build
+
+      - name: Generate collection filters
+        id: filters
+        if: steps.changes.outputs.indexer == 'true'
+        working-directory: apps/indexer
+        run: |
+          FILTERS=$(bun run src/tap/collection-filters.ts)
+          echo "value=$FILTERS" >> $GITHUB_OUTPUT
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-dist
+          path: packages/*/dist
+          retention-days: 1
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Packages: Typecheck all packages
+  # ─────────────────────────────────────────────────────────────────────────────
+  packages:
+    name: Typecheck Packages
+    needs: setup
+    if: needs.setup.outputs.packages_changed == 'true'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.2.7"
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-deps-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-deps-
+
+      - name: Install dependencies
+        run: bun install
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: packages
+
+      - name: Typecheck packages
+        run: |
+          cd packages/atproto-mutations-core && bun run typecheck
+          cd ../atproto-mutations-next && bun run typecheck
+          cd ../atproto-auth-next && bun run typecheck
+          cd ../leaflet-react && bun run typecheck
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Bumicerts: Typecheck (Vercel handles deployment after CI passes)
+  # ─────────────────────────────────────────────────────────────────────────────
+  bumicerts:
+    name: Validate Bumicerts
+    needs: setup
+    if: needs.setup.outputs.bumicerts_changed == 'true' || needs.setup.outputs.packages_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.7"
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-deps-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-deps-
+
+      - name: Install dependencies
+        run: bun install
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: packages
+
+      - name: Generate types
+        run: bun run gen:types
+
+      - name: Typecheck bumicerts
+        run: bun run typecheck
+        working-directory: apps/bumicerts
+        env:
+          SKIP_ENV_VALIDATION: "1"
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Indexer: Validate + Deploy to Railway
+  # ─────────────────────────────────────────────────────────────────────────────
+  indexer:
+    name: Validate & Deploy Indexer
+    needs: setup
+    if: needs.setup.outputs.indexer_changed == 'true'
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_API: https://backboard.railway.com/graphql/v2
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.7"
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-deps-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-deps-
 
       - name: Install dependencies
         run: bun install
@@ -53,23 +207,10 @@ jobs:
         run: bun run typecheck
         working-directory: apps/indexer
 
-      - name: Generate collection filters
-        id: filters
-        working-directory: apps/indexer
-        run: |
-          FILTERS=$(bun run src/tap/collection-filters.ts)
-          echo "value=$FILTERS" >> $GITHUB_OUTPUT
-          echo "### Validation Passed ✅" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**TAP_COLLECTION_FILTERS:**" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "$FILTERS" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build local dev Dockerfile (smoke test)
+      - name: Build dev Dockerfile (smoke test)
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -89,52 +230,22 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ───────────────────────────────────────────────────────────────────────────
-  # 2. Deploy — sync env vars + trigger Railway redeployment
-  #
-  # Runs on:
-  #   - push to main (always deploys)
-  #   - workflow_dispatch with skip_railway = 'false' (manual deploy)
-  #   - workflow_dispatch with skip_railway = 'true'  (validate only, skipped)
-  #
-  # ENV VARIABLE SYNC RULES:
-  #   - Static values are parsed from .env.railway / tap.env.railway and
-  #     upserted to Railway so the file is the single source of truth.
-  #   - Lines containing ${{ are Railway reference variables or secret()
-  #     generators — these are SKIPPED so they are never overwritten.
-  #     Set them once in the Railway UI during initial project setup.
-  #   - TAP_COLLECTION_FILTERS is always overridden with the freshly
-  #     generated value from the validate job above.
-  # ───────────────────────────────────────────────────────────────────────────
-  deploy:
-    name: Deploy to Railway
-    needs: validate
-    runs-on: ubuntu-latest
-    if: |
-      github.repository == 'GainForest/atproto-packages' &&
-      (
-        github.event_name == 'push' ||
-        (github.event_name == 'workflow_dispatch' && github.event.inputs.skip_railway != 'true')
-      )
-    env:
-      RAILWAY_API: https://backboard.railway.com/graphql/v2
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check secrets
+      # ── Deploy (only on main, not PRs) ──────────────────────────────────────
+      - name: Check deployment prerequisites
         id: check
+        if: |
+          github.ref == 'refs/heads/main' && 
+          github.event_name != 'pull_request' &&
+          (github.event.inputs.deploy_indexer != 'false')
         run: |
           if [ -z "$RAILWAY_TOKEN" ] || [ -z "$RAILWAY_PROJECT_ID" ]; then
             echo "ready=false" >> $GITHUB_OUTPUT
-            echo "::warning::RAILWAY_TOKEN or RAILWAY_PROJECT_ID is not set. Skipping deployment."
+            echo "::warning::RAILWAY_TOKEN or RAILWAY_PROJECT_ID not set"
           else
             echo "ready=true" >> $GITHUB_OUTPUT
           fi
 
-      # ── Resolve IDs ──────────────────────────────────────────────────────
-      - name: Resolve service and environment IDs
+      - name: Resolve Railway IDs
         if: steps.check.outputs.ready == 'true'
         id: resolve
         run: |
@@ -157,15 +268,10 @@ jobs:
           echo "Tap service ID : $TAP_ID"
           echo "Indexer service ID: $INDEXER_ID"
 
-      # ── Tap: sync env vars ────────────────────────────────────────────────
-      # Reads apps/indexer/railway/tap.env.railway, strips comments, blank
-      # lines, and any line whose value contains ${{ (Railway references /
-      # secret generators — those must be set once in the Railway UI).
-      # Then merges in the freshly generated TAP_COLLECTION_FILTERS.
       - name: Sync Tap environment variables
         if: steps.check.outputs.ready == 'true'
         env:
-          FILTERS: ${{ needs.validate.outputs.collection_filters }}
+          FILTERS: ${{ needs.setup.outputs.collection_filters }}
           RESOLVED_ENV_ID: ${{ steps.resolve.outputs.env_id }}
           RESOLVED_TAP_ID: ${{ steps.resolve.outputs.tap_id }}
         run: |
@@ -209,8 +315,6 @@ jobs:
 
           echo "✅ Tap environment variables synced"
 
-      # ── Indexer: sync env vars ────────────────────────────────────────────
-      # Same logic as above but reads apps/indexer/.env.railway
       - name: Sync Indexer environment variables
         if: steps.check.outputs.ready == 'true'
         env:
@@ -250,7 +354,6 @@ jobs:
 
           echo "✅ Indexer environment variables synced"
 
-      # ── Trigger redeployments ─────────────────────────────────────────────
       - name: Redeploy Tap service
         if: steps.check.outputs.ready == 'true'
         env:
@@ -289,13 +392,12 @@ jobs:
           echo "✅ Indexer redeploy triggered"
           echo "$RESPONSE"
 
-      # ── Summary ───────────────────────────────────────────────────────────
       - name: Deployment Summary
         if: always()
         run: |
           echo "### Railway Deployment" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.check.outputs.ready }}" != "true" ]; then
-            echo "⚠️ **Skipped:** RAILWAY_TOKEN or RAILWAY_PROJECT_ID not configured" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Skipped:** RAILWAY_TOKEN or RAILWAY_PROJECT_ID not configured, or not on main branch" >> $GITHUB_STEP_SUMMARY
           else
             echo "✅ Env vars synced and deployment triggered — check [Railway Dashboard](https://railway.app) for status." >> $GITHUB_STEP_SUMMARY
           fi
