@@ -27,6 +27,7 @@
     "indexer:typecheck": "bun run --cwd apps/indexer typecheck",
     "bumicerts:dev": "bun run --cwd apps/bumicerts dev",
     "bumicerts:build": "bun run --cwd apps/bumicerts build",
+    "bumicerts:vercel-build": "bun run gen:types && bun run build && bun run --cwd apps/bumicerts build",
     "bumicerts:start": "bun run --cwd apps/bumicerts start",
     "bumicerts:typecheck": "bun run --cwd apps/bumicerts typecheck",
     "bumicerts:lint": "bun run --cwd apps/bumicerts lint",
