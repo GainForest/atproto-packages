@@ -443,6 +443,67 @@ declare const appRouter: _trpc_server.TRPCBuiltRouter<{
             }>;
         }>>;
     }>>;
+    dwc: _trpc_server.TRPCBuiltRouter<{
+        ctx: TRPCContext;
+        meta: object;
+        errorShape: {
+            data: {
+                effectTag: string | undefined;
+                code: _trpc_server.TRPC_ERROR_CODE_KEY;
+                httpStatus: number;
+                path?: string;
+                stack?: string;
+            };
+            message: string;
+            code: _trpc_server.TRPC_ERROR_CODE_NUMBER;
+        };
+        transformer: true;
+    }, _trpc_server.TRPCDecorateCreateRouterOptions<{
+        occurrence: _trpc_server.TRPCBuiltRouter<{
+            ctx: TRPCContext;
+            meta: object;
+            errorShape: {
+                data: {
+                    effectTag: string | undefined;
+                    code: _trpc_server.TRPC_ERROR_CODE_KEY;
+                    httpStatus: number;
+                    path?: string;
+                    stack?: string;
+                };
+                message: string;
+                code: _trpc_server.TRPC_ERROR_CODE_NUMBER;
+            };
+            transformer: true;
+        }, _trpc_server.TRPCDecorateCreateRouterOptions<{
+            create: _trpc_server.TRPCMutationProcedure<{
+                input: any;
+                output: _gainforest_atproto_mutations_core.DwcOccurrenceMutationResult;
+                meta: object;
+            }>;
+        }>>;
+        measurement: _trpc_server.TRPCBuiltRouter<{
+            ctx: TRPCContext;
+            meta: object;
+            errorShape: {
+                data: {
+                    effectTag: string | undefined;
+                    code: _trpc_server.TRPC_ERROR_CODE_KEY;
+                    httpStatus: number;
+                    path?: string;
+                    stack?: string;
+                };
+                message: string;
+                code: _trpc_server.TRPC_ERROR_CODE_NUMBER;
+            };
+            transformer: true;
+        }, _trpc_server.TRPCDecorateCreateRouterOptions<{
+            create: _trpc_server.TRPCMutationProcedure<{
+                input: any;
+                output: _gainforest_atproto_mutations_core.DwcMeasurementMutationResult;
+                meta: object;
+            }>;
+        }>>;
+    }>>;
     blob: _trpc_server.TRPCBuiltRouter<{
         ctx: TRPCContext;
         meta: object;

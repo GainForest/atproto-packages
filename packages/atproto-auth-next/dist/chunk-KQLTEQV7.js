@@ -4,35 +4,29 @@ function createSupabaseSessionStore(supabase, appId) {
   const key = (did) => `${appId}:${did}`;
   return {
     async get(did) {
-      const { data, error } = await supabase
-        .from(TABLE)
-        .select("value")
-        .eq("id", key(did))
-        .single();
+      const { data, error } = await supabase.from(TABLE).select("value").eq("id", key(did)).single();
       if (error?.code === "PGRST116") return void 0;
       if (error) throw new Error(`session store get: ${error.message}`);
       if (!data) return void 0;
       return data.value;
     },
     async set(did, session) {
-      const { data, error } = await supabase
-        .from(TABLE)
-        .upsert(
-          {
-            id: key(did),
-            app_id: appId,
-            did,
-            value: session,
-            updated_at: /* @__PURE__ */ new Date().toISOString(),
-          },
-          { onConflict: "id" },
-        )
-        .select();
+      const { error } = await supabase.from(TABLE).upsert(
+        {
+          id: key(did),
+          app_id: appId,
+          did,
+          value: session,
+          updated_at: (/* @__PURE__ */ new Date()).toISOString()
+        },
+        { onConflict: "id" }
+      ).select();
+      if (error) throw new Error(`session store set: ${error.message}`);
     },
     async del(did) {
       const { error } = await supabase.from(TABLE).delete().eq("id", key(did));
       if (error) throw new Error(`session store del: ${error.message}`);
-    },
+    }
   };
 }
 
@@ -43,11 +37,7 @@ function createSupabaseStateStore(supabase, appId) {
   const key = (k) => `${appId}:${k}`;
   return {
     async get(k) {
-      const { data, error } = await supabase
-        .from(TABLE2)
-        .select("value, expires_at")
-        .eq("id", key(k))
-        .single();
+      const { data, error } = await supabase.from(TABLE2).select("value, expires_at").eq("id", key(k)).single();
       if (error?.code === "PGRST116") return void 0;
       if (error) throw new Error(`state store get: ${error.message}`);
       if (!data) return void 0;
@@ -63,24 +53,20 @@ function createSupabaseStateStore(supabase, appId) {
           id: key(k),
           app_id: appId,
           value: state,
-          expires_at: new Date(Date.now() + TTL_MS).toISOString(),
+          expires_at: new Date(Date.now() + TTL_MS).toISOString()
         },
-        { onConflict: "id" },
+        { onConflict: "id" }
       );
       if (error) throw new Error(`state store set: ${error.message}`);
     },
     async del(k) {
       const { error } = await supabase.from(TABLE2).delete().eq("id", key(k));
       if (error) throw new Error(`state store del: ${error.message}`);
-    },
+    }
   };
 }
 async function cleanupExpiredStates(supabase) {
-  const { data, error } = await supabase
-    .from(TABLE2)
-    .delete()
-    .lt("expires_at", /* @__PURE__ */ new Date().toISOString())
-    .select("id");
+  const { data, error } = await supabase.from(TABLE2).delete().lt("expires_at", (/* @__PURE__ */ new Date()).toISOString()).select("id");
   if (error) throw new Error(`state store cleanup: ${error.message}`);
   return data?.length ?? 0;
 }
@@ -88,6 +74,6 @@ async function cleanupExpiredStates(supabase) {
 export {
   createSupabaseSessionStore,
   createSupabaseStateStore,
-  cleanupExpiredStates,
+  cleanupExpiredStates
 };
-//# sourceMappingURL=chunk-5Y5W3JUC.js.map
+//# sourceMappingURL=chunk-KQLTEQV7.js.map

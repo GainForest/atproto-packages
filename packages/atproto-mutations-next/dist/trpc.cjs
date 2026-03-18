@@ -171,6 +171,14 @@ var appRouter = router({
       delete: effectMutation(import_atproto_mutations_core.mutations.link.evm.delete)
     })
   }),
+  dwc: router({
+    occurrence: router({
+      create: effectMutation(import_atproto_mutations_core.mutations.dwc.occurrence.create)
+    }),
+    measurement: router({
+      create: effectMutation(import_atproto_mutations_core.mutations.dwc.measurement.create)
+    })
+  }),
   blob: router({
     upload: effectMutation(import_atproto_mutations_core.mutations.blob.upload)
   })

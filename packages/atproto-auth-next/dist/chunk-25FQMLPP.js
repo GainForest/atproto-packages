@@ -1,7 +1,7 @@
 import {
   createSupabaseSessionStore,
   createSupabaseStateStore
-} from "./chunk-5Y5W3JUC.js";
+} from "./chunk-KQLTEQV7.js";
 
 // src/utils/url.ts
 function resolvePublicUrl(explicitUrl) {
@@ -744,4 +744,4 @@ export {
   createAuthSetup,
   createOAuthSetup
 };
-//# sourceMappingURL=chunk-DP6TK3WG.js.map
+//# sourceMappingURL=chunk-25FQMLPP.js.map

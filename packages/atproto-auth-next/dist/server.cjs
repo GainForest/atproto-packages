@@ -641,7 +641,7 @@ function createSupabaseSessionStore(supabase, appId) {
       return data.value;
     },
     async set(did, session) {
-      const { data, error } = await supabase.from(TABLE).upsert(
+      const { error } = await supabase.from(TABLE).upsert(
         {
           id: key(did),
           app_id: appId,
@@ -651,18 +651,6 @@ function createSupabaseSessionStore(supabase, appId) {
         },
         { onConflict: "id" }
       ).select();
-      console.log("========", JSON.stringify(data));
-      const { error: e2 } = await supabase.from(TABLE).upsert(
-        {
-          id: "check" + key(did),
-          app_id: "bla",
-          did: "blablabla",
-          value: "blablabla",
-          updated_at: (/* @__PURE__ */ new Date()).toISOString()
-        },
-        { onConflict: "id" }
-      );
-      console.log(e2);
       if (error) throw new Error(`session store set: ${error.message}`);
     },
     async del(did) {
