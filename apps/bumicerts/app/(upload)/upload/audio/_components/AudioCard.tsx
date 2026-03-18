@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc/client";
+import { formatError } from "@/lib/utils/trpc-errors";
 import { queries, type AudioRecordingItem } from "@/lib/graphql/queries/index";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -34,15 +35,18 @@ interface AudioCardProps {
 export function AudioCard({ audio, onEdit }: AudioCardProps) {
   const queryClient = useQueryClient();
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { mutate: deleteAudio, isPending: isDeleting } =
     trpc.organization.recordings.audio.delete.useMutation({
       onSuccess: () => {
         void queryClient.invalidateQueries({ queryKey: queries.audio.key() });
         setIsConfirmingDelete(false);
+        setDeleteError(null);
       },
-      onError: () => {
+      onError: (err) => {
         setIsConfirmingDelete(false);
+        setDeleteError(formatError(err));
       },
     });
 
@@ -188,6 +192,13 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
               Cancel
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Delete error display */}
+      {deleteError && !isConfirmingDelete && (
+        <div className="mx-3 mb-3 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+          <p className="text-xs text-destructive">{deleteError}</p>
         </div>
       )}
     </motion.div>

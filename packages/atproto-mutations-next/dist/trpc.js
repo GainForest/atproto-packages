@@ -30,34 +30,46 @@ import { Effect } from "effect";
 
 // src/trpc/error-mapper.ts
 import { TRPCError } from "@trpc/server";
-function mapEffectErrorToTRPC(error) {
-  if (error && typeof error === "object" && "_tag" in error) {
-    const tag = error._tag;
-    const message2 = "message" in error ? String(error.message) : tag;
-    if (tag.includes("NotFound")) {
-      return new TRPCError({ code: "NOT_FOUND", message: message2, cause: error });
-    }
-    if (tag.includes("Validation") || tag.includes("Invalid") || tag.includes("Constraint")) {
-      return new TRPCError({ code: "BAD_REQUEST", message: message2, cause: error });
-    }
-    if (tag.includes("AlreadyExists")) {
-      return new TRPCError({ code: "CONFLICT", message: message2, cause: error });
-    }
-    if (tag.includes("Unauthorized") || tag.includes("SessionExpired")) {
-      return new TRPCError({ code: "UNAUTHORIZED", message: message2, cause: error });
-    }
-    if (tag.includes("IsDefault")) {
-      return new TRPCError({ code: "PRECONDITION_FAILED", message: message2, cause: error });
-    }
-    if (tag.includes("PdsError") || tag.includes("BlobUpload")) {
-      return new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: message2, cause: error });
-    }
-    if (tag.includes("GeoJson")) {
-      return new TRPCError({ code: "BAD_REQUEST", message: message2, cause: error });
+import { Cause } from "effect";
+var FiberFailureCauseSymbol = /* @__PURE__ */ Symbol.for("effect/Runtime/FiberFailure/Cause");
+function extractEffectError(error) {
+  if (error && typeof error === "object" && FiberFailureCauseSymbol in error) {
+    const cause = error[FiberFailureCauseSymbol];
+    if (cause && Cause.isCause(cause)) {
+      return Cause.squash(cause);
     }
   }
-  const message = error instanceof Error ? error.message : String(error);
-  return new TRPCError({ code: "INTERNAL_SERVER_ERROR", message, cause: error });
+  return error;
+}
+function mapEffectErrorToTRPC(error) {
+  const actualError = extractEffectError(error);
+  if (actualError && typeof actualError === "object" && "_tag" in actualError) {
+    const tag = actualError._tag;
+    const message = "message" in actualError ? String(actualError.message) : tag;
+    if (tag.includes("NotFound")) {
+      return new TRPCError({ code: "NOT_FOUND", message, cause: actualError });
+    }
+    if (tag.includes("Validation") || tag.includes("Invalid") || tag.includes("Constraint")) {
+      return new TRPCError({ code: "BAD_REQUEST", message, cause: actualError });
+    }
+    if (tag.includes("AlreadyExists")) {
+      return new TRPCError({ code: "CONFLICT", message, cause: actualError });
+    }
+    if (tag.includes("Unauthorized") || tag.includes("SessionExpired")) {
+      return new TRPCError({ code: "UNAUTHORIZED", message, cause: actualError });
+    }
+    if (tag.includes("IsDefault")) {
+      return new TRPCError({ code: "PRECONDITION_FAILED", message, cause: actualError });
+    }
+    if (tag.includes("PdsError") || tag.includes("BlobUpload")) {
+      return new TRPCError({ code: "INTERNAL_SERVER_ERROR", message, cause: actualError });
+    }
+    if (tag.includes("GeoJson")) {
+      return new TRPCError({ code: "BAD_REQUEST", message, cause: actualError });
+    }
+  }
+  const fallbackMessage = actualError instanceof Error ? actualError.message : String(actualError);
+  return new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: fallbackMessage, cause: actualError });
 }
 
 // src/trpc/effect-adapter.ts

@@ -67,38 +67,50 @@ var publicProcedure = t.procedure;
 var middleware = t.middleware;
 
 // src/trpc/effect-adapter.ts
-var import_effect = require("effect");
+var import_effect2 = require("effect");
 
 // src/trpc/error-mapper.ts
 var import_server2 = require("@trpc/server");
-function mapEffectErrorToTRPC(error) {
-  if (error && typeof error === "object" && "_tag" in error) {
-    const tag = error._tag;
-    const message2 = "message" in error ? String(error.message) : tag;
-    if (tag.includes("NotFound")) {
-      return new import_server2.TRPCError({ code: "NOT_FOUND", message: message2, cause: error });
-    }
-    if (tag.includes("Validation") || tag.includes("Invalid") || tag.includes("Constraint")) {
-      return new import_server2.TRPCError({ code: "BAD_REQUEST", message: message2, cause: error });
-    }
-    if (tag.includes("AlreadyExists")) {
-      return new import_server2.TRPCError({ code: "CONFLICT", message: message2, cause: error });
-    }
-    if (tag.includes("Unauthorized") || tag.includes("SessionExpired")) {
-      return new import_server2.TRPCError({ code: "UNAUTHORIZED", message: message2, cause: error });
-    }
-    if (tag.includes("IsDefault")) {
-      return new import_server2.TRPCError({ code: "PRECONDITION_FAILED", message: message2, cause: error });
-    }
-    if (tag.includes("PdsError") || tag.includes("BlobUpload")) {
-      return new import_server2.TRPCError({ code: "INTERNAL_SERVER_ERROR", message: message2, cause: error });
-    }
-    if (tag.includes("GeoJson")) {
-      return new import_server2.TRPCError({ code: "BAD_REQUEST", message: message2, cause: error });
+var import_effect = require("effect");
+var FiberFailureCauseSymbol = /* @__PURE__ */ Symbol.for("effect/Runtime/FiberFailure/Cause");
+function extractEffectError(error) {
+  if (error && typeof error === "object" && FiberFailureCauseSymbol in error) {
+    const cause = error[FiberFailureCauseSymbol];
+    if (cause && import_effect.Cause.isCause(cause)) {
+      return import_effect.Cause.squash(cause);
     }
   }
-  const message = error instanceof Error ? error.message : String(error);
-  return new import_server2.TRPCError({ code: "INTERNAL_SERVER_ERROR", message, cause: error });
+  return error;
+}
+function mapEffectErrorToTRPC(error) {
+  const actualError = extractEffectError(error);
+  if (actualError && typeof actualError === "object" && "_tag" in actualError) {
+    const tag = actualError._tag;
+    const message = "message" in actualError ? String(actualError.message) : tag;
+    if (tag.includes("NotFound")) {
+      return new import_server2.TRPCError({ code: "NOT_FOUND", message, cause: actualError });
+    }
+    if (tag.includes("Validation") || tag.includes("Invalid") || tag.includes("Constraint")) {
+      return new import_server2.TRPCError({ code: "BAD_REQUEST", message, cause: actualError });
+    }
+    if (tag.includes("AlreadyExists")) {
+      return new import_server2.TRPCError({ code: "CONFLICT", message, cause: actualError });
+    }
+    if (tag.includes("Unauthorized") || tag.includes("SessionExpired")) {
+      return new import_server2.TRPCError({ code: "UNAUTHORIZED", message, cause: actualError });
+    }
+    if (tag.includes("IsDefault")) {
+      return new import_server2.TRPCError({ code: "PRECONDITION_FAILED", message, cause: actualError });
+    }
+    if (tag.includes("PdsError") || tag.includes("BlobUpload")) {
+      return new import_server2.TRPCError({ code: "INTERNAL_SERVER_ERROR", message, cause: actualError });
+    }
+    if (tag.includes("GeoJson")) {
+      return new import_server2.TRPCError({ code: "BAD_REQUEST", message, cause: actualError });
+    }
+  }
+  const fallbackMessage = actualError instanceof Error ? actualError.message : String(actualError);
+  return new import_server2.TRPCError({ code: "INTERNAL_SERVER_ERROR", message: fallbackMessage, cause: actualError });
 }
 
 // src/trpc/effect-adapter.ts
@@ -106,10 +118,10 @@ function effectMutation(mutation) {
   return t.procedure.input((input) => input).mutation(async ({ input, ctx }) => {
     const agentLayer = ctx.agentLayer;
     try {
-      return await import_effect.Effect.runPromise(
+      return await import_effect2.Effect.runPromise(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mutation(input).pipe(
-          import_effect.Effect.provide(agentLayer)
+          import_effect2.Effect.provide(agentLayer)
         )
       );
     } catch (error) {
@@ -165,33 +177,33 @@ var appRouter = router({
 });
 
 // src/server/index.ts
-var import_effect2 = require("effect");
+var import_effect3 = require("effect");
 var import_api = require("@atproto/api");
 var import_atproto_mutations_core2 = require("@gainforest/atproto-mutations-core");
 var import_server3 = require("@gainforest/atproto-auth-next/server");
-var UnauthorizedError = class extends import_effect2.Data.TaggedError("UnauthorizedError") {
+var UnauthorizedError = class extends import_effect3.Data.TaggedError("UnauthorizedError") {
 };
-var SessionExpiredError = class extends import_effect2.Data.TaggedError("SessionExpiredError") {
+var SessionExpiredError = class extends import_effect3.Data.TaggedError("SessionExpiredError") {
 };
 function makeUserAgentLayer(config) {
   const { oauthClient, sessionConfig } = config;
-  return import_effect2.Layer.effect(
+  return import_effect3.Layer.effect(
     import_atproto_mutations_core2.AtprotoAgent,
-    import_effect2.Effect.gen(function* () {
-      const session = yield* import_effect2.Effect.promise(() => (0, import_server3.getSession)(sessionConfig));
+    import_effect3.Effect.gen(function* () {
+      const session = yield* import_effect3.Effect.promise(() => (0, import_server3.getSession)(sessionConfig));
       if (!session.isLoggedIn) {
-        return yield* import_effect2.Effect.fail(
+        return yield* import_effect3.Effect.fail(
           new UnauthorizedError({ message: "No active session \u2014 user is not logged in" })
         );
       }
-      const oauthSession = yield* import_effect2.Effect.tryPromise({
+      const oauthSession = yield* import_effect3.Effect.tryPromise({
         try: () => oauthClient.restore(session.did),
         catch: (cause) => new SessionExpiredError({
           message: `Failed to restore OAuth session for ${session.did}: ${String(cause)}`
         })
       });
       if (!oauthSession) {
-        return yield* import_effect2.Effect.fail(
+        return yield* import_effect3.Effect.fail(
           new SessionExpiredError({ message: "OAuth session not found \u2014 please log in again" })
         );
       }

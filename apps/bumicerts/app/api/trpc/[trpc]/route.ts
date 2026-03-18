@@ -10,12 +10,15 @@ const handler = (req: Request) =>
     req,
     router: appRouter,
     createContext,
-    onError:
-      process.env.NODE_ENV === "development"
-        ? ({ path, error }) => {
-            console.error(`❌ tRPC failed on ${path ?? "<no-path>"}:`, error);
-          }
-        : undefined,
+    onError: ({ path, error }) => {
+      // Always log errors for server-side visibility (Vercel logs in production)
+      console.error(`tRPC error on ${path ?? "<no-path>"}:`, {
+        code: error.code,
+        message: error.message,
+        // Include stack only in development for debugging
+        ...(process.env.NODE_ENV === "development" && { stack: error.stack }),
+      });
+    },
   });
 
 export { handler as GET, handler as POST };

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import FileInput from "@/components/ui/FileInput";
 import { trpc } from "@/lib/trpc/client";
 import { toSerializableFile } from "@/lib/mutations-utils";
+import { formatError } from "@/lib/utils/trpc-errors";
 import { queries, type AudioRecordingItem } from "@/lib/graphql/queries/index";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -107,7 +108,7 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
         setIsCompleted(true);
       },
       onError: (err) => {
-        setError(err.message ?? "Upload failed. Please try again.");
+        setError(formatError(err));
       },
     });
 
@@ -118,7 +119,7 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
         setIsCompleted(true);
       },
       onError: (err) => {
-        setError(err.message ?? "Update failed. Please try again.");
+        setError(formatError(err));
       },
     });
 
@@ -318,9 +319,7 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
       </div>
 
       {error && (
-        <p className="text-sm text-destructive mt-4">
-          {error.startsWith("[") ? "Bad Request" : error}
-        </p>
+        <p className="text-sm text-destructive mt-4">{error}</p>
       )}
 
       <div className="flex justify-end gap-2 mt-6">

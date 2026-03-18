@@ -9,6 +9,7 @@ import {
 import { useState, type ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { parseAtUri, toSerializableFile } from "@/lib/mutations-utils";
+import { formatError } from "@/lib/utils/trpc-errors";
 import { queries } from "@/lib/graphql/queries/index";
 import FileInput from "@/components/ui/FileInput";
 import { Input } from "@/components/ui/input";
@@ -286,11 +287,7 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
             )}
             {error && (
               <div className="text-sm text-destructive mt-2">
-                {error instanceof Error
-                  ? error.message.startsWith("[")
-                    ? "Bad Request"
-                    : error.message
-                  : "An error occurred"}
+                {formatError(error)}
               </div>
             )}
           </motion.section>

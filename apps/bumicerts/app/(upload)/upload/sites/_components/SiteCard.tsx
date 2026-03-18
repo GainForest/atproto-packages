@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -18,6 +19,7 @@ import { SiteEditorModal, SiteEditorModalId } from "@/components/global/modals/u
 import { getShapefilePreviewUrl } from "@/lib/shapefile";
 import { queries, type CertifiedLocation } from "@/lib/graphql/queries/index";
 import { cn } from "@/lib/utils";
+import { formatError } from "@/lib/utils/trpc-errors";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +55,7 @@ interface SiteCardProps {
 export function SiteCard({ site, defaultSiteUri }: SiteCardProps) {
   const queryClient = useQueryClient();
   const { pushModal, show } = useModal();
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
   const locationUrl = extractLocationUrl(site.record?.location);
   const previewUrl = locationUrl ? getShapefilePreviewUrl(locationUrl) : null;
@@ -78,14 +81,22 @@ export function SiteCard({ site, defaultSiteUri }: SiteCardProps) {
   const { mutate: setDefault, isPending: isSettingDefault } =
     trpc.organization.defaultSite.set.useMutation({
       onSuccess: () => {
+        setMutationError(null);
         void queryClient.invalidateQueries({ queryKey: queries.locations.key() });
+      },
+      onError: (err) => {
+        setMutationError(formatError(err));
       },
     });
 
   const { mutate: deleteSite, isPending: isDeleting } =
     trpc.certified.location.delete.useMutation({
       onSuccess: () => {
+        setMutationError(null);
         void queryClient.invalidateQueries({ queryKey: queries.locations.key() });
+      },
+      onError: (err) => {
+        setMutationError(formatError(err));
       },
     });
 
@@ -220,6 +231,13 @@ export function SiteCard({ site, defaultSiteUri }: SiteCardProps) {
             </div>
           )
         ) : null}
+
+        {/* Mutation error display */}
+        {mutationError && (
+          <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+            <p className="text-xs text-destructive">{mutationError}</p>
+          </div>
+        )}
       </div>
     </motion.div>
   );

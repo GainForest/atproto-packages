@@ -37,6 +37,7 @@ import type { GraphQLOrgInfoItem } from "@/lib/adapters";
 import type { OrganizationData } from "@/lib/types";
 import type { LinearDocument, Richtext } from "@gainforest/atproto-mutations-next";
 import { toSerializableFile } from "@gainforest/atproto-mutations-next";
+import { formatError } from "@/lib/utils/trpc-errors";
 
 import Container from "@/components/ui/container";
 import ErrorPage from "@/components/error-page";
@@ -46,6 +47,7 @@ import { EditableHero, EditBar } from "./EditableHero/index";
 import { EditableAbout } from "./EditableAbout";
 import { UploadNavGrid } from "./UploadNavGrid";
 import { UploadDashboardSkeleton } from "./UploadDashboardSkeleton";
+import { OrgSetupPrompt } from "./OrgSetupPrompt";
 import { useUploadDashboardStore } from "./store";
 import { useUploadMode } from "../_hooks/useUploadMode";
 
@@ -144,7 +146,7 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
     },
     onError: (mutationErr) => {
       setSaving(false);
-      setSaveError(mutationErr.message ?? "Failed to save. Please try again.");
+      setSaveError(formatError(mutationErr));
     },
   });
 
@@ -217,7 +219,7 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
 
   // ── Render states ───────────────────────────────────────────────────────────
 
-  if (isLoading || !serverData) {
+  if (isLoading) {
     return <UploadDashboardSkeleton />;
   }
 
@@ -233,6 +235,20 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
         />
       </Container>
     );
+  }
+
+  // Organization doesn't exist yet — prompt user to set it up
+  if (!fetchedOrg && !serverData) {
+    return (
+      <Container className="pt-4">
+        <OrgSetupPrompt did={did} />
+      </Container>
+    );
+  }
+
+  // Still waiting for serverData to be set in store after fetchedOrg arrives
+  if (!serverData) {
+    return <UploadDashboardSkeleton />;
   }
 
   // ── Edit mode ───────────────────────────────────────────────────────────────

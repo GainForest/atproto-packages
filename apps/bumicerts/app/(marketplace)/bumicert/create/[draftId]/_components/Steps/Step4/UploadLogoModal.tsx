@@ -14,6 +14,7 @@ import { useModal } from "@/components/ui/modal/context";
 import { useQueryClient } from "@tanstack/react-query";
 import { toSerializableFile } from "@/lib/mutations-utils";
 import { trpc } from "@/lib/trpc/client";
+import { formatError } from "@/lib/utils/trpc-errors";
 import { queries } from "@/lib/graphql/queries/index";
 
 export const UploadLogoModalId = "upload/organization/logo";
@@ -21,6 +22,7 @@ export const UploadLogoModalId = "upload/organization/logo";
 export const UploadLogoModal = () => {
   const { stack, popModal, hide } = useModal();
   const [logo, setLogo] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const auth = useAtprotoStore((state) => state.auth);
   const queryClient = useQueryClient();
 
@@ -30,7 +32,11 @@ export const UploadLogoModal = () => {
     isSuccess: isUploaded,
   } = trpc.organization.info.update.useMutation({
     onSuccess: () => {
+      setUploadError(null);
       queryClient.invalidateQueries({ queryKey: queries.organization.key() });
+    },
+    onError: (err) => {
+      setUploadError(formatError(err));
     },
   });
 
@@ -76,6 +82,15 @@ export const UploadLogoModal = () => {
         value={logo}
         onFileChange={setLogo}
       />
+
+      {uploadError && (
+        <div
+          className="p-2 bg-destructive/10 border border-destructive/20 rounded-lg"
+          role="alert"
+        >
+          <p className="text-xs text-destructive">{uploadError}</p>
+        </div>
+      )}
 
       <ModalFooter>
         {isUploaded ? (
