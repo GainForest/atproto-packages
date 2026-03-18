@@ -26,6 +26,7 @@ import {
   ModalContent,
   ModalHeader,
   ModalTitle,
+  ModalFooter,
 } from "@/components/ui/modal/modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -177,16 +178,117 @@ function CartItemLoader({
   );
 }
 
-// ── CartList — manages grouping via resolved callbacks ────────────────────────
+// ── Empty state ───────────────────────────────────────────────────────────────
 
-function CartList({
+function EmptyState() {
+  return (
+    <div className="flex flex-col items-center gap-3 py-10 text-center">
+      <div className="flex size-14 items-center justify-center rounded-full bg-muted">
+        <ShoppingCartIcon className="size-6 text-muted-foreground" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">Your cart is empty</p>
+        <p className="text-xs text-muted-foreground">
+          Add bumicerts you&apos;d like to donate to later.
+        </p>
+      </div>
+      <Button asChild variant="outline" size="sm" className="mt-2">
+        <Link href={links.explore}>Explore Bumicerts</Link>
+      </Button>
+    </div>
+  );
+}
+
+// ── Main modal ────────────────────────────────────────────────────────────────
+
+export function CartModal() {
+  const items = useCartStore((s) => s.items);
+  const removeItem = useCartStore((s) => s.removeItem);
+  const facilitatorAddress = clientEnv.NEXT_PUBLIC_FACILITATOR_WALLET_ADDRESS;
+  const { stack, hide, popModal } = useModal();
+
+  // Track resolved items for checkout button state
+  const [resolvedItems, setResolvedItems] = useState<Record<string, ResolvedCartItem | null>>({});
+  const allResolved = items.every((id) => id in resolvedItems);
+  const openItemsCount = allResolved
+    ? Object.values(resolvedItems).filter((r) => r?.isOpen).length
+    : 0;
+
+  const handleResolved = useCallback((id: string, data: ResolvedCartItem | null) => {
+    setResolvedItems((prev) => {
+      if (prev[id] === data) return prev;
+      return { ...prev, [id]: data };
+    });
+  }, []);
+
+  const handleClose = () => {
+    if (stack.length === 1) {
+      hide().then(() => popModal());
+    } else {
+      popModal();
+    }
+  };
+
+  const handleCheckout = async () => {
+    await hide();
+    popModal();
+  };
+
+  return (
+    <ModalContent dismissible={false}>
+      <ModalHeader
+        backAction={stack.length > 1 ? handleClose : undefined}
+      >
+        <ModalTitle>Your Cart</ModalTitle>
+      </ModalHeader>
+
+      <div className="pt-1">
+        {items.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <CartListWithCallback
+            ids={items}
+            facilitatorAddress={facilitatorAddress}
+            onRemove={removeItem}
+            onResolved={handleResolved}
+          />
+        )}
+      </div>
+
+      {items.length > 0 ? (
+        <ModalFooter className="flex flex-col gap-2">
+          <Button asChild className="w-full" disabled={openItemsCount === 0}>
+            <Link href={links.checkout} onClick={handleCheckout}>
+              Checkout{openItemsCount > 0 ? ` (${openItemsCount} item${openItemsCount > 1 ? "s" : ""})` : ""}
+            </Link>
+          </Button>
+          <Button variant="ghost" onClick={handleClose} className="w-full">
+            Cancel
+          </Button>
+        </ModalFooter>
+      ) : (
+        <ModalFooter>
+          <Button variant="ghost" onClick={handleClose} className="w-full">
+            Close
+          </Button>
+        </ModalFooter>
+      )}
+    </ModalContent>
+  );
+}
+
+// ── CartList variant with external resolved callback ─────────────────────────
+
+function CartListWithCallback({
   ids,
   facilitatorAddress,
   onRemove,
+  onResolved,
 }: {
   ids: string[];
   facilitatorAddress: string | undefined;
   onRemove: (id: string) => void;
+  onResolved: (id: string, data: ResolvedCartItem | null) => void;
 }) {
   const [resolved, setResolved] = useState<Record<string, ResolvedCartItem | null>>({});
 
@@ -195,7 +297,8 @@ function CartList({
       if (prev[id] === data) return prev;
       return { ...prev, [id]: data };
     });
-  }, []);
+    onResolved(id, data);
+  }, [onResolved]);
 
   const allResolved = ids.every((id) => id in resolved);
 
@@ -254,65 +357,5 @@ function CartList({
         </>
       )}
     </div>
-  );
-}
-
-// ── Empty state ───────────────────────────────────────────────────────────────
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center gap-3 py-10 text-center">
-      <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-        <ShoppingCartIcon className="size-6 text-muted-foreground" />
-      </div>
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-foreground">Your cart is empty</p>
-        <p className="text-xs text-muted-foreground">
-          Add bumicerts you&apos;d like to donate to later.
-        </p>
-      </div>
-      <Button asChild variant="outline" size="sm" className="mt-2">
-        <Link href={links.explore}>Explore Bumicerts</Link>
-      </Button>
-    </div>
-  );
-}
-
-// ── Main modal ────────────────────────────────────────────────────────────────
-
-export function CartModal() {
-  const items = useCartStore((s) => s.items);
-  const removeItem = useCartStore((s) => s.removeItem);
-  const facilitatorAddress = clientEnv.NEXT_PUBLIC_FACILITATOR_WALLET_ADDRESS;
-  const { stack, hide, popModal } = useModal();
-
-  const handleClose = () => {
-    if (stack.length === 1) {
-      hide().then(() => popModal());
-    } else {
-      popModal();
-    }
-  };
-
-  return (
-    <ModalContent>
-      <ModalHeader
-        backAction={stack.length > 1 ? handleClose : undefined}
-      >
-        <ModalTitle>Your Cart</ModalTitle>
-      </ModalHeader>
-
-      <div className="pt-1">
-        {items.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <CartList
-            ids={items}
-            facilitatorAddress={facilitatorAddress}
-            onRemove={removeItem}
-          />
-        )}
-      </div>
-    </ModalContent>
   );
 }

@@ -10,11 +10,12 @@ import {
   createPublicClient,
   createWalletClient,
   http,
+  parseUnits,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import { serverEnv } from "@/lib/env/server";
-import { USDC_ABI, USDC_CONTRACT } from "./usdc";
+import { USDC_ABI, USDC_CONTRACT, DECIMALS } from "./usdc";
 import { splitSignature, type Eip3009Authorization } from "./eip3009";
 
 // ---------------------------------------------------------------------------
@@ -92,3 +93,61 @@ export async function executeTransferWithAuthorization(
 
   return { transactionHash: txHash };
 }
+
+// ---------------------------------------------------------------------------
+// executeSimpleTransfer — direct USDC transfer from facilitator to recipient
+// ---------------------------------------------------------------------------
+
+export type SimpleTransferParams = {
+  to: `0x${string}`;
+  amount: number;
+};
+
+export type SimpleTransferResult = {
+  transactionHash: `0x${string}`;
+};
+
+/**
+ * Executes a direct USDC transfer from the facilitator's wallet to a recipient.
+ * Used for batch checkout distribution — facilitator receives total from donor,
+ * then distributes to each org.
+ */
+export async function executeSimpleTransfer(
+  params: SimpleTransferParams
+): Promise<SimpleTransferResult> {
+  const { to, amount } = params;
+
+  const walletClient = getWalletClient();
+  const publicClient = getPublicClient();
+  const account = getFacilitatorAccount();
+
+  // Convert amount to USDC units (6 decimals)
+  const value = parseUnits(amount.toString(), DECIMALS);
+
+  const txHash = await walletClient.writeContract({
+    address:      USDC_CONTRACT,
+    abi:          USDC_TRANSFER_ABI,
+    functionName: "transfer",
+    account,
+    args:         [to, value],
+  });
+
+  // Wait for confirmation
+  await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+  return { transactionHash: txHash };
+}
+
+// Minimal ABI for simple transfer
+const USDC_TRANSFER_ABI = [
+  {
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+    ],
+    name: "transfer",
+    outputs: [{ name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+] as const;

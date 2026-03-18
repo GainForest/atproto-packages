@@ -8,6 +8,7 @@ export const links = {
   home: "/home",
   onboarding: "/onboarding",
   leaderboard: "/leaderboard",
+  checkout: "/checkout",
   myOrganization: (did?: string) =>
     did ? `/organization/${encodeURIComponent(did)}` : "/organization",
   allOrganizations: "/organization/all",

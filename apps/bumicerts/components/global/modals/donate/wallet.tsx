@@ -88,6 +88,11 @@ export function WalletModal({ bumicert, amount, anonymous }: WalletModalProps) {
             USDC on Base network required
           </p>
         </div>
+        <ModalFooter>
+          <Button variant="ghost" onClick={handleBack} className="w-full">
+            Cancel
+          </Button>
+        </ModalFooter>
       </ModalContent>
     );
   }
@@ -109,13 +114,16 @@ export function WalletModal({ bumicert, amount, anonymous }: WalletModalProps) {
             complete your donation.
           </p>
         </div>
-        <ModalFooter>
+        <ModalFooter className="flex flex-col gap-2">
           <Button
             className="w-full"
             onClick={() => switchChain({ chainId: base.id })}
             disabled={isSwitching}
           >
             {isSwitching ? "Switching…" : "Switch to Base"}
+          </Button>
+          <Button variant="ghost" onClick={handleBack} className="w-full">
+            Cancel
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -198,9 +206,12 @@ export function WalletModal({ bumicert, amount, anonymous }: WalletModalProps) {
           {address?.slice(0, 6)}…{address?.slice(-4)}
         </p>
       </div>
-      <ModalFooter>
+      <ModalFooter className="flex flex-col gap-2">
         <Button className="w-full" onClick={handleContinue}>
           Continue to Confirm
+        </Button>
+        <Button variant="ghost" onClick={handleBack} className="w-full">
+          Cancel
         </Button>
       </ModalFooter>
     </ModalContent>

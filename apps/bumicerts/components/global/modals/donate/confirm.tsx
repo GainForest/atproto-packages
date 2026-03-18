@@ -151,6 +151,7 @@ export function ConfirmModal({ bumicert, amount, anonymous, recipientWallet }: C
             transactionHash={data.transactionHash}
             isAuthenticated={isAuthenticated}
             anonymous={anonymous}
+            bumicertId={`${bumicert.organizationDid}-${bumicert.rkey}`}
           />
         ),
       });
@@ -284,13 +285,16 @@ export function ConfirmModal({ bumicert, amount, anonymous, recipientWallet }: C
         </p>
       )}
 
-      <ModalFooter>
+      <ModalFooter className="flex flex-col gap-2">
         <Button
           className="w-full"
           onClick={handlePay}
           disabled={!hasEnoughBalance || isBalanceLoading}
         >
           Pay ${amount.toFixed(2)}
+        </Button>
+        <Button variant="ghost" onClick={handleBack} className="w-full">
+          Cancel
         </Button>
       </ModalFooter>
     </ModalContent>

@@ -150,9 +150,12 @@ export function LinkWalletModal({
           </p>
         </div>
 
-        <ModalFooter>
+        <ModalFooter className="flex flex-col gap-2">
           <Button className="w-full" onClick={handleSign}>
             Sign Message to Link
+          </Button>
+          <Button variant="ghost" onClick={handleBack} className="w-full">
+            Cancel
           </Button>
         </ModalFooter>
       </ModalContent>

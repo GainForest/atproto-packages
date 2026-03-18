@@ -149,6 +149,9 @@ export function AmountModal({ bumicert }: AmountModalProps) {
           Continue with Card
           <span className="text-xs bg-muted-foreground text-muted px-1 rounded-xs uppercase font-mono">Coming soon</span>
         </Button>
+        <Button variant="ghost" onClick={handleClose} className="w-full">
+          Cancel
+        </Button>
       </ModalFooter>
     </ModalContent>
   );

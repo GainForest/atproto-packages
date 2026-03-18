@@ -170,6 +170,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // 2b. Verify authorization.to matches resolved recipient wallet
+  // This prevents attacks where a malicious actor signs an authorization
+  // sending funds to a different address than the org's linked wallet.
+  if (authorization.to.toLowerCase() !== recipientWallet.toLowerCase()) {
+    return Response.json(
+      { error: "Authorization recipient does not match organization wallet" },
+      { status: 422 }
+    );
+  }
+
   // 3. Execute on-chain transfer
   let transactionHash: `0x${string}`;
   try {
