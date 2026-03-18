@@ -5,6 +5,7 @@ import { CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronRight, Loader
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import type { ValidatedRow } from "@/lib/upload/types";
+import { occurrenceInputToCreateInput } from "@/lib/upload/occurrence-adapter";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -106,36 +107,8 @@ export default function UploadStep({ validRows, onBack, onComplete }: UploadStep
       }));
 
       try {
-        // 1. Create occurrence (lat/lon must be strings for ATProto)
-        const occInput: Parameters<typeof createOccurrence.mutateAsync>[0] = {
-          scientificName: row.occurrence.scientificName,
-          eventDate: row.occurrence.eventDate,
-          decimalLatitude: String(row.occurrence.decimalLatitude),
-          decimalLongitude: String(row.occurrence.decimalLongitude),
-        };
-
-        // Only include optional fields if defined
-        if (row.occurrence.basisOfRecord !== undefined)
-          occInput.basisOfRecord = row.occurrence.basisOfRecord;
-        if (row.occurrence.vernacularName !== undefined)
-          occInput.vernacularName = row.occurrence.vernacularName;
-        if (row.occurrence.recordedBy !== undefined)
-          occInput.recordedBy = row.occurrence.recordedBy;
-        if (row.occurrence.locality !== undefined)
-          occInput.locality = row.occurrence.locality;
-        if (row.occurrence.country !== undefined)
-          occInput.country = row.occurrence.country;
-        if (row.occurrence.countryCode !== undefined)
-          occInput.countryCode = row.occurrence.countryCode;
-        if (row.occurrence.occurrenceRemarks !== undefined)
-          occInput.occurrenceRemarks = row.occurrence.occurrenceRemarks;
-        if (row.occurrence.habitat !== undefined)
-          occInput.habitat = row.occurrence.habitat;
-        if (row.occurrence.samplingProtocol !== undefined)
-          occInput.samplingProtocol = row.occurrence.samplingProtocol;
-        if (row.occurrence.kingdom !== undefined)
-          occInput.kingdom = row.occurrence.kingdom;
-
+        // 1. Create occurrence — adapter converts number lat/lon → string for ATProto
+        const occInput = occurrenceInputToCreateInput(row.occurrence);
         const occResult = await createOccurrence.mutateAsync(occInput);
 
         // 2. Create measurement (only if floraMeasurement is not null)
