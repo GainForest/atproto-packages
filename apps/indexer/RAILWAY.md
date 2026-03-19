@@ -197,8 +197,8 @@ PDS_HOST_CACHE_TTL_SECONDS=3600
 
 **Hyperlabel integration**:
 ```
-HYPERLABEL_URL=https://hyperlabel-production.up.railway.app
-HYPERLABEL_DID=did:plc:5rw6of6lry7ihmyhm323ycwn
+HYPERLABEL_URL=https://hyperlabel-production-fc36.up.railway.app/
+HYPERLABEL_DID=did:plc:edod7rboajioq3jbyxsgeicc
 ```
 
 #### 4.4: Add a public domain

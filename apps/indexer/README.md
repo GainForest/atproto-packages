@@ -187,8 +187,8 @@ SEED_DIDS=did:plc:abc123,did:plc:xyz456
 ### Hyperlabel
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HYPERLABEL_URL` | `https://hyperlabel-production.up.railway.app` | Labeller base URL |
-| `HYPERLABEL_DID` | `did:plc:5rw6of6lry7ihmyhm323ycwn` | Labeller DID |
+| `HYPERLABEL_URL` | `https://hyperlabel-production-fc36.up.railway.app/` | Labeller base URL |
+| `HYPERLABEL_DID` | `did:plc:edod7rboajioq3jbyxsgeicc` | Labeller DID |
 
 ---
 

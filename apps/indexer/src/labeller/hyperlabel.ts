@@ -26,10 +26,10 @@ import type { LabelInsert } from "@/db/types.ts";
 // ---------------------------------------------------------------
 
 export const HYPERLABEL_URL =
-  process.env.HYPERLABEL_URL ?? "https://hyperlabel-production.up.railway.app";
+  process.env.HYPERLABEL_URL ?? "https://hyperlabel-production-fc36.up.railway.app/";
 
 export const HYPERLABEL_DID =
-  process.env.HYPERLABEL_DID ?? "did:plc:5rw6of6lry7ihmyhm323ycwn";
+  process.env.HYPERLABEL_DID ?? "did:plc:edod7rboajioq3jbyxsgeicc";
 
 /** All valid label tier values issued by Hyperlabel. */
 export const LABEL_TIERS = [
