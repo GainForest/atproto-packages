@@ -3,7 +3,8 @@
  */
 
 import { l } from '@atproto/lex'
-import * as HypercertsDefs from '../../../../org/hypercerts/defs.defs.ts'
+import * as HypercertsDefs from './..//..//..//..//org//hypercerts//defs.defs.ts'
+import * as CommonDefs from './..//..//common//defs.defs.ts'
 
 const $nsid = 'app.gainforest.organization.observations.measuredTreesCluster'
 
@@ -22,6 +23,86 @@ type Main = {
    * The date and time of the creation of the record
    */
   createdAt: l.DatetimeString
+
+  /**
+   * Name of the tree cluster/plot (e.g., 'Plot A - Riparian Zone')
+   */
+  name?: string
+
+  /**
+   * Description of the cluster
+   */
+  description?: CommonDefs.Richtext
+
+  /**
+   * AT-URI reference to the site this cluster belongs to
+   */
+  siteRef?: l.AtUriString
+
+  /**
+   * Centroid latitude of the cluster
+   */
+  decimalLatitude?: string
+
+  /**
+   * Centroid longitude of the cluster
+   */
+  decimalLongitude?: string
+
+  /**
+   * Area of the cluster in square meters
+   */
+  areaSqMeters?: string
+
+  /**
+   * Total number of measured trees in the cluster
+   */
+  totalTreeCount?: number
+
+  /**
+   * Number of distinct species in the cluster
+   */
+  speciesCount?: number
+
+  /**
+   * Average tree height in meters
+   */
+  averageHeightMeters?: string
+
+  /**
+   * Average diameter at breast height in cm
+   */
+  averageDbhCm?: string
+
+  /**
+   * Most common species scientific name
+   */
+  dominantSpecies?: string
+
+  /**
+   * Date range of measurements (ISO 8601 interval)
+   */
+  measurementDateRange?: string
+
+  /**
+   * Person(s) who measured the trees (pipe-delimited)
+   */
+  measuredBy?: string
+
+  /**
+   * Description of the measurement protocol used
+   */
+  measurementProtocol?: string
+
+  /**
+   * Source of the data (e.g., 'KoBoToolbox', 'field survey')
+   */
+  dataSource?: string
+
+  /**
+   * Data license
+   */
+  license?: string
 }
 
 export type { Main }
@@ -35,6 +116,24 @@ const main = l.record<'tid', Main>(
       (() => HypercertsDefs.smallBlob) as any,
     ),
     createdAt: l.string({ format: 'datetime' }),
+    name: l.optional(l.string({ maxGraphemes: 256 })),
+    description: l.optional(
+      l.ref<CommonDefs.Richtext>((() => CommonDefs.richtext) as any),
+    ),
+    siteRef: l.optional(l.string({ format: 'at-uri' })),
+    decimalLatitude: l.optional(l.string({ maxGraphemes: 32 })),
+    decimalLongitude: l.optional(l.string({ maxGraphemes: 32 })),
+    areaSqMeters: l.optional(l.string({ maxGraphemes: 32 })),
+    totalTreeCount: l.optional(l.integer({ minimum: 0 })),
+    speciesCount: l.optional(l.integer({ minimum: 0 })),
+    averageHeightMeters: l.optional(l.string({ maxGraphemes: 16 })),
+    averageDbhCm: l.optional(l.string({ maxGraphemes: 16 })),
+    dominantSpecies: l.optional(l.string({ maxGraphemes: 256 })),
+    measurementDateRange: l.optional(l.string({ maxGraphemes: 64 })),
+    measuredBy: l.optional(l.string({ maxGraphemes: 512 })),
+    measurementProtocol: l.optional(l.string({ maxGraphemes: 1024 })),
+    dataSource: l.optional(l.string({ maxGraphemes: 256 })),
+    license: l.optional(l.string({ maxGraphemes: 256 })),
   }),
 )
 

@@ -350,6 +350,48 @@ export async function mapCertifiedBadgeResponse(row: RecordRow) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// app.certified.link.evm
+// ──────────────────────────────────────────────────────────────────────────
+
+export const CertifiedLinkEvmRecordType = builder.simpleObject("CertifiedLinkEvmRecord", {
+  description: "Pure payload for app.certified.link.evm. A verifiable link between an ATProto DID and an EVM wallet address, proven via a cryptographic signature. Currently supports EOA wallets via EIP-712 typed data signatures; the proof field is an open union to allow future signature methods.",
+  fields: (t) => ({
+        address: t.string({ nullable: true, description: "EVM wallet address (0x-prefixed, with EIP-55 checksum recommended)." }),
+        proof: t.field({ type: "JSON", nullable: true, description: "Cryptographic proof of wallet ownership. The union is open to allow future proof methods (e.g. ERC-1271, ERC-6492). Each variant bundles its signature with the corresponding message format." }),
+        createdAt: t.field({ type: "DateTime", nullable: true, description: "Client-declared timestamp when this record was originally created." }),
+  }),
+});
+
+export const CertifiedLinkEvmItemType = builder.simpleObject("CertifiedLinkEvmItem", {
+  description: "A record from app.certified.link.evm.",
+  fields: (t) => ({
+    metadata:    t.field({ type: RecordMetaType }),
+    creatorInfo: t.field({ type: CreatorInfoType }),
+    record:      t.field({ type: CertifiedLinkEvmRecordType }),
+  }),
+});
+
+export const CertifiedLinkEvmPageType = builder.simpleObject("CertifiedLinkEvmPage", {
+  fields: (t) => ({
+    data:     t.field({ type: [CertifiedLinkEvmItemType] }),
+    pageInfo: t.field({ type: PageInfoType }),
+  }),
+});
+
+export async function mapCertifiedLinkEvm(row: RecordRow) {
+  const p = payload(row);
+  return {
+    metadata:    rowToMeta(row),
+    creatorInfo: await resolveCreatorInfo(row.did),
+    record: {
+            address: s(p, "address"),
+            proof: j(p, "proof"),
+            createdAt: s(p, "createdAt"),
+    },
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // app.certified.location
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -400,6 +442,68 @@ export async function mapCertifiedLocation(row: RecordRow) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// app.gainforest.ac.multimedia
+// ──────────────────────────────────────────────────────────────────────────
+
+export const GainforestAcMultimediaRecordType = builder.simpleObject("GainforestAcMultimediaRecord", {
+  description: "Pure payload for app.gainforest.ac.multimedia.",
+  fields: (t) => ({
+        occurrenceRef: t.string({ nullable: true, description: "AT-URI of the dwc.occurrence record this media is evidence for." }),
+        siteRef: t.string({ nullable: true, description: "AT-URI of the organization site record where this media was captured." }),
+        subjectPart: t.string({ nullable: true, description: "The part of the organism depicted, using TDWG Audubon Core subjectPart controlled values (http://rs.tdwg.org/acpart/values/). Examples: entireOrganism, leaf, bark, flower, fruit, seed, stem, twig, bud, root." }),
+        subjectPartUri: t.string({ nullable: true, description: "Full IRI of the subjectPart term from the TDWG controlled vocabulary. Example: http://rs.tdwg.org/acpart/values/p0002 for bark." }),
+        subjectOrientation: t.string({ nullable: true, description: "Viewing orientation relative to the subject, using TDWG Audubon Core subjectOrientation controlled values. Examples: dorsal, ventral, lateral, anterior, posterior." }),
+        file: t.field({ type: "JSON", nullable: true, description: "The media file blob. Images up to 100MB, audio up to 100MB, video up to 100MB. For PDS-stored compressed versions; original full-res referenced via accessUri." }),
+        format: t.string({ nullable: true, description: "MIME type of the media file (e.g. image/webp, audio/flac). Should match the blob's actual content type." }),
+        accessUri: t.string({ nullable: true, description: "URI to the original full-resolution media resource (e.g. S3 URL). The PDS blob is a compressed variant; this points to the archival original." }),
+        variantLiteral: t.string({ nullable: true, description: "AC variant describing the quality/size of this service access point. Values: Thumbnail, Lower Quality, Medium Quality, Good Quality, Best Quality, Offline." }),
+        caption: t.string({ nullable: true, description: "Human-readable description of the media content." }),
+        creator: t.string({ nullable: true, description: "Name of the person or agent who created the media resource." }),
+        createDate: t.field({ type: "DateTime", nullable: true, description: "Date and time the media resource was originally created (e.g. when the photo was taken)." }),
+        createdAt: t.field({ type: "DateTime", nullable: true, description: "Timestamp of record creation in the ATProto PDS." }),
+  }),
+});
+
+export const GainforestAcMultimediaItemType = builder.simpleObject("GainforestAcMultimediaItem", {
+  description: "A record from app.gainforest.ac.multimedia.",
+  fields: (t) => ({
+    metadata:    t.field({ type: RecordMetaType }),
+    creatorInfo: t.field({ type: CreatorInfoType }),
+    record:      t.field({ type: GainforestAcMultimediaRecordType }),
+  }),
+});
+
+export const GainforestAcMultimediaPageType = builder.simpleObject("GainforestAcMultimediaPage", {
+  fields: (t) => ({
+    data:     t.field({ type: [GainforestAcMultimediaItemType] }),
+    pageInfo: t.field({ type: PageInfoType }),
+  }),
+});
+
+export async function mapGainforestAcMultimedia(row: RecordRow) {
+  const p = payload(row);
+  return {
+    metadata:    rowToMeta(row),
+    creatorInfo: await resolveCreatorInfo(row.did),
+    record: {
+            occurrenceRef: s(p, "occurrenceRef"),
+            siteRef: s(p, "siteRef"),
+            subjectPart: s(p, "subjectPart"),
+            subjectPartUri: s(p, "subjectPartUri"),
+            subjectOrientation: s(p, "subjectOrientation"),
+            file: await resolveBlobsInValue(j(p, "file"), row.did),
+            format: s(p, "format"),
+            accessUri: s(p, "accessUri"),
+            variantLiteral: s(p, "variantLiteral"),
+            caption: s(p, "caption"),
+            creator: s(p, "creator"),
+            createDate: s(p, "createDate"),
+            createdAt: s(p, "createdAt"),
+    },
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // app.gainforest.dwc.event
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -433,6 +537,26 @@ export const GainforestDwcEventRecordType = builder.simpleObject("GainforestDwcE
         maximumElevationInMeters: t.int({ nullable: true, description: "Upper limit of elevation range in meters above sea level." }),
         locationRemarks: t.string({ nullable: true, description: "Comments about the location." }),
         createdAt: t.field({ type: "DateTime", nullable: true, description: "Timestamp of record creation in the ATProto PDS." }),
+        projectRef: t.string({ nullable: true, description: "AT-URI reference to the organization info record." }),
+        siteRef: t.string({ nullable: true, description: "AT-URI reference to the organization site record." }),
+        monitoringProgramme: t.string({ nullable: true, description: "Name of the monitoring programme (e.g., 'Annual Biodiversity Survey 2025')." }),
+        monitoringFrequency: t.string({ nullable: true, description: "How often this type of event recurs (e.g., 'monthly', 'quarterly', 'annual', 'one-time')." }),
+        temperature: t.string({ nullable: true, description: "Temperature in Celsius during event." }),
+        humidity: t.string({ nullable: true, description: "Relative humidity percentage." }),
+        windSpeed: t.string({ nullable: true, description: "Wind speed during event." }),
+        cloudCover: t.string({ nullable: true, description: "Cloud cover percentage." }),
+        precipitation: t.string({ nullable: true, description: "Precipitation description (e.g., 'none', 'light rain', '5mm')." }),
+        weatherRemarks: t.string({ nullable: true, description: "General weather description." }),
+        moonPhase: t.string({ nullable: true, description: "Moon phase (relevant for nocturnal surveys)." }),
+        waterLevel: t.string({ nullable: true, description: "Water level if aquatic survey (e.g., 'low', '2.3m')." }),
+        waterTemperature: t.string({ nullable: true, description: "Water temperature in Celsius." }),
+        visibility: t.string({ nullable: true, description: "Visibility conditions (e.g., 'clear', 'foggy', '10m underwater')." }),
+        teamSize: t.int({ nullable: true, description: "Number of people involved in the event." }),
+        recordedBy: t.string({ nullable: true, description: "Person(s) who conducted the event. Pipe-delimited for multiple people (e.g., 'Jane Smith | John Doe')." }),
+        recordedByID: t.string({ nullable: true, description: "ORCID or other persistent identifiers for the recorder(s). Pipe-delimited for multiple IDs." }),
+        equipmentUsed: t.string({ nullable: true, description: "Description of equipment used during the event." }),
+        qualityControlNotes: t.string({ nullable: true, description: "Notes on data quality issues encountered during or after the event." }),
+        completeness: t.string({ nullable: true, description: "Assessment of survey completeness (e.g., 'complete', 'partial - rain stopped survey', 'incomplete')." }),
   }),
 });
 
@@ -485,6 +609,26 @@ export async function mapGainforestDwcEvent(row: RecordRow) {
             maximumElevationInMeters: n(p, "maximumElevationInMeters"),
             locationRemarks: s(p, "locationRemarks"),
             createdAt: s(p, "createdAt"),
+            projectRef: s(p, "projectRef"),
+            siteRef: s(p, "siteRef"),
+            monitoringProgramme: s(p, "monitoringProgramme"),
+            monitoringFrequency: s(p, "monitoringFrequency"),
+            temperature: s(p, "temperature"),
+            humidity: s(p, "humidity"),
+            windSpeed: s(p, "windSpeed"),
+            cloudCover: s(p, "cloudCover"),
+            precipitation: s(p, "precipitation"),
+            weatherRemarks: s(p, "weatherRemarks"),
+            moonPhase: s(p, "moonPhase"),
+            waterLevel: s(p, "waterLevel"),
+            waterTemperature: s(p, "waterTemperature"),
+            visibility: s(p, "visibility"),
+            teamSize: n(p, "teamSize"),
+            recordedBy: s(p, "recordedBy"),
+            recordedByID: s(p, "recordedByID"),
+            equipmentUsed: s(p, "equipmentUsed"),
+            qualityControlNotes: s(p, "qualityControlNotes"),
+            completeness: s(p, "completeness"),
     },
   };
 }
@@ -494,19 +638,16 @@ export async function mapGainforestDwcEvent(row: RecordRow) {
 // ──────────────────────────────────────────────────────────────────────────
 
 export const GainforestDwcMeasurementRecordType = builder.simpleObject("GainforestDwcMeasurementRecord", {
-  description: "Pure payload for app.gainforest.dwc.measurement. A measurement, fact, characteristic, or assertion about an occurrence. Multiple measurement records can reference the same occurrence, solving the Simple DwC one-measurement-per-record limitation.",
+  description: "Pure payload for app.gainforest.dwc.measurement. A bundle of measurements, facts, or characteristics about an occurrence. One record per occurrence, with all measurements grouped inside a typed result union.",
   fields: (t) => ({
-        measurementID: t.string({ nullable: true, description: "An identifier for the measurement. Should be unique within the dataset." }),
-        occurrenceRef: t.string({ nullable: true, description: "AT-URI reference to the app.gainforest.dwc.occurrence record this measurement belongs to." }),
-        occurrenceID: t.string({ nullable: true, description: "The occurrenceID of the linked occurrence record (for cross-system interoperability)." }),
-        measurementType: t.string({ nullable: true, description: "The nature of the measurement, fact, characteristic, or assertion (e.g., 'DBH', 'tree height', 'canopy cover', 'tail length', 'body mass', 'soil pH', 'water temperature')." }),
-        measurementValue: t.string({ nullable: true, description: "The value of the measurement, fact, characteristic, or assertion (e.g., '45.2', 'present', 'blue')." }),
-        measurementUnit: t.string({ nullable: true, description: "The units for the measurementValue (e.g., 'cm', 'm', 'kg', 'mm', '%', 'degrees Celsius')." }),
-        measurementAccuracy: t.string({ nullable: true, description: "The description of the potential error associated with the measurementValue (e.g., '0.5 cm', '5%')." }),
-        measurementMethod: t.string({ nullable: true, description: "The description of or reference to the method used to determine the measurement (e.g., 'diameter tape at 1.3m height', 'laser rangefinder', 'Bitterlich method')." }),
-        measurementDeterminedBy: t.string({ nullable: true, description: "Person(s) who determined the measurement. Pipe-delimited for multiple." }),
-        measurementDeterminedDate: t.string({ nullable: true, description: "The date the measurement was made. ISO 8601 format." }),
-        measurementRemarks: t.string({ nullable: true, description: "Comments or notes accompanying the measurement." }),
+        occurrenceRef: t.string({ nullable: true, description: "AT-URI reference to the app.gainforest.dwc.occurrence record these measurements belong to." }),
+        occurrenceID: t.string({ nullable: true, description: "The occurrenceID of the linked occurrence record (for cross-system interoperability with GBIF/DwC-A exports)." }),
+        result: t.field({ type: "JSON", nullable: true, description: "The typed measurement payload. Use floraMeasurement for sessile organisms (trees, plants, corals, sponges), faunaMeasurement for mobile organisms (mammals, birds, reptiles, amphibians, fish, insects), or genericMeasurement as a flexible fallback." }),
+        measuredBy: t.string({ nullable: true, description: "Person(s) who performed the measurements. Pipe-delimited for multiple." }),
+        measuredByID: t.string({ nullable: true, description: "ORCID or other persistent identifier(s) for the measurer(s). Pipe-delimited for multiple." }),
+        measurementDate: t.string({ nullable: true, description: "Date the measurements were taken. ISO 8601 format." }),
+        measurementMethod: t.string({ nullable: true, description: "General protocol or method used (e.g., 'ForestGEO standard protocol', 'mist-net examination')." }),
+        measurementRemarks: t.string({ nullable: true, description: "Comments or notes about the measurement session." }),
         createdAt: t.field({ type: "DateTime", nullable: true, description: "Timestamp of record creation in the ATProto PDS." }),
   }),
 });
@@ -533,16 +674,13 @@ export async function mapGainforestDwcMeasurement(row: RecordRow) {
     metadata:    rowToMeta(row),
     creatorInfo: await resolveCreatorInfo(row.did),
     record: {
-            measurementID: s(p, "measurementID"),
             occurrenceRef: s(p, "occurrenceRef"),
             occurrenceID: s(p, "occurrenceID"),
-            measurementType: s(p, "measurementType"),
-            measurementValue: s(p, "measurementValue"),
-            measurementUnit: s(p, "measurementUnit"),
-            measurementAccuracy: s(p, "measurementAccuracy"),
+            result: j(p, "result"),
+            measuredBy: s(p, "measuredBy"),
+            measuredByID: s(p, "measuredByID"),
+            measurementDate: s(p, "measurementDate"),
             measurementMethod: s(p, "measurementMethod"),
-            measurementDeterminedBy: s(p, "measurementDeterminedBy"),
-            measurementDeterminedDate: s(p, "measurementDeterminedDate"),
             measurementRemarks: s(p, "measurementRemarks"),
             createdAt: s(p, "createdAt"),
     },
@@ -690,6 +828,62 @@ export async function mapGainforestEvaluatorSubscription(row: RecordRow) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// app.gainforest.gbif.dataset
+// ──────────────────────────────────────────────────────────────────────────
+
+export const GainforestGbifDatasetRecordType = builder.simpleObject("GainforestGbifDatasetRecord", {
+  description: "Pure payload for app.gainforest.gbif.dataset. A GBIF dataset registration record linking a PDS organization to its GBIF dataset UUID, installation, and archive blob.",
+  fields: (t) => ({
+        organizationRef: t.string({ nullable: true, description: "AT-URI of the organization info record this dataset belongs to" }),
+        gbifDatasetKey: t.string({ nullable: true, description: "GBIF dataset UUID returned by POST /dataset" }),
+        gbifInstallationKey: t.string({ nullable: true, description: "GBIF installation UUID used when creating the dataset" }),
+        gbifEndpointKey: t.int({ nullable: true, description: "GBIF endpoint integer key returned by POST /dataset/{key}/endpoint" }),
+        datasetTitle: t.string({ nullable: true, description: "Human-readable dataset title" }),
+        archiveBlobCid: t.string({ nullable: true, description: "CID of the most recently uploaded DwC-A blob" }),
+        archiveBlob: t.field({ type: "JSON", nullable: true, description: "Blob reference to the DwC-A archive ZIP. Storing as a proper blob ref prevents PDS garbage collection." }),
+        lastPublishedAt: t.field({ type: "DateTime", nullable: true, description: "When the archive was last published to GBIF" }),
+        lastCrawlFinishReason: t.string({ nullable: true, description: "Result of last GBIF crawl (NORMAL, ABORT, etc.)" }),
+        createdAt: t.field({ type: "DateTime", nullable: true, description: "Timestamp of record creation in the ATProto PDS" }),
+  }),
+});
+
+export const GainforestGbifDatasetItemType = builder.simpleObject("GainforestGbifDatasetItem", {
+  description: "A record from app.gainforest.gbif.dataset.",
+  fields: (t) => ({
+    metadata:    t.field({ type: RecordMetaType }),
+    creatorInfo: t.field({ type: CreatorInfoType }),
+    record:      t.field({ type: GainforestGbifDatasetRecordType }),
+  }),
+});
+
+export const GainforestGbifDatasetPageType = builder.simpleObject("GainforestGbifDatasetPage", {
+  fields: (t) => ({
+    data:     t.field({ type: [GainforestGbifDatasetItemType] }),
+    pageInfo: t.field({ type: PageInfoType }),
+  }),
+});
+
+export async function mapGainforestGbifDataset(row: RecordRow) {
+  const p = payload(row);
+  return {
+    metadata:    rowToMeta(row),
+    creatorInfo: await resolveCreatorInfo(row.did),
+    record: {
+            organizationRef: s(p, "organizationRef"),
+            gbifDatasetKey: s(p, "gbifDatasetKey"),
+            gbifInstallationKey: s(p, "gbifInstallationKey"),
+            gbifEndpointKey: n(p, "gbifEndpointKey"),
+            datasetTitle: s(p, "datasetTitle"),
+            archiveBlobCid: s(p, "archiveBlobCid"),
+            archiveBlob: await resolveBlobsInValue(j(p, "archiveBlob"), row.did),
+            lastPublishedAt: s(p, "lastPublishedAt"),
+            lastCrawlFinishReason: s(p, "lastCrawlFinishReason"),
+            createdAt: s(p, "createdAt"),
+    },
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // app.gainforest.organization.defaultSite
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -730,6 +924,76 @@ export async function mapGainforestOrganizationDefaultSite(row: RecordRow) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// app.gainforest.organization.donation
+// ──────────────────────────────────────────────────────────────────────────
+
+export const GainforestOrganizationDonationRecordType = builder.simpleObject("GainforestOrganizationDonationRecord", {
+  description: "Pure payload for app.gainforest.organization.donation. A record of a donation or financial transaction for financial transparency",
+  fields: (t) => ({
+        donorIdentifier: t.string({ nullable: true, description: "Unique identifier for the donor (DID, email hash, or anonymous token)" }),
+        amount: t.int({ nullable: true, description: "Donation amount in the smallest unit of the currency (e.g., cents for USD)" }),
+        currency: t.string({ nullable: true, description: "Currency code (e.g., 'USD', 'EUR', 'CELO', 'SOL')" }),
+        donatedAt: t.field({ type: "DateTime", nullable: true, description: "When the donation was made" }),
+        createdAt: t.field({ type: "DateTime", nullable: true, description: "Record creation timestamp" }),
+        donorName: t.string({ nullable: true, description: "Donor name (may be anonymous)" }),
+        donorDid: t.string({ nullable: true, description: "Donor's ATProto DID if they have an account" }),
+        recipientMemberRef: t.string({ nullable: true, description: "AT-URI to the member record who received funds" }),
+        transactionType: t.string({ nullable: true, description: "Type of transaction" }),
+        paymentMethod: t.string({ nullable: true, description: "Payment method used for the donation" }),
+        transactionHash: t.string({ nullable: true, description: "Blockchain transaction hash if crypto" }),
+        blockchainNetwork: t.string({ nullable: true, description: "Blockchain network the transaction was made on" }),
+        purpose: t.string({ nullable: true, description: "What the donation is for (e.g., 'tree planting', 'equipment', 'salaries')" }),
+        isAnonymous: t.boolean({ nullable: true, description: "Whether the donor wishes to remain anonymous" }),
+        receiptUrl: t.string({ nullable: true, description: "URL to donation receipt" }),
+        notes: t.string({ nullable: true, description: "Additional notes" }),
+        amountUsd: t.string({ nullable: true, description: "Equivalent amount in USD at time of donation" }),
+  }),
+});
+
+export const GainforestOrganizationDonationItemType = builder.simpleObject("GainforestOrganizationDonationItem", {
+  description: "A record from app.gainforest.organization.donation.",
+  fields: (t) => ({
+    metadata:    t.field({ type: RecordMetaType }),
+    creatorInfo: t.field({ type: CreatorInfoType }),
+    record:      t.field({ type: GainforestOrganizationDonationRecordType }),
+  }),
+});
+
+export const GainforestOrganizationDonationPageType = builder.simpleObject("GainforestOrganizationDonationPage", {
+  fields: (t) => ({
+    data:     t.field({ type: [GainforestOrganizationDonationItemType] }),
+    pageInfo: t.field({ type: PageInfoType }),
+  }),
+});
+
+export async function mapGainforestOrganizationDonation(row: RecordRow) {
+  const p = payload(row);
+  return {
+    metadata:    rowToMeta(row),
+    creatorInfo: await resolveCreatorInfo(row.did),
+    record: {
+            donorIdentifier: s(p, "donorIdentifier"),
+            amount: n(p, "amount"),
+            currency: s(p, "currency"),
+            donatedAt: s(p, "donatedAt"),
+            createdAt: s(p, "createdAt"),
+            donorName: s(p, "donorName"),
+            donorDid: s(p, "donorDid"),
+            recipientMemberRef: s(p, "recipientMemberRef"),
+            transactionType: s(p, "transactionType"),
+            paymentMethod: s(p, "paymentMethod"),
+            transactionHash: s(p, "transactionHash"),
+            blockchainNetwork: s(p, "blockchainNetwork"),
+            purpose: s(p, "purpose"),
+            isAnonymous: b(p, "isAnonymous"),
+            receiptUrl: s(p, "receiptUrl"),
+            notes: s(p, "notes"),
+            amountUsd: s(p, "amountUsd"),
+    },
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // app.gainforest.organization.layer
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -741,6 +1005,24 @@ export const GainforestOrganizationLayerRecordType = builder.simpleObject("Gainf
         uri: t.string({ nullable: true, description: "The URI of the layer" }),
         description: t.string({ nullable: true, description: "The description of the layer" }),
         createdAt: t.field({ type: "DateTime", nullable: true, description: "The date and time of the creation of the record" }),
+        category: t.string({ nullable: true, description: "Layer category for grouping in UI (e.g., 'Biodiversity', 'Land Cover', 'Climate', 'Infrastructure')" }),
+        displayOrder: t.int({ nullable: true, description: "Ordering priority for display" }),
+        isDefault: t.boolean({ nullable: true, description: "Whether this layer should be shown by default" }),
+        opacity: t.string({ nullable: true, description: "Default opacity (0-1 as string, e.g., '0.7')" }),
+        thumbnail: t.field({ type: "JSON", nullable: true, description: "Preview thumbnail for the layer" }),
+        legend: t.field({ type: "JSON", nullable: true, description: "Legend entries for the layer" }),
+        colorScale: t.string({ nullable: true, description: "Named color scale for continuous data" }),
+        unit: t.string({ nullable: true, description: "Unit of measurement for the layer data (e.g., 'species/ha', 'kg C/m²', 'mm/year')" }),
+        minValue: t.string({ nullable: true, description: "Minimum value in the data range" }),
+        maxValue: t.string({ nullable: true, description: "Maximum value in the data range" }),
+        tilePattern: t.string({ nullable: true, description: "URL pattern for TMS tiles (e.g., 'https://tiles.example.com/{z}/{x}/{y}.png')" }),
+        tileMinZoom: t.int({ nullable: true, description: "Minimum zoom level" }),
+        tileMaxZoom: t.int({ nullable: true, description: "Maximum zoom level" }),
+        bounds: t.string({ nullable: true, description: "Bounding box as 'west,south,east,north'" }),
+        dataSource: t.string({ nullable: true, description: "Attribution/source of the layer data" }),
+        dataDate: t.string({ nullable: true, description: "Date of the data (ISO 8601)" }),
+        propertyKey: t.string({ nullable: true, description: "GeoJSON property key to use for choropleth coloring (e.g., 'species_richness')" }),
+        siteRef: t.string({ nullable: true, description: "AT-URI reference to the site this layer belongs to" }),
   }),
 });
 
@@ -771,6 +1053,92 @@ export async function mapGainforestOrganizationLayer(row: RecordRow) {
             uri: s(p, "uri"),
             description: s(p, "description"),
             createdAt: s(p, "createdAt"),
+            category: s(p, "category"),
+            displayOrder: n(p, "displayOrder"),
+            isDefault: b(p, "isDefault"),
+            opacity: s(p, "opacity"),
+            thumbnail: await resolveBlobsInValue(j(p, "thumbnail"), row.did),
+            legend: j(p, "legend"),
+            colorScale: s(p, "colorScale"),
+            unit: s(p, "unit"),
+            minValue: s(p, "minValue"),
+            maxValue: s(p, "maxValue"),
+            tilePattern: s(p, "tilePattern"),
+            tileMinZoom: n(p, "tileMinZoom"),
+            tileMaxZoom: n(p, "tileMaxZoom"),
+            bounds: s(p, "bounds"),
+            dataSource: s(p, "dataSource"),
+            dataDate: s(p, "dataDate"),
+            propertyKey: s(p, "propertyKey"),
+            siteRef: s(p, "siteRef"),
+    },
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// app.gainforest.organization.member
+// ──────────────────────────────────────────────────────────────────────────
+
+export const GainforestOrganizationMemberRecordType = builder.simpleObject("GainforestOrganizationMemberRecord", {
+  description: "Pure payload for app.gainforest.organization.member. A community or team member of an organization",
+  fields: (t) => ({
+        displayName: t.string({ nullable: true, description: "Full display name of the member" }),
+        role: t.string({ nullable: true, description: "Role or title of the member within the organization" }),
+        createdAt: t.field({ type: "DateTime", nullable: true, description: "The date and time the record was created" }),
+        firstName: t.string({ nullable: true, description: "First name of the member" }),
+        lastName: t.string({ nullable: true, description: "Last name of the member" }),
+        bio: t.field({ type: "JSON", nullable: true, description: "Biography of the member" }),
+        profileImage: t.field({ type: "JSON", nullable: true, description: "Profile photo of the member" }),
+        email: t.string({ nullable: true, description: "Contact email address of the member" }),
+        orcid: t.string({ nullable: true, description: "ORCID identifier of the member" }),
+        did: t.string({ nullable: true, description: "ATProto DID if the member has their own account" }),
+        expertise: t.stringList({ nullable: true, description: "Areas of expertise (e.g. 'botany', 'remote sensing', 'community engagement')" }),
+        languages: t.stringList({ nullable: true, description: "Languages spoken by the member as BCP-47 codes" }),
+        displayOrder: t.int({ nullable: true, description: "Ordering priority for display (lower values appear first)" }),
+        isPublic: t.boolean({ nullable: true, description: "Whether this member profile is publicly visible" }),
+        joinedAt: t.field({ type: "DateTime", nullable: true, description: "When the member joined the organization" }),
+        walletAddresses: t.field({ type: "JSON", nullable: true, description: "Blockchain wallet addresses for receiving funds" }),
+  }),
+});
+
+export const GainforestOrganizationMemberItemType = builder.simpleObject("GainforestOrganizationMemberItem", {
+  description: "A record from app.gainforest.organization.member.",
+  fields: (t) => ({
+    metadata:    t.field({ type: RecordMetaType }),
+    creatorInfo: t.field({ type: CreatorInfoType }),
+    record:      t.field({ type: GainforestOrganizationMemberRecordType }),
+  }),
+});
+
+export const GainforestOrganizationMemberPageType = builder.simpleObject("GainforestOrganizationMemberPage", {
+  fields: (t) => ({
+    data:     t.field({ type: [GainforestOrganizationMemberItemType] }),
+    pageInfo: t.field({ type: PageInfoType }),
+  }),
+});
+
+export async function mapGainforestOrganizationMember(row: RecordRow) {
+  const p = payload(row);
+  return {
+    metadata:    rowToMeta(row),
+    creatorInfo: await resolveCreatorInfo(row.did),
+    record: {
+            displayName: s(p, "displayName"),
+            role: s(p, "role"),
+            createdAt: s(p, "createdAt"),
+            firstName: s(p, "firstName"),
+            lastName: s(p, "lastName"),
+            bio: j(p, "bio"),
+            profileImage: await resolveBlobsInValue(j(p, "profileImage"), row.did),
+            email: s(p, "email"),
+            orcid: s(p, "orcid"),
+            did: s(p, "did"),
+            expertise: arr(p, "expertise"),
+            languages: arr(p, "languages"),
+            displayOrder: n(p, "displayOrder"),
+            isPublic: b(p, "isPublic"),
+            joinedAt: s(p, "joinedAt"),
+            walletAddresses: j(p, "walletAddresses"),
     },
   };
 }
@@ -784,6 +1152,17 @@ export const GainforestOrganizationObservationsDendogramRecordType = builder.sim
   fields: (t) => ({
         dendogram: t.field({ type: "JSON", nullable: true, description: "An SVG of the dendogram uploaded as blob" }),
         createdAt: t.field({ type: "DateTime", nullable: true, description: "The date and time of the creation of the record" }),
+        name: t.string({ nullable: true, description: "Name or title of the dendogram (e.g., 'Flora Phylogenetic Tree - Site A 2025')" }),
+        description: t.field({ type: "JSON", nullable: true, description: "Description of what this dendogram shows" }),
+        siteRef: t.string({ nullable: true, description: "AT-URI reference to the site this dendogram represents" }),
+        analysisDate: t.field({ type: "DateTime", nullable: true, description: "When the phylogenetic analysis was performed" }),
+        analysisMethod: t.string({ nullable: true, description: "Method used to generate the dendogram (e.g., 'Maximum Likelihood with RAxML', 'Neighbor-Joining')" }),
+        dataSource: t.string({ nullable: true, description: "Source of the sequence or trait data used in the analysis" }),
+        taxonCount: t.int({ nullable: true, description: "Number of taxa represented in the dendogram" }),
+        rootTaxon: t.string({ nullable: true, description: "The root taxon of the tree (e.g., 'Plantae')" }),
+        treeType: t.string({ nullable: true, description: "Type of tree represented in the dendogram" }),
+        thumbnail: t.field({ type: "JSON", nullable: true, description: "Thumbnail preview image of the dendogram" }),
+        taxonGroups: t.stringList({ nullable: true, description: "Which taxonomic groups are represented in the dendogram" }),
   }),
 });
 
@@ -811,6 +1190,17 @@ export async function mapGainforestOrganizationObservationsDendogram(row: Record
     record: {
             dendogram: await resolveBlobsInValue(j(p, "dendogram"), row.did),
             createdAt: s(p, "createdAt"),
+            name: s(p, "name"),
+            description: j(p, "description"),
+            siteRef: s(p, "siteRef"),
+            analysisDate: s(p, "analysisDate"),
+            analysisMethod: s(p, "analysisMethod"),
+            dataSource: s(p, "dataSource"),
+            taxonCount: n(p, "taxonCount"),
+            rootTaxon: s(p, "rootTaxon"),
+            treeType: s(p, "treeType"),
+            thumbnail: await resolveBlobsInValue(j(p, "thumbnail"), row.did),
+            taxonGroups: arr(p, "taxonGroups"),
     },
   };
 }
@@ -904,6 +1294,22 @@ export const GainforestOrganizationObservationsMeasuredTreesClusterRecordType = 
   fields: (t) => ({
         shapefile: t.field({ type: "JSON", nullable: true, description: "A blob pointing to a shapefile of the measured trees cluster" }),
         createdAt: t.field({ type: "DateTime", nullable: true, description: "The date and time of the creation of the record" }),
+        name: t.string({ nullable: true, description: "Name of the tree cluster/plot (e.g., 'Plot A - Riparian Zone')" }),
+        description: t.field({ type: "JSON", nullable: true, description: "Description of the cluster" }),
+        siteRef: t.string({ nullable: true, description: "AT-URI reference to the site this cluster belongs to" }),
+        decimalLatitude: t.string({ nullable: true, description: "Centroid latitude of the cluster" }),
+        decimalLongitude: t.string({ nullable: true, description: "Centroid longitude of the cluster" }),
+        areaSqMeters: t.string({ nullable: true, description: "Area of the cluster in square meters" }),
+        totalTreeCount: t.int({ nullable: true, description: "Total number of measured trees in the cluster" }),
+        speciesCount: t.int({ nullable: true, description: "Number of distinct species in the cluster" }),
+        averageHeightMeters: t.string({ nullable: true, description: "Average tree height in meters" }),
+        averageDbhCm: t.string({ nullable: true, description: "Average diameter at breast height in cm" }),
+        dominantSpecies: t.string({ nullable: true, description: "Most common species scientific name" }),
+        measurementDateRange: t.string({ nullable: true, description: "Date range of measurements (ISO 8601 interval)" }),
+        measuredBy: t.string({ nullable: true, description: "Person(s) who measured the trees (pipe-delimited)" }),
+        measurementProtocol: t.string({ nullable: true, description: "Description of the measurement protocol used" }),
+        dataSource: t.string({ nullable: true, description: "Source of the data (e.g., 'KoBoToolbox', 'field survey')" }),
+        license: t.string({ nullable: true, description: "Data license" }),
   }),
 });
 
@@ -931,6 +1337,22 @@ export async function mapGainforestOrganizationObservationsMeasuredTreesCluster(
     record: {
             shapefile: await resolveBlobsInValue(j(p, "shapefile"), row.did),
             createdAt: s(p, "createdAt"),
+            name: s(p, "name"),
+            description: j(p, "description"),
+            siteRef: s(p, "siteRef"),
+            decimalLatitude: s(p, "decimalLatitude"),
+            decimalLongitude: s(p, "decimalLongitude"),
+            areaSqMeters: s(p, "areaSqMeters"),
+            totalTreeCount: n(p, "totalTreeCount"),
+            speciesCount: n(p, "speciesCount"),
+            averageHeightMeters: s(p, "averageHeightMeters"),
+            averageDbhCm: s(p, "averageDbhCm"),
+            dominantSpecies: s(p, "dominantSpecies"),
+            measurementDateRange: s(p, "measurementDateRange"),
+            measuredBy: s(p, "measuredBy"),
+            measurementProtocol: s(p, "measurementProtocol"),
+            dataSource: s(p, "dataSource"),
+            license: s(p, "license"),
     },
   };
 }
@@ -1631,90 +2053,6 @@ export async function mapHypercertsWorkscopeTag(row: RecordRow) {
   };
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// org.impactindexer.review.comment
-// ──────────────────────────────────────────────────────────────────────────
-
-export const ImpactindexerReviewCommentRecordType = builder.simpleObject("ImpactindexerReviewCommentRecord", {
-  description: "Pure payload for org.impactindexer.review.comment. A text comment on a subject.",
-  fields: (t) => ({
-        subject: t.field({ type: "JSON", nullable: true, description: "The subject being commented on." }),
-        text: t.string({ nullable: true, description: "The comment text." }),
-        replyTo: t.string({ nullable: true, description: "Optional AT-URI of another comment this is replying to, enabling threaded discussions." }),
-        createdAt: t.field({ type: "DateTime", nullable: true, description: "Timestamp when the comment was created." }),
-  }),
-});
-
-export const ImpactindexerReviewCommentItemType = builder.simpleObject("ImpactindexerReviewCommentItem", {
-  description: "A record from org.impactindexer.review.comment.",
-  fields: (t) => ({
-    metadata:    t.field({ type: RecordMetaType }),
-    creatorInfo: t.field({ type: CreatorInfoType }),
-    record:      t.field({ type: ImpactindexerReviewCommentRecordType }),
-  }),
-});
-
-export const ImpactindexerReviewCommentPageType = builder.simpleObject("ImpactindexerReviewCommentPage", {
-  fields: (t) => ({
-    data:     t.field({ type: [ImpactindexerReviewCommentItemType] }),
-    pageInfo: t.field({ type: PageInfoType }),
-  }),
-});
-
-export async function mapImpactindexerReviewComment(row: RecordRow) {
-  const p = payload(row);
-  return {
-    metadata:    rowToMeta(row),
-    creatorInfo: await resolveCreatorInfo(row.did),
-    record: {
-            subject: j(p, "subject"),
-            text: s(p, "text"),
-            replyTo: s(p, "replyTo"),
-            createdAt: s(p, "createdAt"),
-    },
-  };
-}
-
-// ──────────────────────────────────────────────────────────────────────────
-// org.impactindexer.review.like
-// ──────────────────────────────────────────────────────────────────────────
-
-export const ImpactindexerReviewLikeRecordType = builder.simpleObject("ImpactindexerReviewLikeRecord", {
-  description: "Pure payload for org.impactindexer.review.like. A like on a subject. Create to like, delete to remove like.",
-  fields: (t) => ({
-        subject: t.field({ type: "JSON", nullable: true, description: "The subject being liked." }),
-        createdAt: t.field({ type: "DateTime", nullable: true, description: "Timestamp when the like was created." }),
-  }),
-});
-
-export const ImpactindexerReviewLikeItemType = builder.simpleObject("ImpactindexerReviewLikeItem", {
-  description: "A record from org.impactindexer.review.like.",
-  fields: (t) => ({
-    metadata:    t.field({ type: RecordMetaType }),
-    creatorInfo: t.field({ type: CreatorInfoType }),
-    record:      t.field({ type: ImpactindexerReviewLikeRecordType }),
-  }),
-});
-
-export const ImpactindexerReviewLikePageType = builder.simpleObject("ImpactindexerReviewLikePage", {
-  fields: (t) => ({
-    data:     t.field({ type: [ImpactindexerReviewLikeItemType] }),
-    pageInfo: t.field({ type: PageInfoType }),
-  }),
-});
-
-export async function mapImpactindexerReviewLike(row: RecordRow) {
-  const p = payload(row);
-  return {
-    metadata:    rowToMeta(row),
-    creatorInfo: await resolveCreatorInfo(row.did),
-    record: {
-            subject: j(p, "subject"),
-            createdAt: s(p, "createdAt"),
-    },
-  };
-}
-
 // ════════════════════════════════════════════════════════════════════════════
 // NAMESPACE CLASSES
 // ════════════════════════════════════════════════════════════════════════════
@@ -1724,9 +2062,12 @@ export class BumicertsFundingNS {}
 export class CertifiedNS {}
 export class CertifiedActorNS {}
 export class CertifiedBadgeNS {}
+export class CertifiedLinkNS {}
 export class GainforestNS {}
+export class GainforestAcNS {}
 export class GainforestDwcNS {}
 export class GainforestEvaluatorNS {}
+export class GainforestGbifNS {}
 export class GainforestOrganizationNS {}
 export class GainforestOrganizationObservationsNS {}
 export class GainforestOrganizationPredictionsNS {}
@@ -1736,8 +2077,6 @@ export class HypercertsClaimNS {}
 export class HypercertsContextNS {}
 export class HypercertsFundingNS {}
 export class HypercertsWorkscopeNS {}
-export class ImpactindexerNS {}
-export class ImpactindexerReviewNS {}
 
 // ════════════════════════════════════════════════════════════════════════════
 // NAMESPACE OBJECTTYPES  (children declared before parents)
@@ -1870,12 +2209,32 @@ builder.objectType(CertifiedBadgeNS, {
   }),
 });
 
+builder.objectType(CertifiedLinkNS, {
+  name: "CertifiedLinkNamespace",
+  description: "CertifiedLinkNamespace namespace (certified.link.*).",
+  fields: (t) => ({
+    evm: t.field({
+      type: CertifiedLinkEvmPageType,
+      description: "Paginated list of app.certified.link.evm records.",
+      args: {
+        cursor: t.arg.string(),
+        limit: t.arg.int(),
+        where: t.arg({ type: WhereInputRef, required: false }),
+        sortBy: t.arg({ type: SortFieldEnum }),
+        order: t.arg({ type: SortOrderEnum }),
+      },
+      resolve: (_, args) => fetchCollectionPage("app.certified.link.evm", args, mapCertifiedLinkEvm),
+    }),
+  }),
+});
+
 builder.objectType(CertifiedNS, {
   name: "CertifiedNamespace",
   description: "CertifiedNamespace namespace (certified.*).",
   fields: (t) => ({
     actor: t.field({ type: CertifiedActorNS, description: "CertifiedActorNamespace namespace.", resolve: () => new CertifiedActorNS() }),
     badge: t.field({ type: CertifiedBadgeNS, description: "CertifiedBadgeNamespace namespace.", resolve: () => new CertifiedBadgeNS() }),
+    link: t.field({ type: CertifiedLinkNS, description: "CertifiedLinkNamespace namespace.", resolve: () => new CertifiedLinkNS() }),
     location: t.field({
       type: CertifiedLocationPageType,
       description: "Paginated list of app.certified.location records.",
@@ -1898,6 +2257,38 @@ builder.objectType(CertifiedNS, {
         });
         await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
         const data = await Promise.all(page.records.map(mapCertifiedLocation));
+        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
+      },
+    }),
+  }),
+});
+
+builder.objectType(GainforestAcNS, {
+  name: "GainforestAcNamespace",
+  description: "GainforestAcNamespace namespace (gainforest.ac.*).",
+  fields: (t) => ({
+    multimedia: t.field({
+      type: GainforestAcMultimediaPageType,
+      description: "Paginated list of app.gainforest.ac.multimedia records.",
+      args: {
+        cursor: t.arg.string(),
+        limit: t.arg.int(),
+        where: t.arg({ type: WhereInputRef, required: false }),
+        sortBy: t.arg({ type: SortFieldEnum }),
+        order: t.arg({ type: SortOrderEnum }),
+      },
+      resolve: async (_, args) => {
+        const { cursor, limit, where, sortBy, order } = args;
+        let resolvedDid: string | undefined;
+        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
+        else if (where?.did) resolvedDid = where.did;
+        const page = await getRecordsByCollection("app.gainforest.ac.multimedia", {
+          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
+          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
+          sortOrder: (order as "asc" | "desc") ?? undefined,
+        });
+        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
+        const data = await Promise.all(page.records.map(mapGainforestAcMultimedia));
         return { data, pageInfo: toPageInfo(page.cursor, data.length) };
       },
     }),
@@ -1974,6 +2365,38 @@ builder.objectType(GainforestEvaluatorNS, {
         order: t.arg({ type: SortOrderEnum }),
       },
       resolve: (_, args) => fetchCollectionPage("app.gainforest.evaluator.subscription", args, mapGainforestEvaluatorSubscription),
+    }),
+  }),
+});
+
+builder.objectType(GainforestGbifNS, {
+  name: "GainforestGbifNamespace",
+  description: "GainforestGbifNamespace namespace (gainforest.gbif.*).",
+  fields: (t) => ({
+    dataset: t.field({
+      type: GainforestGbifDatasetPageType,
+      description: "Paginated list of app.gainforest.gbif.dataset records.",
+      args: {
+        cursor: t.arg.string(),
+        limit: t.arg.int(),
+        where: t.arg({ type: WhereInputRef, required: false }),
+        sortBy: t.arg({ type: SortFieldEnum }),
+        order: t.arg({ type: SortOrderEnum }),
+      },
+      resolve: async (_, args) => {
+        const { cursor, limit, where, sortBy, order } = args;
+        let resolvedDid: string | undefined;
+        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
+        else if (where?.did) resolvedDid = where.did;
+        const page = await getRecordsByCollection("app.gainforest.gbif.dataset", {
+          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
+          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
+          sortOrder: (order as "asc" | "desc") ?? undefined,
+        });
+        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
+        const data = await Promise.all(page.records.map(mapGainforestGbifDataset));
+        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
+      },
     }),
   }),
 });
@@ -2108,6 +2531,18 @@ builder.objectType(GainforestOrganizationNS, {
       },
       resolve: (_, args) => fetchCollectionPage("app.gainforest.organization.defaultSite", args, mapGainforestOrganizationDefaultSite),
     }),
+    donation: t.field({
+      type: GainforestOrganizationDonationPageType,
+      description: "Paginated list of app.gainforest.organization.donation records.",
+      args: {
+        cursor: t.arg.string(),
+        limit: t.arg.int(),
+        where: t.arg({ type: WhereInputRef, required: false }),
+        sortBy: t.arg({ type: SortFieldEnum }),
+        order: t.arg({ type: SortOrderEnum }),
+      },
+      resolve: (_, args) => fetchCollectionPage("app.gainforest.organization.donation", args, mapGainforestOrganizationDonation),
+    }),
     layer: t.field({
       type: GainforestOrganizationLayerPageType,
       description: "Paginated list of app.gainforest.organization.layer records.",
@@ -2118,7 +2553,45 @@ builder.objectType(GainforestOrganizationNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: (_, args) => fetchCollectionPage("app.gainforest.organization.layer", args, mapGainforestOrganizationLayer),
+      resolve: async (_, args) => {
+        const { cursor, limit, where, sortBy, order } = args;
+        let resolvedDid: string | undefined;
+        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
+        else if (where?.did) resolvedDid = where.did;
+        const page = await getRecordsByCollection("app.gainforest.organization.layer", {
+          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
+          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
+          sortOrder: (order as "asc" | "desc") ?? undefined,
+        });
+        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
+        const data = await Promise.all(page.records.map(mapGainforestOrganizationLayer));
+        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
+      },
+    }),
+    member: t.field({
+      type: GainforestOrganizationMemberPageType,
+      description: "Paginated list of app.gainforest.organization.member records.",
+      args: {
+        cursor: t.arg.string(),
+        limit: t.arg.int(),
+        where: t.arg({ type: WhereInputRef, required: false }),
+        sortBy: t.arg({ type: SortFieldEnum }),
+        order: t.arg({ type: SortOrderEnum }),
+      },
+      resolve: async (_, args) => {
+        const { cursor, limit, where, sortBy, order } = args;
+        let resolvedDid: string | undefined;
+        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
+        else if (where?.did) resolvedDid = where.did;
+        const page = await getRecordsByCollection("app.gainforest.organization.member", {
+          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
+          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
+          sortOrder: (order as "asc" | "desc") ?? undefined,
+        });
+        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
+        const data = await Promise.all(page.records.map(mapGainforestOrganizationMember));
+        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
+      },
     }),
   }),
 });
@@ -2127,8 +2600,10 @@ builder.objectType(GainforestNS, {
   name: "GainforestNamespace",
   description: "GainforestNamespace namespace (gainforest.*).",
   fields: (t) => ({
+    ac: t.field({ type: GainforestAcNS, description: "GainforestAcNamespace namespace.", resolve: () => new GainforestAcNS() }),
     dwc: t.field({ type: GainforestDwcNS, description: "GainforestDwcNamespace namespace.", resolve: () => new GainforestDwcNS() }),
     evaluator: t.field({ type: GainforestEvaluatorNS, description: "GainforestEvaluatorNamespace namespace.", resolve: () => new GainforestEvaluatorNS() }),
+    gbif: t.field({ type: GainforestGbifNS, description: "GainforestGbifNamespace namespace.", resolve: () => new GainforestGbifNS() }),
     organization: t.field({ type: GainforestOrganizationNS, description: "GainforestOrganizationNamespace namespace.", resolve: () => new GainforestOrganizationNS() }),
   }),
 });
@@ -2427,45 +2902,6 @@ builder.objectType(HypercertsNS, {
   }),
 });
 
-builder.objectType(ImpactindexerReviewNS, {
-  name: "ImpactindexerReviewNamespace",
-  description: "ImpactindexerReviewNamespace namespace (impactindexer.review.*).",
-  fields: (t) => ({
-    comment: t.field({
-      type: ImpactindexerReviewCommentPageType,
-      description: "Paginated list of org.impactindexer.review.comment records.",
-      args: {
-        cursor: t.arg.string(),
-        limit: t.arg.int(),
-        where: t.arg({ type: WhereInputRef, required: false }),
-        sortBy: t.arg({ type: SortFieldEnum }),
-        order: t.arg({ type: SortOrderEnum }),
-      },
-      resolve: (_, args) => fetchCollectionPage("org.impactindexer.review.comment", args, mapImpactindexerReviewComment),
-    }),
-    like: t.field({
-      type: ImpactindexerReviewLikePageType,
-      description: "Paginated list of org.impactindexer.review.like records.",
-      args: {
-        cursor: t.arg.string(),
-        limit: t.arg.int(),
-        where: t.arg({ type: WhereInputRef, required: false }),
-        sortBy: t.arg({ type: SortFieldEnum }),
-        order: t.arg({ type: SortOrderEnum }),
-      },
-      resolve: (_, args) => fetchCollectionPage("org.impactindexer.review.like", args, mapImpactindexerReviewLike),
-    }),
-  }),
-});
-
-builder.objectType(ImpactindexerNS, {
-  name: "ImpactindexerNamespace",
-  description: "ImpactindexerNamespace namespace (impactindexer.*).",
-  fields: (t) => ({
-    review: t.field({ type: ImpactindexerReviewNS, description: "ImpactindexerReviewNamespace namespace.", resolve: () => new ImpactindexerReviewNS() }),
-  }),
-});
-
 // ════════════════════════════════════════════════════════════════════════════
 // QUERY FIELD REGISTRATION
 // ════════════════════════════════════════════════════════════════════════════
@@ -2495,10 +2931,5 @@ builder.queryFields((t) => ({
     type: HypercertsNS,
     description: "All HypercertsNamespace indexed records.",
     resolve: () => new HypercertsNS(),
-  }),
-  impactindexer: t.field({
-    type: ImpactindexerNS,
-    description: "All ImpactindexerNamespace indexed records.",
-    resolve: () => new ImpactindexerNS(),
   }),
 }));

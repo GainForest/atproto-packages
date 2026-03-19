@@ -3,7 +3,7 @@
  */
 
 import { l } from '@atproto/lex'
-import * as CommonDefs from '../../common/defs.defs.ts'
+import * as CommonDefs from './..//..//common//defs.defs.ts'
 
 const $nsid = 'app.gainforest.organization.recordings.audio'
 
@@ -37,6 +37,31 @@ type Main = {
    * The date and time of the creation of the record
    */
   createdAt: l.DatetimeString
+
+  /**
+   * Spectrogram image of the recording
+   */
+  spectrogram?: CommonDefs.Spectrogram
+
+  /**
+   * Thumbnail image for display
+   */
+  thumbnail?: CommonDefs.ImageThumbnail
+
+  /**
+   * License for the recording (e.g., CC-BY-4.0)
+   */
+  license?: string
+
+  /**
+   * Person(s) who made the recording
+   */
+  recordedBy?: string
+
+  /**
+   * Freeform tags for the recording (e.g., 'dawn-chorus', 'rain', 'chainsaw')
+   */
+  tags?: string[]
 }
 
 export type { Main }
@@ -46,13 +71,26 @@ const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    name: l.string(),
+    name: l.string({ maxGraphemes: 256 }),
     description: l.optional(
       l.ref<CommonDefs.Richtext>((() => CommonDefs.richtext) as any),
     ),
     blob: l.ref<CommonDefs.Audio>((() => CommonDefs.audio) as any),
     metadata: l.ref<Metadata>((() => metadata) as any),
     createdAt: l.string({ format: 'datetime' }),
+    spectrogram: l.optional(
+      l.ref<CommonDefs.Spectrogram>((() => CommonDefs.spectrogram) as any),
+    ),
+    thumbnail: l.optional(
+      l.ref<CommonDefs.ImageThumbnail>(
+        (() => CommonDefs.imageThumbnail) as any,
+      ),
+    ),
+    license: l.optional(l.string({ maxGraphemes: 256 })),
+    recordedBy: l.optional(l.string({ maxGraphemes: 512 })),
+    tags: l.optional(
+      l.array(l.string({ maxGraphemes: 64 }), { maxLength: 20 }),
+    ),
   }),
 )
 
@@ -100,9 +138,99 @@ type Metadata = {
   sampleRate: number
 
   /**
-   * The coordinates at which the audio was recorded in the format 'latitude,longitude' OR 'latitude,longitude,altitude'
+   * @deprecated prefer decimalLatitude and decimalLongitude fields. The coordinates at which the audio was recorded in the format 'latitude,longitude' OR 'latitude,longitude,altitude'
    */
   coordinates?: string
+
+  /**
+   * Recording device model (e.g., 'AudioMoth 1.2.0', 'Song Meter SM4')
+   */
+  deviceModel?: string
+
+  /**
+   * Device serial number for tracking
+   */
+  deviceSerialNumber?: string
+
+  /**
+   * Gain setting (e.g., 'medium', '36dB')
+   */
+  gain?: string
+
+  /**
+   * Bits per sample (e.g., 16, 24, 32)
+   */
+  bitDepth?: number
+
+  /**
+   * File format (e.g., 'WAV', 'FLAC', 'MP3')
+   */
+  fileFormat?: string
+
+  /**
+   * File size in bytes
+   */
+  fileSizeBytes?: number
+
+  /**
+   * Latitude in decimal degrees (WGS84)
+   */
+  decimalLatitude?: string
+
+  /**
+   * Longitude in decimal degrees (WGS84)
+   */
+  decimalLongitude?: string
+
+  /**
+   * Altitude in meters
+   */
+  altitude?: string
+
+  /**
+   * Habitat description
+   */
+  habitat?: string
+
+  /**
+   * AT-URI reference to the organization site record
+   */
+  siteRef?: l.AtUriString
+
+  /**
+   * Minimum frequency in recording (Hz)
+   */
+  minFrequencyHz?: number
+
+  /**
+   * Maximum frequency in recording (Hz)
+   */
+  maxFrequencyHz?: number
+
+  /**
+   * Signal-to-noise ratio in dB
+   */
+  signalToNoiseRatio?: string
+
+  /**
+   * Weather conditions during recording
+   */
+  weatherConditions?: string
+
+  /**
+   * Temperature in Celsius during recording
+   */
+  temperature?: string
+
+  /**
+   * Relative humidity percentage during recording
+   */
+  humidity?: string
+
+  /**
+   * Wind speed during recording
+   */
+  windSpeed?: string
 }
 
 export type { Metadata }
@@ -111,12 +239,30 @@ const metadata = l.typedObject<Metadata>(
   $nsid,
   'metadata',
   l.object({
-    codec: l.string(),
-    channels: l.integer(),
-    duration: l.string(),
+    codec: l.string({ maxGraphemes: 32 }),
+    channels: l.integer({ minimum: 1 }),
+    duration: l.string({ maxGraphemes: 32 }),
     recordedAt: l.string({ format: 'datetime' }),
-    sampleRate: l.integer(),
-    coordinates: l.optional(l.string()),
+    sampleRate: l.integer({ minimum: 1 }),
+    coordinates: l.optional(l.string({ maxGraphemes: 64 })),
+    deviceModel: l.optional(l.string({ maxGraphemes: 128 })),
+    deviceSerialNumber: l.optional(l.string({ maxGraphemes: 64 })),
+    gain: l.optional(l.string({ maxGraphemes: 32 })),
+    bitDepth: l.optional(l.integer({ minimum: 8, maximum: 64 })),
+    fileFormat: l.optional(l.string({ maxGraphemes: 32 })),
+    fileSizeBytes: l.optional(l.integer({ minimum: 0 })),
+    decimalLatitude: l.optional(l.string({ maxGraphemes: 32 })),
+    decimalLongitude: l.optional(l.string({ maxGraphemes: 32 })),
+    altitude: l.optional(l.string({ maxGraphemes: 32 })),
+    habitat: l.optional(l.string({ maxGraphemes: 512 })),
+    siteRef: l.optional(l.string({ format: 'at-uri' })),
+    minFrequencyHz: l.optional(l.integer({ minimum: 0 })),
+    maxFrequencyHz: l.optional(l.integer({ minimum: 0 })),
+    signalToNoiseRatio: l.optional(l.string({ maxGraphemes: 32 })),
+    weatherConditions: l.optional(l.string({ maxGraphemes: 256 })),
+    temperature: l.optional(l.string({ maxGraphemes: 16 })),
+    humidity: l.optional(l.string({ maxGraphemes: 16 })),
+    windSpeed: l.optional(l.string({ maxGraphemes: 16 })),
   }),
 )
 

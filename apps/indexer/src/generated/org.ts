@@ -4,4 +4,3 @@
 
 export * as hyperboards from './org/hyperboards.ts'
 export * as hypercerts from './org/hypercerts.ts'
-export * as impactindexer from './org/impactindexer.ts'

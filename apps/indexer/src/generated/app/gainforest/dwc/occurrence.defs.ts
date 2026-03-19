@@ -3,7 +3,8 @@
  */
 
 import { l } from '@atproto/lex'
-import * as CommonDefs from '../common/defs.defs.ts'
+import * as CommonDefs from './..//common//defs.defs.ts'
+import * as DwcDefs from './defs.defs.ts'
 
 const $nsid = 'app.gainforest.dwc.occurrence'
 
@@ -12,6 +13,11 @@ export { $nsid }
 /** A biodiversity occurrence record following the Simple Darwin Core standard. Each record represents one occurrence of an organism at a location and time. */
 type Main = {
   $type: 'app.gainforest.dwc.occurrence'
+
+  /**
+   * Keywords / tags for the occurrence record.
+   */
+  tags?: string[]
 
   /**
    * A globally unique identifier for the occurrence record. Recommended: a persistent URI (e.g., DOI, LSID, or UUID-based URI).
@@ -434,6 +440,46 @@ type Main = {
    * Timestamp of record creation in the ATProto PDS.
    */
   createdAt: l.DatetimeString
+
+  /**
+   * Conservation status information including IUCN category, CITES listing, and native/invasive status.
+   */
+  conservationStatus?: CommonDefs.ConservationStatus
+
+  /**
+   * Functional plant traits from databases like TRY and Restor. Only applicable to flora occurrences.
+   */
+  plantTraits?: DwcDefs.PlantTraits
+
+  /**
+   * AT-URI reference to the organization info record for the project this occurrence belongs to.
+   */
+  projectRef?: l.AtUriString
+
+  /**
+   * AT-URI reference to the site record where this occurrence was observed.
+   */
+  siteRef?: l.AtUriString
+
+  /**
+   * Name of the monitoring programme under which this occurrence was recorded.
+   */
+  monitoringProgramme?: string
+
+  /**
+   * AT-URI reference to a dataset record this occurrence belongs to.
+   */
+  datasetRef?: l.AtUriString
+
+  /**
+   * URL to a thumbnail image for display in lists and cards.
+   */
+  thumbnailUrl?: l.UriString
+
+  /**
+   * URL to a representative species image.
+   */
+  speciesImageUrl?: l.UriString
 }
 
 export type { Main }
@@ -443,6 +489,7 @@ const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
+    tags: l.optional(l.array(l.string({ minGraphemes: 1, maxGraphemes: 64 }))),
     occurrenceID: l.optional(l.string({ maxGraphemes: 256 })),
     basisOfRecord: l.enum([
       'HumanObservation',
@@ -566,6 +613,20 @@ const main = l.record<'tid', Main>(
       l.ref<CommonDefs.Spectrogram>((() => CommonDefs.spectrogram) as any),
     ),
     createdAt: l.string({ format: 'datetime' }),
+    conservationStatus: l.optional(
+      l.ref<CommonDefs.ConservationStatus>(
+        (() => CommonDefs.conservationStatus) as any,
+      ),
+    ),
+    plantTraits: l.optional(
+      l.ref<DwcDefs.PlantTraits>((() => DwcDefs.plantTraits) as any),
+    ),
+    projectRef: l.optional(l.string({ format: 'at-uri' })),
+    siteRef: l.optional(l.string({ format: 'at-uri' })),
+    monitoringProgramme: l.optional(l.string({ maxGraphemes: 256 })),
+    datasetRef: l.optional(l.string({ format: 'at-uri' })),
+    thumbnailUrl: l.optional(l.string({ format: 'uri' })),
+    speciesImageUrl: l.optional(l.string({ format: 'uri' })),
   }),
 )
 

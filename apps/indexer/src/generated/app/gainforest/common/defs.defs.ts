@@ -3,7 +3,7 @@
  */
 
 import { l } from '@atproto/lex'
-import * as RichtextFacet from '../../bsky/richtext/facet.defs.ts'
+import * as RichtextFacet from './..//..//bsky//richtext//facet.defs.ts'
 
 const $nsid = 'app.gainforest.common.defs'
 
@@ -464,3 +464,281 @@ const indexedOrganization = l.typedObject<IndexedOrganization>(
 )
 
 export { indexedOrganization }
+
+/** IUCN and other conservation status information for a species or population */
+type ConservationStatus = {
+  $type?: 'app.gainforest.common.defs#conservationStatus'
+
+  /**
+   * IUCN Red List category code
+   */
+  iucnCategory?:
+    | 'EX'
+    | 'EW'
+    | 'CR'
+    | 'EN'
+    | 'VU'
+    | 'NT'
+    | 'LC'
+    | 'DD'
+    | 'NE'
+    | l.UnknownString
+
+  /**
+   * IUCN taxon identifier
+   */
+  iucnTaxonId?: string
+
+  /**
+   * Date of the IUCN assessment
+   */
+  iucnAssessmentDate?: string
+
+  /**
+   * CITES appendix listing
+   */
+  citesAppendix?: 'I' | 'II' | 'III' | l.UnknownString
+
+  /**
+   * National or regional conservation status
+   */
+  nationalStatus?: string
+
+  /**
+   * Native status of the species in the observed region
+   */
+  nativeStatus?:
+    | 'native'
+    | 'invasive'
+    | 'introduced'
+    | 'endemic'
+    | 'uncertain'
+    | l.UnknownString
+}
+
+export type { ConservationStatus }
+
+/** IUCN and other conservation status information for a species or population */
+const conservationStatus = l.typedObject<ConservationStatus>(
+  $nsid,
+  'conservationStatus',
+  l.object({
+    iucnCategory: l.optional(
+      l.string<{
+        maxGraphemes: 16
+        knownValues: ['EX', 'EW', 'CR', 'EN', 'VU', 'NT', 'LC', 'DD', 'NE']
+      }>({ maxGraphemes: 16 }),
+    ),
+    iucnTaxonId: l.optional(l.string({ maxGraphemes: 32 })),
+    iucnAssessmentDate: l.optional(l.string({ maxGraphemes: 64 })),
+    citesAppendix: l.optional(
+      l.string<{ maxGraphemes: 8; knownValues: ['I', 'II', 'III'] }>({
+        maxGraphemes: 8,
+      }),
+    ),
+    nationalStatus: l.optional(l.string({ maxGraphemes: 256 })),
+    nativeStatus: l.optional(
+      l.string<{
+        maxGraphemes: 32
+        knownValues: [
+          'native',
+          'invasive',
+          'introduced',
+          'endemic',
+          'uncertain',
+        ]
+      }>({ maxGraphemes: 32 }),
+    ),
+  }),
+)
+
+export { conservationStatus }
+
+/** Display-ready species profile for UI rendering */
+type SpeciesProfile = {
+  $type?: 'app.gainforest.common.defs#speciesProfile'
+
+  /**
+   * Scientific (Latin) name of the species
+   */
+  scientificName: string
+
+  /**
+   * Vernacular name of the species
+   */
+  commonName?: string
+
+  /**
+   * GBIF taxon key identifier
+   */
+  gbifTaxonKey?: string
+
+  /**
+   * Taxonomic kingdom
+   */
+  kingdom?: string
+
+  /**
+   * Taxonomic family
+   */
+  family?: string
+
+  /**
+   * Taxonomic genus
+   */
+  genus?: string
+
+  /**
+   * Representative species image URL
+   */
+  imageUrl?: l.UriString
+
+  /**
+   * Small thumbnail image URL
+   */
+  thumbnailUrl?: l.UriString
+
+  /**
+   * Conservation status information for this species
+   */
+  conservationStatus?: ConservationStatus
+}
+
+export type { SpeciesProfile }
+
+/** Display-ready species profile for UI rendering */
+const speciesProfile = l.typedObject<SpeciesProfile>(
+  $nsid,
+  'speciesProfile',
+  l.object({
+    scientificName: l.string({ maxGraphemes: 512 }),
+    commonName: l.optional(l.string({ maxGraphemes: 256 })),
+    gbifTaxonKey: l.optional(l.string({ maxGraphemes: 64 })),
+    kingdom: l.optional(l.string({ maxGraphemes: 128 })),
+    family: l.optional(l.string({ maxGraphemes: 128 })),
+    genus: l.optional(l.string({ maxGraphemes: 128 })),
+    imageUrl: l.optional(l.string({ format: 'uri', maxGraphemes: 512 })),
+    thumbnailUrl: l.optional(l.string({ format: 'uri', maxGraphemes: 512 })),
+    conservationStatus: l.optional(
+      l.ref<ConservationStatus>((() => conservationStatus) as any),
+    ),
+  }),
+)
+
+export { speciesProfile }
+
+/** A simple lat/lon pair for lightweight location references */
+type CoordinatePair = {
+  $type?: 'app.gainforest.common.defs#coordinatePair'
+
+  /**
+   * Decimal latitude
+   */
+  lat: string
+
+  /**
+   * Decimal longitude
+   */
+  lon: string
+}
+
+export type { CoordinatePair }
+
+/** A simple lat/lon pair for lightweight location references */
+const coordinatePair = l.typedObject<CoordinatePair>(
+  $nsid,
+  'coordinatePair',
+  l.object({
+    lat: l.string({ maxGraphemes: 32 }),
+    lon: l.string({ maxGraphemes: 32 }),
+  }),
+)
+
+export { coordinatePair }
+
+/** A date range for temporal queries */
+type DateRange = {
+  $type?: 'app.gainforest.common.defs#dateRange'
+
+  /**
+   * ISO 8601 start date
+   */
+  startDate: string
+
+  /**
+   * ISO 8601 end date
+   */
+  endDate?: string
+}
+
+export type { DateRange }
+
+/** A date range for temporal queries */
+const dateRange = l.typedObject<DateRange>(
+  $nsid,
+  'dateRange',
+  l.object({
+    startDate: l.string({ maxGraphemes: 64 }),
+    endDate: l.optional(l.string({ maxGraphemes: 64 })),
+  }),
+)
+
+export { dateRange }
+
+/** A reference to an external system or database */
+type ExternalReference = {
+  $type?: 'app.gainforest.common.defs#externalReference'
+
+  /**
+   * External system name
+   */
+  system:
+    | 'gbif'
+    | 'iucn'
+    | 'ncbi'
+    | 'bold'
+    | 'ebird'
+    | 'inaturalist'
+    | 'wdpa'
+    | 'restor'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * Identifier in the external system
+   */
+  identifier: string
+
+  /**
+   * Direct URL to the record in the external system
+   */
+  url?: l.UriString
+}
+
+export type { ExternalReference }
+
+/** A reference to an external system or database */
+const externalReference = l.typedObject<ExternalReference>(
+  $nsid,
+  'externalReference',
+  l.object({
+    system: l.string<{
+      maxGraphemes: 128
+      knownValues: [
+        'gbif',
+        'iucn',
+        'ncbi',
+        'bold',
+        'ebird',
+        'inaturalist',
+        'wdpa',
+        'restor',
+        'other',
+      ]
+    }>({ maxGraphemes: 128 }),
+    identifier: l.string({ maxGraphemes: 256 }),
+    url: l.optional(l.string({ format: 'uri', maxGraphemes: 512 })),
+  }),
+)
+
+export { externalReference }

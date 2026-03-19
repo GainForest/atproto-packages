@@ -3,9 +3,9 @@
  */
 
 import { l } from '@atproto/lex'
-import * as CommonDefs from '../common/defs.defs.ts'
-import * as PagesLinearDocument from '../../../pub/leaflet/pages/linearDocument.defs.ts'
-import * as HypercertsDefs from '../../../org/hypercerts/defs.defs.ts'
+import * as CommonDefs from './..//common//defs.defs.ts'
+import * as PagesLinearDocument from './..//..//..//pub//leaflet//pages//linearDocument.defs.ts'
+import * as HypercertsDefs from './..//..//..//org//hypercerts//defs.defs.ts'
 
 const $nsid = 'app.gainforest.organization.info'
 
@@ -75,6 +75,104 @@ type Main = {
    * The date and time of the creation of the record
    */
   createdAt: l.DatetimeString
+
+  /**
+   * Contact email for the organization
+   */
+  email?: string
+
+  /**
+   * Social media links for the organization
+   */
+  socialLinks?: SocialLink[]
+
+  /**
+   * Discord server ID for the organization
+   */
+  discordId?: string
+
+  /**
+   * Donation link for the organization
+   */
+  stripeUrl?: l.UriString
+
+  /**
+   * Number of team members in the organization
+   */
+  teamSize?: number
+
+  /**
+   * Year the organization was founded
+   */
+  foundedYear?: number
+
+  /**
+   * Types of ecosystems the organization works in
+   */
+  ecosystemTypes?: (
+    | 'tropical-rainforest'
+    | 'temperate-forest'
+    | 'boreal-forest'
+    | 'mangrove'
+    | 'coral-reef'
+    | 'savanna'
+    | 'grassland'
+    | 'wetland'
+    | 'desert'
+    | 'alpine'
+    | 'marine'
+    | 'freshwater'
+    | 'urban'
+    | 'agroforestry'
+    | 'other'
+    | l.UnknownString
+  )[]
+
+  /**
+   * Species groups the organization focuses on
+   */
+  focusSpeciesGroups?: (
+    | 'mammals'
+    | 'birds'
+    | 'reptiles'
+    | 'amphibians'
+    | 'fish'
+    | 'insects'
+    | 'arachnids'
+    | 'mollusks'
+    | 'crustaceans'
+    | 'trees'
+    | 'shrubs'
+    | 'herbs'
+    | 'grasses'
+    | 'ferns'
+    | 'mosses'
+    | 'fungi'
+    | 'algae'
+    | 'coral'
+    | 'other'
+    | l.UnknownString
+  )[]
+
+  /**
+   * Default license for data published by the organization
+   */
+  dataLicense?: string
+
+  /**
+   * URL to download the organization's data
+   */
+  dataDownloadUrl?: l.UriString
+
+  /**
+   * Description of available data downloads
+   */
+  dataDownloadInfo?: string
+
+  /**
+   * Description of the organization's funding sources
+   */
+  fundingSourcesDescription?: string
 }
 
 export type { Main }
@@ -109,6 +207,72 @@ const main = l.record<'literal:self', Main>(
     country: l.string(),
     visibility: l.enum(['Public', 'Unlisted']),
     createdAt: l.string({ format: 'datetime' }),
+    email: l.optional(l.string({ maxGraphemes: 256 })),
+    socialLinks: l.optional(
+      l.array(l.ref<SocialLink>((() => socialLink) as any), { maxLength: 10 }),
+    ),
+    discordId: l.optional(l.string({ maxGraphemes: 64 })),
+    stripeUrl: l.optional(l.string({ format: 'uri', maxGraphemes: 512 })),
+    teamSize: l.optional(l.integer({ minimum: 1 })),
+    foundedYear: l.optional(l.integer({ minimum: 1900, maximum: 2100 })),
+    ecosystemTypes: l.optional(
+      l.array(
+        l.string<{
+          maxGraphemes: 128
+          knownValues: [
+            'tropical-rainforest',
+            'temperate-forest',
+            'boreal-forest',
+            'mangrove',
+            'coral-reef',
+            'savanna',
+            'grassland',
+            'wetland',
+            'desert',
+            'alpine',
+            'marine',
+            'freshwater',
+            'urban',
+            'agroforestry',
+            'other',
+          ]
+        }>({ maxGraphemes: 128 }),
+        { maxLength: 10 },
+      ),
+    ),
+    focusSpeciesGroups: l.optional(
+      l.array(
+        l.string<{
+          maxGraphemes: 64
+          knownValues: [
+            'mammals',
+            'birds',
+            'reptiles',
+            'amphibians',
+            'fish',
+            'insects',
+            'arachnids',
+            'mollusks',
+            'crustaceans',
+            'trees',
+            'shrubs',
+            'herbs',
+            'grasses',
+            'ferns',
+            'mosses',
+            'fungi',
+            'algae',
+            'coral',
+            'other',
+          ]
+        }>({ maxGraphemes: 64 }),
+        { maxLength: 20 },
+      ),
+    ),
+    dataLicense: l.optional(l.string({ maxGraphemes: 256 })),
+    dataDownloadUrl: l.optional(l.string({ format: 'uri', maxGraphemes: 512 })),
+    dataDownloadInfo: l.optional(l.string({ maxGraphemes: 1024 })),
+    fundingSourcesDescription: l.optional(l.string({ maxGraphemes: 2048 })),
   }),
 )
 
@@ -126,3 +290,57 @@ export const $assert = /*#__PURE__*/ main.assert.bind(main),
   $safeParse = /*#__PURE__*/ main.safeParse.bind(main),
   $validate = /*#__PURE__*/ main.validate.bind(main),
   $safeValidate = /*#__PURE__*/ main.safeValidate.bind(main)
+
+/** A social media link for an organization */
+type SocialLink = {
+  $type?: 'app.gainforest.organization.info#socialLink'
+
+  /**
+   * The social media platform
+   */
+  platform:
+    | 'twitter'
+    | 'instagram'
+    | 'facebook'
+    | 'linkedin'
+    | 'youtube'
+    | 'tiktok'
+    | 'github'
+    | 'discord'
+    | 'telegram'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * The URL of the social media profile or page
+   */
+  url: l.UriString
+}
+
+export type { SocialLink }
+
+/** A social media link for an organization */
+const socialLink = l.typedObject<SocialLink>(
+  $nsid,
+  'socialLink',
+  l.object({
+    platform: l.string<{
+      maxGraphemes: 64
+      knownValues: [
+        'twitter',
+        'instagram',
+        'facebook',
+        'linkedin',
+        'youtube',
+        'tiktok',
+        'github',
+        'discord',
+        'telegram',
+        'other',
+      ]
+    }>({ maxGraphemes: 64 }),
+    url: l.string({ format: 'uri', maxGraphemes: 512 }),
+  }),
+)
+
+export { socialLink }

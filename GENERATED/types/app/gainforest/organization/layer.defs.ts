@@ -3,6 +3,7 @@
  */
 
 import { l } from '@atproto/lex'
+import * as CommonDefs from './..//common//defs.defs.ts'
 
 const $nsid = 'app.gainforest.organization.layer'
 
@@ -28,6 +29,9 @@ type Main = {
     | 'choropleth_shannon'
     | 'raster_tif'
     | 'tms_tile'
+    | 'heatmap'
+    | 'contour'
+    | 'satellite_overlay'
 
   /**
    * The URI of the layer
@@ -43,6 +47,107 @@ type Main = {
    * The date and time of the creation of the record
    */
   createdAt: l.DatetimeString
+
+  /**
+   * Layer category for grouping in UI (e.g., 'Biodiversity', 'Land Cover', 'Climate', 'Infrastructure')
+   */
+  category?: string
+
+  /**
+   * Ordering priority for display
+   */
+  displayOrder?: number
+
+  /**
+   * Whether this layer should be shown by default
+   */
+  isDefault?: boolean
+
+  /**
+   * Default opacity (0-1 as string, e.g., '0.7')
+   */
+  opacity?: string
+
+  /**
+   * Preview thumbnail for the layer
+   */
+  thumbnail?: CommonDefs.ImageThumbnail
+
+  /**
+   * Legend entries for the layer
+   */
+  legend?: LegendEntry[]
+
+  /**
+   * Named color scale for continuous data
+   */
+  colorScale?:
+    | 'viridis'
+    | 'plasma'
+    | 'inferno'
+    | 'magma'
+    | 'cividis'
+    | 'turbo'
+    | 'spectral'
+    | 'rdylgn'
+    | 'rdylbu'
+    | 'custom'
+    | l.UnknownString
+
+  /**
+   * Unit of measurement for the layer data (e.g., 'species/ha', 'kg C/m²', 'mm/year')
+   */
+  unit?: string
+
+  /**
+   * Minimum value in the data range
+   */
+  minValue?: string
+
+  /**
+   * Maximum value in the data range
+   */
+  maxValue?: string
+
+  /**
+   * URL pattern for TMS tiles (e.g., 'https://tiles.example.com/{z}/{x}/{y}.png')
+   */
+  tilePattern?: string
+
+  /**
+   * Minimum zoom level
+   */
+  tileMinZoom?: number
+
+  /**
+   * Maximum zoom level
+   */
+  tileMaxZoom?: number
+
+  /**
+   * Bounding box as 'west,south,east,north'
+   */
+  bounds?: string
+
+  /**
+   * Attribution/source of the layer data
+   */
+  dataSource?: string
+
+  /**
+   * Date of the data (ISO 8601)
+   */
+  dataDate?: string
+
+  /**
+   * GeoJSON property key to use for choropleth coloring (e.g., 'species_richness')
+   */
+  propertyKey?: string
+
+  /**
+   * AT-URI reference to the site this layer belongs to
+   */
+  siteRef?: l.AtUriString
 }
 
 export type { Main }
@@ -52,7 +157,7 @@ const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    name: l.string(),
+    name: l.string({ maxGraphemes: 256 }),
     type: l.enum([
       'geojson_points',
       'geojson_points_trees',
@@ -61,10 +166,55 @@ const main = l.record<'tid', Main>(
       'choropleth_shannon',
       'raster_tif',
       'tms_tile',
+      'heatmap',
+      'contour',
+      'satellite_overlay',
     ]),
     uri: l.string({ format: 'uri' }),
-    description: l.optional(l.string()),
+    description: l.optional(l.string({ maxGraphemes: 2048 })),
     createdAt: l.string({ format: 'datetime' }),
+    category: l.optional(l.string({ maxGraphemes: 128 })),
+    displayOrder: l.optional(l.integer({ minimum: 0 })),
+    isDefault: l.optional(l.boolean()),
+    opacity: l.optional(l.string({ maxGraphemes: 8 })),
+    thumbnail: l.optional(
+      l.ref<CommonDefs.ImageThumbnail>(
+        (() => CommonDefs.imageThumbnail) as any,
+      ),
+    ),
+    legend: l.optional(
+      l.array(l.ref<LegendEntry>((() => legendEntry) as any), {
+        maxLength: 20,
+      }),
+    ),
+    colorScale: l.optional(
+      l.string<{
+        maxGraphemes: 64
+        knownValues: [
+          'viridis',
+          'plasma',
+          'inferno',
+          'magma',
+          'cividis',
+          'turbo',
+          'spectral',
+          'rdylgn',
+          'rdylbu',
+          'custom',
+        ]
+      }>({ maxGraphemes: 64 }),
+    ),
+    unit: l.optional(l.string({ maxGraphemes: 64 })),
+    minValue: l.optional(l.string({ maxGraphemes: 32 })),
+    maxValue: l.optional(l.string({ maxGraphemes: 32 })),
+    tilePattern: l.optional(l.string({ maxGraphemes: 512 })),
+    tileMinZoom: l.optional(l.integer({ minimum: 0, maximum: 22 })),
+    tileMaxZoom: l.optional(l.integer({ minimum: 0, maximum: 22 })),
+    bounds: l.optional(l.string({ maxGraphemes: 128 })),
+    dataSource: l.optional(l.string({ maxGraphemes: 512 })),
+    dataDate: l.optional(l.string({ maxGraphemes: 64 })),
+    propertyKey: l.optional(l.string({ maxGraphemes: 128 })),
+    siteRef: l.optional(l.string({ format: 'at-uri' })),
   }),
 )
 
@@ -82,3 +232,38 @@ export const $assert = /*#__PURE__*/ main.assert.bind(main),
   $safeParse = /*#__PURE__*/ main.safeParse.bind(main),
   $validate = /*#__PURE__*/ main.validate.bind(main),
   $safeValidate = /*#__PURE__*/ main.safeValidate.bind(main)
+
+/** A single entry in a layer legend */
+type LegendEntry = {
+  $type?: 'app.gainforest.organization.layer#legendEntry'
+
+  /**
+   * Display label for this legend entry
+   */
+  label: string
+
+  /**
+   * Color for this legend entry (e.g., '#FF5733')
+   */
+  color: string
+
+  /**
+   * Optional value associated with this legend entry
+   */
+  value?: string
+}
+
+export type { LegendEntry }
+
+/** A single entry in a layer legend */
+const legendEntry = l.typedObject<LegendEntry>(
+  $nsid,
+  'legendEntry',
+  l.object({
+    label: l.string({ maxGraphemes: 128 }),
+    color: l.string({ maxGraphemes: 16 }),
+    value: l.optional(l.string({ maxGraphemes: 64 })),
+  }),
+)
+
+export { legendEntry }

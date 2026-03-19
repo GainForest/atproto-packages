@@ -8,62 +8,51 @@ const $nsid = 'app.gainforest.dwc.measurement'
 
 export { $nsid }
 
-/** A measurement, fact, characteristic, or assertion about an occurrence. Multiple measurement records can reference the same occurrence, solving the Simple DwC one-measurement-per-record limitation. */
+/** A bundle of measurements, facts, or characteristics about an occurrence. One record per occurrence, with all measurements grouped inside a typed result union. */
 type Main = {
   $type: 'app.gainforest.dwc.measurement'
 
   /**
-   * An identifier for the measurement. Should be unique within the dataset.
-   */
-  measurementID?: string
-
-  /**
-   * AT-URI reference to the app.gainforest.dwc.occurrence record this measurement belongs to.
+   * AT-URI reference to the app.gainforest.dwc.occurrence record these measurements belong to.
    */
   occurrenceRef: l.AtUriString
 
   /**
-   * The occurrenceID of the linked occurrence record (for cross-system interoperability).
+   * The occurrenceID of the linked occurrence record (for cross-system interoperability with GBIF/DwC-A exports).
    */
   occurrenceID?: string
 
   /**
-   * The nature of the measurement, fact, characteristic, or assertion (e.g., 'DBH', 'tree height', 'canopy cover', 'tail length', 'body mass', 'soil pH', 'water temperature').
+   * The typed measurement payload. Use floraMeasurement for sessile organisms (trees, plants, corals, sponges), faunaMeasurement for mobile organisms (mammals, birds, reptiles, amphibians, fish, insects), or genericMeasurement as a flexible fallback.
    */
-  measurementType: string
+  result:
+    | l.$Typed<FloraMeasurement>
+    | l.$Typed<FaunaMeasurement>
+    | l.$Typed<GenericMeasurement>
+    | l.Unknown$TypedObject
 
   /**
-   * The value of the measurement, fact, characteristic, or assertion (e.g., '45.2', 'present', 'blue').
+   * Person(s) who performed the measurements. Pipe-delimited for multiple.
    */
-  measurementValue: string
+  measuredBy?: string
 
   /**
-   * The units for the measurementValue (e.g., 'cm', 'm', 'kg', 'mm', '%', 'degrees Celsius').
+   * ORCID or other persistent identifier(s) for the measurer(s). Pipe-delimited for multiple.
    */
-  measurementUnit?: string
+  measuredByID?: string
 
   /**
-   * The description of the potential error associated with the measurementValue (e.g., '0.5 cm', '5%').
+   * Date the measurements were taken. ISO 8601 format.
    */
-  measurementAccuracy?: string
+  measurementDate?: string
 
   /**
-   * The description of or reference to the method used to determine the measurement (e.g., 'diameter tape at 1.3m height', 'laser rangefinder', 'Bitterlich method').
+   * General protocol or method used (e.g., 'ForestGEO standard protocol', 'mist-net examination').
    */
   measurementMethod?: string
 
   /**
-   * Person(s) who determined the measurement. Pipe-delimited for multiple.
-   */
-  measurementDeterminedBy?: string
-
-  /**
-   * The date the measurement was made. ISO 8601 format.
-   */
-  measurementDeterminedDate?: string
-
-  /**
-   * Comments or notes accompanying the measurement.
+   * Comments or notes about the measurement session.
    */
   measurementRemarks?: string
 
@@ -75,21 +64,25 @@ type Main = {
 
 export type { Main }
 
-/** A measurement, fact, characteristic, or assertion about an occurrence. Multiple measurement records can reference the same occurrence, solving the Simple DwC one-measurement-per-record limitation. */
+/** A bundle of measurements, facts, or characteristics about an occurrence. One record per occurrence, with all measurements grouped inside a typed result union. */
 const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    measurementID: l.optional(l.string({ maxGraphemes: 256 })),
     occurrenceRef: l.string({ format: 'at-uri' }),
     occurrenceID: l.optional(l.string({ maxGraphemes: 256 })),
-    measurementType: l.string({ maxGraphemes: 256 }),
-    measurementValue: l.string({ maxGraphemes: 1024 }),
-    measurementUnit: l.optional(l.string({ maxGraphemes: 64 })),
-    measurementAccuracy: l.optional(l.string({ maxGraphemes: 256 })),
+    result: l.typedUnion(
+      [
+        l.typedRef<FloraMeasurement>((() => floraMeasurement) as any),
+        l.typedRef<FaunaMeasurement>((() => faunaMeasurement) as any),
+        l.typedRef<GenericMeasurement>((() => genericMeasurement) as any),
+      ],
+      false,
+    ),
+    measuredBy: l.optional(l.string({ maxGraphemes: 512 })),
+    measuredByID: l.optional(l.string({ maxGraphemes: 512 })),
+    measurementDate: l.optional(l.string({ maxGraphemes: 64 })),
     measurementMethod: l.optional(l.string({ maxGraphemes: 1024 })),
-    measurementDeterminedBy: l.optional(l.string({ maxGraphemes: 512 })),
-    measurementDeterminedDate: l.optional(l.string({ maxGraphemes: 64 })),
     measurementRemarks: l.optional(l.string({ maxGraphemes: 5000 })),
     createdAt: l.string({ format: 'datetime' }),
   }),
@@ -109,3 +102,824 @@ export const $assert = /*#__PURE__*/ main.assert.bind(main),
   $safeParse = /*#__PURE__*/ main.safeParse.bind(main),
   $validate = /*#__PURE__*/ main.validate.bind(main),
   $safeValidate = /*#__PURE__*/ main.safeValidate.bind(main)
+
+/** Typed measurements for sessile organisms: trees, woody plants, herbs, grasses, corals, sponges, lichens, and other non-mobile life forms. All numeric values stored as strings. Field descriptions include expected units for DwC-A export mapping. */
+type FloraMeasurement = {
+  $type?: 'app.gainforest.dwc.measurement#floraMeasurement'
+
+  /**
+   * Diameter at breast height in centimeters. The core measurement in all tree inventories (ForestGEO, NFI, RAINFOR).
+   */
+  dbh?: string
+
+  /**
+   * Height above ground where DBH was measured, in meters. Important when measured above buttress or irregularity. Default is 1.3m.
+   */
+  dbhMeasurementHeight?: string
+
+  /**
+   * Circumference of trunk at breast height in centimeters. Alternative to DBH (convertible via pi).
+   */
+  girth?: string
+
+  /**
+   * Diameter at ground level or just above root flare in centimeters. Standard for shrubs and multi-stemmed plants.
+   */
+  basalDiameter?: string
+
+  /**
+   * Cross-sectional area of trunk at breast height in square centimeters.
+   */
+  basalArea?: string
+
+  /**
+   * Number of stems for multi-stemmed individuals.
+   */
+  stemCount?: number
+
+  /**
+   * Total height from ground to highest living point in meters.
+   */
+  totalHeight?: string
+
+  /**
+   * Height from ground to first major living branch (bole length) in meters.
+   */
+  heightToFirstBranch?: string
+
+  /**
+   * Height of buttress roots above ground in meters. Common in tropical trees.
+   */
+  buttressHeight?: string
+
+  /**
+   * Method used for height measurement.
+   */
+  heightMeasurementMethod?:
+    | 'clinometer'
+    | 'laser-rangefinder'
+    | 'hypsometer'
+    | 'direct-pole'
+    | 'estimated'
+    | 'drone-photogrammetry'
+    | 'lidar'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * Average crown diameter in meters (typically mean of multiple radial measurements).
+   */
+  crownDiameter?: string
+
+  /**
+   * Vertical extent of crown in meters (total height minus height to crown base).
+   */
+  crownDepth?: string
+
+  /**
+   * Percentage of ground covered by the canopy of this individual.
+   */
+  canopyCoverPercent?: string
+
+  /**
+   * Canopy position relative to neighbors.
+   */
+  crownPosition?:
+    | 'dominant'
+    | 'codominant'
+    | 'intermediate'
+    | 'suppressed'
+    | 'emergent'
+    | l.UnknownString
+
+  /**
+   * Percentage of crown showing dieback.
+   */
+  crownDieback?: string
+
+  /**
+   * Estimated aboveground biomass in kilograms, derived from allometric equations.
+   */
+  abovegroundBiomass?: string
+
+  /**
+   * Estimated belowground (root) biomass in kilograms.
+   */
+  belowgroundBiomass?: string
+
+  /**
+   * Estimated carbon stored in kilograms of carbon (typically 47-50% of dry biomass).
+   */
+  carbonContent?: string
+
+  /**
+   * Specific gravity of wood (dry mass / green volume) in grams per cubic centimeter.
+   */
+  woodDensity?: string
+
+  /**
+   * Reference to the allometric equation used for biomass estimation (e.g., 'Chave et al. 2014').
+   */
+  biomassAllometricEquation?: string
+
+  /**
+   * Annual radial growth measured via dendrometer bands or core samples in millimeters per year.
+   */
+  annualDiameterIncrement?: string
+
+  /**
+   * Estimated age of the organism in years (from rings, radiocarbon, or allometry).
+   */
+  estimatedAge?: string
+
+  /**
+   * Growth form classification of the organism.
+   */
+  growthForm?:
+    | 'tree'
+    | 'shrub'
+    | 'liana'
+    | 'palm'
+    | 'tree-fern'
+    | 'herb'
+    | 'grass'
+    | 'bamboo'
+    | 'epiphyte'
+    | 'succulent'
+    | 'mangrove'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * Overall vitality status of the organism.
+   */
+  vitalityStatus?:
+    | 'alive'
+    | 'dead-standing'
+    | 'dead-fallen'
+    | 'moribund'
+    | 'missing'
+    | 'unknown'
+    | l.UnknownString
+
+  /**
+   * Numeric health or vigor score (protocol-dependent scale).
+   */
+  healthScore?: string
+
+  /**
+   * Type of damage observed (e.g., 'broken crown', 'leaning', 'uprooted', 'hollow', 'scarred', 'stripped bark').
+   */
+  damageType?: string
+
+  /**
+   * Cause of damage.
+   */
+  damageCause?:
+    | 'wind'
+    | 'lightning'
+    | 'fire'
+    | 'drought'
+    | 'flood'
+    | 'animal'
+    | 'human'
+    | 'disease'
+    | 'pest'
+    | 'unknown'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * Decay classification for dead trees (1-5 scale per ForestGEO/FIA protocols).
+   */
+  decayClass?: string
+
+  /**
+   * Current flowering/reproductive state.
+   */
+  floweringStatus?:
+    | 'none'
+    | 'budding'
+    | 'flowering'
+    | 'fruiting'
+    | 'senescing'
+    | l.UnknownString
+
+  /**
+   * Current phenological state.
+   */
+  phenology?:
+    | 'leafless'
+    | 'flush'
+    | 'full-leaf'
+    | 'senescing'
+    | 'dormant'
+    | l.UnknownString
+
+  /**
+   * Leaf area index: total one-sided leaf area per unit ground area (m²/m²).
+   */
+  leafAreaIndex?: string
+
+  /**
+   * Maximum colony diameter in centimeters (corals, sponges).
+   */
+  colonyDiameter?: string
+
+  /**
+   * Height of colony from base to apex in centimeters.
+   */
+  colonyHeight?: string
+
+  /**
+   * Colony growth form.
+   */
+  colonyMorphology?:
+    | 'massive'
+    | 'branching'
+    | 'encrusting'
+    | 'foliose'
+    | 'tabular'
+    | 'columnar'
+    | 'free-living'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * Coral bleaching status.
+   */
+  bleachingStatus?:
+    | 'none'
+    | 'pale'
+    | 'partially-bleached'
+    | 'fully-bleached'
+    | 'recently-dead'
+    | l.UnknownString
+
+  /**
+   * Percentage of colony surface with live tissue.
+   */
+  liveTissueCoverPercent?: string
+
+  /**
+   * Depth of the organism below water surface in meters.
+   */
+  depthBelowSurface?: string
+
+  /**
+   * Additional measurements not covered by the typed fields above.
+   */
+  additionalMeasurements?: MeasurementEntry[]
+}
+
+export type { FloraMeasurement }
+
+/** Typed measurements for sessile organisms: trees, woody plants, herbs, grasses, corals, sponges, lichens, and other non-mobile life forms. All numeric values stored as strings. Field descriptions include expected units for DwC-A export mapping. */
+const floraMeasurement = l.typedObject<FloraMeasurement>(
+  $nsid,
+  'floraMeasurement',
+  l.object({
+    dbh: l.optional(l.string({ maxGraphemes: 32 })),
+    dbhMeasurementHeight: l.optional(l.string({ maxGraphemes: 32 })),
+    girth: l.optional(l.string({ maxGraphemes: 32 })),
+    basalDiameter: l.optional(l.string({ maxGraphemes: 32 })),
+    basalArea: l.optional(l.string({ maxGraphemes: 32 })),
+    stemCount: l.optional(l.integer({ minimum: 1 })),
+    totalHeight: l.optional(l.string({ maxGraphemes: 32 })),
+    heightToFirstBranch: l.optional(l.string({ maxGraphemes: 32 })),
+    buttressHeight: l.optional(l.string({ maxGraphemes: 32 })),
+    heightMeasurementMethod: l.optional(
+      l.string<{
+        maxGraphemes: 128
+        knownValues: [
+          'clinometer',
+          'laser-rangefinder',
+          'hypsometer',
+          'direct-pole',
+          'estimated',
+          'drone-photogrammetry',
+          'lidar',
+          'other',
+        ]
+      }>({ maxGraphemes: 128 }),
+    ),
+    crownDiameter: l.optional(l.string({ maxGraphemes: 32 })),
+    crownDepth: l.optional(l.string({ maxGraphemes: 32 })),
+    canopyCoverPercent: l.optional(l.string({ maxGraphemes: 16 })),
+    crownPosition: l.optional(
+      l.string<{
+        maxGraphemes: 32
+        knownValues: [
+          'dominant',
+          'codominant',
+          'intermediate',
+          'suppressed',
+          'emergent',
+        ]
+      }>({ maxGraphemes: 32 }),
+    ),
+    crownDieback: l.optional(l.string({ maxGraphemes: 16 })),
+    abovegroundBiomass: l.optional(l.string({ maxGraphemes: 32 })),
+    belowgroundBiomass: l.optional(l.string({ maxGraphemes: 32 })),
+    carbonContent: l.optional(l.string({ maxGraphemes: 32 })),
+    woodDensity: l.optional(l.string({ maxGraphemes: 32 })),
+    biomassAllometricEquation: l.optional(l.string({ maxGraphemes: 512 })),
+    annualDiameterIncrement: l.optional(l.string({ maxGraphemes: 32 })),
+    estimatedAge: l.optional(l.string({ maxGraphemes: 32 })),
+    growthForm: l.optional(
+      l.string<{
+        maxGraphemes: 64
+        knownValues: [
+          'tree',
+          'shrub',
+          'liana',
+          'palm',
+          'tree-fern',
+          'herb',
+          'grass',
+          'bamboo',
+          'epiphyte',
+          'succulent',
+          'mangrove',
+          'other',
+        ]
+      }>({ maxGraphemes: 64 }),
+    ),
+    vitalityStatus: l.optional(
+      l.string<{
+        maxGraphemes: 32
+        knownValues: [
+          'alive',
+          'dead-standing',
+          'dead-fallen',
+          'moribund',
+          'missing',
+          'unknown',
+        ]
+      }>({ maxGraphemes: 32 }),
+    ),
+    healthScore: l.optional(l.string({ maxGraphemes: 16 })),
+    damageType: l.optional(l.string({ maxGraphemes: 256 })),
+    damageCause: l.optional(
+      l.string<{
+        maxGraphemes: 128
+        knownValues: [
+          'wind',
+          'lightning',
+          'fire',
+          'drought',
+          'flood',
+          'animal',
+          'human',
+          'disease',
+          'pest',
+          'unknown',
+          'other',
+        ]
+      }>({ maxGraphemes: 128 }),
+    ),
+    decayClass: l.optional(l.string({ maxGraphemes: 8 })),
+    floweringStatus: l.optional(
+      l.string<{
+        maxGraphemes: 32
+        knownValues: ['none', 'budding', 'flowering', 'fruiting', 'senescing']
+      }>({ maxGraphemes: 32 }),
+    ),
+    phenology: l.optional(
+      l.string<{
+        maxGraphemes: 64
+        knownValues: ['leafless', 'flush', 'full-leaf', 'senescing', 'dormant']
+      }>({ maxGraphemes: 64 }),
+    ),
+    leafAreaIndex: l.optional(l.string({ maxGraphemes: 32 })),
+    colonyDiameter: l.optional(l.string({ maxGraphemes: 32 })),
+    colonyHeight: l.optional(l.string({ maxGraphemes: 32 })),
+    colonyMorphology: l.optional(
+      l.string<{
+        maxGraphemes: 64
+        knownValues: [
+          'massive',
+          'branching',
+          'encrusting',
+          'foliose',
+          'tabular',
+          'columnar',
+          'free-living',
+          'other',
+        ]
+      }>({ maxGraphemes: 64 }),
+    ),
+    bleachingStatus: l.optional(
+      l.string<{
+        maxGraphemes: 32
+        knownValues: [
+          'none',
+          'pale',
+          'partially-bleached',
+          'fully-bleached',
+          'recently-dead',
+        ]
+      }>({ maxGraphemes: 32 }),
+    ),
+    liveTissueCoverPercent: l.optional(l.string({ maxGraphemes: 16 })),
+    depthBelowSurface: l.optional(l.string({ maxGraphemes: 32 })),
+    additionalMeasurements: l.optional(
+      l.array(l.ref<MeasurementEntry>((() => measurementEntry) as any), {
+        maxLength: 50,
+      }),
+    ),
+  }),
+)
+
+export { floraMeasurement }
+
+/** Typed measurements for mobile organisms: mammals, birds, reptiles, amphibians, fish, insects, and other animals. Covers morphometrics, health assessments, reproductive measurements, and individual marking data. All numeric values stored as strings. Field descriptions include expected units for DwC-A export mapping. */
+type FaunaMeasurement = {
+  $type?: 'app.gainforest.dwc.measurement#faunaMeasurement'
+
+  /**
+   * Body mass in grams.
+   */
+  bodyMass?: string
+
+  /**
+   * Total body length in millimeters (tip of snout/bill to tail tip).
+   */
+  totalLength?: string
+
+  /**
+   * Head-body length excluding tail in millimeters.
+   */
+  headBodyLength?: string
+
+  /**
+   * Tail length in millimeters.
+   */
+  tailLength?: string
+
+  /**
+   * Flattened wing chord length in millimeters (birds).
+   */
+  wingLength?: string
+
+  /**
+   * Full wingspan tip-to-tip in millimeters (birds, bats).
+   */
+  wingspan?: string
+
+  /**
+   * Culmen length in millimeters (birds).
+   */
+  billLength?: string
+
+  /**
+   * Depth of bill at base or gonys in millimeters (birds).
+   */
+  billDepth?: string
+
+  /**
+   * Tarsometatarsus length in millimeters (birds).
+   */
+  tarsusLength?: string
+
+  /**
+   * Subcutaneous fat deposit score (0-8 scale, birds).
+   */
+  fatScore?: string
+
+  /**
+   * Pectoral muscle score (0-3 scale, birds).
+   */
+  pectoralMuscleScore?: string
+
+  /**
+   * Hind foot length in millimeters (mammals).
+   */
+  hindFootLength?: string
+
+  /**
+   * Ear length from notch to tip in millimeters (mammals).
+   */
+  earLength?: string
+
+  /**
+   * Forearm length in millimeters. Standard measurement for bats.
+   */
+  forearmLength?: string
+
+  /**
+   * Height at shoulder in millimeters (large mammals).
+   */
+  shoulderHeight?: string
+
+  /**
+   * Snout-vent length (SVL) in millimeters. Standard body measurement for reptiles and amphibians.
+   */
+  snoutVentLength?: string
+
+  /**
+   * Straight carapace length in millimeters (turtles/tortoises).
+   */
+  carapaceLength?: string
+
+  /**
+   * Straight carapace width in millimeters (turtles/tortoises).
+   */
+  carapaceWidth?: string
+
+  /**
+   * Standard length (snout to caudal fin base) in millimeters (fish).
+   */
+  standardLength?: string
+
+  /**
+   * Fork length (snout to fork of caudal fin) in millimeters (fish).
+   */
+  forkLength?: string
+
+  /**
+   * Total size of social group observed (herd, flock, pod, colony).
+   */
+  groupSize?: number
+
+  /**
+   * Number of eggs in nest (birds, reptiles).
+   */
+  clutchSize?: number
+
+  /**
+   * Number of offspring in litter (mammals).
+   */
+  litterSize?: number
+
+  /**
+   * Number of surviving young.
+   */
+  broodSize?: number
+
+  /**
+   * Height of nest above ground in meters.
+   */
+  nestHeight?: string
+
+  /**
+   * Standardized body condition score (scale varies by taxon: 1-5 or 1-9).
+   */
+  bodyConditionScore?: string
+
+  /**
+   * Calculated condition index (mass/length ratio or regression residual).
+   */
+  bodyConditionIndex?: string
+
+  /**
+   * Whether visible injuries exist.
+   */
+  injuryPresent?: boolean
+
+  /**
+   * Description of injuries (scars, wounds, missing limbs, broken wing).
+   */
+  injuryDescription?: string
+
+  /**
+   * Whether signs of disease are visible.
+   */
+  diseaseSignsPresent?: boolean
+
+  /**
+   * Description of disease signs (mange, lesions, tumors, fungal infection, avian pox, chytrid).
+   */
+  diseaseDescription?: string
+
+  /**
+   * Ectoparasite assessment.
+   */
+  ectoparasiteLoad?: 'none' | 'light' | 'moderate' | 'heavy' | l.UnknownString
+
+  /**
+   * Ear tag, flipper tag, fin tag, or wing tag identifier.
+   */
+  tagId?: string
+
+  /**
+   * Type of tag or mark applied.
+   */
+  tagType?:
+    | 'ear-tag'
+    | 'flipper-tag'
+    | 'wing-tag'
+    | 'dorsal-tag'
+    | 'pit-tag'
+    | 'leg-band'
+    | 'neck-collar'
+    | 'gps-collar'
+    | 'radio-transmitter'
+    | 'satellite-transmitter'
+    | 'paint-mark'
+    | 'tattoo'
+    | 'toe-clip'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * Metal or color band/ring number (birds).
+   */
+  bandNumber?: string
+
+  /**
+   * Description of color band arrangement (e.g., 'Red/White left, Blue/Metal right').
+   */
+  colorBandCombination?: string
+
+  /**
+   * Passive Integrated Transponder (microchip) number.
+   */
+  pitTagId?: string
+
+  /**
+   * Whether this is a new capture or recapture.
+   */
+  recaptureStatus?: 'new' | 'recapture' | 'unknown' | l.UnknownString
+
+  /**
+   * Description of natural marks, scars, or unique identifying features.
+   */
+  markDescription?: string
+
+  /**
+   * Identifier of tissue, hair, or feather sample collected for genetic analysis.
+   */
+  geneticSampleId?: string
+
+  /**
+   * Additional measurements not covered by the typed fields above.
+   */
+  additionalMeasurements?: MeasurementEntry[]
+}
+
+export type { FaunaMeasurement }
+
+/** Typed measurements for mobile organisms: mammals, birds, reptiles, amphibians, fish, insects, and other animals. Covers morphometrics, health assessments, reproductive measurements, and individual marking data. All numeric values stored as strings. Field descriptions include expected units for DwC-A export mapping. */
+const faunaMeasurement = l.typedObject<FaunaMeasurement>(
+  $nsid,
+  'faunaMeasurement',
+  l.object({
+    bodyMass: l.optional(l.string({ maxGraphemes: 32 })),
+    totalLength: l.optional(l.string({ maxGraphemes: 32 })),
+    headBodyLength: l.optional(l.string({ maxGraphemes: 32 })),
+    tailLength: l.optional(l.string({ maxGraphemes: 32 })),
+    wingLength: l.optional(l.string({ maxGraphemes: 32 })),
+    wingspan: l.optional(l.string({ maxGraphemes: 32 })),
+    billLength: l.optional(l.string({ maxGraphemes: 32 })),
+    billDepth: l.optional(l.string({ maxGraphemes: 32 })),
+    tarsusLength: l.optional(l.string({ maxGraphemes: 32 })),
+    fatScore: l.optional(l.string({ maxGraphemes: 8 })),
+    pectoralMuscleScore: l.optional(l.string({ maxGraphemes: 8 })),
+    hindFootLength: l.optional(l.string({ maxGraphemes: 32 })),
+    earLength: l.optional(l.string({ maxGraphemes: 32 })),
+    forearmLength: l.optional(l.string({ maxGraphemes: 32 })),
+    shoulderHeight: l.optional(l.string({ maxGraphemes: 32 })),
+    snoutVentLength: l.optional(l.string({ maxGraphemes: 32 })),
+    carapaceLength: l.optional(l.string({ maxGraphemes: 32 })),
+    carapaceWidth: l.optional(l.string({ maxGraphemes: 32 })),
+    standardLength: l.optional(l.string({ maxGraphemes: 32 })),
+    forkLength: l.optional(l.string({ maxGraphemes: 32 })),
+    groupSize: l.optional(l.integer({ minimum: 1 })),
+    clutchSize: l.optional(l.integer({ minimum: 0 })),
+    litterSize: l.optional(l.integer({ minimum: 0 })),
+    broodSize: l.optional(l.integer({ minimum: 0 })),
+    nestHeight: l.optional(l.string({ maxGraphemes: 32 })),
+    bodyConditionScore: l.optional(l.string({ maxGraphemes: 16 })),
+    bodyConditionIndex: l.optional(l.string({ maxGraphemes: 32 })),
+    injuryPresent: l.optional(l.boolean()),
+    injuryDescription: l.optional(l.string({ maxGraphemes: 512 })),
+    diseaseSignsPresent: l.optional(l.boolean()),
+    diseaseDescription: l.optional(l.string({ maxGraphemes: 512 })),
+    ectoparasiteLoad: l.optional(
+      l.string<{
+        maxGraphemes: 32
+        knownValues: ['none', 'light', 'moderate', 'heavy']
+      }>({ maxGraphemes: 32 }),
+    ),
+    tagId: l.optional(l.string({ maxGraphemes: 128 })),
+    tagType: l.optional(
+      l.string<{
+        maxGraphemes: 64
+        knownValues: [
+          'ear-tag',
+          'flipper-tag',
+          'wing-tag',
+          'dorsal-tag',
+          'pit-tag',
+          'leg-band',
+          'neck-collar',
+          'gps-collar',
+          'radio-transmitter',
+          'satellite-transmitter',
+          'paint-mark',
+          'tattoo',
+          'toe-clip',
+          'other',
+        ]
+      }>({ maxGraphemes: 64 }),
+    ),
+    bandNumber: l.optional(l.string({ maxGraphemes: 128 })),
+    colorBandCombination: l.optional(l.string({ maxGraphemes: 256 })),
+    pitTagId: l.optional(l.string({ maxGraphemes: 128 })),
+    recaptureStatus: l.optional(
+      l.string<{
+        maxGraphemes: 16
+        knownValues: ['new', 'recapture', 'unknown']
+      }>({ maxGraphemes: 16 }),
+    ),
+    markDescription: l.optional(l.string({ maxGraphemes: 512 })),
+    geneticSampleId: l.optional(l.string({ maxGraphemes: 128 })),
+    additionalMeasurements: l.optional(
+      l.array(l.ref<MeasurementEntry>((() => measurementEntry) as any), {
+        maxLength: 50,
+      }),
+    ),
+  }),
+)
+
+export { faunaMeasurement }
+
+/** Flexible measurement container for organisms that do not fit the flora/fauna split, or for legacy compatibility. Contains an array of key-value measurement entries. */
+type GenericMeasurement = {
+  $type?: 'app.gainforest.dwc.measurement#genericMeasurement'
+
+  /**
+   * Array of individual measurements, each with type, value, and optional unit.
+   */
+  measurements: MeasurementEntry[]
+}
+
+export type { GenericMeasurement }
+
+/** Flexible measurement container for organisms that do not fit the flora/fauna split, or for legacy compatibility. Contains an array of key-value measurement entries. */
+const genericMeasurement = l.typedObject<GenericMeasurement>(
+  $nsid,
+  'genericMeasurement',
+  l.object({
+    measurements: l.array(
+      l.ref<MeasurementEntry>((() => measurementEntry) as any),
+      { maxLength: 100 },
+    ),
+  }),
+)
+
+export { genericMeasurement }
+
+/** A single measurement fact, aligned with one row of the Darwin Core MeasurementOrFact extension. Used in additionalMeasurements arrays and in genericMeasurement. */
+type MeasurementEntry = {
+  $type?: 'app.gainforest.dwc.measurement#measurementEntry'
+
+  /**
+   * The nature of the measurement (e.g., 'DBH', 'tree height', 'canopy cover', 'tail length', 'soil pH').
+   */
+  measurementType: string
+
+  /**
+   * The value of the measurement (e.g., '45.2', 'present', 'blue').
+   */
+  measurementValue: string
+
+  /**
+   * The units for the value (e.g., 'cm', 'm', 'kg', '%', 'degrees Celsius').
+   */
+  measurementUnit?: string
+
+  /**
+   * Method or instrument used to determine this specific measurement.
+   */
+  measurementMethod?: string
+
+  /**
+   * Potential error (e.g., '0.5 cm', '5%').
+   */
+  measurementAccuracy?: string
+
+  /**
+   * Notes about this specific measurement.
+   */
+  measurementRemarks?: string
+}
+
+export type { MeasurementEntry }
+
+/** A single measurement fact, aligned with one row of the Darwin Core MeasurementOrFact extension. Used in additionalMeasurements arrays and in genericMeasurement. */
+const measurementEntry = l.typedObject<MeasurementEntry>(
+  $nsid,
+  'measurementEntry',
+  l.object({
+    measurementType: l.string({ maxGraphemes: 256 }),
+    measurementValue: l.string({ maxGraphemes: 1024 }),
+    measurementUnit: l.optional(l.string({ maxGraphemes: 64 })),
+    measurementMethod: l.optional(l.string({ maxGraphemes: 512 })),
+    measurementAccuracy: l.optional(l.string({ maxGraphemes: 128 })),
+    measurementRemarks: l.optional(l.string({ maxGraphemes: 1024 })),
+  }),
+)
+
+export { measurementEntry }

@@ -146,6 +146,106 @@ type Main = {
    * Timestamp of record creation in the ATProto PDS.
    */
   createdAt: l.DatetimeString
+
+  /**
+   * AT-URI reference to the organization info record.
+   */
+  projectRef?: l.AtUriString
+
+  /**
+   * AT-URI reference to the organization site record.
+   */
+  siteRef?: l.AtUriString
+
+  /**
+   * Name of the monitoring programme (e.g., 'Annual Biodiversity Survey 2025').
+   */
+  monitoringProgramme?: string
+
+  /**
+   * How often this type of event recurs (e.g., 'monthly', 'quarterly', 'annual', 'one-time').
+   */
+  monitoringFrequency?: string
+
+  /**
+   * Temperature in Celsius during event.
+   */
+  temperature?: string
+
+  /**
+   * Relative humidity percentage.
+   */
+  humidity?: string
+
+  /**
+   * Wind speed during event.
+   */
+  windSpeed?: string
+
+  /**
+   * Cloud cover percentage.
+   */
+  cloudCover?: string
+
+  /**
+   * Precipitation description (e.g., 'none', 'light rain', '5mm').
+   */
+  precipitation?: string
+
+  /**
+   * General weather description.
+   */
+  weatherRemarks?: string
+
+  /**
+   * Moon phase (relevant for nocturnal surveys).
+   */
+  moonPhase?: string
+
+  /**
+   * Water level if aquatic survey (e.g., 'low', '2.3m').
+   */
+  waterLevel?: string
+
+  /**
+   * Water temperature in Celsius.
+   */
+  waterTemperature?: string
+
+  /**
+   * Visibility conditions (e.g., 'clear', 'foggy', '10m underwater').
+   */
+  visibility?: string
+
+  /**
+   * Number of people involved in the event.
+   */
+  teamSize?: number
+
+  /**
+   * Person(s) who conducted the event. Pipe-delimited for multiple people (e.g., 'Jane Smith | John Doe').
+   */
+  recordedBy?: string
+
+  /**
+   * ORCID or other persistent identifiers for the recorder(s). Pipe-delimited for multiple IDs.
+   */
+  recordedByID?: string
+
+  /**
+   * Description of equipment used during the event.
+   */
+  equipmentUsed?: string
+
+  /**
+   * Notes on data quality issues encountered during or after the event.
+   */
+  qualityControlNotes?: string
+
+  /**
+   * Assessment of survey completeness (e.g., 'complete', 'partial - rain stopped survey', 'incomplete').
+   */
+  completeness?: string
 }
 
 export type { Main }
@@ -182,6 +282,26 @@ const main = l.record<'tid', Main>(
     maximumElevationInMeters: l.optional(l.integer()),
     locationRemarks: l.optional(l.string({ maxGraphemes: 2048 })),
     createdAt: l.string({ format: 'datetime' }),
+    projectRef: l.optional(l.string({ format: 'at-uri' })),
+    siteRef: l.optional(l.string({ format: 'at-uri' })),
+    monitoringProgramme: l.optional(l.string({ maxGraphemes: 256 })),
+    monitoringFrequency: l.optional(l.string({ maxGraphemes: 64 })),
+    temperature: l.optional(l.string({ maxGraphemes: 16 })),
+    humidity: l.optional(l.string({ maxGraphemes: 16 })),
+    windSpeed: l.optional(l.string({ maxGraphemes: 16 })),
+    cloudCover: l.optional(l.string({ maxGraphemes: 16 })),
+    precipitation: l.optional(l.string({ maxGraphemes: 32 })),
+    weatherRemarks: l.optional(l.string({ maxGraphemes: 512 })),
+    moonPhase: l.optional(l.string({ maxGraphemes: 32 })),
+    waterLevel: l.optional(l.string({ maxGraphemes: 32 })),
+    waterTemperature: l.optional(l.string({ maxGraphemes: 16 })),
+    visibility: l.optional(l.string({ maxGraphemes: 32 })),
+    teamSize: l.optional(l.integer({ minimum: 1 })),
+    recordedBy: l.optional(l.string({ maxGraphemes: 512 })),
+    recordedByID: l.optional(l.string({ maxGraphemes: 512 })),
+    equipmentUsed: l.optional(l.string({ maxGraphemes: 1024 })),
+    qualityControlNotes: l.optional(l.string({ maxGraphemes: 2048 })),
+    completeness: l.optional(l.string({ maxGraphemes: 64 })),
   }),
 )
 

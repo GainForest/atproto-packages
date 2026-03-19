@@ -251,3 +251,290 @@ const taxonRankEnum = l.string<{
 }>({ maxGraphemes: 64 })
 
 export { taxonRankEnum }
+
+/** Functional plant traits from databases like TRY, Restor */
+type PlantTraits = {
+  $type?: 'app.gainforest.dwc.defs#plantTraits'
+
+  /**
+   * Wood density in g/cm³
+   */
+  woodDensity?: string
+
+  /**
+   * Maximum height in meters
+   */
+  maxHeight?: string
+
+  /**
+   * Typical stem diameter in cm
+   */
+  stemDiameter?: string
+
+  /**
+   * Stem conduit diameter in μm
+   */
+  stemConduitDiameter?: string
+
+  /**
+   * Bark thickness in mm
+   */
+  barkThickness?: string
+
+  /**
+   * Root depth in meters
+   */
+  rootDepth?: string
+
+  /**
+   * Leaf area in cm²
+   */
+  leafArea?: string
+
+  /**
+   * Specific leaf area in mm²/mg
+   */
+  specificLeafArea?: string
+
+  /**
+   * Seed mass in mg
+   */
+  seedMass?: string
+
+  /**
+   * Growth form of the plant
+   */
+  growthForm?:
+    | 'tree'
+    | 'shrub'
+    | 'herb'
+    | 'grass'
+    | 'vine'
+    | 'epiphyte'
+    | 'fern'
+    | 'palm'
+    | 'bamboo'
+    | 'succulent'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * Leaf type of the plant
+   */
+  leafType?:
+    | 'broadleaf-deciduous'
+    | 'broadleaf-evergreen'
+    | 'needleleaf-deciduous'
+    | 'needleleaf-evergreen'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * Primary seed dispersal mode
+   */
+  dispersalMode?:
+    | 'wind'
+    | 'water'
+    | 'animal'
+    | 'gravity'
+    | 'ballistic'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * Primary pollination mode
+   */
+  pollinationMode?:
+    | 'insect'
+    | 'wind'
+    | 'bird'
+    | 'bat'
+    | 'water'
+    | 'self'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * Edible parts of the plant (e.g., 'fruit', 'leaves', 'seeds')
+   */
+  edibleParts?: string[]
+
+  /**
+   * Economic uses of the plant (e.g., 'timber', 'medicine')
+   */
+  economicUses?: string[]
+
+  /**
+   * Source database for trait data (e.g., 'TRY', 'Restor', 'BIEN')
+   */
+  traitSource?: string
+}
+
+export type { PlantTraits }
+
+/** Functional plant traits from databases like TRY, Restor */
+const plantTraits = l.typedObject<PlantTraits>(
+  $nsid,
+  'plantTraits',
+  l.object({
+    woodDensity: l.optional(l.string({ maxGraphemes: 32 })),
+    maxHeight: l.optional(l.string({ maxGraphemes: 32 })),
+    stemDiameter: l.optional(l.string({ maxGraphemes: 32 })),
+    stemConduitDiameter: l.optional(l.string({ maxGraphemes: 32 })),
+    barkThickness: l.optional(l.string({ maxGraphemes: 32 })),
+    rootDepth: l.optional(l.string({ maxGraphemes: 32 })),
+    leafArea: l.optional(l.string({ maxGraphemes: 32 })),
+    specificLeafArea: l.optional(l.string({ maxGraphemes: 32 })),
+    seedMass: l.optional(l.string({ maxGraphemes: 32 })),
+    growthForm: l.optional(
+      l.string<{
+        maxGraphemes: 64
+        knownValues: [
+          'tree',
+          'shrub',
+          'herb',
+          'grass',
+          'vine',
+          'epiphyte',
+          'fern',
+          'palm',
+          'bamboo',
+          'succulent',
+          'other',
+        ]
+      }>({ maxGraphemes: 64 }),
+    ),
+    leafType: l.optional(
+      l.string<{
+        maxGraphemes: 32
+        knownValues: [
+          'broadleaf-deciduous',
+          'broadleaf-evergreen',
+          'needleleaf-deciduous',
+          'needleleaf-evergreen',
+          'other',
+        ]
+      }>({ maxGraphemes: 32 }),
+    ),
+    dispersalMode: l.optional(
+      l.string<{
+        maxGraphemes: 64
+        knownValues: [
+          'wind',
+          'water',
+          'animal',
+          'gravity',
+          'ballistic',
+          'other',
+        ]
+      }>({ maxGraphemes: 64 }),
+    ),
+    pollinationMode: l.optional(
+      l.string<{
+        maxGraphemes: 64
+        knownValues: ['insect', 'wind', 'bird', 'bat', 'water', 'self', 'other']
+      }>({ maxGraphemes: 64 }),
+    ),
+    edibleParts: l.optional(
+      l.array(l.string({ maxGraphemes: 64 }), { maxLength: 10 }),
+    ),
+    economicUses: l.optional(
+      l.array(l.string({ maxGraphemes: 128 }), { maxLength: 10 }),
+    ),
+    traitSource: l.optional(l.string({ maxGraphemes: 256 })),
+  }),
+)
+
+export { plantTraits }
+
+/** A structured abundance/density estimate */
+type AbundanceEstimate = {
+  $type?: 'app.gainforest.dwc.defs#abundanceEstimate'
+
+  /**
+   * Numeric value as string
+   */
+  value: string
+
+  /**
+   * Unit of the estimate (e.g., 'individuals/ha', 'stems/ha', '% cover', 'relative abundance')
+   */
+  unit: string
+
+  /**
+   * Estimation method
+   */
+  method?: string
+
+  /**
+   * Confidence interval or qualifier
+   */
+  confidence?: string
+
+  /**
+   * Date of estimate (ISO 8601)
+   */
+  date?: string
+}
+
+export type { AbundanceEstimate }
+
+/** A structured abundance/density estimate */
+const abundanceEstimate = l.typedObject<AbundanceEstimate>(
+  $nsid,
+  'abundanceEstimate',
+  l.object({
+    value: l.string({ maxGraphemes: 64 }),
+    unit: l.string({ maxGraphemes: 64 }),
+    method: l.optional(l.string({ maxGraphemes: 256 })),
+    confidence: l.optional(l.string({ maxGraphemes: 64 })),
+    date: l.optional(l.string({ maxGraphemes: 64 })),
+  }),
+)
+
+export { abundanceEstimate }
+
+/** Life history strategy of the organism */
+type LifeHistoryEnum =
+  | 'annual'
+  | 'biennial'
+  | 'perennial'
+  | 'ephemeral'
+  | l.UnknownString
+
+export type { LifeHistoryEnum }
+
+/** Life history strategy of the organism */
+const lifeHistoryEnum = l.string<{
+  maxGraphemes: 32
+  knownValues: ['annual', 'biennial', 'perennial', 'ephemeral']
+}>({ maxGraphemes: 32 })
+
+export { lifeHistoryEnum }
+
+/** Darwin Core establishment means — the process by which the organism came to be in a given place at a given time */
+type EstablishmentMeansEnum =
+  | 'native'
+  | 'introduced'
+  | 'naturalised'
+  | 'invasive'
+  | 'managed'
+  | 'uncertain'
+  | l.UnknownString
+
+export type { EstablishmentMeansEnum }
+
+/** Darwin Core establishment means — the process by which the organism came to be in a given place at a given time */
+const establishmentMeansEnum = l.string<{
+  maxGraphemes: 64
+  knownValues: [
+    'native',
+    'introduced',
+    'naturalised',
+    'invasive',
+    'managed',
+    'uncertain',
+  ]
+}>({ maxGraphemes: 64 })
+
+export { establishmentMeansEnum }

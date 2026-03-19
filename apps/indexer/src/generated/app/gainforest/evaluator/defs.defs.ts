@@ -409,3 +409,287 @@ const measurementResult = l.typedObject<MeasurementResult>(
 )
 
 export { measurementResult }
+
+/** A single detection within an audio recording. */
+type BioacousticsDetection = {
+  $type?: 'app.gainforest.evaluator.defs#bioacousticsDetection'
+
+  /**
+   * Start time in seconds from recording start.
+   */
+  startTimeSeconds: string
+
+  /**
+   * End time in seconds from recording start.
+   */
+  endTimeSeconds: string
+
+  /**
+   * Lower frequency bound of detection in Hz.
+   */
+  minFrequencyHz?: number
+
+  /**
+   * Upper frequency bound of detection in Hz.
+   */
+  maxFrequencyHz?: number
+
+  /**
+   * Identified species scientific name.
+   */
+  scientificName?: string
+
+  /**
+   * Common name of the identified species.
+   */
+  commonName?: string
+
+  /**
+   * Confidence score (0-1000, where 1000 = 100.0%).
+   */
+  confidence?: number
+
+  /**
+   * Type of sound detected.
+   */
+  soundType?:
+    | 'call'
+    | 'song'
+    | 'alarm'
+    | 'drumming'
+    | 'echolocation'
+    | 'stridulation'
+    | 'anthropogenic'
+    | 'geophony'
+    | 'unknown'
+    | l.UnknownString
+}
+
+export type { BioacousticsDetection }
+
+/** A single detection within an audio recording. */
+const bioacousticsDetection = l.typedObject<BioacousticsDetection>(
+  $nsid,
+  'bioacousticsDetection',
+  l.object({
+    startTimeSeconds: l.string({ maxGraphemes: 16 }),
+    endTimeSeconds: l.string({ maxGraphemes: 16 }),
+    minFrequencyHz: l.optional(l.integer({ minimum: 0 })),
+    maxFrequencyHz: l.optional(l.integer({ minimum: 0 })),
+    scientificName: l.optional(l.string({ maxGraphemes: 512 })),
+    commonName: l.optional(l.string({ maxGraphemes: 256 })),
+    confidence: l.optional(l.integer({ minimum: 0, maximum: 1000 })),
+    soundType: l.optional(
+      l.string<{
+        maxGraphemes: 64
+        knownValues: [
+          'call',
+          'song',
+          'alarm',
+          'drumming',
+          'echolocation',
+          'stridulation',
+          'anthropogenic',
+          'geophony',
+          'unknown',
+        ]
+      }>({ maxGraphemes: 64 }),
+    ),
+  }),
+)
+
+export { bioacousticsDetection }
+
+/** Result of audio-based species detection. */
+type BioacousticsResult = {
+  $type?: 'app.gainforest.evaluator.defs#bioacousticsResult'
+
+  /**
+   * Detected species/sounds within the audio recording.
+   */
+  detections: BioacousticsDetection[]
+
+  /**
+   * Total audio duration analyzed in seconds.
+   */
+  totalDurationAnalyzedSeconds?: string
+
+  /**
+   * Acoustic diversity index value.
+   */
+  soundscapeIndex?: string
+
+  /**
+   * Additional notes about the bioacoustics analysis.
+   */
+  remarks?: string
+}
+
+export type { BioacousticsResult }
+
+/** Result of audio-based species detection. */
+const bioacousticsResult = l.typedObject<BioacousticsResult>(
+  $nsid,
+  'bioacousticsResult',
+  l.object({
+    detections: l.array(
+      l.ref<BioacousticsDetection>((() => bioacousticsDetection) as any),
+      { maxLength: 100 },
+    ),
+    totalDurationAnalyzedSeconds: l.optional(l.string({ maxGraphemes: 32 })),
+    soundscapeIndex: l.optional(l.string({ maxGraphemes: 32 })),
+    remarks: l.optional(l.string({ maxGraphemes: 2048 })),
+  }),
+)
+
+export { bioacousticsResult }
+
+/** Deforestation/land-use change detection result. */
+type DeforestationResult = {
+  $type?: 'app.gainforest.evaluator.defs#deforestationResult'
+
+  /**
+   * Type of land-use change detected.
+   */
+  changeType:
+    | 'deforestation'
+    | 'degradation'
+    | 'reforestation'
+    | 'afforestation'
+    | 'no-change'
+    | 'fire'
+    | 'flooding'
+    | 'urbanization'
+    | l.UnknownString
+
+  /**
+   * Area affected by the change in hectares.
+   */
+  areaAffectedHectares?: string
+
+  /**
+   * Percentage of monitored area affected.
+   */
+  changePercentage?: string
+
+  /**
+   * ISO 8601 date of detection.
+   */
+  detectionDate?: string
+
+  /**
+   * ISO 8601 date of baseline comparison.
+   */
+  baselineDate?: string
+
+  /**
+   * Satellite data source (e.g., 'Sentinel-2', 'Landsat-8', 'Planet').
+   */
+  satelliteSource?: string
+
+  /**
+   * Additional notes about the deforestation detection.
+   */
+  remarks?: string
+}
+
+export type { DeforestationResult }
+
+/** Deforestation/land-use change detection result. */
+const deforestationResult = l.typedObject<DeforestationResult>(
+  $nsid,
+  'deforestationResult',
+  l.object({
+    changeType: l.string<{
+      maxGraphemes: 64
+      knownValues: [
+        'deforestation',
+        'degradation',
+        'reforestation',
+        'afforestation',
+        'no-change',
+        'fire',
+        'flooding',
+        'urbanization',
+      ]
+    }>({ maxGraphemes: 64 }),
+    areaAffectedHectares: l.optional(l.string({ maxGraphemes: 32 })),
+    changePercentage: l.optional(l.string({ maxGraphemes: 16 })),
+    detectionDate: l.optional(l.string({ maxGraphemes: 64 })),
+    baselineDate: l.optional(l.string({ maxGraphemes: 64 })),
+    satelliteSource: l.optional(l.string({ maxGraphemes: 128 })),
+    remarks: l.optional(l.string({ maxGraphemes: 2048 })),
+  }),
+)
+
+export { deforestationResult }
+
+/** Carbon stock or sequestration estimation. */
+type CarbonEstimationResult = {
+  $type?: 'app.gainforest.evaluator.defs#carbonEstimationResult'
+
+  /**
+   * Type of carbon estimation.
+   */
+  estimationType:
+    | 'above-ground-biomass'
+    | 'below-ground-biomass'
+    | 'soil-carbon'
+    | 'total-carbon-stock'
+    | 'annual-sequestration'
+    | 'avoided-emissions'
+    | l.UnknownString
+
+  /**
+   * Estimated carbon value.
+   */
+  value: string
+
+  /**
+   * Unit of the estimated value (e.g., 'tCO2e', 'tC/ha', 'tCO2e/year').
+   */
+  unit: string
+
+  /**
+   * Uncertainty range (e.g., '±15%').
+   */
+  uncertainty?: string
+
+  /**
+   * Estimation methodology used.
+   */
+  methodology?: string
+
+  /**
+   * Additional notes about the carbon estimation.
+   */
+  remarks?: string
+}
+
+export type { CarbonEstimationResult }
+
+/** Carbon stock or sequestration estimation. */
+const carbonEstimationResult = l.typedObject<CarbonEstimationResult>(
+  $nsid,
+  'carbonEstimationResult',
+  l.object({
+    estimationType: l.string<{
+      maxGraphemes: 64
+      knownValues: [
+        'above-ground-biomass',
+        'below-ground-biomass',
+        'soil-carbon',
+        'total-carbon-stock',
+        'annual-sequestration',
+        'avoided-emissions',
+      ]
+    }>({ maxGraphemes: 64 }),
+    value: l.string({ maxGraphemes: 32 }),
+    unit: l.string({ maxGraphemes: 32 }),
+    uncertainty: l.optional(l.string({ maxGraphemes: 32 })),
+    methodology: l.optional(l.string({ maxGraphemes: 512 })),
+    remarks: l.optional(l.string({ maxGraphemes: 2048 })),
+  }),
+)
+
+export { carbonEstimationResult }

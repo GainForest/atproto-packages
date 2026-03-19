@@ -25,7 +25,7 @@
                             "accepted",
                             "rejected"
                         ],
-                        "description": "The recipient\u2019s response for the badge (accepted or rejected)."
+                        "description": "The recipient’s response for the badge (accepted or rejected)."
                     },
                     "weight": {
                         "type": "string",

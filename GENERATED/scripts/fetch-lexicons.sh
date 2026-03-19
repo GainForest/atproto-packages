@@ -115,7 +115,11 @@ copy_from_local() {
     fi
 
     # Pretty-print JSON (validate) or copy as-is
-    if python3 -m json.tool "$file" > "$DEST_PATH" 2>/dev/null; then
+    # node is always available in this project; python3 on Windows may be
+    # a Microsoft Store stub that hangs, so we prefer node > python > jq > cp.
+    if node -e 'console.log(JSON.stringify(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")),null,4))' "$file" > "$DEST_PATH" 2>/dev/null; then
+      :
+    elif python -m json.tool "$file" > "$DEST_PATH" 2>/dev/null; then
       :
     elif jq '.' "$file" > "$DEST_PATH" 2>/dev/null; then
       :
@@ -125,11 +129,11 @@ copy_from_local() {
 
     if [ "$STATUS" = "overwrite" ]; then
       echo -e "  ${YELLOW}[OVERWRITE]${NC} $REL_PATH"
-      ((OVERWRITTEN++))
+      OVERWRITTEN=$((OVERWRITTEN + 1))
     else
       echo -e "  ${GREEN}[OK]${NC} $REL_PATH"
     fi
-    ((COPIED++))
+    COPIED=$((COPIED + 1))
   done < <(find "$SUBDIR" -name "*.json" -print0)
 
   echo -e "  Copied: ${GREEN}$COPIED${NC} file(s)  (overwrites: ${YELLOW}$OVERWRITTEN${NC})"
@@ -185,7 +189,11 @@ fetch_and_merge() {
     fi
 
     # Pretty-print JSON (validate) or copy as-is
-    if python3 -m json.tool "$file" > "$DEST_PATH" 2>/dev/null; then
+    # node is always available in this project; python3 on Windows may be
+    # a Microsoft Store stub that hangs, so we prefer node > python > jq > cp.
+    if node -e 'console.log(JSON.stringify(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")),null,4))' "$file" > "$DEST_PATH" 2>/dev/null; then
+      :
+    elif python -m json.tool "$file" > "$DEST_PATH" 2>/dev/null; then
       :
     elif jq '.' "$file" > "$DEST_PATH" 2>/dev/null; then
       :
@@ -195,11 +203,11 @@ fetch_and_merge() {
 
     if [ "$STATUS" = "overwrite" ]; then
       echo -e "  ${YELLOW}[OVERWRITE]${NC} $REL_PATH"
-      ((OVERWRITTEN++))
+      OVERWRITTEN=$((OVERWRITTEN + 1))
     else
       echo -e "  ${GREEN}[OK]${NC} $REL_PATH"
     fi
-    ((COPIED++))
+    COPIED=$((COPIED + 1))
   done < <(find "$LEXICONS_SUBDIR" -name "*.json" -print0)
 
   echo -e "  Copied: ${GREEN}$COPIED${NC} file(s)  (overwrites: ${YELLOW}$OVERWRITTEN${NC})"
@@ -333,27 +341,7 @@ echo -e "${YELLOW}Checking all \$ref references are resolvable...${NC}"
 # Strip fragment (#fragment), deduplicate, sort.
 ALL_REFS=$(
   find "$OUTPUT_DIR" -name "*.json" -print0 \
-  | xargs -0 python3 -c "
-import sys, json, re
-
-refs = set()
-for path in sys.argv[1:]:
-    try:
-        text = open(path).read()
-        # find all \"ref\": \"...\" values
-        for m in re.finditer(r'\"refs?\"\s*:\s*(?:\"([^\"]+)\"|(\[[^\]]*\]))', text):
-            single, arr = m.group(1), m.group(2)
-            if single:
-                refs.add(single.split('#')[0])
-            elif arr:
-                for r in re.findall(r'\"([^\"]+)\"', arr):
-                    refs.add(r.split('#')[0])
-    except Exception:
-        pass
-
-for r in sorted(refs):
-    print(r)
-" 2>/dev/null
+  | xargs -0 node -e 'const fs=require("fs");const refs=new Set();for(const p of process.argv.slice(1)){  try{    const t=fs.readFileSync(p,"utf8");    for(const m of t.matchAll(/"refs?"s*:s*(?:"([^"]+)"|([[^]]*]))/g)){      if(m[1])refs.add(m[1].split("#")[0]);      else if(m[2])for(const r of m[2].matchAll(/"([^"]+)"/g))refs.add(r[1].split("#")[0]);    }  }catch(e){}}for(const r of[...refs].sort())console.log(r);'
 )
 
 MISSING=()

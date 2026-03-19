@@ -3,7 +3,8 @@
  */
 
 import { l } from '@atproto/lex'
-import * as HypercertsDefs from '../../../../org/hypercerts/defs.defs.ts'
+import * as HypercertsDefs from './..//..//..//..//org//hypercerts//defs.defs.ts'
+import * as CommonDefs from './..//..//common//defs.defs.ts'
 
 const $nsid = 'app.gainforest.organization.observations.dendogram'
 
@@ -22,6 +23,76 @@ type Main = {
    * The date and time of the creation of the record
    */
   createdAt: l.DatetimeString
+
+  /**
+   * Name or title of the dendogram (e.g., 'Flora Phylogenetic Tree - Site A 2025')
+   */
+  name?: string
+
+  /**
+   * Description of what this dendogram shows
+   */
+  description?: CommonDefs.Richtext
+
+  /**
+   * AT-URI reference to the site this dendogram represents
+   */
+  siteRef?: l.AtUriString
+
+  /**
+   * When the phylogenetic analysis was performed
+   */
+  analysisDate?: l.DatetimeString
+
+  /**
+   * Method used to generate the dendogram (e.g., 'Maximum Likelihood with RAxML', 'Neighbor-Joining')
+   */
+  analysisMethod?: string
+
+  /**
+   * Source of the sequence or trait data used in the analysis
+   */
+  dataSource?: string
+
+  /**
+   * Number of taxa represented in the dendogram
+   */
+  taxonCount?: number
+
+  /**
+   * The root taxon of the tree (e.g., 'Plantae')
+   */
+  rootTaxon?: string
+
+  /**
+   * Type of tree represented in the dendogram
+   */
+  treeType?:
+    | 'phylogenetic'
+    | 'phenetic'
+    | 'cladistic'
+    | 'functional-trait'
+    | 'other'
+    | l.UnknownString
+
+  /**
+   * Thumbnail preview image of the dendogram
+   */
+  thumbnail?: CommonDefs.ImageThumbnail
+
+  /**
+   * Which taxonomic groups are represented in the dendogram
+   */
+  taxonGroups?: (
+    | 'flora'
+    | 'fauna'
+    | 'fungi'
+    | 'bacteria'
+    | 'archaea'
+    | 'protista'
+    | 'chromista'
+    | l.UnknownString
+  )[]
 }
 
 export type { Main }
@@ -35,6 +106,50 @@ const main = l.record<'literal:self', Main>(
       (() => HypercertsDefs.smallBlob) as any,
     ),
     createdAt: l.string({ format: 'datetime' }),
+    name: l.optional(l.string({ maxGraphemes: 256 })),
+    description: l.optional(
+      l.ref<CommonDefs.Richtext>((() => CommonDefs.richtext) as any),
+    ),
+    siteRef: l.optional(l.string({ format: 'at-uri' })),
+    analysisDate: l.optional(l.string({ format: 'datetime' })),
+    analysisMethod: l.optional(l.string({ maxGraphemes: 512 })),
+    dataSource: l.optional(l.string({ maxGraphemes: 256 })),
+    taxonCount: l.optional(l.integer({ minimum: 0 })),
+    rootTaxon: l.optional(l.string({ maxGraphemes: 256 })),
+    treeType: l.optional(
+      l.string<{
+        maxGraphemes: 64
+        knownValues: [
+          'phylogenetic',
+          'phenetic',
+          'cladistic',
+          'functional-trait',
+          'other',
+        ]
+      }>({ maxGraphemes: 64 }),
+    ),
+    thumbnail: l.optional(
+      l.ref<CommonDefs.ImageThumbnail>(
+        (() => CommonDefs.imageThumbnail) as any,
+      ),
+    ),
+    taxonGroups: l.optional(
+      l.array(
+        l.string<{
+          maxGraphemes: 64
+          knownValues: [
+            'flora',
+            'fauna',
+            'fungi',
+            'bacteria',
+            'archaea',
+            'protista',
+            'chromista',
+          ]
+        }>({ maxGraphemes: 64 }),
+        { maxLength: 10 },
+      ),
+    ),
   }),
 )
 

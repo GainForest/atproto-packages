@@ -3,9 +3,11 @@
  */
 
 export * as defaultSite from './organization/defaultSite.ts'
+export * as donation from './organization/donation.ts'
 export * as getIndexedOrganizations from './organization/getIndexedOrganizations.ts'
 export * as info from './organization/info.ts'
 export * as layer from './organization/layer.ts'
+export * as member from './organization/member.ts'
 export * as observations from './organization/observations.ts'
 export * as predictions from './organization/predictions.ts'
 export * as recordings from './organization/recordings.ts'

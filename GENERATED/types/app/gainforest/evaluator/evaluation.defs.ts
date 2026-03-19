@@ -37,6 +37,9 @@ type Main = {
     | l.$Typed<EvaluatorDefs.VerificationResult>
     | l.$Typed<EvaluatorDefs.ClassificationResult>
     | l.$Typed<EvaluatorDefs.MeasurementResult>
+    | l.$Typed<EvaluatorDefs.BioacousticsResult>
+    | l.$Typed<EvaluatorDefs.DeforestationResult>
+    | l.$Typed<EvaluatorDefs.CarbonEstimationResult>
     | l.Unknown$TypedObject
 
   /**
@@ -106,6 +109,15 @@ const main = l.record<'tid', Main>(
           ),
           l.typedRef<EvaluatorDefs.MeasurementResult>(
             (() => EvaluatorDefs.measurementResult) as any,
+          ),
+          l.typedRef<EvaluatorDefs.BioacousticsResult>(
+            (() => EvaluatorDefs.bioacousticsResult) as any,
+          ),
+          l.typedRef<EvaluatorDefs.DeforestationResult>(
+            (() => EvaluatorDefs.deforestationResult) as any,
+          ),
+          l.typedRef<EvaluatorDefs.CarbonEstimationResult>(
+            (() => EvaluatorDefs.carbonEstimationResult) as any,
           ),
         ],
         false,

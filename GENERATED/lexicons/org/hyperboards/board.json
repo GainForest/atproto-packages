@@ -73,7 +73,7 @@
                 },
                 "backgroundOpacity": {
                     "type": "integer",
-                    "description": "Background opacity as a percentage (0\u2013100).",
+                    "description": "Background opacity as a percentage (0–100).",
                     "minimum": 0,
                     "maximum": 100
                 },

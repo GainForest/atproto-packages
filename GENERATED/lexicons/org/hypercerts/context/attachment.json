@@ -15,7 +15,7 @@
                 "properties": {
                     "subjects": {
                         "type": "array",
-                        "description": "References to the subject(s) the attachment is connected to\u2014this may be an activity claim, outcome claim, measurement, evaluation, or even another attachment. This is optional as the attachment can exist before the claim is recorded.",
+                        "description": "References to the subject(s) the attachment is connected to—this may be an activity claim, outcome claim, measurement, evaluation, or even another attachment. This is optional as the attachment can exist before the claim is recorded.",
                         "items": {
                             "type": "ref",
                             "ref": "com.atproto.repo.strongRef"

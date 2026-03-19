@@ -31,7 +31,7 @@
                     },
                     "unit": {
                         "type": "string",
-                        "description": "The unit of the measured value (e.g. kg CO\u2082e, hectares, %, index score).",
+                        "description": "The unit of the measured value (e.g. kg CO₂e, hectares, %, index score).",
                         "maxLength": 50
                     },
                     "value": {
