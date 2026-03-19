@@ -52,8 +52,8 @@ const KOBO_PATTERNS: KoboPattern[] = [
   // Measurements
   { pattern: "dbh", targetField: "dbh" },
   { pattern: "diameter_breast_height", targetField: "dbh" },
-  { pattern: "height", targetField: "height" },
-  { pattern: "tree_height", targetField: "height" },
+  { pattern: "height", targetField: "totalHeight" },
+  { pattern: "tree_height", targetField: "totalHeight" },
   { pattern: "diameter", targetField: "diameter" },
   { pattern: "canopy_cover", targetField: "canopyCover" },
   { pattern: "canopy", targetField: "canopyCover" },
@@ -99,16 +99,40 @@ const KOBO_PATTERNS: KoboPattern[] = [
  * Returns the first matching pattern entry, or null if none match.
  *
  * Matching strategy:
- *   1. Exact match (case-insensitive)
- *   2. Contains match (case-insensitive)
+ *   1. First pass: exact match only (lower === entry.pattern)
+ *   2. Second pass: substring match (lower.includes(entry.pattern)),
+ *      but gpsCombined patterns are SKIPPED in this pass so that a
+ *      column like "_GPS_longitude" (which contains "gps") is not
+ *      incorrectly matched by the combined-GPS pattern when a more
+ *      specific exact pattern already exists.
  */
 function matchPattern(header: string): KoboPattern | null {
   const lower = header.toLowerCase();
+
+  // Pass 1: exact match
   for (const entry of KOBO_PATTERNS) {
-    if (lower === entry.pattern || lower.includes(entry.pattern)) {
+    if (lower === entry.pattern) {
       return entry;
     }
   }
+
+  // Pass 2: substring match — skip gpsCombined patterns to prevent
+  // "_gps_longitude".includes("gps") from firing the combined-GPS handler
+  for (const entry of KOBO_PATTERNS) {
+    if (!entry.gpsCombined && lower.includes(entry.pattern)) {
+      return entry;
+    }
+  }
+
+  // Pass 3: substring match for gpsCombined patterns (only reached when no
+  // specific pattern matched above, i.e. the column is genuinely a combined
+  // GPS field like "GPS" or "geopoint")
+  for (const entry of KOBO_PATTERNS) {
+    if (entry.gpsCombined && lower.includes(entry.pattern)) {
+      return entry;
+    }
+  }
+
   return null;
 }
 

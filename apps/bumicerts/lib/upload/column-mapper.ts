@@ -54,7 +54,7 @@ const KNOWN_PATTERNS: { patterns: string[]; target: string }[] = [
 
   // Measurement fields
   { patterns: ["dbh", "diameter_breast_height", "trunk_diameter"], target: "dbh" },
-  { patterns: ["height", "tree_height", "total_height"], target: "height" },
+  { patterns: ["height", "tree_height", "total_height"], target: "totalHeight" },
   { patterns: ["diameter"], target: "diameter" },
   {
     patterns: ["crown_diameter", "canopy_diameter", "canopy_cover"],
