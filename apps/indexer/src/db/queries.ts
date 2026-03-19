@@ -19,49 +19,55 @@ import type {
  * On conflict (same uri), updates the record content and cid.
  * This is the hot path — called for every matching firehose event.
  *
- * Uses sql.unsafe inside a transaction for batch upsert, since
- * the postgres library's TransactionSql type loses call signatures
- * via Omit (a known TypeScript limitation).
+ * Uses a single multi-row INSERT with parameterized values for maximum
+ * throughput. Records are sorted by URI before inserting so that all
+ * concurrent transactions always lock rows in the same order — this
+ * prevents deadlocks when multiple flush calls overlap.
+ *
+ * The postgres library's sql(array, ...cols) helper does not support
+ * sql.json() values. We work around this by pre-serializing each
+ * record's JSONB to a string and casting with ::jsonb in the query.
+ * The VALUES clause uses $N placeholders via sql.unsafe() but all
+ * values are still bound parameters (no injection risk).
  */
 export async function upsertRecords(records: RecordInsert[]): Promise<void> {
   if (records.length === 0) return;
 
-  // The postgres library's sql(array, ...cols) helper does not support sql.json()
-  // values inside the array — it crashes when trying to escape them as identifiers.
-  // Instead we use a transaction with individual parameterized statements, one per
-  // record. PostgreSQL pipelines these within the transaction so performance is
-  // equivalent to a single multi-row INSERT for our batch sizes (≤100 rows).
-  // TransactionSql loses its call signature via Omit — cast to any to use it as a
-  // tagged template literal. This is a known TypeScript limitation in the postgres lib.
-  //
-  // Sort by URI before acquiring row locks so that all concurrent transactions
-  // always lock rows in the same order — this prevents deadlocks when multiple
-  // flush calls overlap (even across separate processes / connections).
   const sorted = [...records].sort((a, b) => a.uri.localeCompare(b.uri));
 
-  await sql.begin(async (tx) => {
-    const q = tx as unknown as typeof sql;
-    for (const r of sorted) {
-      await q`
-        INSERT INTO records
-          (uri, did, collection, rkey, record, cid, created_at)
-        VALUES (
-          ${r.uri},
-          ${r.did},
-          ${r.collection},
-          ${r.rkey},
-          ${sql.json(r.record as Parameters<typeof sql.json>[0])},
-          ${r.cid},
-          ${r.created_at ?? null}
-        )
-        ON CONFLICT (uri) DO UPDATE SET
-          record     = EXCLUDED.record,
-          cid        = EXCLUDED.cid,
-          created_at = EXCLUDED.created_at,
-          indexed_at = NOW()
-      `;
-    }
-  });
+  // 7 columns per row: uri, did, collection, rkey, record, cid, created_at
+  const COLS_PER_ROW = 7;
+  const params: unknown[] = [];
+  const valueRows: string[] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    const r = sorted[i]!;
+    const offset = i * COLS_PER_ROW;
+    valueRows.push(
+      `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}::jsonb, $${offset + 6}, $${offset + 7})`
+    );
+    params.push(
+      r.uri,
+      r.did,
+      r.collection,
+      r.rkey,
+      JSON.stringify(r.record),
+      r.cid,
+      r.created_at ?? null,
+    );
+  }
+
+  const query = `
+    INSERT INTO records (uri, did, collection, rkey, record, cid, created_at)
+    VALUES ${valueRows.join(", ")}
+    ON CONFLICT (uri) DO UPDATE SET
+      record     = EXCLUDED.record,
+      cid        = EXCLUDED.cid,
+      created_at = EXCLUDED.created_at,
+      indexed_at = NOW()
+  `;
+
+  await sql.unsafe(query, params);
 }
 
 /**
@@ -70,6 +76,16 @@ export async function upsertRecords(records: RecordInsert[]): Promise<void> {
  */
 export async function deleteRecord(uri: string): Promise<void> {
   await sql`DELETE FROM records WHERE uri = ${uri}`;
+}
+
+/**
+ * Delete multiple records by their AT-URIs in a single query.
+ * More efficient than individual deleteRecord() calls when handling
+ * batched delete events during flush.
+ */
+export async function deleteRecords(uris: string[]): Promise<void> {
+  if (uris.length === 0) return;
+  await sql`DELETE FROM records WHERE uri = ANY(${uris}::text[])`;
 }
 
 /**

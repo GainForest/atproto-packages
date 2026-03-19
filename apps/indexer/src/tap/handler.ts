@@ -16,7 +16,7 @@
 
 import type { RecordEvent, IdentityEvent } from "@atproto/tap";
 import { isIndexedCollection } from "./collections.ts";
-import { upsertRecords, deleteRecord, deleteRecordsByDid } from "@/db/queries.ts";
+import { upsertRecords, deleteRecords, deleteRecordsByDid } from "@/db/queries.ts";
 import type { RecordInsert } from "@/db/types.ts";
 import { validateRecord } from "./validation.ts";
 import { normalizeBlobsInRecord, prepareBlobsForValidation } from "./blobs.ts";
@@ -77,8 +77,8 @@ export class EventHandler {
     logValidationErrors?: boolean;
     validationLogFilter?: string[];
   } = {}) {
-    this.batchSize = options.batchSize ?? 100;
-    this.batchTimeoutMs = options.batchTimeoutMs ?? 5_000;
+    this.batchSize = options.batchSize ?? 20;
+    this.batchTimeoutMs = options.batchTimeoutMs ?? 200;
     this.validateRecords = options.validateRecords ?? true;
     this.logValidationErrors = options.logValidationErrors ?? true;
     this.validationLogFilter = new Set(options.validationLogFilter ?? []);
@@ -271,7 +271,7 @@ export class EventHandler {
     try {
       await Promise.all([
         upserts.length > 0 ? upsertRecords(upserts) : Promise.resolve(),
-        ...deletes.map((uri) => deleteRecord(uri)),
+        deletes.length > 0 ? deleteRecords(deletes) : Promise.resolve(),
       ]);
 
       this.stats.batchesFlushed++;
