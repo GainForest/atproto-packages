@@ -1,5 +1,5 @@
-import { S as SessionConfig } from './setup-B9ryJI_1.cjs';
-export { A as AuthActions, d as AuthActionsConfig, a as AuthSetup, b as AuthSetupConfig, O as OAuthSetup, e as OAuthSetupConfig, f as createAuthActions, c as createAuthSetup, g as createOAuthSetup } from './setup-B9ryJI_1.cjs';
+import { S as SessionConfig } from './setup-DXpNZorY.cjs';
+export { A as AuthActions, d as AuthActionsConfig, a as AuthSetup, b as AuthSetupConfig, O as OAuthSetup, e as OAuthSetupConfig, f as createAuthActions, c as createAuthSetup, g as createOAuthSetup } from './setup-DXpNZorY.cjs';
 import { A as AnySession, S as SessionData } from './client-BzoqfpZM.cjs';
 export { E as EmptySession, P as ProfileAuthError, a as ProfileData, f as fetchProfile } from './client-BzoqfpZM.cjs';
 import { Agent } from '@atproto/api';

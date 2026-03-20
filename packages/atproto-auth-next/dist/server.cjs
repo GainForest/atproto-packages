@@ -69,7 +69,7 @@ function buildSessionOptions({
     cookieName,
     cookieOptions: {
       httpOnly: true,
-      secure: secure ?? process.env.NODE_ENV === "production",
+      secure: secure ?? false,
       sameSite: "lax",
       maxAge: COOKIE_MAX_AGE_SECONDS,
       path: "/"
@@ -124,7 +124,10 @@ async function clearSession(config) {
 var import_api = require("@atproto/api");
 
 // src/utils/debug.ts
-var isEnabled = typeof process !== "undefined" && (process.env.AUTH_DEBUG === "1" || process.env.AUTH_DEBUG === "true");
+var isEnabled = false;
+function configureDebug(enabled) {
+  isEnabled = enabled;
+}
 var debug = {
   log(label, data) {
     if (!isEnabled) return;
@@ -226,19 +229,6 @@ var import_jwk_jose = require("@atproto/jwk-jose");
 function resolvePublicUrl(explicitUrl) {
   if (explicitUrl) {
     return explicitUrl.replace(/\/$/, "");
-  }
-  if (process.env.NEXT_PUBLIC_BASE_URL) {
-    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
-  }
-  if (process.env.VERCEL_BRANCH_URL) {
-    return `https://${process.env.VERCEL_BRANCH_URL}`;
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  if (process.env.NODE_ENV === "development") {
-    const port = process.env.PORT ?? "3000";
-    return `http://127.0.0.1:${port}`;
   }
   return "https://placeholder.invalid";
 }
@@ -718,8 +708,10 @@ function createAuthSetup(config) {
     emailTemplateUri,
     emailSubjectTemplate,
     tosUri,
-    policyUri
+    policyUri,
+    debug: debug2
   } = config;
+  configureDebug(debug2 ?? false);
   const publicUrl = resolvePublicUrl(config.publicUrl);
   const loopback = isLoopback(publicUrl);
   const isEpdsEnabled = !!epdsConfig;

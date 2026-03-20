@@ -18,6 +18,7 @@ export const serverEnv = createEnv({
     VERCEL_ENV: z
       .enum(["development", "preview", "production"])
       .optional(),
+    VERCEL_URL: z.string().optional(),
 
     // ATProto OAuth
     ATPROTO_JWK_PRIVATE: z.string().min(1),
@@ -71,6 +72,7 @@ export const serverEnv = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     VERCEL_ENV: process.env.VERCEL_ENV,
+    VERCEL_URL: process.env.VERCEL_URL,
     ATPROTO_JWK_PRIVATE: process.env.ATPROTO_JWK_PRIVATE,
     COOKIE_SECRET: process.env.COOKIE_SECRET,
     PDS_ADMIN_IDENTIFIER: process.env.PDS_ADMIN_IDENTIFIER,

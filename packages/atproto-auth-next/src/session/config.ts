@@ -24,7 +24,7 @@ export function buildSessionOptions({
     cookieName,
     cookieOptions: {
       httpOnly: true,
-      secure: secure ?? process.env.NODE_ENV === "production",
+      secure: secure ?? false,
       sameSite: "lax" as const,
       maxAge: COOKIE_MAX_AGE_SECONDS,
       path: "/",

@@ -46,18 +46,9 @@ let _auth: ReturnType<typeof createAuthSetup> | null = null;
 
 function getAuth() {
   if (_auth) return _auth;
-  // Resolve publicUrl here in app code (server-only) so it survives Next.js
-  // bundling. When the auth package is in transpilePackages, bare
-  // process.env.VERCEL_URL inside the package gets statically replaced with
-  // undefined at build time, causing "placeholder.invalid" on Vercel preview.
-  // Reading it here (in a non-transpiled server file) is safe.
-  // For OAuth redirect_uris and client_ids, the actual per-request URL is used
-  // (derived from the Host header in each handler). This setup-time publicUrl
-  // is only used for branding URIs (logo, tos, policy) which don't affect
-  // OAuth correctness.
-  const publicUrl =
-    clientEnv.NEXT_PUBLIC_BASE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+  // Resolve publicUrl in app code using VERCEL_URL (server-side, safe from
+  // static replacement during next build since it's read here not in the package).
+  const publicUrl = env.VERCEL_URL ? `https://${env.VERCEL_URL}` : undefined;
 
   _auth = createAuthSetup({
     privateKeyJwk: env.ATPROTO_JWK_PRIVATE,
@@ -66,6 +57,8 @@ function getAuth() {
     appId: "bumicerts",
     clientName: "Bumicerts",
     cookieName: "bumicerts_session",
+    cookieSecure: env.NODE_ENV === "production",
+    debug: env.DEBUG === "1" || env.DEBUG === "true",
     defaultPdsDomain: defaultSignupPdsDomain,
     publicUrl,
     epds: clientEnv.NEXT_PUBLIC_EPDS_URL
