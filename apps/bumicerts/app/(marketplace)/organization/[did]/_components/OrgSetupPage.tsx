@@ -123,6 +123,8 @@ export function OrgSetupPage({ did }: { did: string }) {
   const [isFetchingBrandInfo, setIsFetchingBrandInfo] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [countdown, setCountdown] = useState(3);
 
   const upsertOrgInfo = trpc.organization.info.upsert.useMutation();
 
@@ -169,6 +171,18 @@ export function OrgSetupPage({ did }: { did: string }) {
       if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
     };
   }, [logoPreviewUrl]);
+
+  // ── Success countdown → refresh ──────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!saveSuccess) return;
+    if (countdown <= 0) {
+      router.refresh();
+      return;
+    }
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [saveSuccess, countdown, router]);
 
   // ── BrandFetch ──────────────────────────────────────────────────────────────
 
@@ -306,13 +320,12 @@ export function OrgSetupPage({ did }: { did: string }) {
         logo: logoInput,
       });
 
-      // Step 5: Refresh the page — the server will now find the org data and
-      // render OrgPageClient instead of OrgSetupPage.
-      router.refresh();
+      // Step 5: Show success state with countdown, then refresh.
+      setIsSubmitting(false);
+      setSaveSuccess(true);
     } catch (caughtError) {
       console.error("Failed to save org info:", caughtError);
       setSubmitError(formatError(caughtError));
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -583,21 +596,30 @@ export function OrgSetupPage({ did }: { did: string }) {
         {/* Gradient separator */}
         <div className="w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-        {/* Submit */}
+        {/* Submit / Success */}
         <div className="w-full flex justify-center">
-          <Button onClick={handleSubmit} disabled={!canSubmit || isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2Icon className="mr-2 animate-spin" />
-                Saving…
-              </>
-            ) : (
-              <>
-                Save &amp; Continue
-                <ArrowRightIcon className="ml-2" />
-              </>
-            )}
-          </Button>
+          {saveSuccess ? (
+            <div className="flex items-center gap-2 text-sm text-primary">
+              <Loader2Icon className="size-4 animate-spin" />
+              <span>
+                Saved successfully! Refreshing in {countdown}…
+              </span>
+            </div>
+          ) : (
+            <Button onClick={handleSubmit} disabled={!canSubmit || isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2Icon className="mr-2 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  Save &amp; Continue
+                  <ArrowRightIcon className="ml-2" />
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </motion.div>
