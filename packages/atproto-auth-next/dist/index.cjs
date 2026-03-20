@@ -48,19 +48,6 @@ function resolvePublicUrl(explicitUrl) {
   if (explicitUrl) {
     return explicitUrl.replace(/\/$/, "");
   }
-  if (process.env.NEXT_PUBLIC_BASE_URL) {
-    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
-  }
-  if (process.env.VERCEL_BRANCH_URL) {
-    return `https://${process.env.VERCEL_BRANCH_URL}`;
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  if (process.env.NODE_ENV === "development") {
-    const port = process.env.PORT ?? "3000";
-    return `http://127.0.0.1:${port}`;
-  }
   return "https://placeholder.invalid";
 }
 function isLoopback(url) {
@@ -213,6 +200,37 @@ function createSupabaseStateStore(supabase, appId) {
   };
 }
 
+// src/utils/debug.ts
+var isEnabled = false;
+function configureDebug(enabled) {
+  isEnabled = enabled;
+}
+var debug = {
+  log(label, data) {
+    if (!isEnabled) return;
+    if (data !== void 0) {
+      console.log(`[atproto-auth] ${label}`, data);
+    } else {
+      console.log(`[atproto-auth] ${label}`);
+    }
+  },
+  warn(label, data) {
+    if (!isEnabled) return;
+    if (data !== void 0) {
+      console.warn(`[atproto-auth] ${label}`, data);
+    } else {
+      console.warn(`[atproto-auth] ${label}`);
+    }
+  },
+  error(label, data) {
+    if (data !== void 0) {
+      console.error(`[atproto-auth] ${label}`, data);
+    } else {
+      console.error(`[atproto-auth] ${label}`);
+    }
+  }
+};
+
 // src/session/cookie.ts
 var import_iron_session = require("iron-session");
 var import_headers = require("next/headers");
@@ -233,7 +251,7 @@ function buildSessionOptions({
     cookieName,
     cookieOptions: {
       httpOnly: true,
-      secure: secure ?? process.env.NODE_ENV === "production",
+      secure: secure ?? false,
       sameSite: "lax",
       maxAge: COOKIE_MAX_AGE_SECONDS,
       path: "/"
@@ -286,36 +304,6 @@ async function clearSession(config) {
 
 // src/session/restore.ts
 var import_api = require("@atproto/api");
-
-// src/utils/debug.ts
-var isEnabled = typeof process !== "undefined" && (process.env.AUTH_DEBUG === "1" || process.env.AUTH_DEBUG === "true");
-var debug = {
-  log(label, data) {
-    if (!isEnabled) return;
-    if (data !== void 0) {
-      console.log(`[atproto-auth] ${label}`, data);
-    } else {
-      console.log(`[atproto-auth] ${label}`);
-    }
-  },
-  warn(label, data) {
-    if (!isEnabled) return;
-    if (data !== void 0) {
-      console.warn(`[atproto-auth] ${label}`, data);
-    } else {
-      console.warn(`[atproto-auth] ${label}`);
-    }
-  },
-  error(label, data) {
-    if (data !== void 0) {
-      console.error(`[atproto-auth] ${label}`, data);
-    } else {
-      console.error(`[atproto-auth] ${label}`);
-    }
-  }
-};
-
-// src/session/restore.ts
 async function restoreSession(client, did) {
   try {
     const session = await client.restore(did);
@@ -706,8 +694,10 @@ function createAuthSetup(config) {
     emailTemplateUri,
     emailSubjectTemplate,
     tosUri,
-    policyUri
+    policyUri,
+    debug: debug2
   } = config;
+  configureDebug(debug2 ?? false);
   const publicUrl = resolvePublicUrl(config.publicUrl);
   const loopback = isLoopback(publicUrl);
   const isEpdsEnabled = !!epdsConfig;

@@ -1,51 +1,26 @@
 /**
  * Public URL resolution utilities.
  *
- * Resolves the app's public URL from environment variables, with Vercel
- * auto-detection and loopback detection for local development.
+ * The public URL must be provided explicitly at initialization time by the
+ * consuming app — this package does not read process.env directly.
  *
- * Priority order:
- *   1. NEXT_PUBLIC_BASE_URL — explicit override (ngrok, custom domain, etc.)
- *   2. VERCEL_BRANCH_URL   — stable per-branch URL for preview deploys
- *   3. VERCEL_URL          — fallback Vercel auto-detected URL
- *   4. http://127.0.0.1:PORT — local development fallback
- *   5. https://placeholder.invalid — build-time fallback (never used at runtime)
- *
- * Note: Loopback detection is URL-based, not NODE_ENV-based. This correctly
- * handles ngrok/tunnel URLs in development where NODE_ENV is 'development'
- * but the URL is publicly accessible.
+ * Note: Loopback detection is URL-based. This correctly handles ngrok/tunnel
+ * URLs in development where NODE_ENV is 'development' but the URL is publicly
+ * accessible.
  */
 
 /**
- * Resolve the public URL from env vars or an explicit override.
+ * Normalize the public URL provided at setup time.
  *
- * @param explicitUrl - Pass this to skip env var lookup entirely (e.g. from config).
+ * @param explicitUrl - The URL resolved by the consuming app (e.g. from VERCEL_URL).
  */
 export function resolvePublicUrl(explicitUrl?: string): string {
   if (explicitUrl) {
     return explicitUrl.replace(/\/$/, "");
   }
 
-  if (process.env.NEXT_PUBLIC_BASE_URL) {
-    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
-  }
-
-  if (process.env.VERCEL_BRANCH_URL) {
-    return `https://${process.env.VERCEL_BRANCH_URL}`;
-  }
-
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-
-  if (process.env.NODE_ENV === "development") {
-    const port = process.env.PORT ?? "3000";
-    return `http://127.0.0.1:${port}`;
-  }
-
-  // Build-time fallback — next build evaluates modules at compile time when
-  // no Vercel env vars are present. This placeholder will never be used at runtime.
-  // Using .invalid TLD (RFC 2606) ensures loud failure if accidentally used.
+  // Build-time fallback — used when no URL is provided (e.g. during next build).
+  // Using .invalid TLD (RFC 2606) ensures loud failure if accidentally used at runtime.
   return "https://placeholder.invalid";
 }
 

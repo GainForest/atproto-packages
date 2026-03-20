@@ -41,6 +41,7 @@ import { createOAuthClient, DEFAULT_OAUTH_SCOPE } from "./oauth-client";
 import { createSupabaseSessionStore } from "./stores/session-store";
 import { createSupabaseStateStore } from "./stores/state-store";
 import { resolvePublicUrl, isLoopback } from "./utils/url";
+import { configureDebug } from "./utils/debug";
 import { buildSessionOptions, type SessionConfig } from "./session/config";
 import { getSession, saveSession, clearSession } from "./session/cookie";
 import { restoreSession, getAuthenticatedAgent } from "./session/restore";
@@ -84,8 +85,9 @@ export type AuthSetupConfig = {
 
   // ─── Optional: URL / Environment ─────────────────────────────────────────────
   /**
-   * Explicit public URL override. If not set, auto-detected from:
-   *   NEXT_PUBLIC_BASE_URL → VERCEL_BRANCH_URL → VERCEL_URL → http://127.0.0.1:PORT
+   * The app's public URL. Should be resolved by the consuming app from its
+   * own environment variables (e.g. VERCEL_URL) and passed in here.
+   * Falls back to "https://placeholder.invalid" at build time if omitted.
    */
   publicUrl?: string;
 
@@ -103,9 +105,15 @@ export type AuthSetupConfig = {
    */
   cookieName?: string;
   /**
-   * Whether to set the cookie `Secure` flag. Defaults to true in production.
+   * Whether to set the cookie `Secure` flag. Should be set by the consuming
+   * app (e.g. `NODE_ENV === "production"`). Defaults to false if not provided.
    */
   cookieSecure?: boolean;
+  /**
+   * Enable debug logging for this auth setup. Defaults to false.
+   * Pass true when you want verbose auth logs (e.g. `DEBUG === "1"`).
+   */
+  debug?: boolean;
 
   // ─── Optional: Handle normalization ──────────────────────────────────────────
   /**
@@ -292,7 +300,11 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     emailSubjectTemplate,
     tosUri,
     policyUri,
+    debug,
   } = config;
+
+  // ─── Debug configuration ─────────────────────────────────────────────────────
+  configureDebug(debug ?? false);
 
   // ─── URL resolution ─────────────────────────────────────────────────────────
   const publicUrl = resolvePublicUrl(config.publicUrl);

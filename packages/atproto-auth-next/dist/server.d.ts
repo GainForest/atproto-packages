@@ -1,5 +1,5 @@
-import { S as SessionConfig } from './setup-DfMlzUfT.js';
-export { A as AuthActions, d as AuthActionsConfig, a as AuthSetup, b as AuthSetupConfig, O as OAuthSetup, e as OAuthSetupConfig, f as createAuthActions, c as createAuthSetup, g as createOAuthSetup } from './setup-DfMlzUfT.js';
+import { S as SessionConfig } from './setup-ziFPvUKo.js';
+export { A as AuthActions, d as AuthActionsConfig, a as AuthSetup, b as AuthSetupConfig, O as OAuthSetup, e as OAuthSetupConfig, f as createAuthActions, c as createAuthSetup, g as createOAuthSetup } from './setup-ziFPvUKo.js';
 import { A as AnySession, S as SessionData } from './client-BzoqfpZM.js';
 export { E as EmptySession, P as ProfileAuthError, a as ProfileData, f as fetchProfile } from './client-BzoqfpZM.js';
 import { Agent } from '@atproto/api';

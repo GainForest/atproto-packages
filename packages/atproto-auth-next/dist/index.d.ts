@@ -1,4 +1,4 @@
-export { A as AuthActions, a as AuthSetup, b as AuthSetupConfig, c as createAuthSetup } from './setup-DfMlzUfT.js';
+export { A as AuthActions, a as AuthSetup, b as AuthSetupConfig, c as createAuthSetup } from './setup-ziFPvUKo.js';
 export { A as AnySession, E as EmptySession, P as ProfileAuthError, a as ProfileData, S as SessionData } from './client-BzoqfpZM.js';
 import { NodeOAuthClientOptions, NodeOAuthClient } from '@atproto/oauth-client-node';
 export { NodeOAuthClient } from '@atproto/oauth-client-node';
@@ -38,24 +38,17 @@ declare function createOAuthClient({ publicUrl, privateKeyJwk, stateStore, sessi
 /**
  * Public URL resolution utilities.
  *
- * Resolves the app's public URL from environment variables, with Vercel
- * auto-detection and loopback detection for local development.
+ * The public URL must be provided explicitly at initialization time by the
+ * consuming app — this package does not read process.env directly.
  *
- * Priority order:
- *   1. NEXT_PUBLIC_BASE_URL — explicit override (ngrok, custom domain, etc.)
- *   2. VERCEL_BRANCH_URL   — stable per-branch URL for preview deploys
- *   3. VERCEL_URL          — fallback Vercel auto-detected URL
- *   4. http://127.0.0.1:PORT — local development fallback
- *   5. https://placeholder.invalid — build-time fallback (never used at runtime)
- *
- * Note: Loopback detection is URL-based, not NODE_ENV-based. This correctly
- * handles ngrok/tunnel URLs in development where NODE_ENV is 'development'
- * but the URL is publicly accessible.
+ * Note: Loopback detection is URL-based. This correctly handles ngrok/tunnel
+ * URLs in development where NODE_ENV is 'development' but the URL is publicly
+ * accessible.
  */
 /**
- * Resolve the public URL from env vars or an explicit override.
+ * Normalize the public URL provided at setup time.
  *
- * @param explicitUrl - Pass this to skip env var lookup entirely (e.g. from config).
+ * @param explicitUrl - The URL resolved by the consuming app (e.g. from VERCEL_URL).
  */
 declare function resolvePublicUrl(explicitUrl?: string): string;
 /**

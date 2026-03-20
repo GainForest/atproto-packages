@@ -1,16 +1,18 @@
 /**
  * Debug logger for @gainforest/atproto-auth-next.
  *
- * Enabled by setting AUTH_DEBUG=1 (or any truthy value) in the environment.
+ * Enabled by calling configureDebug(true) during auth setup initialization.
  * All output is prefixed with [atproto-auth] so it's easy to filter.
- *
- * @example
- *   AUTH_DEBUG=1 bun dev
  */
 
-const isEnabled =
-  typeof process !== "undefined" &&
-  (process.env.AUTH_DEBUG === "1" || process.env.AUTH_DEBUG === "true");
+let isEnabled = false;
+
+/**
+ * Configure the debug logger. Called once at createAuthSetup() time.
+ */
+export function configureDebug(enabled: boolean): void {
+  isEnabled = enabled;
+}
 
 export const debug = {
   log(label: string, data?: unknown): void {

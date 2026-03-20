@@ -165,8 +165,9 @@ type AuthSetupConfig = {
      */
     appId: string;
     /**
-     * Explicit public URL override. If not set, auto-detected from:
-     *   NEXT_PUBLIC_BASE_URL → VERCEL_BRANCH_URL → VERCEL_URL → http://127.0.0.1:PORT
+     * The app's public URL. Should be resolved by the consuming app from its
+     * own environment variables (e.g. VERCEL_URL) and passed in here.
+     * Falls back to "https://placeholder.invalid" at build time if omitted.
      */
     publicUrl?: string;
     /**
@@ -182,9 +183,15 @@ type AuthSetupConfig = {
      */
     cookieName?: string;
     /**
-     * Whether to set the cookie `Secure` flag. Defaults to true in production.
+     * Whether to set the cookie `Secure` flag. Should be set by the consuming
+     * app (e.g. `NODE_ENV === "production"`). Defaults to false if not provided.
      */
     cookieSecure?: boolean;
+    /**
+     * Enable debug logging for this auth setup. Defaults to false.
+     * Pass true when you want verbose auth logs (e.g. `DEBUG === "1"`).
+     */
+    debug?: boolean;
     /**
      * Default PDS domain for handle normalization.
      * When set, "alice" → "alice.{defaultPdsDomain}".
