@@ -29,11 +29,8 @@ import {
   extractStrongRefs,
   resolveBlobsInValue,
   fetchCollectionPage,
-  toPageInfo,
   resolveCreatorInfo,
 } from "../types.ts";
-import { getRecordsByCollection } from "@/db/queries.ts";
-import { resolveActorToDid } from "../identity.ts";
 import { getPdsHostsBatch } from "@/identity/pds.ts";
 import type { RecordRow } from "@/db/types.ts";
 
@@ -1438,6 +1435,90 @@ export async function mapGainforestOrganizationPredictionsFlora(row: RecordRow) 
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// app.gainforest.organization.site
+// ──────────────────────────────────────────────────────────────────────────
+
+export const GainforestOrganizationSiteRecordType = builder.simpleObject("GainforestOrganizationSiteRecord", {
+  description: "Pure payload for app.gainforest.organization.site. A declaration of a site for an organization, with optional environmental and location context",
+  fields: (t) => ({
+        name: t.string({ nullable: true, description: "The name of the site" }),
+        lat: t.string({ nullable: true, description: "The latitude of the centerpoint of the site" }),
+        lon: t.string({ nullable: true, description: "The longitude of the centerpoint of the site" }),
+        area: t.string({ nullable: true, description: "The area of the site in hectares" }),
+        shapefile: t.field({ type: "JSON", nullable: true, description: "A blob pointing to a GeoJSON file containing the site boundaries" }),
+        createdAt: t.field({ type: "DateTime", nullable: true, description: "The date and time of the creation of the record" }),
+        country: t.string({ nullable: true, description: "The country where the site is located" }),
+        countryCode: t.string({ nullable: true, description: "ISO 3166-1 alpha-2 country code" }),
+        stateProvince: t.string({ nullable: true, description: "The first-level administrative division (state, province, region) where the site is located" }),
+        locality: t.string({ nullable: true, description: "Specific locality description for the site" }),
+        minimumElevationInMeters: t.int({ nullable: true, description: "The lower elevation bound of the site in meters" }),
+        maximumElevationInMeters: t.int({ nullable: true, description: "The upper elevation bound of the site in meters" }),
+        biome: t.string({ nullable: true, description: "The biome classification of the site" }),
+        ecosystemType: t.string({ nullable: true, description: "Freeform description of the ecosystem type at the site" }),
+        protectionStatus: t.string({ nullable: true, description: "The protection status of the site" }),
+        iucnProtectedAreaCategory: t.string({ nullable: true, description: "The IUCN protected area management category" }),
+        wdpaId: t.string({ nullable: true, description: "The World Database on Protected Areas (WDPA) identifier for the site" }),
+        averageAnnualRainfallMm: t.int({ nullable: true, description: "The average annual rainfall at the site in millimeters" }),
+        averageTemperatureCelsius: t.string({ nullable: true, description: "The average annual temperature at the site in degrees Celsius" }),
+        climatezone: t.string({ nullable: true, description: "The Koppen climate classification for the site" }),
+        monitoringStartDate: t.field({ type: "DateTime", nullable: true, description: "The date and time when monitoring of the site began" }),
+        description: t.field({ type: "JSON", nullable: true, description: "A rich text description of the site" }),
+        boundary: t.string({ nullable: true, description: "URL to a boundary GeoJSON file (alternative to the shapefile blob)" }),
+        siteRemarks: t.string({ nullable: true, description: "Additional notes or remarks about the site" }),
+  }),
+});
+
+export const GainforestOrganizationSiteItemType = builder.simpleObject("GainforestOrganizationSiteItem", {
+  description: "A record from app.gainforest.organization.site.",
+  fields: (t) => ({
+    metadata:    t.field({ type: RecordMetaType }),
+    creatorInfo: t.field({ type: CreatorInfoType }),
+    record:      t.field({ type: GainforestOrganizationSiteRecordType }),
+  }),
+});
+
+export const GainforestOrganizationSitePageType = builder.simpleObject("GainforestOrganizationSitePage", {
+  fields: (t) => ({
+    data:     t.field({ type: [GainforestOrganizationSiteItemType] }),
+    pageInfo: t.field({ type: PageInfoType }),
+  }),
+});
+
+export async function mapGainforestOrganizationSite(row: RecordRow) {
+  const p = payload(row);
+  return {
+    metadata:    rowToMeta(row),
+    creatorInfo: await resolveCreatorInfo(row.did),
+    record: {
+            name: s(p, "name"),
+            lat: s(p, "lat"),
+            lon: s(p, "lon"),
+            area: s(p, "area"),
+            shapefile: await resolveBlobsInValue(j(p, "shapefile"), row.did),
+            createdAt: s(p, "createdAt"),
+            country: s(p, "country"),
+            countryCode: s(p, "countryCode"),
+            stateProvince: s(p, "stateProvince"),
+            locality: s(p, "locality"),
+            minimumElevationInMeters: n(p, "minimumElevationInMeters"),
+            maximumElevationInMeters: n(p, "maximumElevationInMeters"),
+            biome: s(p, "biome"),
+            ecosystemType: s(p, "ecosystemType"),
+            protectionStatus: s(p, "protectionStatus"),
+            iucnProtectedAreaCategory: s(p, "iucnProtectedAreaCategory"),
+            wdpaId: s(p, "wdpaId"),
+            averageAnnualRainfallMm: n(p, "averageAnnualRainfallMm"),
+            averageTemperatureCelsius: s(p, "averageTemperatureCelsius"),
+            climatezone: s(p, "climatezone"),
+            monitoringStartDate: s(p, "monitoringStartDate"),
+            description: j(p, "description"),
+            boundary: s(p, "boundary"),
+            siteRemarks: s(p, "siteRemarks"),
+    },
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // org.hyperboards.board
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -2135,20 +2216,9 @@ builder.objectType(CertifiedActorNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("app.certified.actor.profile", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapCertifiedActorProfile));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("app.certified.actor.profile", args, mapCertifiedActorProfile, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
   }),
 });
@@ -2179,20 +2249,9 @@ builder.objectType(CertifiedBadgeNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("app.certified.badge.definition", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapCertifiedBadgeDefinition));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("app.certified.badge.definition", args, mapCertifiedBadgeDefinition, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
     response: t.field({
       type: CertifiedBadgeResponsePageType,
@@ -2245,20 +2304,9 @@ builder.objectType(CertifiedNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("app.certified.location", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapCertifiedLocation));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("app.certified.location", args, mapCertifiedLocation, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
   }),
 });
@@ -2277,20 +2325,9 @@ builder.objectType(GainforestAcNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("app.gainforest.ac.multimedia", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapGainforestAcMultimedia));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("app.gainforest.ac.multimedia", args, mapGainforestAcMultimedia, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
   }),
 });
@@ -2383,20 +2420,9 @@ builder.objectType(GainforestGbifNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("app.gainforest.gbif.dataset", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapGainforestGbifDataset));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("app.gainforest.gbif.dataset", args, mapGainforestGbifDataset, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
   }),
 });
@@ -2415,20 +2441,9 @@ builder.objectType(GainforestOrganizationObservationsNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("app.gainforest.organization.observations.dendogram", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapGainforestOrganizationObservationsDendogram));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("app.gainforest.organization.observations.dendogram", args, mapGainforestOrganizationObservationsDendogram, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
     fauna: t.field({
       type: GainforestOrganizationObservationsFaunaPageType,
@@ -2464,20 +2479,9 @@ builder.objectType(GainforestOrganizationObservationsNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("app.gainforest.organization.observations.measuredTreesCluster", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapGainforestOrganizationObservationsMeasuredTreesCluster));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("app.gainforest.organization.observations.measuredTreesCluster", args, mapGainforestOrganizationObservationsMeasuredTreesCluster, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
   }),
 });
@@ -2553,20 +2557,9 @@ builder.objectType(GainforestOrganizationNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("app.gainforest.organization.layer", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapGainforestOrganizationLayer));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("app.gainforest.organization.layer", args, mapGainforestOrganizationLayer, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
     member: t.field({
       type: GainforestOrganizationMemberPageType,
@@ -2578,20 +2571,23 @@ builder.objectType(GainforestOrganizationNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("app.gainforest.organization.member", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapGainforestOrganizationMember));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
+      resolve: (_, args) => fetchCollectionPage("app.gainforest.organization.member", args, mapGainforestOrganizationMember, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
+    }),
+    site: t.field({
+      type: GainforestOrganizationSitePageType,
+      description: "Paginated list of app.gainforest.organization.site records.",
+      args: {
+        cursor: t.arg.string(),
+        limit: t.arg.int(),
+        where: t.arg({ type: WhereInputRef, required: false }),
+        sortBy: t.arg({ type: SortFieldEnum }),
+        order: t.arg({ type: SortOrderEnum }),
       },
+      resolve: (_, args) => fetchCollectionPage("app.gainforest.organization.site", args, mapGainforestOrganizationSite, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
   }),
 });
@@ -2622,20 +2618,9 @@ builder.objectType(HyperboardsNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("org.hyperboards.board", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapHyperboardsBoard));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("org.hyperboards.board", args, mapHyperboardsBoard, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
     displayProfile: t.field({
       type: HyperboardsDisplayProfilePageType,
@@ -2647,20 +2632,9 @@ builder.objectType(HyperboardsNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("org.hyperboards.displayProfile", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapHyperboardsDisplayProfile));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("org.hyperboards.displayProfile", args, mapHyperboardsDisplayProfile, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
   }),
 });
@@ -2691,20 +2665,9 @@ builder.objectType(HypercertsClaimNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("org.hypercerts.claim.contributorInformation", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapHypercertsClaimContributorInformation));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("org.hypercerts.claim.contributorInformation", args, mapHypercertsClaimContributorInformation, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
     rights: t.field({
       type: HypercertsClaimRightsPageType,
@@ -2716,20 +2679,9 @@ builder.objectType(HypercertsClaimNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("org.hypercerts.claim.rights", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapHypercertsClaimRights));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("org.hypercerts.claim.rights", args, mapHypercertsClaimRights, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
   }),
 });
@@ -2760,20 +2712,9 @@ builder.objectType(HypercertsContextNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("org.hypercerts.context.attachment", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapHypercertsContextAttachment));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("org.hypercerts.context.attachment", args, mapHypercertsContextAttachment, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
     evaluation: t.field({
       type: HypercertsContextEvaluationPageType,
@@ -2785,20 +2726,9 @@ builder.objectType(HypercertsContextNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("org.hypercerts.context.evaluation", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapHypercertsContextEvaluation));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("org.hypercerts.context.evaluation", args, mapHypercertsContextEvaluation, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
     measurement: t.field({
       type: HypercertsContextMeasurementPageType,
@@ -2848,20 +2778,9 @@ builder.objectType(HypercertsWorkscopeNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("org.hypercerts.workscope.tag", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapHypercertsWorkscopeTag));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("org.hypercerts.workscope.tag", args, mapHypercertsWorkscopeTag, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
   }),
 });
@@ -2884,20 +2803,9 @@ builder.objectType(HypercertsNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order: t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("org.hypercerts.collection", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order as "asc" | "desc") ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapHypercertsCollection));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage("org.hypercerts.collection", args, mapHypercertsCollection, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
     }),
   }),
 });

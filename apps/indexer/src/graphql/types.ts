@@ -251,10 +251,23 @@ export interface CollectionQueryArgs {
  *   - Cursor / limit / sort forwarding to getRecordsByCollection
  *   - Mapping each DB row to a typed resolver return shape
  */
+/**
+ * Options for fetchCollectionPage.
+ */
+export interface FetchCollectionOptions {
+  /**
+   * Optional hook that runs on the raw DB rows before mapping.
+   * Use this to batch-fetch related data (e.g., PDS hosts for blob URLs).
+   * The return value is ignored.
+   */
+  preFetch?: (rows: RecordRow[]) => Promise<unknown>;
+}
+
 export async function fetchCollectionPage<T>(
   collection: string,
   args: CollectionQueryArgs,
-  mapper: (row: RecordRow) => T | Promise<T>
+  mapper: (row: RecordRow) => T | Promise<T>,
+  options?: FetchCollectionOptions
 ): Promise<{ data: T[]; pageInfo: { endCursor: string | null; hasNextPage: boolean; count: number } }> {
   const { cursor, limit, where, sortBy, order } = args;
 
@@ -274,6 +287,11 @@ export async function fetchCollectionPage<T>(
     sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
     sortOrder: (order  as "asc" | "desc")            ?? undefined,
   });
+
+  // Run optional preFetch hook (e.g., batch PDS host resolution)
+  if (options?.preFetch) {
+    await options.preFetch(page.records);
+  }
 
   const data = await Promise.all(page.records.map(mapper));
 

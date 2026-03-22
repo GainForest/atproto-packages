@@ -737,6 +737,8 @@ export interface SearchParams {
   filter: RecordFilter;
   /** Optional DID filter — restrict to records from this author. */
   did?: string;
+  /** Optional rkey filter — restrict to a specific record key. */
+  rkey?: string;
   /** Max records to return (1–100, default 50). */
   limit?: number;
   /** Opaque cursor for keyset pagination (indexed_at DESC). */
@@ -763,6 +765,7 @@ export async function searchActivities(
     SELECT * FROM records
     WHERE collection = 'org.hypercerts.claim.activity'
       ${params.did    ? sql`AND did        = ${params.did}`              : sql``}
+      ${params.rkey   ? sql`AND rkey       = ${params.rkey}`             : sql``}
       ${params.cursor ? sql`AND indexed_at < ${new Date(params.cursor)}` : sql``}
       ${filterClause  ? sql`AND ${filterClause}`                         : sql``}
     ORDER BY indexed_at DESC
@@ -792,6 +795,7 @@ export async function searchOrganizations(
     SELECT * FROM records
     WHERE collection = 'app.gainforest.organization.info'
       ${params.did    ? sql`AND did        = ${params.did}`              : sql``}
+      ${params.rkey   ? sql`AND rkey       = ${params.rkey}`             : sql``}
       ${params.cursor ? sql`AND indexed_at < ${new Date(params.cursor)}` : sql``}
       ${filterClause  ? sql`AND ${filterClause}`                         : sql``}
     ORDER BY indexed_at DESC

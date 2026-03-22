@@ -714,26 +714,15 @@ function genNamespaceBlock(node: NSNode): string {
     const whereRef = col.customWhereInput ?? "WhereInputRef";
 
     if (col.needsPdsBatch) {
-      // Emit expanded resolve with getPdsHostsBatch
+      // Use fetchCollectionPage with preFetch hook for PDS batch resolution
       fieldLines.push(
         `    ${fieldName}: t.field({`,
         `      type: ${pageTypeName},`,
         `      description: "Paginated list of ${col.nsid} records.",`,
         `      args: ${emitArgs(whereRef)},`,
-        `      resolve: async (_, args) => {`,
-        `        const { cursor, limit, where, sortBy, order } = args;`,
-        `        let resolvedDid: string | undefined;`,
-        `        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);`,
-        `        else if (where?.did) resolvedDid = where.did;`,
-        `        const page = await getRecordsByCollection(${JSON.stringify(col.nsid)}, {`,
-        `          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,`,
-        `          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,`,
-        `          sortOrder: (order as "asc" | "desc") ?? undefined,`,
-        `        });`,
-        `        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);`,
-        `        const data = await Promise.all(page.records.map(${mapperName}));`,
-        `        return { data, pageInfo: toPageInfo(page.cursor, data.length) };`,
-        `      },`,
+        `      resolve: (_, args) => fetchCollectionPage(${JSON.stringify(col.nsid)}, args, ${mapperName}, {`,
+        `        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),`,
+        `      }),`,
         `    }),`,
       );
     } else {
@@ -837,11 +826,8 @@ import {
   extractStrongRefs,
   resolveBlobsInValue,
   fetchCollectionPage,
-  toPageInfo,
   resolveCreatorInfo,
 } from "../types.ts";
-import { getRecordsByCollection } from "@/db/queries.ts";
-import { resolveActorToDid } from "../identity.ts";
 import { getPdsHostsBatch } from "@/identity/pds.ts";
 import type { RecordRow } from "@/db/types.ts";
 

@@ -14,10 +14,8 @@ import {
   PageInfoType, RecordMetaType, BlobRefType, CreatorInfoType,
   SortOrderEnum, SortFieldEnum,
   WhereInputRef,
-  rowToMeta, payload, extractBlobRef, toPageInfo, resolveCreatorInfo,
+  rowToMeta, payload, extractBlobRef, resolveCreatorInfo, fetchCollectionPage,
 } from "../../types.ts";
-import { getRecordsByCollection } from "@/db/queries.ts";
-import { resolveActorToDid } from "../../identity.ts";
 import { getPdsHostsBatch } from "@/identity/pds.ts";
 import type { RecordRow } from "@/db/types.ts";
 
@@ -133,20 +131,12 @@ builder.objectType(GainforestOrganizationRecordingsNS, {
         sortBy: t.arg({ type: SortFieldEnum }),
         order:  t.arg({ type: SortOrderEnum }),
       },
-      resolve: async (_, args) => {
-        const { cursor, limit, where, sortBy, order } = args;
-        let resolvedDid: string | undefined;
-        if (where?.handle) resolvedDid = await resolveActorToDid(where.handle);
-        else if (where?.did) resolvedDid = where.did;
-        const page = await getRecordsByCollection("app.gainforest.organization.recordings.audio", {
-          cursor: cursor ?? undefined, limit: limit ?? undefined, did: resolvedDid,
-          sortField: (sortBy as "createdAt" | "indexedAt") ?? undefined,
-          sortOrder: (order  as "asc" | "desc")            ?? undefined,
-        });
-        await getPdsHostsBatch([...new Set(page.records.map((r) => r.did))]);
-        const data = await Promise.all(page.records.map(mapGainforestOrganizationRecordingsAudio));
-        return { data, pageInfo: toPageInfo(page.cursor, data.length) };
-      },
+      resolve: (_, args) => fetchCollectionPage(
+        "app.gainforest.organization.recordings.audio",
+        args,
+        mapGainforestOrganizationRecordingsAudio,
+        { preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]) }
+      ),
     }),
   }),
 });

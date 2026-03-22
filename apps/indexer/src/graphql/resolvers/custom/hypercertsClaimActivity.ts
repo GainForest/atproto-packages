@@ -219,6 +219,7 @@ builder.objectFields(HypercertsClaimNS, (t) => ({
           const page = await searchActivities({
             filter: activityWhereToFilter(where as ActivityWhereInput),
             did:    allowedDids?.size === 1 ? [...allowedDids][0] : resolvedDid,
+            rkey:   resolvedRkey,
             limit:  safeLimit,
             cursor: cursor ?? undefined,
           });
