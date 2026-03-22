@@ -23,25 +23,29 @@ function parseAtUri(uri: string): { did: string; rkey: string } | null {
 /**
  * Extract a resolved blob/http URL from the `record.location` JSON scalar.
  *
- * The indexer resolves blobs to { uri } objects. Possible shapes:
- *   - string                     → plain URI, use as-is
- *   - { uri: string }            → resolved blob / #uri variant
- *   - { image: { uri: string }}  → #smallBlob wrapper
- *   - { ref: { uri: string }}    → ATProto BlobRef with resolved uri
- *   - { string: string }         → #string inline GeoJSON — no URL to extract
+ * Observed shapes from the indexer:
+ *   - string                              → plain URI, use as-is
+ *   - { uri: string }                     → #uri variant
+ *   - { $type: "org.hypercerts.defs#smallBlob", blob: { uri: string } }
+ *                                         → smallBlob — URI is nested under blob.uri
+ *   - { ref: { uri: string } }            → ATProto BlobRef with resolved uri
+ *   - { string: string }                  → #string inline coordinate — no URL
  */
 function extractLocationUrl(location: unknown): string | null {
   if (typeof location === "string") return location || null;
   if (location && typeof location === "object") {
     const loc = location as Record<string, unknown>;
+    // Direct uri field (#uri variant)
     if (typeof loc["uri"] === "string" && loc["uri"]) return loc["uri"];
+    // #smallBlob — { blob: { uri } }
+    if (loc["blob"] && typeof loc["blob"] === "object") {
+      const blob = loc["blob"] as Record<string, unknown>;
+      if (typeof blob["uri"] === "string" && blob["uri"]) return blob["uri"];
+    }
+    // ATProto BlobRef — { ref: { uri } }
     if (loc["ref"] && typeof loc["ref"] === "object") {
       const ref = loc["ref"] as Record<string, unknown>;
       if (typeof ref["uri"] === "string" && ref["uri"]) return ref["uri"];
-    }
-    if (loc["image"] && typeof loc["image"] === "object") {
-      const img = loc["image"] as Record<string, unknown>;
-      if (typeof img["uri"] === "string" && img["uri"]) return img["uri"];
     }
   }
   return null;

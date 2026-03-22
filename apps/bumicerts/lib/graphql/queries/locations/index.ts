@@ -44,7 +44,7 @@ const byDidDocument = graphql(`
 const byDidAndRkeyDocument = graphql(`
   query CertifiedLocationByDidAndRkey($did: String!, $rkey: String!) {
     certified {
-      location(where: { and: [{ did: $did }, { rkey: $rkey }] }) {
+      location(where: { did: $did, rkey: $rkey }) {
         data {
           metadata {
             did

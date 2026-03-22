@@ -50,6 +50,7 @@ export function CalendarRange({ value, onValueChange }: CalendarRangeProps) {
         }
         onSelect={handleSelect}
         numberOfMonths={2}
+        captionLayout="dropdown"
       />
       <div className="w-full flex items-center text-center justify-center text-sm text-primary mb-2">
         <span className="px-2 py-1 bg-muted rounded-lg flex items-center gap-2">

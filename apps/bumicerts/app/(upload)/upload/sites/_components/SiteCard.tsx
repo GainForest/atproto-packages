@@ -155,7 +155,7 @@ export function SiteCard({ site, defaultSiteUri }: SiteCardProps) {
 
   const handleSetDefault = () => {
     if (!site.metadata?.uri) return;
-    setDefault({ locationAtUri: site.metadata.uri });
+    setDefault({ locationUri: site.metadata.uri });
   };
 
   const handleDelete = () => {
