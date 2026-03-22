@@ -20,8 +20,11 @@ import {
   UploadIcon,
   Building2Icon,
   BuildingIcon,
+  MapPinHouseIcon,
+  MapPinPlusIcon,
+  CalendarPlusIcon,
 } from "lucide-react";
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { countries } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -82,9 +85,6 @@ export function StepOrgDetails() {
   const [brandInfoFetched, setBrandInfoFetched] = useState(false);
   const [websiteError, setWebsiteError] = useState<string | null>(null);
   const { show, pushModal } = useModal();
-
-  // Track if we've done the initial auto-fetch
-  const hasAutoFetched = useRef(false);
 
   const selectedCountry = data.country ? countries[data.country] : null;
 
@@ -191,9 +191,9 @@ export function StepOrgDetails() {
           }
         }
 
-        if (Object.keys(updates).length > 0) {
-          updateData(updates);
-        }
+        // Always record the fetched website, even if no fields were updated,
+        // so re-mounting doesn't trigger another fetch for the same domain.
+        updateData({ ...updates, lastBrandfetchedWebsite: data.website });
 
         setBrandInfoFetched(true);
       } else if (!isAutoFetch) {
@@ -208,13 +208,18 @@ export function StepOrgDetails() {
     }
   }, [data.website, setError, updateData]);
 
-  // Auto-fetch brand info on first render if website is provided
+  // On mount only: auto-fetch brand info if the current website differs from
+  // the last website we successfully brandfetched. This prevents re-fetching
+  // (and overwriting user edits) when the user navigates away and comes back.
   useEffect(() => {
-    if (!hasAutoFetched.current && data.website && extractDomain(data.website)) {
-      hasAutoFetched.current = true;
+    const currentDomain = extractDomain(data.website);
+    const lastDomain = extractDomain(data.lastBrandfetchedWebsite ?? "");
+    if (currentDomain && currentDomain !== lastDomain) {
       handleFetchBrandInfo(true);
     }
-  }, [data.website, handleFetchBrandInfo]);
+    // Intentionally empty deps — this must only run on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Generate short description and objectives, then proceed to next step
   const handleContinue = async () => {
@@ -422,21 +427,19 @@ export function StepOrgDetails() {
           {/* Content */}
           <div className={cn("flex flex-col gap-3 w-full mt-2", isFetchingBrandInfo && "animate-pulse blur-xs pointer-events-none")}>
             {/* Logo and Organization Name row */}
-            <div className="flex gap-3 items-start">
+            <div className="flex gap-3 items-stretch">
               {/* Logo upload - left side */}
               <div className="space-y-1.5">
                 <div className="flex flex-col items-center gap-2">
                   {logoPreviewUrl ? (
-                    <div className="relative">
-                      <div className="w-16 h-16 rounded-full overflow-hidden border bg-muted">
-                        <Image
-                          src={logoPreviewUrl}
-                          alt="Logo preview"
-                          width={64}
-                          height={64}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                    <div className="w-16 h-16 rounded-full overflow-hidden border bg-muted">
+                      <Image
+                        src={logoPreviewUrl}
+                        alt="Logo preview"
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   ) : (
                     <div
@@ -447,7 +450,6 @@ export function StepOrgDetails() {
                     </div>
                   )}
                   <div className="flex items-center border border-border rounded-full overflow-hidden">
-
                     <Button
                       variant="ghost"
                       size="sm"
@@ -456,10 +458,9 @@ export function StepOrgDetails() {
                     >
                       <UploadIcon />
                     </Button>
-                    {
-                      logoPreviewUrl &&
+                    {logoPreviewUrl && (
                       <>
-                        <div className="h-4 w-px bg-border"></div>
+                        <div className="h-4 w-px bg-border" />
                         <Button
                           variant="ghost"
                           size="sm"
@@ -469,13 +470,13 @@ export function StepOrgDetails() {
                           <Trash2Icon className="text-destructive" />
                         </Button>
                       </>
-                    }
+                    )}
                   </div>
                 </div>
               </div>
-              {/* Organization Name - left side */}
-              <div className="flex flex-col gap-2 w-full">
 
+              {/* Org name + country + date */}
+              <div className="flex flex-col gap-2 w-full">
                 <InputGroup>
                   <InputGroupAddon>
                     <BuildingIcon />
@@ -489,61 +490,79 @@ export function StepOrgDetails() {
                     className="h-9 text-sm"
                   />
                 </InputGroup>
-                <ul className="flex flex-col gap-1.5 mt-2">
-                  <li className="flex items-center gap-3">
-                    <MapPinIcon className="size-3 -mr-2" />
-                    <span className="font-medium text-sm">
 
-                      Based <span className="text-destructive">*</span></span>
-                    <button
-                      className="bg-primary/5 hover:bg-primary/10 text-primary text-sm px-2 rounded-md"
-                      onClick={handleOpenCountrySelector}
-                    >
-                      {selectedCountry ? (
-                        <span className="flex items-center gap-1">
-                          <span>{selectedCountry.emoji}</span>
-                          <span>{selectedCountry.name}</span>
+                <div className="flex-1 grid grid-cols-2 gap-2 w-full">
+                  <button
+                    className="relative h-full bg-background hover:bg-muted border-2 border-dashed rounded-lg px-2 py-1"
+                    onClick={handleOpenCountrySelector}
+                  >
+                    {selectedCountry ? (
+                      <div className="h-full flex flex-col justify-between items-start">
+                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPinHouseIcon className="size-3" />
+                          <span>
+                            Based in<span className="text-destructive">*</span>
+                          </span>
                         </span>
-                      ) : (
-                        <span className="text-muted-foreground">
-                          Select a country
+                        <span className="absolute top-0 right-2 text-2xl">
+                          {selectedCountry.emoji}
                         </span>
-                      )}
-                    </button>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <CalendarIcon className="size-3 -mr-2" />
-                    <span className="font-medium text-sm">Founded</span>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button
-                          className="bg-primary/5 hover:bg-primary/10 text-primary text-sm px-2 rounded-md"
-                        >
-                          {selectedDate ? (
-                            format(selectedDate, "MMM d, yyyy")
-                          ) : (
-                            <span className="text-muted-foreground">Pick a date</span>
-                          )}
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={(date) =>
-                            updateData({
-                              startDate: date ? format(date, "yyyy-MM-dd") : null,
-                            })
-                          }
-                          disabled={(date) => date > new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </li>
-                </ul>
+                        <span className="text-sm font-medium">
+                          {selectedCountry.name.length > 22
+                            ? `${selectedCountry.name.slice(0, 20)}...`
+                            : selectedCountry.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
+                        <MapPinPlusIcon className="size-3.5" />
+                        <span className="text-sm">
+                          Country
+                          <span className="text-destructive">*</span>
+                        </span>
+                      </span>
+                    )}
+                  </button>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="relative h-full bg-background hover:bg-muted border-2 border-dashed rounded-lg px-2 py-1">
+                        {selectedDate ? (
+                          <div className="h-full flex flex-col justify-between items-start">
+                            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <CalendarIcon className="size-3" />
+                              <span>Founded</span>
+                            </span>
+                            <span className="self-end text-sm font-medium">
+                              {format(selectedDate, "d MMMM,")}
+                              <span className="text-lg md:text-2xl ml-1 font-bold opacity-40">
+                                {format(selectedDate, "yyyy")}
+                              </span>
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <CalendarPlusIcon className="size-3.5" />
+                            <span className="text-sm">Founding Date</span>
+                          </span>
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) =>
+                          updateData({
+                            startDate: date ? format(date, "yyyy-MM-dd") : null,
+                          })
+                        }
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
-
             </div>
 
             {/* Long description */}
@@ -553,8 +572,8 @@ export function StepOrgDetails() {
                 placeholder="Describe your organization's mission and impact..."
                 value={data.longDescription}
                 onChange={(e) => updateData({ longDescription: e.target.value })}
-                rows={3}
-                className="resize-none text-sm"
+                rows={2}
+                className="resize-y text-sm"
               />
               <span
                 className={cn(
@@ -567,6 +586,11 @@ export function StepOrgDetails() {
                 {data.longDescription.length}/50+
               </span>
             </div>
+            {brandInfoFetched && (
+              <p className="text-xs text-muted-foreground">
+                Review and edit this AI-generated description to accurately represent your organisation before continuing.
+              </p>
+            )}
 
             {/* Error display */}
             {error && (

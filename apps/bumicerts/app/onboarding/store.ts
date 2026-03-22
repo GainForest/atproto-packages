@@ -35,6 +35,10 @@ export type OnboardingData = {
   objectives: Objective[];
   website: string;
   logo: File | undefined;
+  // Tracks the website URL that was last successfully brandfetched.
+  // Persists across step navigation so re-mounting StepOrgDetails doesn't
+  // re-fetch and overwrite data the user has already edited.
+  lastBrandfetchedWebsite: string | null;
 
   // Step 4: Credentials
   handle: string;
@@ -78,6 +82,7 @@ const initialData: OnboardingData = {
   objectives: [],
   website: "",
   logo: undefined,
+  lastBrandfetchedWebsite: null,
   handle: "",
   password: "",
   confirmPassword: "",

@@ -38,6 +38,10 @@ import {
   UploadIcon,
   BuildingIcon,
   Building2Icon,
+  PlusCircleIcon,
+  MapPinHouseIcon,
+  CalendarPlusIcon,
+  MapPinPlusIcon,
 } from "lucide-react";
 
 import { countries } from "@/lib/countries";
@@ -53,17 +57,22 @@ import { toSerializableFile } from "@/lib/mutations-utils";
 
 const CountrySelectorModal = dynamic(
   () => import("@/components/modals/country-selector"),
-  { ssr: false }
+  { ssr: false },
 );
 const ImageEditorModal = dynamic(
   () =>
     import("@/components/modals/image-editor").then((m) => ({
       default: m.ImageEditorModal,
     })),
-  { ssr: false }
+  { ssr: false },
 );
 
-type Objective = "Conservation" | "Research" | "Education" | "Community" | "Other";
+type Objective =
+  | "Conservation"
+  | "Research"
+  | "Education"
+  | "Community"
+  | "Other";
 
 type BrandInfo = {
   found: boolean;
@@ -121,6 +130,7 @@ export function OrgSetupPage({ did }: { did: string }) {
 
   const [websiteError, setWebsiteError] = useState<string | null>(null);
   const [isFetchingBrandInfo, setIsFetchingBrandInfo] = useState(false);
+  const [brandInfoFetched, setBrandInfoFetched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -135,7 +145,9 @@ export function OrgSetupPage({ did }: { did: string }) {
   const domain = useMemo(() => extractDomain(form.website), [form.website]);
   const canFetchBrandInfo = !!domain && !isFetchingBrandInfo;
 
-  const longDescriptionText = extractTextFromLinearDocument(form.longDescription);
+  const longDescriptionText = extractTextFromLinearDocument(
+    form.longDescription,
+  );
 
   const canSubmit =
     form.organizationName.trim().length > 0 &&
@@ -216,6 +228,7 @@ export function OrgSetupPage({ did }: { did: string }) {
           if (logoFile) updates.logo = logoFile;
         }
         if (Object.keys(updates).length > 0) updateForm(updates);
+        setBrandInfoFetched(true);
       } else {
         setSubmitError("Could not find information for this website.");
       }
@@ -240,7 +253,7 @@ export function OrgSetupPage({ did }: { did: string }) {
           />
         ),
       },
-      true
+      true,
     );
     show();
   };
@@ -258,7 +271,7 @@ export function OrgSetupPage({ did }: { did: string }) {
           />
         ),
       },
-      true
+      true,
     );
     show();
   };
@@ -276,17 +289,21 @@ export function OrgSetupPage({ did }: { did: string }) {
       let objectives: Objective[] = ["Other"];
 
       try {
-        const genRes = await fetch(links.api.onboarding.generateShortDescription, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            longDescription: longDescriptionText,
-            organizationName: form.organizationName,
-            country: form.country,
-          }),
-        });
+        const genRes = await fetch(
+          links.api.onboarding.generateShortDescription,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              longDescription: longDescriptionText,
+              organizationName: form.organizationName,
+              country: form.country,
+            }),
+          },
+        );
         const genData = await genRes.json();
-        if (genData.shortDescription) shortDescription = genData.shortDescription;
+        if (genData.shortDescription)
+          shortDescription = genData.shortDescription;
         if (genData.objectives?.length > 0) objectives = genData.objectives;
       } catch {
         // Keep fallback values — don't block the user
@@ -299,7 +316,9 @@ export function OrgSetupPage({ did }: { did: string }) {
           : form.website || undefined;
 
       // Step 3: Serialize logo if present
-      const logoInput = form.logo ? { image: await toSerializableFile(form.logo) } : undefined;
+      const logoInput = form.logo
+        ? { image: await toSerializableFile(form.logo) }
+        : undefined;
 
       // Step 4: Upsert org info via tRPC
       await upsertOrgInfo.mutateAsync({
@@ -334,6 +353,7 @@ export function OrgSetupPage({ did }: { did: string }) {
 
   const handleWebsiteChange = (value: string) => {
     updateForm({ website: value });
+    setBrandInfoFetched(false);
     if (value && !validateUrl(value)) {
       setWebsiteError("Please enter a valid URL");
     } else {
@@ -362,7 +382,8 @@ export function OrgSetupPage({ did }: { did: string }) {
             Set up your organization
           </h1>
           <p className="text-sm text-muted-foreground">
-            Your organization profile isn&apos;t set up yet. Let&apos;s fix that.
+            Your organization profile isn&apos;t set up yet. Let&apos;s fix
+            that.
           </p>
         </div>
 
@@ -385,7 +406,7 @@ export function OrgSetupPage({ did }: { did: string }) {
                 className={cn(
                   "h-9 text-sm",
                   websiteError &&
-                    "border-destructive focus-visible:ring-destructive/50"
+                    "border-destructive focus-visible:ring-destructive/50",
                 )}
               />
             </InputGroup>
@@ -419,7 +440,9 @@ export function OrgSetupPage({ did }: { did: string }) {
             <motion.div
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
               animate={{ rotate: [0, 360] }}
-              transition={{ rotate: { duration: 2, ease: "easeInOut", repeat: Infinity } }}
+              transition={{
+                rotate: { duration: 2, ease: "easeInOut", repeat: Infinity },
+              }}
             >
               <SparkleIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-16 text-primary animate-pulse fill-current" />
             </motion.div>
@@ -428,11 +451,12 @@ export function OrgSetupPage({ did }: { did: string }) {
           <div
             className={cn(
               "flex flex-col gap-3 w-full",
-              isFetchingBrandInfo && "animate-pulse blur-xs pointer-events-none"
+              isFetchingBrandInfo &&
+                "animate-pulse blur-xs pointer-events-none",
             )}
           >
             {/* Logo + org name row */}
-            <div className="flex gap-3 items-start">
+            <div className="flex gap-3 items-stretch">
               {/* Logo upload */}
               <div className="space-y-1.5">
                 <div className="flex flex-col items-center gap-2">
@@ -498,59 +522,77 @@ export function OrgSetupPage({ did }: { did: string }) {
                   />
                 </InputGroup>
 
-                <ul className="flex flex-col gap-1.5 mt-2">
-                  <li className="flex items-center gap-3">
-                    <MapPinIcon className="size-3 -mr-2" />
-                    <span className="font-medium text-sm">
-                      Based <span className="text-destructive">*</span>
-                    </span>
-                    <button
-                      className="bg-primary/5 hover:bg-primary/10 text-primary text-sm px-2 rounded-md"
-                      onClick={handleOpenCountrySelector}
-                    >
-                      {selectedCountry ? (
-                        <span className="flex items-center gap-1">
-                          <span>{selectedCountry.emoji}</span>
-                          <span>{selectedCountry.name}</span>
+                <div className="flex-1 grid grid-cols-2 gap-2 w-full">
+                  <button
+                    className="relative h-full bg-background hover:bg-muted border-2 border-dashed rounded-lg px-2 py-1"
+                    onClick={handleOpenCountrySelector}
+                  >
+                    {selectedCountry ? (
+                      <div className="h-full flex flex-col justify-between items-start">
+                        <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <MapPinHouseIcon className="size-3" />
+                          <span>
+                            Based in<span className="text-destructive">*</span>
+                          </span>
                         </span>
-                      ) : (
-                        <span className="text-muted-foreground">
-                          Select a country
+                        <span className="absolute top-0 right-2 text-2xl">
+                          {selectedCountry.emoji}
                         </span>
-                      )}
-                    </button>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <CalendarIcon className="size-3 -mr-2" />
-                    <span className="font-medium text-sm">Founded</span>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="bg-primary/5 hover:bg-primary/10 text-primary text-sm px-2 rounded-md">
-                          {selectedDate ? (
-                            format(selectedDate, "MMM d, yyyy")
-                          ) : (
-                            <span className="text-muted-foreground">
-                              Pick a date
+                        <span className="text-sm font-medium">
+                          {selectedCountry.name.length > 22
+                            ? `${selectedCountry.name.slice(0, 20)}...`
+                            : selectedCountry.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
+                        <MapPinPlusIcon className="size-3.5" />
+                        <span className="text-sm">
+                          Country
+                          <span className="text-destructive">*</span>
+                        </span>
+                      </span>
+                    )}
+                  </button>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="relative h-full bg-background hover:bg-muted border-2 border-dashed rounded-lg px-2 py-1">
+                        {selectedDate ? (
+                          <div className="h-full flex flex-col justify-between items-start">
+                            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <CalendarIcon className="size-3" />
+                              <span>Founded</span>
                             </span>
-                          )}
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={(date) =>
-                            updateForm({
-                              startDate: date ? format(date, "yyyy-MM-dd") : null,
-                            })
-                          }
-                          disabled={(date) => date > new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </li>
-                </ul>
+                            <span className="self-end text-sm font-medium">
+                              {format(selectedDate, "d MMMM,")}
+                              <span className="text-lg md:text-2xl ml-1 font-bold opacity-40">
+                                {format(selectedDate, "yyyy")}
+                              </span>
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <CalendarPlusIcon className="size-3.5" />
+                            <span className="text-sm">Founding Date</span>
+                          </span>
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) =>
+                          updateForm({
+                            startDate: date ? format(date, "yyyy-MM-dd") : null,
+                          })
+                        }
+                        disabled={(date) => date > new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
             </div>
 
@@ -565,20 +607,27 @@ export function OrgSetupPage({ did }: { did: string }) {
                     "text-xs",
                     longDescriptionText.trim().length < 50
                       ? "text-destructive"
-                      : "text-muted-foreground"
+                      : "text-muted-foreground",
                   )}
                 >
                   {longDescriptionText.length}/50+ chars
                 </span>
               </div>
-              <div className="rounded-xl border border-border overflow-hidden">
-                <LeafletEditor
-                  content={form.longDescription}
-                  onChange={(doc) => updateForm({ longDescription: doc })}
-                  ownerDid={did}
-                  placeholder="Describe your organization's mission and impact..."
-                />
-              </div>
+              {/*<div className="rounded-xl border border-border overflow-hidden">*/}
+              <LeafletEditor
+                content={form.longDescription}
+                onChange={(doc) => updateForm({ longDescription: doc })}
+                ownerDid={did}
+                placeholder="Describe your organization's mission and impact..."
+                className="h-80 resize-y"
+              />
+              {/*</div>*/}
+              {brandInfoFetched && (
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Review and edit this AI-generated description to accurately
+                  represent your organisation before continuing.
+                </p>
+              )}
             </div>
 
             {/* Error */}
@@ -601,12 +650,13 @@ export function OrgSetupPage({ did }: { did: string }) {
           {saveSuccess ? (
             <div className="flex items-center gap-2 text-sm text-primary">
               <Loader2Icon className="size-4 animate-spin" />
-              <span>
-                Saved successfully! Refreshing in {countdown}…
-              </span>
+              <span>Saved successfully! Refreshing in {countdown}…</span>
             </div>
           ) : (
-            <Button onClick={handleSubmit} disabled={!canSubmit || isSubmitting}>
+            <Button
+              onClick={handleSubmit}
+              disabled={!canSubmit || isSubmitting}
+            >
               {isSubmitting ? (
                 <>
                   <Loader2Icon className="mr-2 animate-spin" />
