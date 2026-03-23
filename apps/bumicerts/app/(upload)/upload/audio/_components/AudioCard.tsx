@@ -1,6 +1,25 @@
 "use client";
 
 import { useState } from "react";
+
+/**
+ * Map PDS-normalised MIME types back to canonical browser-playable equivalents.
+ * The PDS normalises on blob upload (e.g. "audio/wav" → "audio/vnd.wave"), but
+ * browsers don't recognise non-standard types in <source type="...">, causing
+ * them to skip the source and refuse to play.
+ */
+function toPlayableMimeType(mime: string | undefined): string | undefined {
+  if (!mime) return undefined;
+  const map: Record<string, string> = {
+    "audio/vnd.wave": "audio/wav",
+    "audio/x-wav": "audio/wav",
+    "audio/mp3": "audio/mpeg",
+    "audio/x-m4a": "audio/mp4",
+    "audio/x-flac": "audio/flac",
+    "audio/x-aiff": "audio/aiff",
+  };
+  return map[mime] ?? mime;
+}
 import {
   Loader2Icon,
   MapPinIcon,
@@ -53,7 +72,7 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
   const rkey = audio.metadata?.rkey;
   const record = audio.record;
   const audioUrl = record?.blob?.uri;
-  const mimeType = record?.blob?.mimeType ?? undefined;
+  const mimeType = toPlayableMimeType(record?.blob?.mimeType ?? undefined);
   const name = record?.name ?? "Untitled Recording";
   const description =
     record?.description &&

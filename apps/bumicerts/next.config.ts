@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   skipProxyUrlNormalize: true,
 
+
+
   // Compile workspace packages from TypeScript source directly.
   // Without this, Turbopack would look for dist/ which is gitignored.
   transpilePackages: [
@@ -33,6 +35,10 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "15mb",
     },
+    // Raises the body buffer limit for App Router route handlers (confirmed working
+    // locally — overrides the default 10 MB buffer). Audio files are base64-encoded
+    // for tRPC transport (~33% inflation): 100 MB raw → ~133 MB on the wire.
+    proxyClientMaxBodySize: "150mb",
   },
 
   turbopack: {
