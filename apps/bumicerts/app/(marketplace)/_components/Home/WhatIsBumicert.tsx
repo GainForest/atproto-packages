@@ -10,7 +10,7 @@ const FAQ_ITEMS = [
     id: "1",
     question: "A digital certificate of impact",
     answer:
-      "A Bumicert records a specific environmental action — giving it a permanent, verifiable identity on the AT Protocol, the same decentralized infrastructure that powers Bluesky.",
+      "A Bumicert records a specific environmental action — giving it a permanent, verifiable identity on an open, decentralized network (the same technology that powers Bluesky).",
   },
   {
     id: "2",

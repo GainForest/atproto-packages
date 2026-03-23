@@ -171,9 +171,9 @@ export default function UploadStep({ validRows, onBack, onComplete }: UploadStep
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold">Upload to PDS</h2>
+        <h2 className="text-lg font-semibold">Saving your records</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Uploading {total} tree record{total !== 1 ? "s" : ""} to the ATProto PDS.
+          Saving {total} tree record{total !== 1 ? "s" : ""} to the GainForest network.
         </p>
       </div>
 

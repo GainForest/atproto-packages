@@ -17,7 +17,7 @@ const FEATURES = [
   {
     number: "03",
     title: "Decentralized & transparent",
-    description: "Built on the AT Protocol. Every action is recorded, traceable, and permanent.",
+    description: "Built on open, decentralized infrastructure. Every action is recorded, traceable, and permanent.",
   },
 ];
 

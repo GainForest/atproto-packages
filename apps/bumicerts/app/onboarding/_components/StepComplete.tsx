@@ -86,7 +86,7 @@ export function StepComplete() {
       const { did, organizationInitialized } = result;
 
       if (!did) {
-        throw new Error("Account created but no DID returned");
+        throw new Error("Your account was created but setup could not be completed. Please contact support.");
       }
 
       // Update store with success data

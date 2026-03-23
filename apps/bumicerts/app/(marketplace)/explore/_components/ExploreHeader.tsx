@@ -389,8 +389,8 @@ export function ExploreHeaderSlots({
 
         {/* Row 2: Scrollable filter chips + All filters button */}
         <div className="flex items-center gap-3">
-          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hidden">
-            <div className="flex items-center gap-2 pb-1">
+          <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hidden pb-px">
+            <div className="flex items-center gap-2">
               {(() => {
                 const allChips = filterCategories.flatMap((category) =>
                   category.options.map((option) => ({

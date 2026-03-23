@@ -75,7 +75,7 @@ function PdsDomainDropdown({
   const [open, setOpen] = useState(false);
   const isCustom = value === CUSTOM_SENTINEL;
 
-  const displayLabel = isCustom ? (customValue || "custom PDS") : value;
+  const displayLabel = isCustom ? (customValue || "custom server") : value;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -114,7 +114,7 @@ function PdsDomainDropdown({
             isCustom && "bg-accent/60"
           )}
         >
-          <span className="text-muted-foreground">Custom PDS…</span>
+          <span className="text-muted-foreground">Custom server…</span>
           {isCustom && <CheckIcon className="w-3 h-3 shrink-0 text-primary" />}
         </button>
       </PopoverContent>
@@ -199,7 +199,7 @@ function HandleForm() {
 
   const customDomainError =
     isCustom && customDomain && !isValidPdsDomain(customDomain)
-      ? "Enter a valid PDS domain (e.g. pds.example.com)"
+      ? "Enter a valid server address (e.g. pds.example.com)"
       : null;
 
   const handleError =
@@ -378,7 +378,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
           Welcome back
         </h2>
         <p className="text-sm text-muted-foreground">
-          Sign in to your ATProto account
+          Sign in to your account
         </p>
       </div>
 

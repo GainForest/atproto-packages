@@ -36,7 +36,7 @@ export function HomeFooter() {
             Connecting communities with funders.
           </p>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            Built on the AT Protocol. Powered by the Gainforest SDK.
+            Open infrastructure. Built with GainForest.
           </p>
         </div>
 
