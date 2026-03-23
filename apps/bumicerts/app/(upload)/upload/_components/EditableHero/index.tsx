@@ -73,8 +73,6 @@ function formatSinceDate(dateStr: string | null): string | null {
   }
 }
 
-
-
 // ── EditChip ──────────────────────────────────────────────────────────────────
 
 interface EditChipProps {
@@ -85,14 +83,20 @@ interface EditChipProps {
   isEmpty?: boolean;
 }
 
-function EditChip({ onClick, className, children, isEditing, isEmpty = false }: EditChipProps) {
+function EditChip({
+  onClick,
+  className,
+  children,
+  isEditing,
+  isEmpty = false,
+}: EditChipProps) {
   if (!isEditing) {
     if (isEmpty) return null;
     return (
       <span
         className={cn(
           "inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.08em] text-foreground/60 bg-background/40 backdrop-blur-md border border-border/50 rounded-full px-2.5 py-1 font-medium",
-          className
+          className,
         )}
       >
         {children}
@@ -112,7 +116,7 @@ function EditChip({ onClick, className, children, isEditing, isEmpty = false }: 
         isEmpty
           ? "text-primary/70 bg-primary/5 border-primary/20 hover:bg-primary/10"
           : "text-foreground/60 bg-background/40 backdrop-blur-md border-border/50 hover:bg-background/60 hover:text-foreground/80",
-        className
+        className,
       )}
     >
       {isEmpty && <PlusCircleIcon className="h-3 w-3 shrink-0" />}
@@ -138,8 +142,10 @@ export function EditableHero({ organization }: EditableHeroProps) {
 
   // Resolved display values — edit buffer takes priority over server data
   const displayName = edits.displayName ?? organization.displayName;
-  const shortDescription = edits.shortDescription ?? organization.shortDescription;
-  const shortDescriptionFacets = edits.shortDescriptionFacets ?? organization.shortDescriptionFacets;
+  const shortDescription =
+    edits.shortDescription ?? organization.shortDescription;
+  const shortDescriptionFacets =
+    edits.shortDescriptionFacets ?? organization.shortDescriptionFacets;
   const country = edits.country ?? organization.country;
   const website = edits.website ?? organization.website;
   const startDate = edits.startDate ?? organization.startDate;
@@ -152,11 +158,11 @@ export function EditableHero({ organization }: EditableHeroProps) {
   // treat it as a new src and unmount/remount the img — causing visible flicker.
   const coverObjectUrl = useMemo(
     () => (edits.coverImage ? URL.createObjectURL(edits.coverImage) : null),
-    [edits.coverImage]
+    [edits.coverImage],
   );
   const logoObjectUrl = useMemo(
     () => (edits.logo ? URL.createObjectURL(edits.logo) : null),
-    [edits.logo]
+    [edits.logo],
   );
 
   // Revoke blob URLs when the File changes or the component unmounts to avoid
@@ -177,7 +183,7 @@ export function EditableHero({ organization }: EditableHeroProps) {
 
   const initial = displayName.charAt(0).toUpperCase();
   const sinceLabel = formatSinceDate(startDate);
-  const countryName = (country ? (countries[country]?.name ?? country) : null);
+  const countryName = country ? (countries[country]?.name ?? country) : null;
   const countryFlag = countries[country]?.emoji ?? "";
 
   const hasPillRow =
@@ -200,7 +206,7 @@ export function EditableHero({ organization }: EditableHeroProps) {
           />
         ),
       },
-      true
+      true,
     );
     show();
   };
@@ -216,7 +222,7 @@ export function EditableHero({ organization }: EditableHeroProps) {
           />
         ),
       },
-      true
+      true,
     );
     show();
   };
@@ -232,7 +238,7 @@ export function EditableHero({ organization }: EditableHeroProps) {
           />
         ),
       },
-      true
+      true,
     );
     show();
   };
@@ -248,7 +254,7 @@ export function EditableHero({ organization }: EditableHeroProps) {
           />
         ),
       },
-      true
+      true,
     );
     show();
   };
@@ -264,7 +270,7 @@ export function EditableHero({ organization }: EditableHeroProps) {
           />
         ),
       },
-      true
+      true,
     );
     show();
   };
@@ -280,7 +286,7 @@ export function EditableHero({ organization }: EditableHeroProps) {
           />
         ),
       },
-      true
+      true,
     );
     show();
   };
@@ -313,14 +319,13 @@ export function EditableHero({ organization }: EditableHeroProps) {
               }}
             />
           )}
-          <div className="absolute inset-0 bg-linear-to-b from-black/25 via-black/5 to-background" />
+          <div className="absolute inset-0 bg-linear-to-b from-background/0 via-background/75 to-background" />
         </motion.div>
       </div>
 
       {/* ── Bottom content (z-10, same level as top row — never blocks top row) ── */}
       <div className="relative z-10 flex-1 flex flex-col justify-end px-5 pb-6 pt-24">
         <div className="max-w-3xl">
-
           {/* Logo + name row */}
           <div className="flex items-center gap-3 mb-3">
             <div className="relative shrink-0">
@@ -360,7 +365,7 @@ export function EditableHero({ organization }: EditableHeroProps) {
                 className={cn(
                   "text-3xl sm:text-4xl md:text-5xl font-light tracking-[-0.02em] leading-none",
                   "bg-transparent border-b-2 border-white/40 focus:border-primary/60 outline-none",
-                  "text-foreground placeholder:text-foreground/40 w-full max-w-lg transition-colors"
+                  "text-foreground placeholder:text-foreground/40 w-full max-w-lg transition-colors",
                 )}
                 style={{ fontFamily: "var(--font-garamond-var)" }}
               />
@@ -381,14 +386,17 @@ export function EditableHero({ organization }: EditableHeroProps) {
                 text: shortDescription ?? "",
                 // app.bsky.richtext.facet.Main and our Facet type are structurally
                 // identical at runtime — this cast is safe and documented.
-                facets: shortDescriptionFacets as unknown as app.bsky.richtext.facet.Main[],
+                facets:
+                  shortDescriptionFacets as unknown as app.bsky.richtext.facet.Main[],
               }}
               onChange={(text, facets) => {
                 setEdit("shortDescription", text || null);
                 // Reverse cast: same structural identity in the other direction.
-                setEdit("shortDescriptionFacets", facets && facets.length > 0
-                  ? facets as unknown as Facet[]
-                  : null
+                setEdit(
+                  "shortDescriptionFacets",
+                  facets && facets.length > 0
+                    ? (facets as unknown as Facet[])
+                    : null,
                 );
               }}
               placeholder="Short description…"
@@ -407,7 +415,11 @@ export function EditableHero({ organization }: EditableHeroProps) {
           {/* Pills row */}
           {hasPillRow && (
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <EditChip onClick={openCountry} isEditing={isEditing} isEmpty={!countryName}>
+              <EditChip
+                onClick={openCountry}
+                isEditing={isEditing}
+                isEmpty={!countryName}
+              >
                 {countryFlag && (
                   <span className="text-sm leading-none" aria-hidden="true">
                     {countryFlag}
@@ -416,12 +428,20 @@ export function EditableHero({ organization }: EditableHeroProps) {
                 {countryName ?? "Add country"}
               </EditChip>
 
-              <EditChip onClick={openStartDate} isEditing={isEditing} isEmpty={!sinceLabel}>
+              <EditChip
+                onClick={openStartDate}
+                isEditing={isEditing}
+                isEmpty={!sinceLabel}
+              >
                 <CalendarIcon className="h-3 w-3 shrink-0" />
                 {sinceLabel ? `Since ${sinceLabel}` : "Add start date"}
               </EditChip>
 
-              <EditChip onClick={openWebsite} isEditing={isEditing} isEmpty={!website}>
+              <EditChip
+                onClick={openWebsite}
+                isEditing={isEditing}
+                isEmpty={!website}
+              >
                 <GlobeIcon className="h-3 w-3 shrink-0" />
                 {website ? formatWebsite(website) : "Add website"}
               </EditChip>
@@ -437,7 +457,11 @@ export function EditableHero({ organization }: EditableHeroProps) {
                 ))}
 
               {(isEditing || visibility === "Unlisted") && (
-                <EditChip onClick={openVisibility} isEditing={isEditing} isEmpty={false}>
+                <EditChip
+                  onClick={openVisibility}
+                  isEditing={isEditing}
+                  isEmpty={false}
+                >
                   {visibility === "Unlisted" ? (
                     <LockIcon className="h-3 w-3 shrink-0" />
                   ) : (
@@ -473,7 +497,9 @@ export function EditableHero({ organization }: EditableHeroProps) {
               aria-label="Change cover image"
             >
               <ImageIcon className="h-3.5 w-3.5 text-foreground/80 shrink-0" />
-              <span className="text-xs font-medium text-foreground/80">Change cover</span>
+              <span className="text-xs font-medium text-foreground/80">
+                Change cover
+              </span>
             </motion.button>
           )}
         </AnimatePresence>
@@ -514,7 +540,7 @@ export function EditBar() {
 
   const handleCancel = () => {
     cancelEditing(); // reset edits in store
-    setMode(null);   // clear ?mode=edit from URL → view mode
+    setMode(null); // clear ?mode=edit from URL → view mode
   };
 
   return (
@@ -531,7 +557,9 @@ export function EditBar() {
         ) : saveError ? (
           <span className="text-destructive text-xs">{saveError}</span>
         ) : (
-          <span>{hasChanges() ? "You have unsaved changes." : "No changes yet."}</span>
+          <span>
+            {hasChanges() ? "You have unsaved changes." : "No changes yet."}
+          </span>
         )}
       </div>
       <div className="flex items-center gap-2">

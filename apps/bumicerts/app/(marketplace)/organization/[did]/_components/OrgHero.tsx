@@ -19,7 +19,13 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { GlobeIcon, CalendarIcon, Share2Icon, CheckIcon, PencilIcon } from "lucide-react";
+import {
+  GlobeIcon,
+  CalendarIcon,
+  Share2Icon,
+  CheckIcon,
+  PencilIcon,
+} from "lucide-react";
 import type { OrganizationData } from "@/lib/types";
 import { links } from "@/lib/links";
 import { BskyRichTextDisplay } from "@/components/ui/bsky-richtext-display";
@@ -61,38 +67,135 @@ function countryCodeToFlag(code: string): string {
 
 // ISO 3166-1 alpha-2 → display name
 const COUNTRY_NAMES: Record<string, string> = {
-  AF: "Afghanistan", AL: "Albania", DZ: "Algeria", AR: "Argentina", AU: "Australia",
-  AT: "Austria", BD: "Bangladesh", BE: "Belgium", BO: "Bolivia", BR: "Brazil",
-  KH: "Cambodia", CM: "Cameroon", CA: "Canada", CL: "Chile", CN: "China",
-  CO: "Colombia", CD: "Congo (DRC)", CR: "Costa Rica", HR: "Croatia", CU: "Cuba",
-  CZ: "Czech Republic", DK: "Denmark", DO: "Dominican Republic", EC: "Ecuador",
-  EG: "Egypt", SV: "El Salvador", ET: "Ethiopia", FI: "Finland", FR: "France",
-  GA: "Gabon", GH: "Ghana", DE: "Germany", GT: "Guatemala", HN: "Honduras",
-  HU: "Hungary", IN: "India", ID: "Indonesia", IR: "Iran", IQ: "Iraq", IE: "Ireland",
-  IL: "Israel", IT: "Italy", JM: "Jamaica", JP: "Japan", JO: "Jordan", KZ: "Kazakhstan",
-  KE: "Kenya", KR: "South Korea", KW: "Kuwait", LA: "Laos", LB: "Lebanon", LR: "Liberia",
-  LY: "Libya", MG: "Madagascar", MW: "Malawi", MY: "Malaysia", MV: "Maldives",
-  ML: "Mali", MX: "Mexico", MA: "Morocco", MZ: "Mozambique", MM: "Myanmar",
-  NA: "Namibia", NP: "Nepal", NL: "Netherlands", NZ: "New Zealand", NI: "Nicaragua",
-  NE: "Niger", NG: "Nigeria", NO: "Norway", PK: "Pakistan", PA: "Panama",
-  PG: "Papua New Guinea", PY: "Paraguay", PE: "Peru", PH: "Philippines", PL: "Poland",
-  PT: "Portugal", QA: "Qatar", RO: "Romania", RU: "Russia", RW: "Rwanda",
-  SA: "Saudi Arabia", SN: "Senegal", SL: "Sierra Leone", SG: "Singapore",
-  SO: "Somalia", ZA: "South Africa", SS: "South Sudan", ES: "Spain", LK: "Sri Lanka",
-  SD: "Sudan", SE: "Sweden", CH: "Switzerland", SY: "Syria", TW: "Taiwan",
-  TZ: "Tanzania", TH: "Thailand", TG: "Togo", TT: "Trinidad and Tobago",
-  TN: "Tunisia", TR: "Turkey", UG: "Uganda", UA: "Ukraine", AE: "United Arab Emirates",
-  GB: "United Kingdom", US: "United States", UY: "Uruguay", UZ: "Uzbekistan",
-  VE: "Venezuela", VN: "Vietnam", YE: "Yemen", ZM: "Zambia", ZW: "Zimbabwe",
+  AF: "Afghanistan",
+  AL: "Albania",
+  DZ: "Algeria",
+  AR: "Argentina",
+  AU: "Australia",
+  AT: "Austria",
+  BD: "Bangladesh",
+  BE: "Belgium",
+  BO: "Bolivia",
+  BR: "Brazil",
+  KH: "Cambodia",
+  CM: "Cameroon",
+  CA: "Canada",
+  CL: "Chile",
+  CN: "China",
+  CO: "Colombia",
+  CD: "Congo (DRC)",
+  CR: "Costa Rica",
+  HR: "Croatia",
+  CU: "Cuba",
+  CZ: "Czech Republic",
+  DK: "Denmark",
+  DO: "Dominican Republic",
+  EC: "Ecuador",
+  EG: "Egypt",
+  SV: "El Salvador",
+  ET: "Ethiopia",
+  FI: "Finland",
+  FR: "France",
+  GA: "Gabon",
+  GH: "Ghana",
+  DE: "Germany",
+  GT: "Guatemala",
+  HN: "Honduras",
+  HU: "Hungary",
+  IN: "India",
+  ID: "Indonesia",
+  IR: "Iran",
+  IQ: "Iraq",
+  IE: "Ireland",
+  IL: "Israel",
+  IT: "Italy",
+  JM: "Jamaica",
+  JP: "Japan",
+  JO: "Jordan",
+  KZ: "Kazakhstan",
+  KE: "Kenya",
+  KR: "South Korea",
+  KW: "Kuwait",
+  LA: "Laos",
+  LB: "Lebanon",
+  LR: "Liberia",
+  LY: "Libya",
+  MG: "Madagascar",
+  MW: "Malawi",
+  MY: "Malaysia",
+  MV: "Maldives",
+  ML: "Mali",
+  MX: "Mexico",
+  MA: "Morocco",
+  MZ: "Mozambique",
+  MM: "Myanmar",
+  NA: "Namibia",
+  NP: "Nepal",
+  NL: "Netherlands",
+  NZ: "New Zealand",
+  NI: "Nicaragua",
+  NE: "Niger",
+  NG: "Nigeria",
+  NO: "Norway",
+  PK: "Pakistan",
+  PA: "Panama",
+  PG: "Papua New Guinea",
+  PY: "Paraguay",
+  PE: "Peru",
+  PH: "Philippines",
+  PL: "Poland",
+  PT: "Portugal",
+  QA: "Qatar",
+  RO: "Romania",
+  RU: "Russia",
+  RW: "Rwanda",
+  SA: "Saudi Arabia",
+  SN: "Senegal",
+  SL: "Sierra Leone",
+  SG: "Singapore",
+  SO: "Somalia",
+  ZA: "South Africa",
+  SS: "South Sudan",
+  ES: "Spain",
+  LK: "Sri Lanka",
+  SD: "Sudan",
+  SE: "Sweden",
+  CH: "Switzerland",
+  SY: "Syria",
+  TW: "Taiwan",
+  TZ: "Tanzania",
+  TH: "Thailand",
+  TG: "Togo",
+  TT: "Trinidad and Tobago",
+  TN: "Tunisia",
+  TR: "Turkey",
+  UG: "Uganda",
+  UA: "Ukraine",
+  AE: "United Arab Emirates",
+  GB: "United Kingdom",
+  US: "United States",
+  UY: "Uruguay",
+  UZ: "Uzbekistan",
+  VE: "Venezuela",
+  VN: "Vietnam",
+  YE: "Yemen",
+  ZM: "Zambia",
+  ZW: "Zimbabwe",
 };
 
-export function OrgHero({ organization, showEditButton = false }: OrgHeroProps) {
+export function OrgHero({
+  organization,
+  showEditButton = false,
+}: OrgHeroProps) {
   const [copied, setCopied] = useState(false);
 
   const initial = organization.displayName.charAt(0).toUpperCase();
   const sinceLabel = formatSinceDate(organization.startDate);
-  const countryName = COUNTRY_NAMES[organization.country] ?? organization.country ?? null;
-  const countryFlag = organization.country ? countryCodeToFlag(organization.country) : "";
+  const countryName =
+    COUNTRY_NAMES[organization.country] ?? organization.country ?? null;
+  const countryFlag = organization.country
+    ? countryCodeToFlag(organization.country)
+    : "";
   const hasPillRow =
     sinceLabel ||
     countryName ||
@@ -134,13 +237,12 @@ export function OrgHero({ organization, showEditButton = false }: OrgHeroProps) 
               }}
             />
           )}
-          <div className="absolute inset-0 bg-linear-to-b from-black/25 via-black/5 to-background" />
+          <div className="absolute inset-0 bg-linear-to-b from-background/0 via-background/75 to-background" />
         </motion.div>
       </div>
 
       {/* ── Top-right action buttons ── */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-
         {/* Share button — Framer Motion for tap feedback */}
         <motion.button
           onClick={handleShare}
@@ -160,7 +262,9 @@ export function OrgHero({ organization, showEditButton = false }: OrgHeroProps) 
                 className="flex items-center gap-1.5"
               >
                 <CheckIcon className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span className="text-xs font-medium text-primary">Copied!</span>
+                <span className="text-xs font-medium text-primary">
+                  Copied!
+                </span>
               </motion.span>
             ) : (
               <motion.span
@@ -172,12 +276,13 @@ export function OrgHero({ organization, showEditButton = false }: OrgHeroProps) 
                 className="flex items-center gap-1.5"
               >
                 <Share2Icon className="h-3.5 w-3.5 text-foreground/80 shrink-0" />
-                <span className="text-xs font-medium text-foreground/80">Share</span>
+                <span className="text-xs font-medium text-foreground/80">
+                  Share
+                </span>
               </motion.span>
             )}
           </AnimatePresence>
         </motion.button>
-
 
         {/* Edit button — only rendered when viewer is the owner */}
         {showEditButton && (
@@ -195,7 +300,6 @@ export function OrgHero({ organization, showEditButton = false }: OrgHeroProps) 
       {/* ── Bottom content — SEO-critical, CSS animations ── */}
       <div className="relative z-10 flex-1 flex flex-col justify-end px-5 pb-6 pt-24">
         <div className="max-w-3xl">
-
           {/* Logo + Org name — same line, vertically centered */}
           <div className="flex items-center gap-3 mb-3 org-animate org-fade-in-up org-delay-1">
             <div className="h-9 w-9 rounded-full overflow-hidden bg-muted border border-white/15 shadow-sm shrink-0">
@@ -235,7 +339,6 @@ export function OrgHero({ organization, showEditButton = false }: OrgHeroProps) 
           {/* Pills row: Since · Country (with flag) · Objectives · Website */}
           {hasPillRow && (
             <div className="mt-4 flex flex-wrap items-center gap-2 org-animate org-fade-in-up org-delay-3">
-
               {/* Since pill */}
               {sinceLabel && (
                 <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.08em] text-foreground/60 bg-background/40 backdrop-blur-md border border-border/50 rounded-full px-2.5 py-1 font-medium">
