@@ -1,0 +1,9 @@
+{
+  "title": "Packages",
+  "pages": [
+    "atproto-auth-next",
+    "atproto-mutations-core",
+    "atproto-mutations-next",
+    "leaflet-react"
+  ]
+}

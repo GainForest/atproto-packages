@@ -1,0 +1,55 @@
+---
+title: Monorepo Structure
+description: How the workspace is organised and how packages relate to each other.
+---
+
+The repository uses **Bun workspaces** with three workspace roots:
+
+```
+atproto-packages/
+├── apps/           # Deployable applications
+│   ├── bumicerts/        # Next.js frontend (Vercel)
+│   ├── bumicerts-docs/   # Documentation site (Vercel)
+│   └── indexer/          # GraphQL indexer (Railway)
+├── packages/       # Shared npm packages
+│   ├── atproto-auth-next/
+│   ├── atproto-mutations-core/
+│   ├── atproto-mutations-next/
+│   ├── internal-utils/
+│   └── leaflet-react/
+└── GENERATED/      # Auto-generated lexicon types
+```
+
+## Dependency graph
+
+```
+bumicerts (app)
+  ├── @gainforest/atproto-auth-next
+  ├── @gainforest/atproto-mutations-next
+  │     ├── @gainforest/atproto-auth-next
+  │     ├── @gainforest/atproto-mutations-core
+  │     │     └── @gainforest/generated
+  │     └── @gainforest/internal-utils
+  └── @gainforest/leaflet-react
+```
+
+## Build tooling
+
+| Tool | Purpose |
+| --- | --- |
+| **Bun** | Package manager, script runner, runtime for the indexer |
+| **tsup** | Builds all shared packages (ESM + CJS + declarations) |
+| **Next.js + Turbopack** | Builds the bumicerts and docs apps |
+| **Changesets** | Version management and npm publishing |
+
+## Workspace commands
+
+All commands run from the repository root:
+
+```bash
+bun run build          # Build all packages
+bun run bumicerts:dev  # Start bumicerts frontend
+bun run indexer:dev    # Start indexer
+bun run docs:dev       # Start documentation site
+bun run codegen        # Regenerate types from lexicons
+```

@@ -1,0 +1,37 @@
+---
+title: Data Flow
+description: How records move from user input to PDS to indexer to the UI.
+---
+
+## Write path
+
+1. **User action** — the user fills in a form in the Bumicerts frontend.
+2. **tRPC mutation** — the client calls a tRPC procedure provided by
+   `@gainforest/atproto-mutations-next`.
+3. **Server action** — the tRPC server resolves the authenticated session
+   (via `atproto-auth-next`), then delegates to `atproto-mutations-core`.
+4. **PDS write** — the core mutation layer writes the record to the user's
+   Personal Data Server using the ATProto `com.atproto.repo.applyWrites` API.
+5. **Relay fan-out** — the PDS emits the event to the ATProto relay network.
+
+## Read path
+
+1. **Relay subscription** — the indexer subscribes to the relay via
+   `@atproto/tap` and receives a stream of repository events.
+2. **Validation** — each event is validated against the generated lexicon
+   schemas.
+3. **Database write** — valid records are inserted into PostgreSQL.
+4. **GraphQL query** — the frontend queries the indexer's GraphQL API (via
+   `gql.tada` + `graphql-request`) to fetch indexed data.
+5. **UI render** — React Query caches the response and the UI renders.
+
+## Optimistic updates
+
+After a successful mutation, the frontend performs an optimistic cache update:
+
+1. `queryClient.setQueryData(key, optimistic)` — applies the new text fields
+   and uses `URL.createObjectURL(file)` for newly uploaded images.
+2. Sets edit mode to `null` (via nuqs).
+3. `queryClient.invalidateQueries(key)` — triggers a background refetch so
+   the optimistic data is replaced with the real indexed data once the
+   indexer catches up.

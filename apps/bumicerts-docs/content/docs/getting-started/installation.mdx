@@ -1,0 +1,58 @@
+---
+title: Installation
+description: Clone the repository and install all dependencies.
+---
+
+## Clone the repository
+
+```bash
+git clone https://github.com/gainforest/atproto-packages.git
+cd atproto-packages
+```
+
+## Install dependencies
+
+The monorepo uses **Bun workspaces**. A single install at the root pulls
+dependencies for every app and package:
+
+```bash
+bun install
+```
+
+## Environment variables
+
+Copy the example env files for each app that needs them:
+
+```bash
+# Bumicerts frontend
+cp apps/bumicerts/.env.example apps/bumicerts/.env.local
+
+# Indexer
+cp apps/indexer/.env.example apps/indexer/.env
+```
+
+Edit the files and fill in the required values. At a minimum you will need:
+
+| Variable | App | Description |
+| --- | --- | --- |
+| `NEXT_PUBLIC_BASE_URL` | bumicerts | `http://127.0.0.1:3001` for local dev |
+| `DATABASE_URL` | indexer | PostgreSQL connection string |
+
+## Build workspace packages
+
+Some packages need to be built before the apps can import them:
+
+```bash
+bun run build
+```
+
+## Generate types from lexicons
+
+If you need fresh ATProto type definitions:
+
+```bash
+bun run codegen
+```
+
+This fetches lexicon JSON files and generates TypeScript types, collection
+helpers, and GraphQL resolvers into the `GENERATED/` package.

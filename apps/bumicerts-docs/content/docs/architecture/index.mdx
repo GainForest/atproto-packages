@@ -1,0 +1,27 @@
+---
+title: Architecture
+description: How the Bumicerts system is structured and how data flows between services.
+---
+
+This section covers the high-level architecture of the Bumicerts platform,
+including the monorepo layout, the data pipeline, and the indexer service.
+
+## Overview
+
+Bumicerts is a two-service system:
+
+1. **Bumicerts frontend** — a Next.js app that serves the UI, handles
+   authentication, and writes records to a user's PDS via ATProto mutations.
+2. **Indexer** — a Bun service that subscribes to the AT Protocol relay,
+   indexes records into PostgreSQL, and exposes them via a GraphQL API.
+
+Both services live in the same monorepo alongside shared packages.
+
+## Sections
+
+- **[Monorepo](/docs/architecture/monorepo)** — workspace layout, package
+  dependencies, and build tooling.
+- **[Data Flow](/docs/architecture/data-flow)** — how records move from user
+  input to PDS to indexer to UI.
+- **[Indexer](/docs/architecture/indexer)** — the indexer's subscription
+  pipeline, database schema, and GraphQL layer.

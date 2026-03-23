@@ -1,0 +1,91 @@
+---
+title: Development Setup
+description: Set up a complete development environment for Bumicerts.
+---
+
+## Fork and clone
+
+1. Fork the repository on GitHub.
+2. Clone your fork:
+
+```bash
+git clone https://github.com/<your-username>/atproto-packages.git
+cd atproto-packages
+```
+
+## Install dependencies
+
+```bash
+bun install
+```
+
+## Build packages
+
+Build all workspace packages before starting any app:
+
+```bash
+bun run build
+```
+
+## Generate types
+
+If you need to work with ATProto record types:
+
+```bash
+bun run codegen
+```
+
+For local lexicon development (if you have the lexicons repo checked out):
+
+```bash
+bun run codegen:local
+```
+
+## Start development servers
+
+### Frontend only
+
+```bash
+bun run bumicerts:dev
+```
+
+### Indexer only
+
+```bash
+bun run indexer:docker:up   # Start PostgreSQL
+bun run indexer:migrate     # Run migrations
+bun run indexer:dev         # Start indexer
+```
+
+### Documentation site
+
+```bash
+bun run docs:dev
+```
+
+## Linting and type checking
+
+Always lint and type-check before pushing:
+
+```bash
+bun run bumicerts:lint
+bun run bumicerts:typecheck
+bun run indexer:typecheck
+```
+
+## Git hooks
+
+The repository uses **Husky** for Git hooks. They are installed automatically
+via the `prepare` script when you run `bun install`.
+
+## Changesets
+
+For any user-facing change to a published package, create a changeset:
+
+```bash
+bun run changeset
+```
+
+Follow the prompts to describe the change and select the affected packages.
+Changesets are committed alongside your code and consumed during the release
+process.

@@ -1,0 +1,27 @@
+---
+title: Packages
+description: Reference documentation for the shared @gainforest packages.
+---
+
+The monorepo publishes several npm packages under the `@gainforest` scope.
+These are used by the Bumicerts app and can be consumed by any project that
+integrates with the GainForest ATProto ecosystem.
+
+## Published packages
+
+| Package | Description |
+| --- | --- |
+| [`@gainforest/atproto-auth-next`](/docs/packages/atproto-auth-next) | ATProto OAuth authentication for Next.js |
+| [`@gainforest/atproto-mutations-core`](/docs/packages/atproto-mutations-core) | Framework-agnostic typed mutation primitives |
+| [`@gainforest/atproto-mutations-next`](/docs/packages/atproto-mutations-next) | Next.js integration for ATProto mutations |
+| [`@gainforest/leaflet-react`](/docs/packages/leaflet-react) | React rich-text editor and renderer |
+
+## Internal packages
+
+| Package | Description |
+| --- | --- |
+| `@gainforest/internal-utils` | Shared internal utilities (not published) |
+| `@gainforest/generated` | Auto-generated ATProto lexicon types (not published) |
+
+All packages are built with **tsup** and ship both ESM and CJS with
+TypeScript declarations.

@@ -1,0 +1,51 @@
+---
+title: "@gainforest/atproto-mutations-core"
+description: Framework-agnostic ATProto mutation primitives with typed errors.
+---
+
+`@gainforest/atproto-mutations-core` provides the low-level building blocks
+for creating, updating, upserting, and deleting ATProto records with full
+type safety. It uses the [Effect](https://effect.website/) library for typed
+error handling.
+
+## Installation
+
+```bash
+bun add @gainforest/atproto-mutations-core
+```
+
+## Key features
+
+- **Typed mutations** — create, update, upsert, and delete operations derived
+  from the generated lexicon types.
+- **Effect-based errors** — every mutation returns an `Effect` value, so
+  callers know exactly which errors can occur.
+- **Framework-agnostic** — zero dependency on React or Next.js; can be used in
+  any TypeScript runtime.
+- **Blob handling** — utilities for uploading blobs (images, files) to PDS and
+  attaching them to records.
+
+## Core concepts
+
+### Mutation operations
+
+| Operation | When to use |
+| --- | --- |
+| `create` | Creating a new record |
+| `update` | Patching an existing record (partial data) |
+| `upsert` | Creating or replacing a record (full data) |
+| `delete` | Removing a record |
+
+### Error types
+
+All mutations produce typed errors via Effect. Common error variants include:
+
+- `RecordNotFound` — the record does not exist (update/delete)
+- `InvalidRecord` — the data does not match the lexicon schema
+- `NetworkError` — the PDS could not be reached
+- `AuthRequired` — no valid session available
+
+## Dependency
+
+This package depends on `@gainforest/generated` for lexicon type definitions.
+The generated types are the source of truth for all record schemas.

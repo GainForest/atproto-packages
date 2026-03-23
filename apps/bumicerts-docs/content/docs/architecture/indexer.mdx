@@ -1,0 +1,64 @@
+---
+title: Indexer
+description: The GraphQL indexer that subscribes to the AT Protocol relay.
+---
+
+The indexer is a standalone Bun service that lives in `apps/indexer/`. It
+subscribes to the ATProto relay, validates and stores records in PostgreSQL,
+and exposes them via a GraphQL API.
+
+## Stack
+
+| Component | Technology |
+| --- | --- |
+| Runtime | Bun |
+| GraphQL server | graphql-yoga |
+| Schema builder | Pothos |
+| Database | PostgreSQL (via `postgres` driver) |
+| ATProto relay | `@atproto/tap`, `@atproto/ws-client` |
+| Deployment | Railway (Docker) |
+
+## Pipeline
+
+```
+ATProto Relay
+  → WebSocket subscription (@atproto/tap)
+  → Event validation (generated lexicon schemas)
+  → PostgreSQL insert (migrations in src/db/)
+  → GraphQL API (graphql-yoga + Pothos)
+```
+
+## Directory structure
+
+```
+apps/indexer/src/
+├── index.ts        # Entry point
+├── db/             # Database migrations and queries
+├── generated/      # Auto-generated collection helpers
+├── graphql/        # GraphQL schema and resolvers
+├── tap/            # Relay subscription logic
+├── health/         # Health check endpoint
+├── identity/       # DID resolution
+└── labeller/       # Record labelling service
+```
+
+## Running locally
+
+```bash
+# Start PostgreSQL via Docker
+bun run indexer:docker:up
+
+# Run migrations
+bun run indexer:migrate
+
+# Start in watch mode
+bun run indexer:dev
+```
+
+The GraphQL playground is available at `http://localhost:4000/graphql`.
+
+## Deployment
+
+The indexer deploys to Railway using `Dockerfile.railway`. Configuration is
+in `railway.json` and environment variables are managed in the Railway
+dashboard.

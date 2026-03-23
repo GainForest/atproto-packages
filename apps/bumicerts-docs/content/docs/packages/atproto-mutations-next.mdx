@@ -1,0 +1,46 @@
+---
+title: "@gainforest/atproto-mutations-next"
+description: Next.js integration layer for ATProto mutations via tRPC.
+---
+
+`@gainforest/atproto-mutations-next` bridges `atproto-mutations-core` into
+Next.js by providing a tRPC router, server actions, and a client-side
+namespace for calling mutations.
+
+## Installation
+
+```bash
+bun add @gainforest/atproto-mutations-next
+```
+
+## Key features
+
+- **tRPC router** — a pre-built tRPC router that exposes all mutation
+  operations as type-safe procedures.
+- **Server actions** — Next.js server action wrappers for mutations.
+- **Client namespace** — a React hook-based API for calling mutations from
+  client components with React Query integration.
+- **File handling** — automatic serialisation of `File` objects into blobs
+  before sending to the PDS.
+
+## Dependencies
+
+This package depends on:
+
+- `@gainforest/atproto-auth-next` — for session resolution
+- `@gainforest/atproto-mutations-core` — for the underlying mutation logic
+- `@gainforest/internal-utils` — for shared utilities
+
+All are resolved via `workspace:*` in the monorepo.
+
+## Update vs upsert
+
+When mutating records, choose the right operation:
+
+| Situation | Use |
+| --- | --- |
+| Record is guaranteed to exist | `update` (sends partial data, preserves existing fields) |
+| Record may or may not exist | `upsert` (sends full data, creates or replaces) |
+
+Using `update` for partial edits prevents accidentally wiping fields that
+were not included in the payload (such as BlobRefs for images).

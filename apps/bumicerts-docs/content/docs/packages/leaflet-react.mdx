@@ -1,0 +1,49 @@
+---
+title: "@gainforest/leaflet-react"
+description: React components for rendering and editing rich-text documents.
+---
+
+`@gainforest/leaflet-react` provides React components for rendering and
+editing rich-text documents in the ATProto `linearDocument` format. It is
+built on top of [Tiptap](https://tiptap.dev/).
+
+## Installation
+
+```bash
+bun add @gainforest/leaflet-react
+```
+
+## Key features
+
+- **Rich-text renderer** — render `linearDocument` records as styled HTML.
+- **Rich-text editor** — a Tiptap-based editor that produces
+  `linearDocument`-compatible output.
+- **ATProto integration** — designed to work with records stored on a
+  Personal Data Server (PDS).
+
+## Usage
+
+### Rendering a document
+
+```tsx
+import { DocumentRenderer } from "@gainforest/leaflet-react";
+
+export function ReadOnlyDoc({ content }) {
+  return <DocumentRenderer document={content} />;
+}
+```
+
+### Editing a document
+
+```tsx
+import { DocumentEditor } from "@gainforest/leaflet-react";
+
+export function EditableDoc({ initialContent, onSave }) {
+  return (
+    <DocumentEditor
+      initialContent={initialContent}
+      onSave={onSave}
+    />
+  );
+}
+```

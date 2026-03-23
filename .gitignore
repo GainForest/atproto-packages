@@ -9,5 +9,8 @@ dist/
 
 .local/
 
+# Fumadocs MDX generated source files
+.source/
+
 # GENERATED/types/ is intentionally committed — used by packages and apps.
 # packages/*/dist/ is NOT committed — CI and Vercel build packages from source.

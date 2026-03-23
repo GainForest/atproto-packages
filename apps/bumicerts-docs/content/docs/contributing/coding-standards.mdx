@@ -1,0 +1,66 @@
+---
+title: Coding Standards
+description: Type safety, error handling, and conventions used across the codebase.
+---
+
+## Package manager
+
+Always use **Bun**. Never use npm, pnpm, or yarn.
+
+## Type safety
+
+- **Never use `as any`** — no exceptions.
+- **Avoid `as` casts** unless there is genuinely no alternative. Prefer
+  proper typing or type guards.
+- **Never use `!` (non-null assertion)** — use optional chaining (`?.`),
+  nullish coalescing (`??`), or explicit guards.
+- Every variable, parameter, and return value should have an accurate type.
+
+## Null / undefined handling
+
+Prefer `??` over `||` for fallback values. `||` coerces all falsy values
+(`0`, `""`, `false`); `??` only falls back on `null` and `undefined`.
+
+## File organisation
+
+Prefer creating a new file over appending more code to an existing one. If a
+component, hook, or utility is growing large or serving a distinct purpose,
+split it out.
+
+## Error handling
+
+- **Never `throw` in server components.** Return `<ErrorPage />` instead so
+  users see a meaningful error.
+- Use typed errors (Effect) in mutation code.
+
+## Linting
+
+Run `bun run lint` after every change. Lint errors must be resolved. Warnings
+are acceptable only if they are genuinely unimportant.
+
+## Building
+
+Run `bun run build` before pushing. Do not rely on CI to catch build errors.
+
+## Links and routes
+
+Never hardcode URLs or paths inline. Add the path to `lib/links.ts` and
+import it from there.
+
+## Base URL resolution
+
+All public base URL resolution lives in `lib/url.ts`. Never read
+`VERCEL_URL` or `VERCEL_PROJECT_PRODUCTION_URL` directly. Never hardcode
+domain strings.
+
+## Icons
+
+- For Bumicert-specific icons, use `BumicertIcon` from `icons/BumicertIcon.tsx`.
+- For all other icons, use [Lucide](https://lucide.dev/).
+
+## Mutations: update vs upsert
+
+| Situation | Operation |
+| --- | --- |
+| Record guaranteed to exist | `update` (partial data, preserves existing fields) |
+| Record may or may not exist | `upsert` (full data, creates or replaces) |

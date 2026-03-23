@@ -1,0 +1,53 @@
+---
+title: "@gainforest/atproto-auth-next"
+description: ATProto OAuth authentication for Next.js applications.
+---
+
+`@gainforest/atproto-auth-next` provides a complete ATProto OAuth flow for
+Next.js apps using the App Router. It handles session management with
+iron-session cookies and stores OAuth tokens in Supabase.
+
+## Installation
+
+```bash
+bun add @gainforest/atproto-auth-next
+```
+
+## Key features
+
+- **OAuth flow** — initiates and completes the ATProto OAuth handshake.
+- **Session management** — encrypted iron-session cookies hold the session on
+  the client; refresh tokens are stored server-side in Supabase.
+- **Route handlers** — pre-built Next.js API route handlers for login,
+  callback, logout, and session introspection.
+- **React hooks** — client-side hooks to access the current session.
+
+## Usage
+
+### Route handlers
+
+Create API routes that delegate to the package's handlers:
+
+```ts title="app/api/auth/[...route]/route.ts"
+export { GET, POST } from "@gainforest/atproto-auth-next/handlers";
+```
+
+### Session access
+
+Use the provided helpers in server components or server actions:
+
+```ts
+import { getSession } from "@gainforest/atproto-auth-next";
+
+const session = await getSession();
+```
+
+## Configuration
+
+The package reads the following environment variables:
+
+| Variable | Description |
+| --- | --- |
+| `IRON_SESSION_SECRET` | 32-character secret for cookie encryption |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key for token storage |

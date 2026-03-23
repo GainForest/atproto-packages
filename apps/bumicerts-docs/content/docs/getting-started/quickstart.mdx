@@ -1,0 +1,48 @@
+---
+title: Quickstart
+description: Run the platform locally and verify everything works.
+---
+
+## Start the indexer
+
+The indexer needs a PostgreSQL database. Use Docker Compose to spin one up:
+
+```bash
+bun run indexer:docker:up
+```
+
+Run database migrations:
+
+```bash
+bun run indexer:migrate
+```
+
+Start the indexer in watch mode:
+
+```bash
+bun run indexer:dev
+```
+
+The GraphQL playground is available at `http://localhost:4000/graphql`.
+
+## Start the Bumicerts frontend
+
+In a separate terminal:
+
+```bash
+bun run bumicerts:dev
+```
+
+The app is available at `http://localhost:3001`.
+
+## Verify the stack
+
+1. Open `http://localhost:3001` in your browser — you should see the Bumicerts
+   home page.
+2. Open `http://localhost:4000/graphql` — you should see the GraphQL Yoga
+   playground where you can query indexed records.
+
+## Next steps
+
+- Read the [Packages](/docs/packages) section to understand the shared libraries.
+- Check [Architecture](/docs/architecture) for the full system overview.

@@ -1,0 +1,34 @@
+---
+title: Introduction
+description: Welcome to the Bumicerts documentation.
+---
+
+Bumicerts is a platform built on the [AT Protocol](https://atproto.com/) by
+[GainForest](https://gainforest.earth) for issuing and managing biodiversity
+certificates. It uses decentralised identity, typed mutations, and a GraphQL
+indexer to provide a transparent, verifiable record of conservation impact.
+
+## What you'll find here
+
+- **[Getting Started](/docs/getting-started)** — prerequisites, installation, and
+  a quickstart guide to get the platform running locally.
+- **[Packages](/docs/packages)** — reference documentation for the shared
+  `@gainforest` packages that power authentication, mutations, and rich-text
+  rendering.
+- **[Architecture](/docs/architecture)** — how the monorepo is structured, data
+  flow between services, and the indexer pipeline.
+- **[Contributing](/docs/contributing)** — development setup, coding standards,
+  and guidelines for submitting changes.
+
+## Tech stack
+
+| Layer | Technology |
+| --- | --- |
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS v4, shadcn/ui |
+| State | Zustand, React Query, nuqs |
+| API | tRPC, GraphQL (gql.tada) |
+| Auth | ATProto OAuth (`@gainforest/atproto-auth-next`) |
+| Mutations | `@gainforest/atproto-mutations-core` / `next` |
+| Indexer | Bun, graphql-yoga, Pothos, PostgreSQL |
+| Package manager | Bun (workspace monorepo) |
+| Deployment | Vercel (frontend), Railway (indexer) |
