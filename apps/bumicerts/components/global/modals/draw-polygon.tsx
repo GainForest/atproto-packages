@@ -7,7 +7,7 @@ import {
   ModalTitle,
 } from "@/components/ui/modal/modal";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeftIcon } from "lucide-react";
+import { ChevronLeftIcon, Loader2Icon } from "lucide-react";
 import { useModal } from "@/components/ui/modal/context";
 import { VisuallyHidden } from "radix-ui";
 
@@ -103,6 +103,7 @@ const DrawPolygonModal = ({ onSubmit }: DrawPolygonModalProps) => {
   const { popModal, stack, hide } = useModal();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [polygonData, setPolygonData] = useState<string | null>(null);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
 
   // Listen for postMessage from iframe
   useEffect(() => {
@@ -151,11 +152,17 @@ const DrawPolygonModal = ({ onSubmit }: DrawPolygonModalProps) => {
         </ModalHeader>
       </VisuallyHidden.Root>
       <div className="w-full relative">
+        {!iframeLoaded && (
+          <div className="absolute inset-0 rounded-lg bg-muted flex items-center justify-center">
+            <Loader2Icon className="text-muted-foreground animate-spin" />
+          </div>
+        )}
         <iframe
           ref={iframeRef}
           src="https://polygons-gainforest.vercel.app/draw"
           className="w-full h-[500px] overflow-hidden rounded-lg"
           title="Draw Polygon"
+          onLoad={() => setIframeLoaded(true)}
         />
         {stack.length > 1 && (
           <Button

@@ -28,6 +28,8 @@ const SMALL_SCREEN_BREAKPOINT = "32rem";
 export type ModalVariant = {
   id: string;
   content: React.ReactNode;
+  /** Tailwind max-width class for dialog mode (e.g. "max-w-2xl"). Defaults to "max-w-sm". */
+  dialogWidth?: string;
 };
 
 type ModalMode = "dialog" | "drawer";
@@ -53,12 +55,14 @@ const ModalStack = ({
   isOpen,
   onOpenChange,
   dismissible,
+  dialogWidth,
 }: {
   mode: ModalMode | null;
   children: React.ReactNode;
   dismissible: boolean;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  dialogWidth: string;
 }) => {
   if (mode === "dialog") {
     debug.log("dismissible", dismissible);
@@ -66,6 +70,7 @@ const ModalStack = ({
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogPlaceholder
           className="overflow-hidden"
+          dialogWidth={dialogWidth}
           onEscapeKeyDown={(e) => {
             e.preventDefault();
             if (dismissible) {
@@ -115,6 +120,7 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
     smQueryMatches === null ? null : smQueryMatches ? "dialog" : "drawer";
 
   const modalInfo = useCurrentModalInfo(modalIdStack);
+  const activeDialogWidth = modalStack.at(-1)?.dialogWidth ?? "max-w-sm";
 
   const show = () => {
     setIsOpen(true);
@@ -177,6 +183,7 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
           isOpen={isOpen}
           onOpenChange={handleOpenChange}
           dismissible={modalInfo.dismissible}
+          dialogWidth={activeDialogWidth}
         >
           <VisuallyHidden.Root>
             {mode === "dialog" ? (

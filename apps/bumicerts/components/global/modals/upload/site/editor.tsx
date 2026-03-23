@@ -257,6 +257,7 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
                     onClick={() => {
                       pushModal({
                         id: DrawPolygonModalId,
+                        dialogWidth: "max-w-2xl",
                         content: (
                           <DrawPolygonModal
                             onSubmit={(polygonJSONString: string) => {
