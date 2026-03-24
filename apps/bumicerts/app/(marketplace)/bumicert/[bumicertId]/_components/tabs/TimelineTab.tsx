@@ -1,30 +1,24 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ClockIcon, FileTextIcon, ExternalLinkIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ClockIcon, FileTextIcon, ExternalLinkIcon, Trash2Icon, AlertTriangleIcon } from "lucide-react";
 import { queries, type AttachmentItem } from "@/lib/graphql/queries";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { useModal } from "@/components/ui/modal/context";
-import { MODAL_IDS } from "@/components/global/modals/ids";
-import { EvidencePickerModal } from "@/components/global/modals/evidence/picker";
-import type { EvidencePickerModalProps } from "@/components/global/modals/evidence/picker";
-import { EvidenceDeleteModal } from "@/components/global/modals/evidence/delete";
+import { trpc } from "@/lib/trpc/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { formatError } from "@/lib/utils/trpc-errors";
+import { EvidenceLinker } from "../timeline/EvidenceLinker";
 import Image from "next/image";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Format ISO datetime string to a readable date (e.g. "Mar 2026"). */
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
-/**
- * Map a raw contentType string to a display label.
- * Falls back to the raw value (capitalised) for unknown types.
- */
 function contentTypeLabel(raw: string | null | undefined): string {
   if (!raw) return "Attachment";
   const map: Record<string, string> = {
@@ -51,12 +45,10 @@ function TimelineSkeleton() {
     <div className="flex flex-col gap-0">
       {[0, 1, 2].map((i) => (
         <div key={i} className="flex gap-4">
-          {/* Spine */}
           <div className="flex flex-col items-center w-8 shrink-0">
             <div className="mt-1 h-3 w-3 rounded-full bg-border shrink-0" />
             {i < 2 && <div className="w-px flex-1 bg-border/50 mt-1" />}
           </div>
-          {/* Card */}
           <div className="flex-1 pb-8">
             <div className="border border-border rounded-2xl p-4 space-y-3">
               <div className="flex items-center gap-2">
@@ -65,7 +57,6 @@ function TimelineSkeleton() {
               </div>
               <Skeleton className="h-5 w-3/4" />
               <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-2/3" />
               <div className="flex items-center gap-2 pt-1">
                 <Skeleton className="h-5 w-5 rounded-full" />
                 <Skeleton className="h-3 w-28" />
@@ -80,7 +71,7 @@ function TimelineSkeleton() {
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
-function TimelineEmpty({ isOwner, onAdd }: { isOwner: boolean; onAdd: () => void }) {
+function TimelineEmpty() {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
       <ClockIcon className="h-9 w-9 opacity-30" />
@@ -89,13 +80,59 @@ function TimelineEmpty({ isOwner, onAdd }: { isOwner: boolean; onAdd: () => void
         Evidence reports, audits, and field notes published by this organisation
         will appear here.
       </p>
-      {isOwner && (
-        <Button variant="outline" size="sm" onClick={onAdd} className="mt-1">
-          <PlusIcon />
-          Link Evidence
-        </Button>
-      )}
     </div>
+  );
+}
+
+// ── Inline delete confirm ─────────────────────────────────────────────────────
+
+interface DeleteConfirmProps {
+  title: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isDeleting: boolean;
+  error: string | null;
+}
+
+function DeleteConfirm({ title, onConfirm, onCancel, isDeleting, error }: DeleteConfirmProps) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: 1, height: "auto" }}
+        exit={{ opacity: 0, height: 0 }}
+        transition={{ duration: 0.2 }}
+        className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 flex flex-col gap-2"
+      >
+        <div className="flex items-center gap-2 text-destructive">
+          <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" />
+          <p className="text-xs font-medium">
+            Remove &ldquo;{title}&rdquo;? This cannot be undone.
+          </p>
+        </div>
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="destructive"
+            className="h-7 text-xs px-3"
+            onClick={onConfirm}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Removing…" : "Remove"}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs px-3"
+            onClick={onCancel}
+            disabled={isDeleting}
+          >
+            Cancel
+          </Button>
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -106,11 +143,17 @@ interface EntryProps {
   isLast: boolean;
   index: number;
   isOwner: boolean;
-  onDelete: (rkey: string, title: string) => void;
 }
 
-function TimelineEntry({ item, isLast, index, isOwner, onDelete }: EntryProps) {
+function TimelineEntry({ item, isLast, index, isOwner }: EntryProps) {
   const { metadata, creatorInfo, record } = item;
+  const queryClient = useQueryClient();
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const deleteAttachment = trpc.context.attachment.delete.useMutation();
 
   const date = formatDate(record?.createdAt ?? metadata?.createdAt);
   const label = contentTypeLabel(record?.contentType);
@@ -120,7 +163,6 @@ function TimelineEntry({ item, isLast, index, isOwner, onDelete }: EntryProps) {
   const logoUri = creatorInfo?.organizationLogo?.uri;
   const rkey = metadata?.rkey;
 
-  // Extract content links — `record.content` is JSON (array of { uri } or { blob })
   const contentLinks: string[] = [];
   if (Array.isArray(record?.content)) {
     for (const contentItem of record.content as unknown[]) {
@@ -135,18 +177,27 @@ function TimelineEntry({ item, isLast, index, isOwner, onDelete }: EntryProps) {
     }
   }
 
+  const handleDelete = async () => {
+    if (!rkey) return;
+    setDeleteError(null);
+    setIsDeleting(true);
+    try {
+      await deleteAttachment.mutateAsync({ rkey });
+      await queryClient.invalidateQueries({ queryKey: queries.attachments.key() });
+    } catch (e) {
+      setDeleteError(formatError(e));
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <motion.div
       className="flex gap-4"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.35,
-        delay: index * 0.07,
-        ease: [0.25, 0.1, 0.25, 1],
-      }}
+      transition={{ duration: 0.35, delay: index * 0.07, ease: [0.25, 0.1, 0.25, 1] }}
     >
-      {/* Spine: dot + vertical line */}
+      {/* Spine */}
       <div className="flex flex-col items-center w-8 shrink-0">
         <div className="mt-[18px] h-2.5 w-2.5 rounded-full bg-primary/60 ring-2 ring-primary/20 shrink-0" />
         {!isLast && <div className="w-px flex-1 bg-border/60 mt-1.5" />}
@@ -155,18 +206,19 @@ function TimelineEntry({ item, isLast, index, isOwner, onDelete }: EntryProps) {
       {/* Card */}
       <div className="flex-1 pb-8">
         <div className="border border-border rounded-2xl p-4 transition-all duration-300 hover:shadow-md hover:border-primary/20">
-          {/* Top row: badge + date + delete action */}
+          {/* Top row: badge + date + delete trigger */}
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[10px] uppercase tracking-[0.08em] text-foreground/60 bg-muted/60 border border-border/50 rounded-full px-2.5 py-1 font-medium">
               {label}
             </span>
-            {date && (
-              <span className="text-xs text-muted-foreground">{date}</span>
-            )}
+            {date && <span className="text-xs text-muted-foreground">{date}</span>}
             {isOwner && rkey && (
               <button
                 type="button"
-                onClick={() => onDelete(rkey, title)}
+                onClick={() => {
+                  setShowDeleteConfirm((v) => !v);
+                  setDeleteError(null);
+                }}
                 className="ml-auto p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                 aria-label="Remove evidence"
               >
@@ -185,9 +237,7 @@ function TimelineEntry({ item, isLast, index, isOwner, onDelete }: EntryProps) {
 
           {/* Short description */}
           {description && (
-            <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-              {description}
-            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-3">{description}</p>
           )}
 
           {/* Content links */}
@@ -214,13 +264,7 @@ function TimelineEntry({ item, isLast, index, isOwner, onDelete }: EntryProps) {
           <div className="flex items-center gap-2">
             {logoUri ? (
               <div className="relative h-5 w-5 rounded-full overflow-hidden border border-border shrink-0">
-                <Image
-                  src={logoUri}
-                  alt={orgName ?? ""}
-                  fill
-                  className="object-cover"
-                  sizes="20px"
-                />
+                <Image src={logoUri} alt={orgName ?? ""} fill className="object-cover" sizes="20px" />
               </div>
             ) : (
               <div className="h-5 w-5 rounded-full bg-muted border border-border flex items-center justify-center shrink-0">
@@ -229,10 +273,22 @@ function TimelineEntry({ item, isLast, index, isOwner, onDelete }: EntryProps) {
                 </span>
               </div>
             )}
-            {orgName && (
-              <span className="text-xs text-muted-foreground">{orgName}</span>
-            )}
+            {orgName && <span className="text-xs text-muted-foreground">{orgName}</span>}
           </div>
+
+          {/* Inline delete confirm */}
+          {showDeleteConfirm && rkey && (
+            <DeleteConfirm
+              title={title}
+              onConfirm={handleDelete}
+              onCancel={() => {
+                setShowDeleteConfirm(false);
+                setDeleteError(null);
+              }}
+              isDeleting={isDeleting}
+              error={deleteError}
+            />
+          )}
         </div>
       </div>
     </motion.div>
@@ -242,15 +298,10 @@ function TimelineEntry({ item, isLast, index, isOwner, onDelete }: EntryProps) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 interface TimelineTabProps {
-  /** The organisation DID — used to fetch all their context.attachment records. */
   organizationDid: string;
-  /** The AT-URI of this bumicert activity — used to filter attachments client-side. */
   activityUri: string;
-  /** The CID of this bumicert activity — used for the StrongRef in new attachments. */
   activityCid: string;
-  /** Display title of the bumicert — passed to the picker modal. */
   bumicertTitle: string;
-  /** True when the authenticated user owns this bumicert. */
   isOwner: boolean;
 }
 
@@ -262,49 +313,10 @@ export function TimelineTab({
   isOwner,
 }: TimelineTabProps) {
   const { data, isLoading } = queries.attachments.useQuery({ did: organizationDid });
-  const { pushModal, show } = useModal();
 
-  // Filter client-side to only attachments whose subjects include this activity
   const entries = (data ?? []).filter((item) =>
     item.record?.subjects?.some((s) => s.uri === activityUri)
   );
-
-  const pickerProps: EvidencePickerModalProps = {
-    activityUri,
-    activityCid,
-    bumicertTitle,
-    organizationDid,
-    onLinked: () => {},
-  };
-
-  const handleAddEvidence = () => {
-    pushModal(
-      {
-        id: MODAL_IDS.EVIDENCE_PICKER,
-        dialogWidth: "max-w-lg",
-        content: <EvidencePickerModal {...pickerProps} />,
-      },
-      true
-    );
-    show();
-  };
-
-  const handleDeleteEvidence = (rkey: string, title: string) => {
-    pushModal(
-      {
-        id: MODAL_IDS.EVIDENCE_DELETE,
-        content: (
-          <EvidenceDeleteModal
-            rkey={rkey}
-            title={title}
-            onDeleted={() => {}}
-          />
-        ),
-      },
-      true
-    );
-    show();
-  };
 
   return (
     <motion.div
@@ -312,45 +324,53 @@ export function TimelineTab({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-      className="py-1 max-w-2xl"
+      className="py-1"
     >
-      {/* Section header + add button */}
-      <div className="flex items-center gap-2 mb-6">
-        <ClockIcon className="h-4 w-4 text-primary" />
-        <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-          Evidence Timeline
-        </span>
-        {isOwner && !isLoading && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddEvidence}
-            className="ml-auto"
-          >
-            <PlusIcon />
-            Link Evidence
-          </Button>
+      {/* Two-column layout: timeline left, linker right (owner only) */}
+      <div className={`grid grid-cols-1 gap-8 ${isOwner ? "lg:grid-cols-[1fr_320px]" : ""}`}>
+
+        {/* ── Left: timeline entries ─────────────────────────────────────── */}
+        <div>
+          <div className="flex items-center gap-2 mb-6">
+            <ClockIcon className="h-4 w-4 text-primary" />
+            <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
+              Evidence Timeline
+            </span>
+          </div>
+
+          {isLoading ? (
+            <TimelineSkeleton />
+          ) : entries.length === 0 ? (
+            <TimelineEmpty />
+          ) : (
+            <div className="flex flex-col gap-0">
+              {entries.map((item, i) => (
+                <TimelineEntry
+                  key={item.metadata?.uri ?? i}
+                  item={item}
+                  isLast={i === entries.length - 1}
+                  index={i}
+                  isOwner={isOwner}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Right: evidence linker (owner only) ───────────────────────── */}
+        {isOwner && (
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <div className="border border-border rounded-2xl p-4">
+              <EvidenceLinker
+                activityUri={activityUri}
+                activityCid={activityCid}
+                bumicertTitle={bumicertTitle}
+                organizationDid={organizationDid}
+              />
+            </div>
+          </div>
         )}
       </div>
-
-      {isLoading ? (
-        <TimelineSkeleton />
-      ) : entries.length === 0 ? (
-        <TimelineEmpty isOwner={isOwner} onAdd={handleAddEvidence} />
-      ) : (
-        <div className="flex flex-col gap-0">
-          {entries.map((item, i) => (
-            <TimelineEntry
-              key={item.metadata?.uri ?? i}
-              item={item}
-              isLast={i === entries.length - 1}
-              index={i}
-              isOwner={isOwner}
-              onDelete={handleDeleteEvidence}
-            />
-          ))}
-        </div>
-      )}
     </motion.div>
   );
 }

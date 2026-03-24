@@ -21,10 +21,6 @@ export const MODAL_IDS = {
   DONATE_SUCCESS: "donate/success",
   DONATE_LINK_WALLET: "donate/link-wallet",
 
-  // Evidence timeline
-  EVIDENCE_PICKER: "evidence/picker",
-  EVIDENCE_DELETE: "evidence/delete",
-
   // Upload / org management
   UPLOAD_IMAGE_EDITOR: "upload/image-editor",
   UPLOAD_COUNTRY_SELECTOR: "upload/country-selector",
