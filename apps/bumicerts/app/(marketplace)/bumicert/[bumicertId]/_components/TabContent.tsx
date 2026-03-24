@@ -10,12 +10,14 @@ import { TimelineTab } from "./tabs/TimelineTab";
 
 interface TabContentProps {
   bumicert: BumicertData;
+  isOwner: boolean;
 }
 
-export function TabContent({ bumicert }: TabContentProps) {
+export function TabContent({ bumicert, isOwner }: TabContentProps) {
   const [tab] = useTabParam();
 
   const activityUri = `at://${bumicert.organizationDid}/org.hypercerts.claim.activity/${bumicert.rkey}`;
+  const activityCid = bumicert.cid ?? "";
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -27,6 +29,9 @@ export function TabContent({ bumicert }: TabContentProps) {
           key="timeline"
           organizationDid={bumicert.organizationDid}
           activityUri={activityUri}
+          activityCid={activityCid}
+          bumicertTitle={bumicert.title}
+          isOwner={isOwner}
         />
       )}
     </AnimatePresence>

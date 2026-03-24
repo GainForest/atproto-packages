@@ -1,9 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ClockIcon, FileTextIcon, ExternalLinkIcon } from "lucide-react";
+import { ClockIcon, FileTextIcon, ExternalLinkIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { queries, type AttachmentItem } from "@/lib/graphql/queries";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useModal } from "@/components/ui/modal/context";
+import { MODAL_IDS } from "@/components/global/modals/ids";
+import { EvidencePickerModal } from "@/components/global/modals/evidence/picker";
+import type { EvidencePickerModalProps } from "@/components/global/modals/evidence/picker";
+import { EvidenceDeleteModal } from "@/components/global/modals/evidence/delete";
 import Image from "next/image";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -31,6 +37,9 @@ function contentTypeLabel(raw: string | null | undefined): string {
     video: "Video",
     dataset: "Dataset",
     certificate: "Certificate",
+    audio: "Audio",
+    occurrence: "Tree",
+    location: "Site",
   };
   return map[raw.toLowerCase()] ?? raw.charAt(0).toUpperCase() + raw.slice(1);
 }
@@ -71,7 +80,7 @@ function TimelineSkeleton() {
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
-function TimelineEmpty() {
+function TimelineEmpty({ isOwner, onAdd }: { isOwner: boolean; onAdd: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
       <ClockIcon className="h-9 w-9 opacity-30" />
@@ -80,6 +89,12 @@ function TimelineEmpty() {
         Evidence reports, audits, and field notes published by this organisation
         will appear here.
       </p>
+      {isOwner && (
+        <Button variant="outline" size="sm" onClick={onAdd} className="mt-1">
+          <PlusIcon />
+          Link Evidence
+        </Button>
+      )}
     </div>
   );
 }
@@ -90,9 +105,11 @@ interface EntryProps {
   item: AttachmentItem;
   isLast: boolean;
   index: number;
+  isOwner: boolean;
+  onDelete: (rkey: string, title: string) => void;
 }
 
-function TimelineEntry({ item, isLast, index }: EntryProps) {
+function TimelineEntry({ item, isLast, index, isOwner, onDelete }: EntryProps) {
   const { metadata, creatorInfo, record } = item;
 
   const date = formatDate(record?.createdAt ?? metadata?.createdAt);
@@ -101,13 +118,19 @@ function TimelineEntry({ item, isLast, index }: EntryProps) {
   const description = record?.shortDescription;
   const orgName = creatorInfo?.organizationName;
   const logoUri = creatorInfo?.organizationLogo?.uri;
+  const rkey = metadata?.rkey;
 
   // Extract content links — `record.content` is JSON (array of { uri } or { blob })
   const contentLinks: string[] = [];
   if (Array.isArray(record?.content)) {
-    for (const item of record.content as unknown[]) {
-      if (item && typeof item === "object" && "uri" in item && typeof (item as { uri: unknown }).uri === "string") {
-        contentLinks.push((item as { uri: string }).uri);
+    for (const contentItem of record.content as unknown[]) {
+      if (
+        contentItem &&
+        typeof contentItem === "object" &&
+        "uri" in contentItem &&
+        typeof (contentItem as { uri: unknown }).uri === "string"
+      ) {
+        contentLinks.push((contentItem as { uri: string }).uri);
       }
     }
   }
@@ -132,13 +155,23 @@ function TimelineEntry({ item, isLast, index }: EntryProps) {
       {/* Card */}
       <div className="flex-1 pb-8">
         <div className="border border-border rounded-2xl p-4 transition-all duration-300 hover:shadow-md hover:border-primary/20">
-          {/* Top row: badge + date */}
+          {/* Top row: badge + date + delete action */}
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[10px] uppercase tracking-[0.08em] text-foreground/60 bg-muted/60 border border-border/50 rounded-full px-2.5 py-1 font-medium">
               {label}
             </span>
             {date && (
               <span className="text-xs text-muted-foreground">{date}</span>
+            )}
+            {isOwner && rkey && (
+              <button
+                type="button"
+                onClick={() => onDelete(rkey, title)}
+                className="ml-auto p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                aria-label="Remove evidence"
+              >
+                <Trash2Icon className="h-3.5 w-3.5" />
+              </button>
             )}
           </div>
 
@@ -213,15 +246,65 @@ interface TimelineTabProps {
   organizationDid: string;
   /** The AT-URI of this bumicert activity — used to filter attachments client-side. */
   activityUri: string;
+  /** The CID of this bumicert activity — used for the StrongRef in new attachments. */
+  activityCid: string;
+  /** Display title of the bumicert — passed to the picker modal. */
+  bumicertTitle: string;
+  /** True when the authenticated user owns this bumicert. */
+  isOwner: boolean;
 }
 
-export function TimelineTab({ organizationDid, activityUri }: TimelineTabProps) {
+export function TimelineTab({
+  organizationDid,
+  activityUri,
+  activityCid,
+  bumicertTitle,
+  isOwner,
+}: TimelineTabProps) {
   const { data, isLoading } = queries.attachments.useQuery({ did: organizationDid });
+  const { pushModal, show } = useModal();
 
   // Filter client-side to only attachments whose subjects include this activity
   const entries = (data ?? []).filter((item) =>
     item.record?.subjects?.some((s) => s.uri === activityUri)
   );
+
+  const pickerProps: EvidencePickerModalProps = {
+    activityUri,
+    activityCid,
+    bumicertTitle,
+    organizationDid,
+    onLinked: () => {},
+  };
+
+  const handleAddEvidence = () => {
+    pushModal(
+      {
+        id: MODAL_IDS.EVIDENCE_PICKER,
+        dialogWidth: "max-w-lg",
+        content: <EvidencePickerModal {...pickerProps} />,
+      },
+      true
+    );
+    show();
+  };
+
+  const handleDeleteEvidence = (rkey: string, title: string) => {
+    pushModal(
+      {
+        id: MODAL_IDS.EVIDENCE_DELETE,
+        content: (
+          <EvidenceDeleteModal
+            rkey={rkey}
+            title={title}
+            onDeleted={() => {}}
+          />
+        ),
+      },
+      true
+    );
+    show();
+  };
 
   return (
     <motion.div
@@ -231,18 +314,29 @@ export function TimelineTab({ organizationDid, activityUri }: TimelineTabProps) 
       transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
       className="py-1 max-w-2xl"
     >
-      {/* Section header */}
+      {/* Section header + add button */}
       <div className="flex items-center gap-2 mb-6">
         <ClockIcon className="h-4 w-4 text-primary" />
         <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
           Evidence Timeline
         </span>
+        {isOwner && !isLoading && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAddEvidence}
+            className="ml-auto"
+          >
+            <PlusIcon />
+            Link Evidence
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
         <TimelineSkeleton />
       ) : entries.length === 0 ? (
-        <TimelineEmpty />
+        <TimelineEmpty isOwner={isOwner} onAdd={handleAddEvidence} />
       ) : (
         <div className="flex flex-col gap-0">
           {entries.map((item, i) => (
@@ -251,6 +345,8 @@ export function TimelineTab({ organizationDid, activityUri }: TimelineTabProps) 
               item={item}
               isLast={i === entries.length - 1}
               index={i}
+              isOwner={isOwner}
+              onDelete={handleDeleteEvidence}
             />
           ))}
         </div>

@@ -39,6 +39,7 @@ import * as leaderboard from "./leaderboard";
 import * as linkEvm from "./linkEvm";
 import * as cartBumicert from "./cartBumicert";
 import * as attachments from "./attachments";
+import * as occurrences from "./occurrences";
 
 export const queries = {
   organization: {
@@ -98,6 +99,16 @@ export const queries = {
     /** Invalidates ALL attachment queries. */
     key: () => ["attachments"] as const,
   },
+
+  /**
+   * DWC occurrence records authored by a DID.
+   * Used in the evidence picker to link tree/species records as evidence.
+   */
+  occurrences: {
+    ...createQuery(["occurrences"], occurrences),
+    /** Invalidates ALL occurrence queries. */
+    key: () => ["occurrences"] as const,
+  },
 };
 
 // Re-export types that consumers commonly need
@@ -111,3 +122,4 @@ export type { LeaderboardEntry, LeaderboardResult, Period as LeaderboardPeriod }
 export type { EvmLink } from "./linkEvm";
 export type { CartBumicertItem } from "./cartBumicert";
 export type { AttachmentItem } from "./attachments";
+export type { OccurrenceItem } from "./occurrences";
