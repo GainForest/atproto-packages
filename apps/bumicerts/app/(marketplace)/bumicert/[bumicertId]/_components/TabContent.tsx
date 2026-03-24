@@ -15,12 +15,20 @@ interface TabContentProps {
 export function TabContent({ bumicert }: TabContentProps) {
   const [tab] = useTabParam();
 
+  const activityUri = `at://${bumicert.organizationDid}/org.hypercerts.claim.activity/${bumicert.rkey}`;
+
   return (
     <AnimatePresence mode="wait" initial={false}>
       {tab === "description" && <DescriptionTab key="description" bumicert={bumicert} />}
       {tab === "site-boundaries" && <SiteBoundariesTab key="site-boundaries" bumicert={bumicert} />}
       {tab === "donations" && <DonationsTab key="donations" bumicert={bumicert} />}
-      {tab === "timeline" && <TimelineTab key="timeline" />}
+      {tab === "timeline" && (
+        <TimelineTab
+          key="timeline"
+          organizationDid={bumicert.organizationDid}
+          activityUri={activityUri}
+        />
+      )}
     </AnimatePresence>
   );
 }

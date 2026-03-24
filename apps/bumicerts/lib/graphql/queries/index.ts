@@ -38,6 +38,7 @@ import * as fundingReceipts from "./fundingReceipts";
 import * as leaderboard from "./leaderboard";
 import * as linkEvm from "./linkEvm";
 import * as cartBumicert from "./cartBumicert";
+import * as attachments from "./attachments";
 
 export const queries = {
   organization: {
@@ -87,6 +88,16 @@ export const queries = {
 
   /** Single bumicert card data for the cart modal. Keyed by bumicert ID ("{did}-{rkey}"). */
   cartBumicert: createQuery(["cartBumicert"], cartBumicert),
+
+  /**
+   * Evidence attachments for a bumicert — fetches all context.attachment records
+   * authored by a DID. Filter by activityUri client-side to scope to one bumicert.
+   */
+  attachments: {
+    ...createQuery(["attachments"], attachments),
+    /** Invalidates ALL attachment queries. */
+    key: () => ["attachments"] as const,
+  },
 };
 
 // Re-export types that consumers commonly need
@@ -99,3 +110,4 @@ export type { FundingReceiptItem } from "./fundingReceipts";
 export type { LeaderboardEntry, LeaderboardResult, Period as LeaderboardPeriod } from "./leaderboard";
 export type { EvmLink } from "./linkEvm";
 export type { CartBumicertItem } from "./cartBumicert";
+export type { AttachmentItem } from "./attachments";
