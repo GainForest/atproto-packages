@@ -184,7 +184,6 @@ export default function PhotoAttachModal({
   return (
     <ModalContent>
       <ModalTitle>Add Photo to {speciesName}</ModalTitle>
-      </ModalTitle>
       <ModalDescription>
         Select the part of the tree shown in your photo and upload an image to attach it to this occurrence record.
       </ModalDescription>
