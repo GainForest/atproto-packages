@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import type { ValidatedRow } from "@/lib/upload/types";
 import { occurrenceInputToCreateInput } from "@/lib/upload/occurrence-adapter";
-import PhotoAttachDialog from "./PhotoAttachDialog";
+import { useModal } from "@/components/ui/modal/context";
+import { MODAL_IDS } from "@/components/global/modals/ids";
+import PhotoAttachModal from "./PhotoAttachDialog";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -50,6 +52,7 @@ type UploadStepProps = {
 export default function UploadStep({ validRows, onBack, onComplete }: UploadStepProps) {
   const createOccurrence = trpc.dwc.occurrence.create.useMutation();
   const createMeasurement = trpc.dwc.measurement.create.useMutation();
+  const { pushModal, show } = useModal();
 
   const [uploadStarted, setUploadStarted] = useState(false);
   const [uploadDone, setUploadDone] = useState(false);
@@ -67,10 +70,42 @@ export default function UploadStep({ validRows, onBack, onComplete }: UploadStep
 
   // Photo attachment state
   const [photoUris, setPhotoUris] = useState<Map<number, string[]>>(new Map());
-  const [photoDialogRow, setPhotoDialogRow] = useState<number | null>(null);
 
   // Prevent double-run in StrictMode
   const uploadRef = useRef(false);
+
+  // ── Photo attachment ──────────────────────────────────────────────────────
+  const handleAddPhoto = (rowIndex: number, occurrenceUri: string, speciesName: string) => {
+    pushModal(
+      {
+        id: MODAL_IDS.UPLOAD_PHOTO_ATTACH,
+        content: (
+          <PhotoAttachModal
+            occurrenceUri={occurrenceUri}
+            speciesName={speciesName}
+            onPhotoUploaded={(uri) => {
+              setPhotoUris((prev) => {
+                const next = new Map(prev);
+                const existing = next.get(rowIndex) ?? [];
+                next.set(rowIndex, [...existing, uri]);
+                return next;
+              });
+              setRowStatuses((prev) => {
+                const next = [...prev];
+                const s = next[rowIndex];
+                if (s?.state === "success") {
+                  next[rowIndex] = { ...s, photoCount: s.photoCount + 1 };
+                }
+                return next;
+              });
+            }}
+          />
+        ),
+      },
+      true
+    );
+    show();
+  };
 
   // ── sessionStorage: save pending state before OAuth redirect ──────────────
   useEffect(() => {
@@ -285,7 +320,7 @@ export default function UploadStep({ validRows, onBack, onComplete }: UploadStep
                       variant="outline"
                       size="sm"
                       className="h-7 px-2 text-xs gap-1"
-                      onClick={() => setPhotoDialogRow(i)}
+                      onClick={() => handleAddPhoto(i, status.occurrenceUri, species)}
                     >
                       <Camera className="h-3 w-3" />
                       Add Photo
@@ -297,43 +332,6 @@ export default function UploadStep({ validRows, onBack, onComplete }: UploadStep
           })}
         </div>
       </div>
-
-      {/* Photo Attach Dialog */}
-      {photoDialogRow !== null && (() => {
-        const status = rowStatuses[photoDialogRow];
-        if (status?.state !== "success") return null;
-        const species = validRows[photoDialogRow]?.occurrence.scientificName || `Row ${photoDialogRow + 1}`;
-        return (
-          <PhotoAttachDialog
-            open={photoDialogRow !== null}
-            onOpenChange={(open) => {
-              if (!open) setPhotoDialogRow(null);
-            }}
-            occurrenceUri={status.occurrenceUri}
-            speciesName={species}
-            onPhotoUploaded={(multimediaUri) => {
-              const rowIdx = photoDialogRow;
-              // Add the new photo URI to the map
-              setPhotoUris((prev) => {
-                const next = new Map(prev);
-                const existing = next.get(rowIdx) ?? [];
-                next.set(rowIdx, [...existing, multimediaUri]);
-                return next;
-              });
-              // Increment photoCount on the row status
-              setRowStatuses((prev) => {
-                const next = [...prev];
-                const s = next[rowIdx];
-                if (s?.state === "success") {
-                  next[rowIdx] = { ...s, photoCount: s.photoCount + 1 };
-                }
-                return next;
-              });
-              setPhotoDialogRow(null);
-            }}
-          />
-        );
-      })()}
 
       {/* Failed rows detail (collapsible) */}
       {failedRows.length > 0 && (
