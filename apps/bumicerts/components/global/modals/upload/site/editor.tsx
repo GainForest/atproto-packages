@@ -104,6 +104,12 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
       // appears immediately in the site-selection list (Step 3) without waiting
       // for the GraphQL indexer to catch up.
       if (did && data) {
+        // Create a local blob URL from the shapefile so the SiteItem can
+        // resolve and display the location (area, coordinates) immediately.
+        // The Fetch API supports blob: URLs, so SiteItem's useSuspenseQuery
+        // will fetch and parse the GeoJSON without needing the indexer.
+        const localBlobUrl = shapefile ? URL.createObjectURL(shapefile) : null;
+
         const queryKey = ["locations", { did }] as const;
         queryClient.setQueryData<CertifiedLocation[]>(queryKey, (old) => {
           const newLocation = {
@@ -116,7 +122,9 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
             record: {
               name: (data.record?.name as string) ?? null,
               description: (data.record?.description as string) ?? null,
-              location: data.record?.location ?? null,
+              location: localBlobUrl
+                ? { $type: "org.hypercerts.defs#uri", uri: localBlobUrl }
+                : (data.record?.location ?? null),
               locationType: (data.record?.locationType as string) ?? null,
             },
           } as CertifiedLocation;
@@ -145,6 +153,10 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
     onSuccess: (data: { uri: string; cid: string; rkey: string; record: Record<string, unknown> }) => {
       // Optimistically update the cached location so changes appear immediately.
       if (did && data) {
+        // If a new shapefile was uploaded, create a local blob URL so the
+        // SiteItem can display the updated location without the indexer.
+        const localBlobUrl = shapefile ? URL.createObjectURL(shapefile) : null;
+
         const queryKey = ["locations", { did }] as const;
         queryClient.setQueryData<CertifiedLocation[]>(queryKey, (old) => {
           if (!old) return old;
@@ -160,7 +172,9 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
                   ...loc.record,
                   name: (data.record?.name as string) ?? loc.record?.name,
                   description: (data.record?.description as string) ?? loc.record?.description,
-                  location: data.record?.location ?? loc.record?.location,
+                  location: localBlobUrl
+                    ? { $type: "org.hypercerts.defs#uri", uri: localBlobUrl }
+                    : (data.record?.location ?? loc.record?.location),
                   locationType: (data.record?.locationType as string) ?? loc.record?.locationType,
                 },
               } as CertifiedLocation;
