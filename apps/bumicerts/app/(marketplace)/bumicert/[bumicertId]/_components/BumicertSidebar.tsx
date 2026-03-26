@@ -82,8 +82,8 @@ export function BumicertSidebar({ bumicert, isOwner, fundingConfig }: BumicertSi
         <PublicDonateArea bumicert={bumicert} fundingConfig={fundingConfig} />
       )}
 
-      {/* ── Owner: Delete bumicert (only if no funding config exists) ──── */}
-      {isOwner && !fundingConfig && (
+      {/* ── Owner: Delete bumicert ──────────────────────────────────────── */}
+      {isOwner && (
         <Button
           variant="ghost"
           size="sm"

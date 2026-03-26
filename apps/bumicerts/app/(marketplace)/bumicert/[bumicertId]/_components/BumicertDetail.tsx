@@ -123,8 +123,8 @@ export function BumicertDetail({ bumicert, isOwner, fundingConfig }: BumicertDet
                   isOwner={isOwner}
                   fundingConfig={fundingConfig}
                 />
-                {/* Owner: delete bumicert (only if no funding config exists) */}
-                {isOwner && !fundingConfig && (
+                {/* Owner: delete bumicert */}
+                {isOwner && (
                   <Button
                     variant="ghost"
                     size="sm"
