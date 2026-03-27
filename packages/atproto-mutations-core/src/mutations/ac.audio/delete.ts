@@ -4,7 +4,7 @@ import { deleteRecord } from "../../utils/shared";
 import { AudioRecordingPdsError } from "./utils/errors";
 import type { DeleteRecordInput, DeleteRecordResult } from "./utils/types";
 
-const COLLECTION = "app.gainforest.organization.recordings.audio";
+const COLLECTION = "app.gainforest.ac.audio";
 
 const makePdsError = (message: string, cause: unknown) =>
   new AudioRecordingPdsError({ message, cause });

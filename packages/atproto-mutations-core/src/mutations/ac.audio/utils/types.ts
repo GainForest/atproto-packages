@@ -1,7 +1,7 @@
 import type {
   Main as AudioRecordingRecord,
   Metadata as AudioMetadata,
-} from "@gainforest/generated/app/gainforest/organization/recordings/audio.defs";
+} from "@gainforest/generated/app/gainforest/ac/audio.defs";
 import type { Richtext } from "@gainforest/generated/app/gainforest/common/defs.defs";
 import type { SerializableFile } from "../../../blob/types";
 import type {
@@ -51,8 +51,6 @@ export type CreateAudioRecordingInput = {
   metadata: AudioTechnicalMetadata & {
     /** ISO 8601 datetime at which the audio was recorded. */
     recordedAt: string;
-    /** Optional coordinates in "latitude,longitude" or "latitude,longitude,altitude" format. */
-    coordinates?: string;
   };
   /** Optional caller-supplied rkey. PDS assigns a TID if omitted. */
   rkey?: string;
@@ -74,7 +72,6 @@ export type UpdateAudioRecordingInput = {
     description?: { text: string; facets?: unknown[] };
     metadata?: {
       recordedAt?: string;
-      coordinates?: string;
     };
   };
   /**

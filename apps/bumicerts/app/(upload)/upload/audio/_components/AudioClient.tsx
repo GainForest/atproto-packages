@@ -227,7 +227,8 @@ export function AudioClient({ did }: AudioClientProps) {
               {filteredRecordings.map((r) => {
                 const name = r.record?.name ?? "Untitled Recording";
                 const rkey = r.metadata?.rkey;
-                const recordedAt = r.record?.metadata?.recordedAt;
+                const meta = r.record?.metadata as Record<string, unknown> | null | undefined;
+                const recordedAt = meta?.["recordedAt"] as string | undefined;
                 return (
                   <div
                     key={r.metadata?.uri ?? rkey}

@@ -151,10 +151,7 @@ var appRouter = router({
     defaultSite: router({
       set: effectMutation(import_atproto_mutations_core.mutations.organization.defaultSite.set)
     }),
-    layer: entityRouter(import_atproto_mutations_core.mutations.organization.layer),
-    recordings: router({
-      audio: entityRouter(import_atproto_mutations_core.mutations.organization.recordings.audio)
-    })
+    layer: entityRouter(import_atproto_mutations_core.mutations.organization.layer)
   }),
   claim: router({
     activity: entityRouter(import_atproto_mutations_core.mutations.claim.activity)
@@ -179,6 +176,7 @@ var appRouter = router({
     })
   }),
   ac: router({
+    audio: entityRouter(import_atproto_mutations_core.mutations.ac.audio),
     multimedia: router({
       create: effectMutation(import_atproto_mutations_core.mutations.ac.multimedia.create)
     })

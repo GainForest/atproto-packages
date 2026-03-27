@@ -106,12 +106,12 @@ export {
   LayerPdsError,
 } from "./mutations/organization.layer/utils/errors";
 
-// organization.recordings.audio
+// ac.audio
 export {
   AudioRecordingValidationError,
   AudioRecordingNotFoundError,
   AudioRecordingPdsError,
-} from "./mutations/organization.recordings.audio/utils/errors";
+} from "./mutations/ac.audio/utils/errors";
 
 // claim.activity
 export {
@@ -210,7 +210,7 @@ export type {
   UpsertLayerInput,
 } from "./mutations/organization.layer/utils/types";
 
-// organization.recordings.audio
+// ac.audio
 export type {
   AudioRecordingRecord,
   AudioRecordingMutationResult,
@@ -219,7 +219,7 @@ export type {
   CreateAudioRecordingInput,
   UpdateAudioRecordingInput,
   UpsertAudioRecordingInput,
-} from "./mutations/organization.recordings.audio/utils/types";
+} from "./mutations/ac.audio/utils/types";
 
 // claim.activity
 export type {

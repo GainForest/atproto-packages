@@ -156,7 +156,7 @@ describe("createAudioRecording", () => {
     console.log(`[ok] Created audio recording at ${result.uri} rkey=${result.rkey}`);
   });
 
-  it("creates an audio recording with description and coordinates (integration)", async () => {
+  it("creates an audio recording with description (integration)", async () => {
     if (!credentialsProvided) {
       console.log("[skip] Credentials not set.");
       return;
@@ -169,15 +169,11 @@ describe("createAudioRecording", () => {
         name: "Rainforest Bird Call",
         description: { text: "A dawn chorus recording from the Amazon." },
         audioFile: makeTinyWav(),
-        metadata: {
-          ...minimalMetadata,
-          coordinates: "-3.4653,-62.2159",
-        },
+        metadata: minimalMetadata,
       }).pipe(Effect.provide(layer))
     );
 
-    expect(result.record.metadata.coordinates).toBe("-3.4653,-62.2159");
     expect(result.record.description?.text).toBe("A dawn chorus recording from the Amazon.");
-    console.log(`[ok] Created recording with description + coordinates at ${result.uri}`);
+    console.log(`[ok] Created recording with description at ${result.uri}`);
   });
 });

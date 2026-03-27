@@ -7,7 +7,7 @@
  * Leaf: queries.audio
  *
  * Schema shape:
- *   gainforest.organization.recordings.audio(...) { data { metadata creatorInfo record } pageInfo }
+ *   gainforest.ac.audio(...) { data { metadata creatorInfo record } pageInfo }
  */
 
 import { graphqlClient } from "@/lib/graphql/client";
@@ -20,35 +20,21 @@ import type { QueryModule } from "@/lib/graphql/create-query";
 const document = graphql(`
   query AudioRecordingsByDid($did: String!) {
     gainforest {
-      organization {
-        recordings {
-          audio(where: { did: $did }, order: DESC, sortBy: CREATED_AT) {
-            data {
-              metadata {
-                did
-                uri
-                rkey
-                cid
-              }
-              record {
-                name
-                description
-                createdAt
-                blob {
-                  uri
-                  mimeType
-                  size
-                  cid
-                }
-                metadata {
-                  codec
-                  channels
-                  duration
-                  sampleRate
-                  recordedAt
-                  coordinates
-                }
-              }
+      ac {
+        audio(where: { did: $did }, order: DESC, sortBy: CREATED_AT) {
+          data {
+            metadata {
+              did
+              uri
+              rkey
+              cid
+            }
+            record {
+              name
+              description
+              createdAt
+              blob
+              metadata
             }
           }
         }
@@ -60,10 +46,10 @@ const document = graphql(`
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type _Result = ResultOf<typeof document>;
-type _GainforestOrg = NonNullable<NonNullable<_Result["gainforest"]>["organization"]>;
-type _Recordings = NonNullable<NonNullable<_GainforestOrg["recordings"]>["audio"]>["data"];
-type _RecordingsArr = NonNullable<_Recordings> extends readonly (infer T)[] ? T : never;
-export type AudioRecordingItem = NonNullable<_RecordingsArr>;
+type _GainforestAc = NonNullable<NonNullable<_Result["gainforest"]>["ac"]>;
+type _AudioData = NonNullable<NonNullable<_GainforestAc["audio"]>["data"]>;
+type _AudioDataArr = NonNullable<_AudioData> extends readonly (infer T)[] ? T : never;
+export type AudioRecordingItem = NonNullable<_AudioDataArr>;
 
 export type Params = { did: string };
 export type Result = AudioRecordingItem[];
@@ -72,7 +58,7 @@ export type Result = AudioRecordingItem[];
 
 export async function fetch(params: Params): Promise<Result> {
   const res = await graphqlClient.request(document, { did: params.did });
-  return (res.gainforest?.organization?.recordings?.audio?.data ?? []) as Result;
+  return (res.gainforest?.ac?.audio?.data ?? []) as Result;
 }
 
 // ── Default options ───────────────────────────────────────────────────────────

@@ -147,7 +147,7 @@ describe("updateAudioRecording", () => {
     }
   });
 
-  it("updates name and coordinates without replacing the blob (integration)", async () => {
+  it("updates name without replacing the blob (integration)", async () => {
     if (!credentialsProvided) {
       console.log("[skip] Credentials not set.");
       return;
@@ -159,7 +159,7 @@ describe("updateAudioRecording", () => {
       createAudioRecording({
         name: "Before Update",
         audioFile: makeTinyWav(),
-        metadata: { ...baseMetadata, coordinates: "-3.4,60.1" },
+        metadata: baseMetadata,
       }).pipe(Effect.provide(layer))
     );
 
@@ -168,13 +168,11 @@ describe("updateAudioRecording", () => {
         rkey: created.rkey,
         data: {
           name: "After Update",
-          metadata: { coordinates: "1.0,2.0" },
         },
       }).pipe(Effect.provide(layer))
     );
 
     expect(updated.record.name).toBe("After Update");
-    expect(updated.record.metadata.coordinates).toBe("1.0,2.0");
     expect(updated.record.metadata.codec).toBe("PCM"); // preserved
     expect(updated.record.createdAt).toBe(created.record.createdAt);
     console.log(`[ok] Updated audio recording at ${updated.uri}`);

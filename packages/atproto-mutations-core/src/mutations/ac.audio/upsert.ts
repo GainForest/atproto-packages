@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { $parse } from "@gainforest/generated/app/gainforest/organization/recordings/audio.defs";
+import { $parse } from "@gainforest/generated/app/gainforest/ac/audio.defs";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { BlobUploadError, FileConstraintError } from "../../blob/errors";
 import { fromSerializableFile } from "../../blob/types";
@@ -14,7 +14,7 @@ import type {
   AudioRecordingRecord,
 } from "./utils/types";
 
-const COLLECTION = "app.gainforest.organization.recordings.audio";
+const COLLECTION = "app.gainforest.ac.audio";
 const MAX_AUDIO_BYTES = 100 * 1024 * 1024;
 
 const ACCEPTED_AUDIO_MIMES = new Set([
@@ -104,20 +104,19 @@ export const upsertAudioRecording = (
         file: blobRef,
       },
       metadata: {
-        $type: "app.gainforest.organization.recordings.audio#metadata",
+        $type: "app.gainforest.ac.audio#metadata",
         codec: metadata.codec,
         channels: metadata.channels,
         duration: metadata.duration,
         sampleRate: metadata.sampleRate,
         recordedAt: metadata.recordedAt,
-        coordinates: metadata.coordinates,
       },
       createdAt,
     };
 
     const record = yield* Effect.try({
       try: () => $parse(candidate),
-      catch: (cause) => makeValidationError(`organization.recordings.audio record failed lexicon validation: ${String(cause)}`, cause),
+      catch: (cause) => makeValidationError(`ac.audio record failed lexicon validation: ${String(cause)}`, cause),
     });
 
     // 5. Write.

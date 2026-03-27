@@ -300,7 +300,7 @@ export function EvidenceLinker({
                   icon={MicIcon}
                   primary={item.record?.name ?? "Untitled recording"}
                   secondary={formatDate(
-                    item.record?.metadata?.recordedAt ?? item.record?.createdAt ?? undefined
+                    (item.record?.metadata as Record<string, unknown> | null | undefined)?.["recordedAt"] as string ?? item.record?.createdAt ?? undefined
                   )}
                 />
               );

@@ -10,8 +10,8 @@ import { Main as Main$1 } from '@gainforest/generated/app/gainforest/organizatio
 export { Main as DefaultSiteRecord } from '@gainforest/generated/app/gainforest/organization/defaultSite.defs';
 import { Main as Main$2 } from '@gainforest/generated/app/gainforest/organization/layer.defs';
 export { Main as LayerRecord } from '@gainforest/generated/app/gainforest/organization/layer.defs';
-import { Main as Main$3 } from '@gainforest/generated/app/gainforest/organization/recordings/audio.defs';
-export { Metadata as AudioMetadata, Main as AudioRecordingRecord } from '@gainforest/generated/app/gainforest/organization/recordings/audio.defs';
+import { Main as Main$3 } from '@gainforest/generated/app/gainforest/ac/audio.defs';
+export { Metadata as AudioMetadata, Main as AudioRecordingRecord } from '@gainforest/generated/app/gainforest/ac/audio.defs';
 import { Main as Main$4 } from '@gainforest/generated/org/hypercerts/claim/activity.defs';
 export { Main as ClaimActivityRecord, Contributor, ContributorIdentity, ContributorRole, WorkScopeString } from '@gainforest/generated/org/hypercerts/claim/activity.defs';
 import { Main as Main$5 } from '@gainforest/generated/org/hypercerts/claim/rights.defs';
@@ -59,16 +59,6 @@ declare const mutations: {
                 created: boolean;
             }, LayerValidationError | LayerPdsError, AtprotoAgent>;
             readonly delete: (input: DeleteRecordInput) => effect_Effect.Effect<DeleteRecordResult, LayerPdsError, AtprotoAgent>;
-        };
-        readonly recordings: {
-            readonly audio: {
-                readonly create: (input: CreateAudioRecordingInput) => effect_Effect.Effect<AudioRecordingMutationResult, AudioRecordingValidationError | AudioRecordingPdsError | FileConstraintError | BlobUploadError, AtprotoAgent>;
-                readonly update: (input: UpdateAudioRecordingInput) => effect_Effect.Effect<AudioRecordingMutationResult, AudioRecordingValidationError | AudioRecordingNotFoundError | AudioRecordingPdsError | FileConstraintError | BlobUploadError, AtprotoAgent>;
-                readonly upsert: (input: UpsertAudioRecordingInput) => effect_Effect.Effect<AudioRecordingMutationResult & {
-                    created: boolean;
-                }, AudioRecordingValidationError | AudioRecordingPdsError | FileConstraintError | BlobUploadError, AtprotoAgent>;
-                readonly delete: (input: DeleteRecordInput) => effect_Effect.Effect<DeleteRecordResult, AudioRecordingPdsError, AtprotoAgent>;
-            };
         };
     };
     readonly claim: {
@@ -120,6 +110,14 @@ declare const mutations: {
         };
     };
     readonly ac: {
+        readonly audio: {
+            readonly create: (input: CreateAudioRecordingInput) => effect_Effect.Effect<AudioRecordingMutationResult, AudioRecordingValidationError | AudioRecordingPdsError | FileConstraintError | BlobUploadError, AtprotoAgent>;
+            readonly update: (input: UpdateAudioRecordingInput) => effect_Effect.Effect<AudioRecordingMutationResult, AudioRecordingValidationError | AudioRecordingNotFoundError | AudioRecordingPdsError | FileConstraintError | BlobUploadError, AtprotoAgent>;
+            readonly upsert: (input: UpsertAudioRecordingInput) => effect_Effect.Effect<AudioRecordingMutationResult & {
+                created: boolean;
+            }, AudioRecordingValidationError | AudioRecordingPdsError | FileConstraintError | BlobUploadError, AtprotoAgent>;
+            readonly delete: (input: DeleteRecordInput) => effect_Effect.Effect<DeleteRecordResult, AudioRecordingPdsError, AtprotoAgent>;
+        };
         readonly multimedia: {
             readonly create: (input: CreateAcMultimediaInput) => effect_Effect.Effect<AcMultimediaMutationResult, AcMultimediaValidationError | AcMultimediaPdsError | FileConstraintError | BlobUploadError, AtprotoAgent>;
         };
@@ -1192,8 +1190,6 @@ type CreateAudioRecordingInput = {
     metadata: AudioTechnicalMetadata & {
         /** ISO 8601 datetime at which the audio was recorded. */
         recordedAt: string;
-        /** Optional coordinates in "latitude,longitude" or "latitude,longitude,altitude" format. */
-        coordinates?: string;
     };
     /** Optional caller-supplied rkey. PDS assigns a TID if omitted. */
     rkey?: string;
@@ -1214,7 +1210,6 @@ type UpdateAudioRecordingInput = {
         };
         metadata?: {
             recordedAt?: string;
-            coordinates?: string;
         };
     };
     /**

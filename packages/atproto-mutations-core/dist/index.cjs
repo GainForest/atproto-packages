@@ -825,11 +825,11 @@ var deleteLayer = (input) => import_effect16.Effect.gen(function* () {
   return { uri, rkey };
 });
 
-// src/mutations/organization.recordings.audio/create.ts
+// src/mutations/ac.audio/create.ts
 var import_effect18 = require("effect");
-var import_audio = require("@gainforest/generated/app/gainforest/organization/recordings/audio.defs");
+var import_audio = require("@gainforest/generated/app/gainforest/ac/audio.defs");
 
-// src/mutations/organization.recordings.audio/utils/errors.ts
+// src/mutations/ac.audio/utils/errors.ts
 var import_effect17 = require("effect");
 var AudioRecordingValidationError = class extends import_effect17.Data.TaggedError(
   "AudioRecordingValidationError"
@@ -844,8 +844,8 @@ var AudioRecordingPdsError = class extends import_effect17.Data.TaggedError(
 ) {
 };
 
-// src/mutations/organization.recordings.audio/create.ts
-var COLLECTION9 = "app.gainforest.organization.recordings.audio";
+// src/mutations/ac.audio/create.ts
+var COLLECTION9 = "app.gainforest.ac.audio";
 var MAX_AUDIO_BYTES = 100 * 1024 * 1024;
 var ACCEPTED_AUDIO_MIMES = /* @__PURE__ */ new Set([
   "audio/wav",
@@ -905,19 +905,18 @@ var createAudioRecording = (input) => import_effect18.Effect.gen(function* () {
       file: blobRef
     },
     metadata: {
-      $type: "app.gainforest.organization.recordings.audio#metadata",
+      $type: "app.gainforest.ac.audio#metadata",
       codec: metadata.codec,
       channels: metadata.channels,
       duration: metadata.duration,
       sampleRate: metadata.sampleRate,
-      recordedAt: metadata.recordedAt,
-      coordinates: metadata.coordinates
+      recordedAt: metadata.recordedAt
     },
     createdAt
   };
   const record = yield* import_effect18.Effect.try({
     try: () => (0, import_audio.$parse)(candidate),
-    catch: (cause) => makeValidationError8(`organization.recordings.audio record failed lexicon validation: ${String(cause)}`, cause)
+    catch: (cause) => makeValidationError8(`ac.audio record failed lexicon validation: ${String(cause)}`, cause)
   });
   const { uri, cid } = yield* createRecord(COLLECTION9, record, rkey, makePdsError9);
   const assignedRkey = uri.split("/").pop() ?? rkey ?? "unknown";
@@ -929,10 +928,10 @@ var createAudioRecording = (input) => import_effect18.Effect.gen(function* () {
   };
 });
 
-// src/mutations/organization.recordings.audio/update.ts
+// src/mutations/ac.audio/update.ts
 var import_effect19 = require("effect");
-var import_audio2 = require("@gainforest/generated/app/gainforest/organization/recordings/audio.defs");
-var COLLECTION10 = "app.gainforest.organization.recordings.audio";
+var import_audio2 = require("@gainforest/generated/app/gainforest/ac/audio.defs");
+var COLLECTION10 = "app.gainforest.ac.audio";
 var MAX_AUDIO_BYTES2 = 100 * 1024 * 1024;
 var ACCEPTED_AUDIO_MIMES2 = /* @__PURE__ */ new Set([
   "audio/wav",
@@ -1028,19 +1027,18 @@ var updateAudioRecording = (input) => import_effect19.Effect.gen(function* () {
     } : existing.description,
     blob: audioBlob,
     metadata: {
-      $type: "app.gainforest.organization.recordings.audio#metadata",
+      $type: "app.gainforest.ac.audio#metadata",
       codec: techMeta.codec,
       channels: techMeta.channels,
       duration: techMeta.duration,
       sampleRate: techMeta.sampleRate,
-      recordedAt: data.metadata?.recordedAt ?? existingMeta["recordedAt"],
-      coordinates: data.metadata?.coordinates !== void 0 ? data.metadata.coordinates : existingMeta["coordinates"]
+      recordedAt: data.metadata?.recordedAt ?? existingMeta["recordedAt"]
     },
     createdAt: existing.createdAt
   };
   const record = yield* import_effect19.Effect.try({
     try: () => (0, import_audio2.$parse)(merged),
-    catch: (cause) => makeValidationError9(`organization.recordings.audio record failed lexicon validation: ${String(cause)}`, cause)
+    catch: (cause) => makeValidationError9(`ac.audio record failed lexicon validation: ${String(cause)}`, cause)
   });
   const { uri, cid } = yield* putRecord(COLLECTION10, rkey, record, makePdsError10);
   return {
@@ -1051,10 +1049,10 @@ var updateAudioRecording = (input) => import_effect19.Effect.gen(function* () {
   };
 });
 
-// src/mutations/organization.recordings.audio/upsert.ts
+// src/mutations/ac.audio/upsert.ts
 var import_effect20 = require("effect");
-var import_audio3 = require("@gainforest/generated/app/gainforest/organization/recordings/audio.defs");
-var COLLECTION11 = "app.gainforest.organization.recordings.audio";
+var import_audio3 = require("@gainforest/generated/app/gainforest/ac/audio.defs");
+var COLLECTION11 = "app.gainforest.ac.audio";
 var MAX_AUDIO_BYTES3 = 100 * 1024 * 1024;
 var ACCEPTED_AUDIO_MIMES3 = /* @__PURE__ */ new Set([
   "audio/wav",
@@ -1122,19 +1120,18 @@ var upsertAudioRecording = (input) => import_effect20.Effect.gen(function* () {
       file: blobRef
     },
     metadata: {
-      $type: "app.gainforest.organization.recordings.audio#metadata",
+      $type: "app.gainforest.ac.audio#metadata",
       codec: metadata.codec,
       channels: metadata.channels,
       duration: metadata.duration,
       sampleRate: metadata.sampleRate,
-      recordedAt: metadata.recordedAt,
-      coordinates: metadata.coordinates
+      recordedAt: metadata.recordedAt
     },
     createdAt
   };
   const record = yield* import_effect20.Effect.try({
     try: () => (0, import_audio3.$parse)(candidate),
-    catch: (cause) => makeValidationError10(`organization.recordings.audio record failed lexicon validation: ${String(cause)}`, cause)
+    catch: (cause) => makeValidationError10(`ac.audio record failed lexicon validation: ${String(cause)}`, cause)
   });
   const isCreate = !rkey || existing === null;
   let resultUri;
@@ -1160,9 +1157,9 @@ var upsertAudioRecording = (input) => import_effect20.Effect.gen(function* () {
   };
 });
 
-// src/mutations/organization.recordings.audio/delete.ts
+// src/mutations/ac.audio/delete.ts
 var import_effect21 = require("effect");
-var COLLECTION12 = "app.gainforest.organization.recordings.audio";
+var COLLECTION12 = "app.gainforest.ac.audio";
 var makePdsError12 = (message, cause) => new AudioRecordingPdsError({ message, cause });
 var deleteAudioRecording = (input) => import_effect21.Effect.gen(function* () {
   const { rkey } = input;
@@ -2855,14 +2852,6 @@ var mutations = {
       update: updateLayer,
       upsert: upsertLayer,
       delete: deleteLayer
-    },
-    recordings: {
-      audio: {
-        create: createAudioRecording,
-        update: updateAudioRecording,
-        upsert: upsertAudioRecording,
-        delete: deleteAudioRecording
-      }
     }
   },
   claim: {
@@ -2906,6 +2895,12 @@ var mutations = {
     }
   },
   ac: {
+    audio: {
+      create: createAudioRecording,
+      update: updateAudioRecording,
+      upsert: upsertAudioRecording,
+      delete: deleteAudioRecording
+    },
     multimedia: {
       create: createAcMultimedia
     }

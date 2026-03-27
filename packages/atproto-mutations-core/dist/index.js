@@ -744,11 +744,11 @@ var deleteLayer = (input) => Effect11.gen(function* () {
   return { uri, rkey };
 });
 
-// src/mutations/organization.recordings.audio/create.ts
+// src/mutations/ac.audio/create.ts
 import { Effect as Effect12 } from "effect";
-import { $parse as $parse8 } from "@gainforest/generated/app/gainforest/organization/recordings/audio.defs";
+import { $parse as $parse8 } from "@gainforest/generated/app/gainforest/ac/audio.defs";
 
-// src/mutations/organization.recordings.audio/utils/errors.ts
+// src/mutations/ac.audio/utils/errors.ts
 import { Data as Data5 } from "effect";
 var AudioRecordingValidationError = class extends Data5.TaggedError(
   "AudioRecordingValidationError"
@@ -763,8 +763,8 @@ var AudioRecordingPdsError = class extends Data5.TaggedError(
 ) {
 };
 
-// src/mutations/organization.recordings.audio/create.ts
-var COLLECTION9 = "app.gainforest.organization.recordings.audio";
+// src/mutations/ac.audio/create.ts
+var COLLECTION9 = "app.gainforest.ac.audio";
 var MAX_AUDIO_BYTES = 100 * 1024 * 1024;
 var ACCEPTED_AUDIO_MIMES = /* @__PURE__ */ new Set([
   "audio/wav",
@@ -824,19 +824,18 @@ var createAudioRecording = (input) => Effect12.gen(function* () {
       file: blobRef
     },
     metadata: {
-      $type: "app.gainforest.organization.recordings.audio#metadata",
+      $type: "app.gainforest.ac.audio#metadata",
       codec: metadata.codec,
       channels: metadata.channels,
       duration: metadata.duration,
       sampleRate: metadata.sampleRate,
-      recordedAt: metadata.recordedAt,
-      coordinates: metadata.coordinates
+      recordedAt: metadata.recordedAt
     },
     createdAt
   };
   const record = yield* Effect12.try({
     try: () => $parse8(candidate),
-    catch: (cause) => makeValidationError8(`organization.recordings.audio record failed lexicon validation: ${String(cause)}`, cause)
+    catch: (cause) => makeValidationError8(`ac.audio record failed lexicon validation: ${String(cause)}`, cause)
   });
   const { uri, cid } = yield* createRecord(COLLECTION9, record, rkey, makePdsError9);
   const assignedRkey = uri.split("/").pop() ?? rkey ?? "unknown";
@@ -848,10 +847,10 @@ var createAudioRecording = (input) => Effect12.gen(function* () {
   };
 });
 
-// src/mutations/organization.recordings.audio/update.ts
+// src/mutations/ac.audio/update.ts
 import { Effect as Effect13 } from "effect";
-import { $parse as $parse9 } from "@gainforest/generated/app/gainforest/organization/recordings/audio.defs";
-var COLLECTION10 = "app.gainforest.organization.recordings.audio";
+import { $parse as $parse9 } from "@gainforest/generated/app/gainforest/ac/audio.defs";
+var COLLECTION10 = "app.gainforest.ac.audio";
 var MAX_AUDIO_BYTES2 = 100 * 1024 * 1024;
 var ACCEPTED_AUDIO_MIMES2 = /* @__PURE__ */ new Set([
   "audio/wav",
@@ -947,19 +946,18 @@ var updateAudioRecording = (input) => Effect13.gen(function* () {
     } : existing.description,
     blob: audioBlob,
     metadata: {
-      $type: "app.gainforest.organization.recordings.audio#metadata",
+      $type: "app.gainforest.ac.audio#metadata",
       codec: techMeta.codec,
       channels: techMeta.channels,
       duration: techMeta.duration,
       sampleRate: techMeta.sampleRate,
-      recordedAt: data.metadata?.recordedAt ?? existingMeta["recordedAt"],
-      coordinates: data.metadata?.coordinates !== void 0 ? data.metadata.coordinates : existingMeta["coordinates"]
+      recordedAt: data.metadata?.recordedAt ?? existingMeta["recordedAt"]
     },
     createdAt: existing.createdAt
   };
   const record = yield* Effect13.try({
     try: () => $parse9(merged),
-    catch: (cause) => makeValidationError9(`organization.recordings.audio record failed lexicon validation: ${String(cause)}`, cause)
+    catch: (cause) => makeValidationError9(`ac.audio record failed lexicon validation: ${String(cause)}`, cause)
   });
   const { uri, cid } = yield* putRecord(COLLECTION10, rkey, record, makePdsError10);
   return {
@@ -970,10 +968,10 @@ var updateAudioRecording = (input) => Effect13.gen(function* () {
   };
 });
 
-// src/mutations/organization.recordings.audio/upsert.ts
+// src/mutations/ac.audio/upsert.ts
 import { Effect as Effect14 } from "effect";
-import { $parse as $parse10 } from "@gainforest/generated/app/gainforest/organization/recordings/audio.defs";
-var COLLECTION11 = "app.gainforest.organization.recordings.audio";
+import { $parse as $parse10 } from "@gainforest/generated/app/gainforest/ac/audio.defs";
+var COLLECTION11 = "app.gainforest.ac.audio";
 var MAX_AUDIO_BYTES3 = 100 * 1024 * 1024;
 var ACCEPTED_AUDIO_MIMES3 = /* @__PURE__ */ new Set([
   "audio/wav",
@@ -1041,19 +1039,18 @@ var upsertAudioRecording = (input) => Effect14.gen(function* () {
       file: blobRef
     },
     metadata: {
-      $type: "app.gainforest.organization.recordings.audio#metadata",
+      $type: "app.gainforest.ac.audio#metadata",
       codec: metadata.codec,
       channels: metadata.channels,
       duration: metadata.duration,
       sampleRate: metadata.sampleRate,
-      recordedAt: metadata.recordedAt,
-      coordinates: metadata.coordinates
+      recordedAt: metadata.recordedAt
     },
     createdAt
   };
   const record = yield* Effect14.try({
     try: () => $parse10(candidate),
-    catch: (cause) => makeValidationError10(`organization.recordings.audio record failed lexicon validation: ${String(cause)}`, cause)
+    catch: (cause) => makeValidationError10(`ac.audio record failed lexicon validation: ${String(cause)}`, cause)
   });
   const isCreate = !rkey || existing === null;
   let resultUri;
@@ -1079,9 +1076,9 @@ var upsertAudioRecording = (input) => Effect14.gen(function* () {
   };
 });
 
-// src/mutations/organization.recordings.audio/delete.ts
+// src/mutations/ac.audio/delete.ts
 import { Effect as Effect15 } from "effect";
-var COLLECTION12 = "app.gainforest.organization.recordings.audio";
+var COLLECTION12 = "app.gainforest.ac.audio";
 var makePdsError12 = (message, cause) => new AudioRecordingPdsError({ message, cause });
 var deleteAudioRecording = (input) => Effect15.gen(function* () {
   const { rkey } = input;
@@ -2824,14 +2821,6 @@ var mutations = {
       update: updateLayer,
       upsert: upsertLayer,
       delete: deleteLayer
-    },
-    recordings: {
-      audio: {
-        create: createAudioRecording,
-        update: updateAudioRecording,
-        upsert: upsertAudioRecording,
-        delete: deleteAudioRecording
-      }
     }
   },
   claim: {
@@ -2875,6 +2864,12 @@ var mutations = {
     }
   },
   ac: {
+    audio: {
+      create: createAudioRecording,
+      update: updateAudioRecording,
+      upsert: upsertAudioRecording,
+      delete: deleteAudioRecording
+    },
     multimedia: {
       create: createAcMultimedia
     }

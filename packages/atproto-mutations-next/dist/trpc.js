@@ -110,10 +110,7 @@ var appRouter = router({
     defaultSite: router({
       set: effectMutation(mutations.organization.defaultSite.set)
     }),
-    layer: entityRouter(mutations.organization.layer),
-    recordings: router({
-      audio: entityRouter(mutations.organization.recordings.audio)
-    })
+    layer: entityRouter(mutations.organization.layer)
   }),
   claim: router({
     activity: entityRouter(mutations.claim.activity)
@@ -138,6 +135,7 @@ var appRouter = router({
     })
   }),
   ac: router({
+    audio: entityRouter(mutations.ac.audio),
     multimedia: router({
       create: effectMutation(mutations.ac.multimedia.create)
     })

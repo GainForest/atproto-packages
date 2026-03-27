@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { $parse } from "@gainforest/generated/app/gainforest/organization/recordings/audio.defs";
+import { $parse } from "@gainforest/generated/app/gainforest/ac/audio.defs";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { BlobUploadError, FileConstraintError } from "../../blob/errors";
 import { fromSerializableFile, isAnyBlobRef, normalizeBlobRef } from "../../blob/types";
@@ -16,7 +16,7 @@ import type {
   AudioTechnicalMetadata,
 } from "./utils/types";
 
-const COLLECTION = "app.gainforest.organization.recordings.audio";
+const COLLECTION = "app.gainforest.ac.audio";
 const MAX_AUDIO_BYTES = 100 * 1024 * 1024;
 
 const ACCEPTED_AUDIO_MIMES = new Set([
@@ -135,22 +135,19 @@ export const updateAudioRecording = (
         : existing.description,
       blob: audioBlob,
       metadata: {
-        $type: "app.gainforest.organization.recordings.audio#metadata",
+        $type: "app.gainforest.ac.audio#metadata",
         codec: techMeta.codec,
         channels: techMeta.channels,
         duration: techMeta.duration,
         sampleRate: techMeta.sampleRate,
         recordedAt: data.metadata?.recordedAt ?? (existingMeta["recordedAt"] as string),
-        coordinates: data.metadata?.coordinates !== undefined
-          ? data.metadata.coordinates
-          : (existingMeta["coordinates"] as string | undefined),
       },
       createdAt: existing.createdAt,
     };
 
     const record = yield* Effect.try({
       try: () => $parse(merged),
-      catch: (cause) => makeValidationError(`organization.recordings.audio record failed lexicon validation: ${String(cause)}`, cause),
+      catch: (cause) => makeValidationError(`ac.audio record failed lexicon validation: ${String(cause)}`, cause),
     });
 
     const { uri, cid } = yield* putRecord(COLLECTION, rkey, record, makePdsError);

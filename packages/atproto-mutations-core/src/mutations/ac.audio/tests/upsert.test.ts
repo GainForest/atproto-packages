@@ -105,7 +105,7 @@ describe("upsertAudioRecording", () => {
       upsertAudioRecording({
         name: "Upsert Recording v2",
         audioFile: makeTinyWav(),
-        metadata: { ...baseMetadata, coordinates: "5.0,10.0" },
+        metadata: baseMetadata,
         rkey: "test-audio-upsert",
       }).pipe(Effect.provide(layer))
     );

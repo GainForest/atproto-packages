@@ -80,11 +80,9 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
     if (!desc || typeof desc !== "object") return "";
     return String((desc as Record<string, unknown>)["text"] ?? "");
   });
-  const [coordinates, setCoordinates] = useState(
-    initRecord?.metadata?.coordinates ?? ""
-  );
+  const initMeta = initRecord?.metadata as Record<string, unknown> | null | undefined;
   const [recordedAt, setRecordedAt] = useState(() => {
-    const recorded = initRecord?.metadata?.recordedAt;
+    const recorded = initMeta?.["recordedAt"] as string | undefined;
     if (recorded) {
       return new Date(recorded).toISOString().slice(0, 16);
     }
@@ -102,7 +100,7 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
   // ── Mutations ───────────────────────────────────────────────────────────────
 
   const { mutate: createAudio, isPending: isCreating } =
-    trpc.organization.recordings.audio.create.useMutation({
+    trpc.ac.audio.create.useMutation({
       onSuccess: () => {
         void queryClient.invalidateQueries({ queryKey: queries.audio.key() });
         setIsCompleted(true);
@@ -113,7 +111,7 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
     });
 
   const { mutate: updateAudio, isPending: isUpdating } =
-    trpc.organization.recordings.audio.update.useMutation({
+    trpc.ac.audio.update.useMutation({
       onSuccess: () => {
         void queryClient.invalidateQueries({ queryKey: queries.audio.key() });
         setIsCompleted(true);
@@ -156,7 +154,6 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
           duration,
           sampleRate: 44100,
           recordedAt: new Date(recordedAt).toISOString(),
-          coordinates: coordinates.trim() || undefined,
         },
       });
     } else {
@@ -187,7 +184,6 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
             : undefined,
           metadata: {
             recordedAt: new Date(recordedAt).toISOString(),
-            coordinates: coordinates.trim() || undefined,
           },
         },
         ...(newAudioFile ? { newAudioFile, newTechnicalMetadata } : {}),
@@ -300,21 +296,7 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-muted-foreground">
-              Coordinates (optional)
-            </label>
-            <Input
-              placeholder="-3.4653, 142.0723"
-              value={coordinates}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setCoordinates(e.target.value)
-              }
-            />
-            <span className="text-xs text-muted-foreground">
-              Format: latitude, longitude
-            </span>
-          </div>
+
         </div>
       </div>
 
