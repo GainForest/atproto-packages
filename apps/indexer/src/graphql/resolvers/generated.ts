@@ -439,6 +439,148 @@ export async function mapCertifiedLocation(row: RecordRow) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// app.gainforest.ac.audio
+// ──────────────────────────────────────────────────────────────────────────
+
+export const GainforestAcAudioRecordType = builder.simpleObject("GainforestAcAudioRecord", {
+  description: "Pure payload for app.gainforest.ac.audio.",
+  fields: (t) => ({
+        name: t.string({ nullable: true, description: "A short human-readable name or label for this audio recording." }),
+        description: t.field({ type: "JSON", nullable: true, description: "A longer human-readable description of the audio recording content." }),
+        blob: t.field({ type: "JSON", nullable: true, description: "The audio file blob stored on the PDS." }),
+        metadata: t.field({ type: "JSON", nullable: true, description: "Technical audio metadata (codec, sample rate, duration, frequency bounds, etc.)." }),
+        spectrogram: t.field({ type: "JSON", nullable: true, description: "Spectrogram image of the recording (visual frequency-time representation)." }),
+        thumbnail: t.field({ type: "JSON", nullable: true, description: "Thumbnail image for display in list views." }),
+        license: t.string({ nullable: true, description: "License for this recording (e.g., CC-BY-4.0, CC0-1.0). Aligns with AC dcterms:rights." }),
+        recordedBy: t.string({ nullable: true, description: "Name of the person or agent who made the recording. Aligns with AC dc:creator. For automated deployments, this is the person who deployed the device." }),
+        tags: t.stringList({ nullable: true, description: "Freeform tags for the recording (e.g., 'dawn-chorus', 'rain', 'chainsaw', 'anthropogenic-noise'). Aligns with AC ac:tag." }),
+        occurrenceRef: t.string({ nullable: true, description: "AT-URI of the dwc.occurrence record this audio is evidence for. Use when this recording documents a specific species detection or biodiversity observation." }),
+        deploymentRef: t.string({ nullable: true, description: "AT-URI of the ac.deployment record describing the recording device setup (device model, gain, location, schedule, etc.)." }),
+        siteRef: t.string({ nullable: true, description: "AT-URI of the organization site record where this audio was captured." }),
+        createdAt: t.field({ type: "DateTime", nullable: true, description: "Timestamp of record creation in the ATProto PDS." }),
+  }),
+});
+
+export const GainforestAcAudioItemType = builder.simpleObject("GainforestAcAudioItem", {
+  description: "A record from app.gainforest.ac.audio.",
+  fields: (t) => ({
+    metadata:    t.field({ type: RecordMetaType }),
+    creatorInfo: t.field({ type: CreatorInfoType }),
+    record:      t.field({ type: GainforestAcAudioRecordType }),
+  }),
+});
+
+export const GainforestAcAudioPageType = builder.simpleObject("GainforestAcAudioPage", {
+  fields: (t) => ({
+    data:     t.field({ type: [GainforestAcAudioItemType] }),
+    pageInfo: t.field({ type: PageInfoType }),
+  }),
+});
+
+export async function mapGainforestAcAudio(row: RecordRow) {
+  const p = payload(row);
+  return {
+    metadata:    rowToMeta(row),
+    creatorInfo: await resolveCreatorInfo(row.did),
+    record: {
+            name: s(p, "name"),
+            description: j(p, "description"),
+            blob: await resolveBlobsInValue(j(p, "blob"), row.did),
+            metadata: j(p, "metadata"),
+            spectrogram: await resolveBlobsInValue(j(p, "spectrogram"), row.did),
+            thumbnail: await resolveBlobsInValue(j(p, "thumbnail"), row.did),
+            license: s(p, "license"),
+            recordedBy: s(p, "recordedBy"),
+            tags: arr(p, "tags"),
+            occurrenceRef: s(p, "occurrenceRef"),
+            deploymentRef: s(p, "deploymentRef"),
+            siteRef: s(p, "siteRef"),
+            createdAt: s(p, "createdAt"),
+    },
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// app.gainforest.ac.deployment
+// ──────────────────────────────────────────────────────────────────────────
+
+export const GainforestAcDeploymentRecordType = builder.simpleObject("GainforestAcDeploymentRecord", {
+  description: "Pure payload for app.gainforest.ac.deployment.",
+  fields: (t) => ({
+        name: t.string({ nullable: true, description: "A short human-readable label for this deployment (e.g., 'Site A North — AudioMoth March 2024')." }),
+        deviceModel: t.string({ nullable: true, description: "Recording device model name (e.g., 'AudioMoth 1.2.0', 'AudioMoth 1.1.0', 'Wildlife Acoustics Song Meter SM4', 'Cornell Lab Swift'). Aligns with AC ac:captureDevice." }),
+        deviceSerialNumber: t.string({ nullable: true, description: "Device serial number for inventory tracking and cross-referencing recordings." }),
+        firmwareVersion: t.string({ nullable: true, description: "Firmware version loaded on the device at time of deployment (e.g., '1.8.1')." }),
+        gain: t.string({ nullable: true, description: "Gain setting configured on the device (e.g., 'low', 'medium', 'high', 'medium-high', '36dB'). AudioMoth-specific values: low/medium/high/medium-high/medium-low." }),
+        recordingSchedule: t.string({ nullable: true, description: "Human-readable description of the recording duty cycle and schedule (e.g., '5 min on / 10 min off, 18:00–06:00 UTC+0'). For AudioMoth, this reflects the schedule configured via the AudioMoth app." }),
+        sampleRateHz: t.int({ nullable: true, description: "Sample rate configured on the device in Hz (e.g., 48000, 192000, 384000 for ultrasonic bat detection)." }),
+        microphoneType: t.string({ nullable: true, description: "Microphone type used (e.g., 'built-in MEMS', 'external electret', 'ultrasonic MEMS', 'Knowles SPH0641LU4H-1')." }),
+        mountingHeight: t.string({ nullable: true, description: "Height above ground at which the device was mounted, in meters (e.g., '1.5')." }),
+        mountingOrientation: t.string({ nullable: true, description: "Orientation of the device microphone (e.g., 'horizontal', 'vertical-facing-up', 'vertical-facing-down', 'angled-45deg')." }),
+        batteryType: t.string({ nullable: true, description: "Battery type used (e.g., 'AA alkaline x3', 'AA lithium x3', 'USB power bank', 'solar panel')." }),
+        storageMedia: t.string({ nullable: true, description: "Storage media type and capacity (e.g., 'microSD 128GB SanDisk Endurance')." }),
+        deployedAt: t.field({ type: "DateTime", nullable: true, description: "Date and time the device was placed and activated at the deployment location." }),
+        retrievedAt: t.field({ type: "DateTime", nullable: true, description: "Date and time the device was collected and deactivated. Null if still active." }),
+        decimalLatitude: t.string({ nullable: true, description: "Decimal latitude of the deployment location in WGS84 (e.g., '-3.7452'). Aligns with dwc:decimalLatitude." }),
+        decimalLongitude: t.string({ nullable: true, description: "Decimal longitude of the deployment location in WGS84 (e.g., '-62.2159'). Aligns with dwc:decimalLongitude." }),
+        altitude: t.string({ nullable: true, description: "Altitude of the deployment location in meters above sea level (e.g., '312')." }),
+        habitat: t.string({ nullable: true, description: "Brief habitat description at the deployment site (e.g., 'primary rainforest edge, closed canopy ~30m'). Aligns with dwc:habitat." }),
+        siteRef: t.string({ nullable: true, description: "AT-URI of the organization site record this deployment belongs to." }),
+        eventRef: t.string({ nullable: true, description: "AT-URI of the dwc.event sampling event this deployment is part of." }),
+        remarks: t.string({ nullable: true, description: "Free-text remarks about the deployment (e.g., notable issues, vegetation around device, signs of disturbance)." }),
+        createdAt: t.field({ type: "DateTime", nullable: true, description: "Timestamp of record creation in the ATProto PDS." }),
+  }),
+});
+
+export const GainforestAcDeploymentItemType = builder.simpleObject("GainforestAcDeploymentItem", {
+  description: "A record from app.gainforest.ac.deployment.",
+  fields: (t) => ({
+    metadata:    t.field({ type: RecordMetaType }),
+    creatorInfo: t.field({ type: CreatorInfoType }),
+    record:      t.field({ type: GainforestAcDeploymentRecordType }),
+  }),
+});
+
+export const GainforestAcDeploymentPageType = builder.simpleObject("GainforestAcDeploymentPage", {
+  fields: (t) => ({
+    data:     t.field({ type: [GainforestAcDeploymentItemType] }),
+    pageInfo: t.field({ type: PageInfoType }),
+  }),
+});
+
+export async function mapGainforestAcDeployment(row: RecordRow) {
+  const p = payload(row);
+  return {
+    metadata:    rowToMeta(row),
+    creatorInfo: await resolveCreatorInfo(row.did),
+    record: {
+            name: s(p, "name"),
+            deviceModel: s(p, "deviceModel"),
+            deviceSerialNumber: s(p, "deviceSerialNumber"),
+            firmwareVersion: s(p, "firmwareVersion"),
+            gain: s(p, "gain"),
+            recordingSchedule: s(p, "recordingSchedule"),
+            sampleRateHz: n(p, "sampleRateHz"),
+            microphoneType: s(p, "microphoneType"),
+            mountingHeight: s(p, "mountingHeight"),
+            mountingOrientation: s(p, "mountingOrientation"),
+            batteryType: s(p, "batteryType"),
+            storageMedia: s(p, "storageMedia"),
+            deployedAt: s(p, "deployedAt"),
+            retrievedAt: s(p, "retrievedAt"),
+            decimalLatitude: s(p, "decimalLatitude"),
+            decimalLongitude: s(p, "decimalLongitude"),
+            altitude: s(p, "altitude"),
+            habitat: s(p, "habitat"),
+            siteRef: s(p, "siteRef"),
+            eventRef: s(p, "eventRef"),
+            remarks: s(p, "remarks"),
+            createdAt: s(p, "createdAt"),
+    },
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // app.gainforest.ac.multimedia
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -1435,90 +1577,6 @@ export async function mapGainforestOrganizationPredictionsFlora(row: RecordRow) 
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// app.gainforest.organization.site
-// ──────────────────────────────────────────────────────────────────────────
-
-export const GainforestOrganizationSiteRecordType = builder.simpleObject("GainforestOrganizationSiteRecord", {
-  description: "Pure payload for app.gainforest.organization.site. A declaration of a site for an organization, with optional environmental and location context",
-  fields: (t) => ({
-        name: t.string({ nullable: true, description: "The name of the site" }),
-        lat: t.string({ nullable: true, description: "The latitude of the centerpoint of the site" }),
-        lon: t.string({ nullable: true, description: "The longitude of the centerpoint of the site" }),
-        area: t.string({ nullable: true, description: "The area of the site in hectares" }),
-        shapefile: t.field({ type: "JSON", nullable: true, description: "A blob pointing to a GeoJSON file containing the site boundaries" }),
-        createdAt: t.field({ type: "DateTime", nullable: true, description: "The date and time of the creation of the record" }),
-        country: t.string({ nullable: true, description: "The country where the site is located" }),
-        countryCode: t.string({ nullable: true, description: "ISO 3166-1 alpha-2 country code" }),
-        stateProvince: t.string({ nullable: true, description: "The first-level administrative division (state, province, region) where the site is located" }),
-        locality: t.string({ nullable: true, description: "Specific locality description for the site" }),
-        minimumElevationInMeters: t.int({ nullable: true, description: "The lower elevation bound of the site in meters" }),
-        maximumElevationInMeters: t.int({ nullable: true, description: "The upper elevation bound of the site in meters" }),
-        biome: t.string({ nullable: true, description: "The biome classification of the site" }),
-        ecosystemType: t.string({ nullable: true, description: "Freeform description of the ecosystem type at the site" }),
-        protectionStatus: t.string({ nullable: true, description: "The protection status of the site" }),
-        iucnProtectedAreaCategory: t.string({ nullable: true, description: "The IUCN protected area management category" }),
-        wdpaId: t.string({ nullable: true, description: "The World Database on Protected Areas (WDPA) identifier for the site" }),
-        averageAnnualRainfallMm: t.int({ nullable: true, description: "The average annual rainfall at the site in millimeters" }),
-        averageTemperatureCelsius: t.string({ nullable: true, description: "The average annual temperature at the site in degrees Celsius" }),
-        climatezone: t.string({ nullable: true, description: "The Koppen climate classification for the site" }),
-        monitoringStartDate: t.field({ type: "DateTime", nullable: true, description: "The date and time when monitoring of the site began" }),
-        description: t.field({ type: "JSON", nullable: true, description: "A rich text description of the site" }),
-        boundary: t.string({ nullable: true, description: "URL to a boundary GeoJSON file (alternative to the shapefile blob)" }),
-        siteRemarks: t.string({ nullable: true, description: "Additional notes or remarks about the site" }),
-  }),
-});
-
-export const GainforestOrganizationSiteItemType = builder.simpleObject("GainforestOrganizationSiteItem", {
-  description: "A record from app.gainforest.organization.site.",
-  fields: (t) => ({
-    metadata:    t.field({ type: RecordMetaType }),
-    creatorInfo: t.field({ type: CreatorInfoType }),
-    record:      t.field({ type: GainforestOrganizationSiteRecordType }),
-  }),
-});
-
-export const GainforestOrganizationSitePageType = builder.simpleObject("GainforestOrganizationSitePage", {
-  fields: (t) => ({
-    data:     t.field({ type: [GainforestOrganizationSiteItemType] }),
-    pageInfo: t.field({ type: PageInfoType }),
-  }),
-});
-
-export async function mapGainforestOrganizationSite(row: RecordRow) {
-  const p = payload(row);
-  return {
-    metadata:    rowToMeta(row),
-    creatorInfo: await resolveCreatorInfo(row.did),
-    record: {
-            name: s(p, "name"),
-            lat: s(p, "lat"),
-            lon: s(p, "lon"),
-            area: s(p, "area"),
-            shapefile: await resolveBlobsInValue(j(p, "shapefile"), row.did),
-            createdAt: s(p, "createdAt"),
-            country: s(p, "country"),
-            countryCode: s(p, "countryCode"),
-            stateProvince: s(p, "stateProvince"),
-            locality: s(p, "locality"),
-            minimumElevationInMeters: n(p, "minimumElevationInMeters"),
-            maximumElevationInMeters: n(p, "maximumElevationInMeters"),
-            biome: s(p, "biome"),
-            ecosystemType: s(p, "ecosystemType"),
-            protectionStatus: s(p, "protectionStatus"),
-            iucnProtectedAreaCategory: s(p, "iucnProtectedAreaCategory"),
-            wdpaId: s(p, "wdpaId"),
-            averageAnnualRainfallMm: n(p, "averageAnnualRainfallMm"),
-            averageTemperatureCelsius: s(p, "averageTemperatureCelsius"),
-            climatezone: s(p, "climatezone"),
-            monitoringStartDate: s(p, "monitoringStartDate"),
-            description: j(p, "description"),
-            boundary: s(p, "boundary"),
-            siteRemarks: s(p, "siteRemarks"),
-    },
-  };
-}
-
-// ──────────────────────────────────────────────────────────────────────────
 // org.hyperboards.board
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -2025,7 +2083,7 @@ export async function mapHypercertsContextMeasurement(row: RecordRow) {
 export const HypercertsFundingReceiptRecordType = builder.simpleObject("HypercertsFundingReceiptRecord", {
   description: "Pure payload for org.hypercerts.funding.receipt. Records a funding receipt for a payment from one user to another user. It may be recorded by the recipient, by the sender, or by a third party. The sender may remain anonymous.",
   fields: (t) => ({
-        from: t.field({ type: "JSON", nullable: true, description: "DID of the sender who transferred the funds. Leave empty if sender wants to stay anonymous." }),
+        from: t.field({ type: "JSON", nullable: true, description: "DID of the sender who transferred the funds. This field is optional, and can be left undefined to represent anonymity." }),
         to: t.string({ nullable: true, description: "The recipient of the funds. Can be identified by DID or a clear-text name." }),
         amount: t.string({ nullable: true, description: "Amount of funding received as a numeric string (e.g. '1000.50')." }),
         currency: t.string({ nullable: true, description: "Currency of the payment (e.g. EUR, USD, ETH)." }),
@@ -2315,6 +2373,32 @@ builder.objectType(GainforestAcNS, {
   name: "GainforestAcNamespace",
   description: "GainforestAcNamespace namespace (gainforest.ac.*).",
   fields: (t) => ({
+    audio: t.field({
+      type: GainforestAcAudioPageType,
+      description: "Paginated list of app.gainforest.ac.audio records.",
+      args: {
+        cursor: t.arg.string(),
+        limit: t.arg.int(),
+        where: t.arg({ type: WhereInputRef, required: false }),
+        sortBy: t.arg({ type: SortFieldEnum }),
+        order: t.arg({ type: SortOrderEnum }),
+      },
+      resolve: (_, args) => fetchCollectionPage("app.gainforest.ac.audio", args, mapGainforestAcAudio, {
+        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
+      }),
+    }),
+    deployment: t.field({
+      type: GainforestAcDeploymentPageType,
+      description: "Paginated list of app.gainforest.ac.deployment records.",
+      args: {
+        cursor: t.arg.string(),
+        limit: t.arg.int(),
+        where: t.arg({ type: WhereInputRef, required: false }),
+        sortBy: t.arg({ type: SortFieldEnum }),
+        order: t.arg({ type: SortOrderEnum }),
+      },
+      resolve: (_, args) => fetchCollectionPage("app.gainforest.ac.deployment", args, mapGainforestAcDeployment),
+    }),
     multimedia: t.field({
       type: GainforestAcMultimediaPageType,
       description: "Paginated list of app.gainforest.ac.multimedia records.",
@@ -2572,20 +2656,6 @@ builder.objectType(GainforestOrganizationNS, {
         order: t.arg({ type: SortOrderEnum }),
       },
       resolve: (_, args) => fetchCollectionPage("app.gainforest.organization.member", args, mapGainforestOrganizationMember, {
-        preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
-      }),
-    }),
-    site: t.field({
-      type: GainforestOrganizationSitePageType,
-      description: "Paginated list of app.gainforest.organization.site records.",
-      args: {
-        cursor: t.arg.string(),
-        limit: t.arg.int(),
-        where: t.arg({ type: WhereInputRef, required: false }),
-        sortBy: t.arg({ type: SortFieldEnum }),
-        order: t.arg({ type: SortOrderEnum }),
-      },
-      resolve: (_, args) => fetchCollectionPage("app.gainforest.organization.site", args, mapGainforestOrganizationSite, {
         preFetch: (rows) => getPdsHostsBatch([...new Set(rows.map((r) => r.did))]),
       }),
     }),

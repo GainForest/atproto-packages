@@ -3,7 +3,7 @@
  */
 
 import { l } from '@atproto/lex'
-import * as CertifiedDefs from './..//..//..//app//certified//defs.defs.ts'
+import * as CertifiedDefs from './..\\..\\..\\app\\certified\\defs.defs.ts'
 
 const $nsid = 'org.hypercerts.funding.receipt'
 
@@ -14,9 +14,9 @@ type Main = {
   $type: 'org.hypercerts.funding.receipt'
 
   /**
-   * DID of the sender who transferred the funds. Leave empty if sender wants to stay anonymous.
+   * DID of the sender who transferred the funds. This field is optional, and can be left undefined to represent anonymity.
    */
-  from: CertifiedDefs.Did
+  from?: CertifiedDefs.Did
 
   /**
    * The recipient of the funds. Can be identified by DID or a clear-text name.
@@ -76,7 +76,9 @@ const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    from: l.ref<CertifiedDefs.Did>((() => CertifiedDefs.did) as any),
+    from: l.optional(
+      l.ref<CertifiedDefs.Did>((() => CertifiedDefs.did) as any),
+    ),
     to: l.string({ maxLength: 2048 }),
     amount: l.string({ maxLength: 50 }),
     currency: l.string({ maxLength: 10 }),
