@@ -18,7 +18,6 @@ import {
   ModalTitle,
 } from "@/components/ui/modal/modal";
 import { Button } from "@/components/ui/button";
-import { trpc } from "@/lib/trpc/client";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { clientEnv } from "@/lib/env/client";
 import type { EvmLink } from "@/lib/graphql-dev/queries/linkEvm";
