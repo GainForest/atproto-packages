@@ -124,7 +124,7 @@ export {
   LayerPdsError,
 } from "@gainforest/atproto-mutations-core";
 
-// organization.recordings.audio types — safe everywhere
+// ac.audio types — safe everywhere
 export type {
   AudioRecordingRecord,
   AudioRecordingMutationResult,

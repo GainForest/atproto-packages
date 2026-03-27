@@ -22,7 +22,6 @@ function toPlayableMimeType(mime: string | undefined): string | undefined {
 }
 import {
   Loader2Icon,
-  MapPinIcon,
   MoreVerticalIcon,
   PencilIcon,
   Trash2Icon,
@@ -58,7 +57,7 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { mutate: deleteAudio, isPending: isDeleting } =
-    trpc.organization.recordings.audio.delete.useMutation({
+    trpc.ac.audio.delete.useMutation({
       onSuccess: () => {
         void indexerUtils.audio.list.invalidate();
         setIsConfirmingDelete(false);
@@ -72,8 +71,10 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
 
   const rkey = audio.metadata?.rkey;
   const record = audio.record;
-  const audioUrl = record?.blob?.uri;
-  const mimeType = toPlayableMimeType(record?.blob?.mimeType ?? undefined);
+  const blob = record?.blob as Record<string, unknown> | null | undefined;
+  const meta = record?.metadata as Record<string, unknown> | null | undefined;
+  const audioUrl = blob?.["uri"] as string | undefined;
+  const mimeType = toPlayableMimeType((blob?.["mimeType"] as string) ?? undefined);
   const name = record?.name ?? "Untitled Recording";
   const description =
     record?.description &&
@@ -81,9 +82,8 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
     "text" in record.description
       ? String((record.description as Record<string, unknown>)["text"])
       : null;
-  const coordinates = record?.metadata?.coordinates ?? null;
-  const recordedAt = record?.metadata?.recordedAt ?? null;
-  const sampleRate = record?.metadata?.sampleRate ?? null;
+  const recordedAt = (meta?.["recordedAt"] as string) ?? null;
+  const sampleRate = (meta?.["sampleRate"] as number) ?? null;
 
   const handleEdit = () => {
     if (rkey) onEdit(rkey);
@@ -161,13 +161,6 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
           <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
             {description}
           </p>
-        )}
-
-        {coordinates && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5">
-            <MapPinIcon className="h-3 w-3 shrink-0" />
-            {coordinates}
-          </div>
         )}
 
         <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">

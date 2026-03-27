@@ -35,12 +35,12 @@ import { upsertLayer } from "./mutations/organization.layer/upsert";
 import { deleteLayer } from "./mutations/organization.layer/delete";
 
 // ---------------------------------------------------------------------------
-// organization.recordings.audio
+// ac.audio
 // ---------------------------------------------------------------------------
-import { createAudioRecording } from "./mutations/organization.recordings.audio/create";
-import { updateAudioRecording } from "./mutations/organization.recordings.audio/update";
-import { upsertAudioRecording } from "./mutations/organization.recordings.audio/upsert";
-import { deleteAudioRecording } from "./mutations/organization.recordings.audio/delete";
+import { createAudioRecording } from "./mutations/ac.audio/create";
+import { updateAudioRecording } from "./mutations/ac.audio/update";
+import { upsertAudioRecording } from "./mutations/ac.audio/upsert";
+import { deleteAudioRecording } from "./mutations/ac.audio/delete";
 
 // ---------------------------------------------------------------------------
 // claim.activity
@@ -134,14 +134,6 @@ export const mutations = {
       upsert: upsertLayer,
       delete: deleteLayer,
     },
-    recordings: {
-      audio: {
-        create: createAudioRecording,
-        update: updateAudioRecording,
-        upsert: upsertAudioRecording,
-        delete: deleteAudioRecording,
-      },
-    },
   },
   claim: {
     activity: {
@@ -184,6 +176,12 @@ export const mutations = {
     },
   },
   ac: {
+    audio: {
+      create: createAudioRecording,
+      update: updateAudioRecording,
+      upsert: upsertAudioRecording,
+      delete: deleteAudioRecording,
+    },
     multimedia: {
       create: createAcMultimedia,
     },

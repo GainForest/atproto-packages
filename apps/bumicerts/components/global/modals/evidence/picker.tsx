@@ -65,7 +65,8 @@ function AudioRow({
   onToggle: () => void;
 }) {
   const title = item.record?.name ?? "Untitled recording";
-  const date = formatDate(item.record?.metadata?.recordedAt ?? item.record?.createdAt ?? undefined);
+  const meta = item.record?.metadata as Record<string, unknown> | null | undefined;
+  const date = formatDate((meta?.["recordedAt"] as string) ?? item.record?.createdAt ?? undefined);
   return (
     <button
       type="button"
