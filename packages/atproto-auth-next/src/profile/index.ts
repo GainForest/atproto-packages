@@ -1,11 +1,12 @@
 /**
  * Profile fetching utilities.
  *
- * Fetches the user's profile by trying two record collections in priority order:
+ * Fetches the user's profile by trying two sources in priority order:
  *   1. app.certified.profile — GainForest's certified profile (if it exists)
- *   2. app.bsky.actor.profile — Standard ATProto/Bluesky profile (fallback)
+ *   2. Bluesky public API — Standard ATProto/Bluesky profile (fallback)
  *
- * Both are fetched in parallel and the first non-null result is used.
+ * Fields are merged individually: certified values take priority, with
+ * Bluesky filling in any gaps (especially avatar).
  */
 
 import type { Agent } from "@atproto/api";
@@ -29,11 +30,61 @@ type RawProfileRecord = {
   avatar?: string | { ref?: { $link?: string }; mimeType?: string };
 };
 
+/** Response shape from the Bluesky public API. */
+type BskyPublicProfile = {
+  did: string;
+  handle: string;
+  displayName?: string;
+  description?: string;
+  avatar?: string; // Always a resolved CDN URL
+};
+
+/**
+ * Fetch a resolved avatar URL from the Bluesky public API.
+ *
+ * Unlike `getRecord`, the public API returns fully resolved CDN URLs
+ * (e.g. `https://cdn.bsky.app/...`) rather than blob refs.
+ */
+async function fetchBskyPublicProfile(
+  did: string,
+): Promise<BskyPublicProfile | null> {
+  try {
+    const url = new URL(
+      "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile",
+    );
+    url.searchParams.set("actor", did);
+    const res = await fetch(url.toString());
+    if (!res.ok) return null;
+    return (await res.json()) as BskyPublicProfile;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extract a usable avatar URL from a raw profile record.
+ *
+ * Returns the avatar if it's a pre-resolved string URL (e.g. from a CDN),
+ * or undefined if it's a blob ref object (which can't be resolved without
+ * the PDS host).
+ */
+function extractAvatarUrl(
+  raw: RawProfileRecord | null,
+): string | undefined {
+  if (raw && typeof raw.avatar === "string") {
+    return raw.avatar;
+  }
+  return undefined;
+}
+
 /**
  * Fetch the user's profile by DID.
  *
- * Tries `app.certified.profile` first, falls back to `app.bsky.actor.profile`.
- * Both are fetched in parallel for speed.
+ * Tries `app.certified.profile` first for all fields. For avatar specifically,
+ * if the certified profile doesn't have a usable avatar URL, falls back to the
+ * Bluesky public API which returns resolved CDN URLs.
+ *
+ * Both sources are fetched in parallel for speed.
  *
  * @param agent - An authenticated Agent for the user's DID
  * @param did   - The user's DID
@@ -62,38 +113,47 @@ export async function fetchProfile(
 
   debug.log("[profile] Fetching profiles in parallel", { did });
 
-  const [certifiedProfile, bskyProfile] = await Promise.all([
+  const [certifiedProfile, bskyPublicProfile] = await Promise.all([
     fetchRecord("app.certified.profile"),
-    fetchRecord("app.bsky.actor.profile"),
+    fetchBskyPublicProfile(did),
   ]);
 
-  const raw = certifiedProfile ?? bskyProfile;
-  if (!raw) {
+  if (!certifiedProfile && !bskyPublicProfile) {
     debug.log("[profile] No profile found", { did });
     return null;
   }
 
-  // Avatar may be a pre-resolved string URL (e.g. from a CDN)
-  // or a blob ref object { ref: { $link: "<cid>" }, mimeType: "..." }.
-  // For blob refs, we can't resolve the URL without knowing the PDS host,
-  // so we return undefined. Callers that need blob URLs can construct them
-  // via: `${pdsUrl}/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${cid}`
-  let avatarUrl: string | undefined;
-  if (typeof raw.avatar === "string") {
-    avatarUrl = raw.avatar;
-  }
+  // Resolve avatar: prefer certified profile, fall back to Bluesky public API.
+  // The certified profile avatar may be a string URL or a blob ref — only
+  // string URLs are usable. The Bluesky public API always returns resolved
+  // CDN URLs, making it a reliable fallback.
+  const certifiedAvatarUrl = extractAvatarUrl(certifiedProfile);
+  const bskyAvatarUrl = bskyPublicProfile?.avatar;
+  const avatarUrl = certifiedAvatarUrl ?? bskyAvatarUrl;
+
+  const avatarSource = certifiedAvatarUrl
+    ? "certified"
+    : bskyAvatarUrl
+      ? "bsky"
+      : "none";
+
+  // Merge remaining fields: prefer certified, fall back to bsky public API.
+  const displayName =
+    certifiedProfile?.displayName ?? bskyPublicProfile?.displayName;
+  const description =
+    certifiedProfile?.description ?? bskyPublicProfile?.description;
 
   debug.log("[profile] Profile fetched", {
     did,
-    source: certifiedProfile ? "certified" : "bsky",
-    hasDisplayName: !!raw.displayName,
+    hasDisplayName: !!displayName,
     hasAvatar: !!avatarUrl,
+    avatarSource,
   });
 
   return {
     handle,
-    displayName: raw.displayName,
-    description: raw.description,
+    displayName,
+    description,
     avatar: avatarUrl,
   };
 }
