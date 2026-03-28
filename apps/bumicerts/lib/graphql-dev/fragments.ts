@@ -65,6 +65,30 @@ export const OrgInfoFragment = graphql(`
   }
 `);
 
+// ── CertifiedActorProfile ─────────────────────────────────────────────────────
+
+export const CertifiedActorProfileFragment = graphql(`
+  fragment CertifiedActorProfileFields on CertifiedActorProfileItem @_unmask {
+    metadata {
+      did
+      uri
+      rkey
+      cid
+      createdAt
+      indexedAt
+    }
+    record {
+      displayName
+      description
+      pronouns
+      website
+      avatar
+      banner
+      createdAt
+    }
+  }
+`);
+
 // ── HcActivity ────────────────────────────────────────────────────────────────
 
 export const HcActivityFragment = graphql(`

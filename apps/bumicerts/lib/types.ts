@@ -95,6 +95,56 @@ export type FundingConfigData = {
   updatedAt: string | null;
 };
 
+// ── Certified Actor Profile ──────────────────────────────────────────────────
+
+/**
+ * A certified user profile that extends basic Bluesky actor data.
+ *
+ * Data sources:
+ *   - `handle`       → Imported from Bluesky (app.bsky.actor.getProfile)
+ *   - `displayName`  → Certified profile (app.certified.actor.profile), falls back to Bluesky
+ *   - `description`  → Certified profile, falls back to Bluesky
+ *   - `pronouns`     → Certified profile only (not available on Bluesky)
+ *   - `website`      → Certified profile only (not available on Bluesky)
+ *   - `avatarUrl`    → Certified profile, falls back to Bluesky
+ *   - `bannerUrl`    → Certified profile only (not available on Bluesky)
+ *   - `createdAt`    → Certified profile record timestamp
+ *
+ * Fields marked "Imported from Bluesky" are fetched from the public Bluesky API
+ * at runtime and are NOT stored in the certified profile record.
+ */
+export type CertifiedProfileData = {
+  did: string;
+  /** Imported from Bluesky — the user's ATProto handle (e.g. alice.bsky.social) */
+  handle: string;
+
+  // ── Certified profile fields (editable) ──────────────────────────────────
+
+  /** Display name — stored in certified profile, falls back to Bluesky display name */
+  displayName: string;
+  /** Bio / description — stored in certified profile, falls back to Bluesky description */
+  description: string;
+  /** Pronouns — certified profile only (not on Bluesky) */
+  pronouns: string | null;
+  /** Personal website URL — certified profile only (not on Bluesky) */
+  website: string | null;
+  /** Avatar image URL — stored in certified profile, falls back to Bluesky avatar */
+  avatarUrl: string | null;
+  /** Banner image URL — certified profile only (not on Bluesky) */
+  bannerUrl: string | null;
+
+  createdAt: string;
+
+  // ── Bluesky-imported fields (read-only, shown for context) ───────────────
+
+  /** Whether displayName was imported from Bluesky (no certified override) */
+  displayNameFromBluesky: boolean;
+  /** Whether description was imported from Bluesky (no certified override) */
+  descriptionFromBluesky: boolean;
+  /** Whether avatar was imported from Bluesky (no certified override) */
+  avatarFromBluesky: boolean;
+};
+
 // ── Organization ─────────────────────────────────────────────────────────────
 
 export type OrganizationData = {

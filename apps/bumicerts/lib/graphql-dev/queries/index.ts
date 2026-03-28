@@ -34,6 +34,7 @@ import * as activities from "./activities";
 import * as locations from "./locations";
 import * as audio from "./audio";
 import * as actor from "./actor";
+import * as certifiedProfile from "./certifiedProfile";
 import * as fundingReceipts from "./fundingReceipts";
 import * as leaderboard from "./leaderboard";
 import * as linkEvm from "./linkEvm";
@@ -71,6 +72,12 @@ export const queries = {
     ...createQuery(["actor"], actor),
     /** Invalidates ALL actor profile queries. */
     key: () => ["actor"] as const,
+  },
+
+  certifiedProfile: {
+    ...createQuery(["certifiedProfile"], certifiedProfile),
+    /** Invalidates ALL certified profile queries. */
+    key: () => ["certifiedProfile"] as const,
   },
 
   fundingReceipts: {
@@ -117,6 +124,7 @@ export type { Activity, ActivityOrgInfo, ByDidParams as ActivityByDidParams, ByD
 export type { CertifiedLocation } from "./locations";
 export type { AudioRecordingItem } from "./audio";
 export type { ActorProfile } from "./actor";
+export type { CertifiedProfileRecord } from "./certifiedProfile";
 export type { FundingReceiptItem } from "./fundingReceipts";
 export type { LeaderboardEntry, LeaderboardResult, Period as LeaderboardPeriod } from "./leaderboard";
 export type { EvmLink } from "./linkEvm";

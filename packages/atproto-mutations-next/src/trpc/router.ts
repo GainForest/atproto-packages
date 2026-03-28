@@ -18,6 +18,9 @@ export const appRouter = router({
     attachment: entityRouter(mutations.context.attachment),
   }),
   certified: router({
+    actor: router({
+      profile: entityRouter(mutations.certified.actor.profile),
+    }),
     location: entityRouter(mutations.certified.location),
   }),
   funding: router({
