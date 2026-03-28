@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import FileInput from "@/components/ui/FileInput";
 import { trpc } from "@/lib/trpc/client";
+import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { toSerializableFile } from "@/lib/mutations-utils";
 import { formatError } from "@/lib/utils/trpc-errors";
-import { queries, type AudioRecordingItem } from "@/lib/graphql/queries/index";
-import { useQueryClient } from "@tanstack/react-query";
+import type { AudioRecordingItem } from "@/lib/graphql-dev/queries/audio";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -69,7 +69,7 @@ interface AudioEditorProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
-  const queryClient = useQueryClient();
+  const indexerUtils = indexerTrpc.useUtils();
 
   const rkey = initialData?.metadata?.rkey;
   const initRecord = initialData?.record;
@@ -80,11 +80,9 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
     if (!desc || typeof desc !== "object") return "";
     return String((desc as Record<string, unknown>)["text"] ?? "");
   });
-  const [coordinates, setCoordinates] = useState(
-    initRecord?.metadata?.coordinates ?? ""
-  );
+  const initMeta = initRecord?.metadata as Record<string, unknown> | null | undefined;
   const [recordedAt, setRecordedAt] = useState(() => {
-    const recorded = initRecord?.metadata?.recordedAt;
+    const recorded = initMeta?.["recordedAt"] as string | undefined;
     if (recorded) {
       return new Date(recorded).toISOString().slice(0, 16);
     }
@@ -102,9 +100,9 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
   // ── Mutations ───────────────────────────────────────────────────────────────
 
   const { mutate: createAudio, isPending: isCreating } =
-    trpc.organization.recordings.audio.create.useMutation({
+    trpc.ac.audio.create.useMutation({
       onSuccess: () => {
-        void queryClient.invalidateQueries({ queryKey: queries.audio.key() });
+        void indexerUtils.audio.list.invalidate();
         setIsCompleted(true);
       },
       onError: (err) => {
@@ -113,9 +111,9 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
     });
 
   const { mutate: updateAudio, isPending: isUpdating } =
-    trpc.organization.recordings.audio.update.useMutation({
+    trpc.ac.audio.update.useMutation({
       onSuccess: () => {
-        void queryClient.invalidateQueries({ queryKey: queries.audio.key() });
+        void indexerUtils.audio.list.invalidate();
         setIsCompleted(true);
       },
       onError: (err) => {
@@ -156,7 +154,6 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
           duration,
           sampleRate: 44100,
           recordedAt: new Date(recordedAt).toISOString(),
-          coordinates: coordinates.trim() || undefined,
         },
       });
     } else {
@@ -187,7 +184,6 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
             : undefined,
           metadata: {
             recordedAt: new Date(recordedAt).toISOString(),
-            coordinates: coordinates.trim() || undefined,
           },
         },
         ...(newAudioFile ? { newAudioFile, newTechnicalMetadata } : {}),
@@ -300,21 +296,7 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-muted-foreground">
-              Coordinates (optional)
-            </label>
-            <Input
-              placeholder="-3.4653, 142.0723"
-              value={coordinates}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setCoordinates(e.target.value)
-              }
-            />
-            <span className="text-xs text-muted-foreground">
-              Format: latitude, longitude
-            </span>
-          </div>
+
         </div>
       </div>
 
