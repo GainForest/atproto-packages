@@ -59,6 +59,13 @@ import { upsertClaimRights } from "./mutations/claim.rights/upsert";
 import { deleteClaimRights } from "./mutations/claim.rights/delete";
 
 // ---------------------------------------------------------------------------
+// certified.actor.profile
+// ---------------------------------------------------------------------------
+import { createCertifiedActorProfile } from "./mutations/certified.actor.profile/create";
+import { updateCertifiedActorProfile } from "./mutations/certified.actor.profile/update";
+import { upsertCertifiedActorProfile } from "./mutations/certified.actor.profile/upsert";
+
+// ---------------------------------------------------------------------------
 // certified.location
 // ---------------------------------------------------------------------------
 import { createCertifiedLocation } from "./mutations/certified.location/create";
@@ -150,6 +157,13 @@ export const mutations = {
     },
   },
   certified: {
+    actor: {
+      profile: {
+        create: createCertifiedActorProfile,
+        update: updateCertifiedActorProfile,
+        upsert: upsertCertifiedActorProfile,
+      },
+    },
     location: {
       create: createCertifiedLocation,
       update: updateCertifiedLocation,

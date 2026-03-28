@@ -28,6 +28,10 @@ export const MODAL_IDS = {
   UPLOAD_START_DATE_SELECTOR: "upload/start-date-selector",
   UPLOAD_VISIBILITY_SELECTOR: "upload/visibility-selector",
   UPLOAD_PHOTO_ATTACH: "upload/photo-attach",
+
+  // Profile editing
+  PROFILE_IMAGE_EDITOR: "profile/image-editor",
+  PROFILE_WEBSITE_EDITOR: "profile/website-editor",
 } as const;
 
 export type ModalId = (typeof MODAL_IDS)[keyof typeof MODAL_IDS];

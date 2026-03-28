@@ -15,7 +15,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRightIcon, MapPinIcon, MicIcon, PencilIcon } from "lucide-react";
+import { ArrowRightIcon, MapPinIcon, MicIcon, PencilIcon, UserIcon } from "lucide-react";
 import BumicertIcon from "@/icons/BumicertIcon";
 import { links } from "@/lib/links";
 import type { ComponentType } from "react";
@@ -32,10 +32,17 @@ interface NavCard {
 const NAV_CARDS: NavCard[] = [
   {
     id: "edit",
-    label: "Edit Profile",
+    label: "Edit Organisation",
     description: "Update your organisation name, description, logo, and cover image.",
     href: links.upload.edit,
     Icon: PencilIcon,
+  },
+  {
+    id: "profile",
+    label: "Certified Profile",
+    description: "Edit your personal certified profile — display name, bio, pronouns, and avatar.",
+    href: links.upload.profile,
+    Icon: UserIcon,
   },
   {
     id: "sites",

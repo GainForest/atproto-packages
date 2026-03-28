@@ -21,6 +21,8 @@ export const links = {
   upload: {
     home: "/upload",
     edit: "/upload?mode=edit",
+    profile: "/upload/profile",
+    profileEdit: "/upload/profile?mode=edit",
     sites: "/upload/sites",
     audio: "/upload/audio",
     bumicerts: "/upload/bumicerts",

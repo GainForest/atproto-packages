@@ -82,6 +82,20 @@ export {
   ClaimActivityPdsError,
 } from "@gainforest/atproto-mutations-core";
 
+// certified.actor.profile types — safe everywhere
+export type {
+  CertifiedActorProfileRecord,
+  CertifiedActorProfileMutationResult,
+  CreateCertifiedActorProfileInput,
+  UpdateCertifiedActorProfileInput,
+} from "@gainforest/atproto-mutations-core";
+export {
+  CertifiedActorProfileValidationError,
+  CertifiedActorProfileAlreadyExistsError,
+  CertifiedActorProfileNotFoundError,
+  CertifiedActorProfilePdsError,
+} from "@gainforest/atproto-mutations-core";
+
 // certified.location types — safe everywhere
 export type {
   CertifiedLocationRecord,

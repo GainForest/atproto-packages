@@ -84,6 +84,14 @@ export { GeoJsonValidationError, GeoJsonProcessingError } from "./geojson/errors
 // Entity errors
 // ---------------------------------------------------------------------------
 
+// certified.actor.profile
+export {
+  CertifiedActorProfileValidationError,
+  CertifiedActorProfileAlreadyExistsError,
+  CertifiedActorProfileNotFoundError,
+  CertifiedActorProfilePdsError,
+} from "./mutations/certified.actor.profile/utils/errors";
+
 // certified.location
 export {
   CertifiedLocationValidationError,
@@ -183,6 +191,14 @@ export {
 // ---------------------------------------------------------------------------
 // Entity types
 // ---------------------------------------------------------------------------
+
+// certified.actor.profile
+export type {
+  CertifiedActorProfileRecord,
+  CertifiedActorProfileMutationResult,
+  CreateCertifiedActorProfileInput,
+  UpdateCertifiedActorProfileInput,
+} from "./mutations/certified.actor.profile/utils/types";
 
 // certified.location
 export type {
