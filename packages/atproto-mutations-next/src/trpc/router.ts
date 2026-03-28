@@ -10,12 +10,12 @@ export const appRouter = router({
       set: effectMutation(mutations.organization.defaultSite.set),
     }),
     layer: entityRouter(mutations.organization.layer),
-    recordings: router({
-      audio: entityRouter(mutations.organization.recordings.audio),
-    }),
   }),
   claim: router({
     activity: entityRouter(mutations.claim.activity),
+  }),
+  context: router({
+    attachment: entityRouter(mutations.context.attachment),
   }),
   certified: router({
     location: entityRouter(mutations.certified.location),
@@ -34,6 +34,7 @@ export const appRouter = router({
     }),
   }),
   ac: router({
+    audio: entityRouter(mutations.ac.audio),
     multimedia: router({
       create: effectMutation(mutations.ac.multimedia.create),
     }),

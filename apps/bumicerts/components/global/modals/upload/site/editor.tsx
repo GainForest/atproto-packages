@@ -10,7 +10,7 @@ import { useState, type ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { parseAtUri, toSerializableFile } from "@/lib/mutations-utils";
 import { formatError } from "@/lib/utils/trpc-errors";
-import { queries } from "@/lib/graphql/queries/index";
+
 import FileInput from "@/components/ui/FileInput";
 import { Input } from "@/components/ui/input";
 import { ArrowLeftIcon, CheckIcon, Loader2Icon, PencilIcon } from "lucide-react";
@@ -20,9 +20,8 @@ import DrawPolygonModal, {
   DrawPolygonModalId,
 } from "@/components/global/modals/draw-polygon";
 import { useAtprotoStore } from "@/components/stores/atproto";
-import { useQueryClient } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc/client";
-import type { CertifiedLocation } from "@/lib/graphql/queries/index";
+import { indexerTrpc } from "@/lib/trpc/indexer/client";
 
 export const SiteEditorModalId = "site/editor";
 
@@ -91,7 +90,7 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
   const [isCompleted, setIsCompleted] = useState(false);
 
   const { stack, popModal, hide, pushModal, show } = useModal();
-  const queryClient = useQueryClient();
+  const indexerUtils = indexerTrpc.useUtils();
 
   // Create mutation
   const {
@@ -99,41 +98,8 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
     isPending: isAdding,
     error: addError,
   } = trpc.certified.location.create.useMutation({
-    onSuccess: (data: { uri: string; cid: string; rkey: string; record: Record<string, unknown> }) => {
-      // Optimistically prepend the newly created location to the cache so it
-      // appears immediately in the site-selection list (Step 3) without waiting
-      // for the GraphQL indexer to catch up.
-      if (did && data) {
-        // Create a local blob URL from the shapefile so the SiteItem can
-        // resolve and display the location (area, coordinates) immediately.
-        // The Fetch API supports blob: URLs, so SiteItem's useSuspenseQuery
-        // will fetch and parse the GeoJSON without needing the indexer.
-        const localBlobUrl = shapefile ? URL.createObjectURL(shapefile) : null;
-
-        const queryKey = ["locations", { did }] as const;
-        queryClient.setQueryData<CertifiedLocation[]>(queryKey, (old) => {
-          const newLocation = {
-            metadata: {
-              did,
-              uri: data.uri,
-              rkey: data.rkey,
-              cid: data.cid,
-            },
-            record: {
-              name: (data.record?.name as string) ?? null,
-              description: (data.record?.description as string) ?? null,
-              location: localBlobUrl
-                ? { $type: "org.hypercerts.defs#uri", uri: localBlobUrl }
-                : (data.record?.location ?? null),
-              locationType: (data.record?.locationType as string) ?? null,
-            },
-          } as CertifiedLocation;
-          return old ? [newLocation, ...old] : [newLocation];
-        });
-      }
-      // Still invalidate so the cache is eventually replaced by the fully
-      // indexed data (with resolved blob URLs, etc.).
-      queryClient.invalidateQueries({ queryKey: queries.locations.key() });
+    onSuccess: () => {
+      void indexerUtils.locations.list.invalidate();
       setIsCompleted(true);
     },
   });
@@ -150,40 +116,8 @@ export const SiteEditorModal = ({ initialData }: SiteEditorModalProps) => {
     isPending: isUpdating,
     error: updateError,
   } = trpc.certified.location.update.useMutation({
-    onSuccess: (data: { uri: string; cid: string; rkey: string; record: Record<string, unknown> }) => {
-      // Optimistically update the cached location so changes appear immediately.
-      if (did && data) {
-        // If a new shapefile was uploaded, create a local blob URL so the
-        // SiteItem can display the updated location without the indexer.
-        const localBlobUrl = shapefile ? URL.createObjectURL(shapefile) : null;
-
-        const queryKey = ["locations", { did }] as const;
-        queryClient.setQueryData<CertifiedLocation[]>(queryKey, (old) => {
-          if (!old) return old;
-          return old.map((loc) => {
-            if (loc.metadata?.uri === data.uri) {
-              return {
-                ...loc,
-                metadata: {
-                  ...loc.metadata,
-                  cid: data.cid,
-                },
-                record: {
-                  ...loc.record,
-                  name: (data.record?.name as string) ?? loc.record?.name,
-                  description: (data.record?.description as string) ?? loc.record?.description,
-                  location: localBlobUrl
-                    ? { $type: "org.hypercerts.defs#uri", uri: localBlobUrl }
-                    : (data.record?.location ?? loc.record?.location),
-                  locationType: (data.record?.locationType as string) ?? loc.record?.locationType,
-                },
-              } as CertifiedLocation;
-            }
-            return loc;
-          });
-        });
-      }
-      queryClient.invalidateQueries({ queryKey: queries.locations.key() });
+    onSuccess: () => {
+      void indexerUtils.locations.list.invalidate();
       setIsCompleted(true);
     },
   });

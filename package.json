@@ -7,13 +7,13 @@
     "GENERATED"
   ],
   "scripts": {
-    "build": "bun run --filter '@gainforest/*' build",
+    "build": "bun run --filter '@gainforest/internal-utils' --filter '@gainforest/atproto-mutations-core' --filter '@gainforest/atproto-auth-next' --filter '@gainforest/leaflet-react' build && bun run --filter '@gainforest/atproto-mutations-next' build",
     "dev": "bun run --filter '@gainforest/*' dev",
     "clean": "rm -rf packages/*/dist",
     "fetch-lexicons": "./GENERATED/scripts/fetch-lexicons.sh",
     "fetch-lexicons:local": "./GENERATED/scripts/fetch-lexicons.sh -gl ../lexicons -hl ../hypercerts-lexicon",
     "gen:types": "bun run GENERATED/scripts/codegen.ts",
-    "gen:indexer": "bun run GENERATED/scripts/generate-collections.ts",
+    "gen:indexer": "bun run GENERATED/scripts/generate-collections.ts && bun run --cwd apps/indexer sync:filters",
     "gen:resolvers": "bun run GENERATED/scripts/generate-resolvers.ts",
     "codegen": "bun run fetch-lexicons && bun run gen:types && bun run gen:indexer && bun run gen:resolvers",
     "codegen:local": "bun run fetch-lexicons:local && bun run gen:types && bun run gen:indexer && bun run gen:resolvers",

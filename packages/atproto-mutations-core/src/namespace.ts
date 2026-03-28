@@ -35,12 +35,12 @@ import { upsertLayer } from "./mutations/organization.layer/upsert";
 import { deleteLayer } from "./mutations/organization.layer/delete";
 
 // ---------------------------------------------------------------------------
-// organization.recordings.audio
+// ac.audio
 // ---------------------------------------------------------------------------
-import { createAudioRecording } from "./mutations/organization.recordings.audio/create";
-import { updateAudioRecording } from "./mutations/organization.recordings.audio/update";
-import { upsertAudioRecording } from "./mutations/organization.recordings.audio/upsert";
-import { deleteAudioRecording } from "./mutations/organization.recordings.audio/delete";
+import { createAudioRecording } from "./mutations/ac.audio/create";
+import { updateAudioRecording } from "./mutations/ac.audio/update";
+import { upsertAudioRecording } from "./mutations/ac.audio/upsert";
+import { deleteAudioRecording } from "./mutations/ac.audio/delete";
 
 // ---------------------------------------------------------------------------
 // claim.activity
@@ -97,6 +97,14 @@ import { createAcMultimedia } from "./mutations/ac.multimedia/create";
 import { createDwcOccurrence } from "./mutations/dwc.occurrence/create";
 
 // ---------------------------------------------------------------------------
+// context.attachment
+// ---------------------------------------------------------------------------
+import { createContextAttachment } from "./mutations/context.attachment/create";
+import { updateContextAttachment } from "./mutations/context.attachment/update";
+import { upsertContextAttachment } from "./mutations/context.attachment/upsert";
+import { deleteContextAttachment } from "./mutations/context.attachment/delete";
+
+// ---------------------------------------------------------------------------
 // dwc.measurement
 // ---------------------------------------------------------------------------
 import { createDwcMeasurement } from "./mutations/dwc.measurement/create";
@@ -125,14 +133,6 @@ export const mutations = {
       update: updateLayer,
       upsert: upsertLayer,
       delete: deleteLayer,
-    },
-    recordings: {
-      audio: {
-        create: createAudioRecording,
-        update: updateAudioRecording,
-        upsert: upsertAudioRecording,
-        delete: deleteAudioRecording,
-      },
     },
   },
   claim: {
@@ -176,8 +176,22 @@ export const mutations = {
     },
   },
   ac: {
+    audio: {
+      create: createAudioRecording,
+      update: updateAudioRecording,
+      upsert: upsertAudioRecording,
+      delete: deleteAudioRecording,
+    },
     multimedia: {
       create: createAcMultimedia,
+    },
+  },
+  context: {
+    attachment: {
+      create: createContextAttachment,
+      update: updateContextAttachment,
+      upsert: upsertContextAttachment,
+      delete: deleteContextAttachment,
     },
   },
   dwc: {

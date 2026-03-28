@@ -984,6 +984,9 @@ type GainforestEvaluatorSubscriptionRecord {
 
 """GainforestNamespace namespace (gainforest.*)."""
 type GainforestNamespace {
+  """GainforestAcNamespace namespace."""
+  ac: GainforestAcNamespace
+
   """GainforestDwcNamespace namespace."""
   dwc: GainforestDwcNamespace
 
@@ -994,14 +997,52 @@ type GainforestNamespace {
   organization: GainforestOrganizationNamespace
 }
 
-"""Technical metadata for an audio recording."""
-type GainforestOrganizationAudioMetadata {
-  channels: Int
-  codec: String
-  coordinates: String
-  duration: String
-  recordedAt: DateTime
-  sampleRate: Int
+"""A record from app.gainforest.ac.audio."""
+type GainforestAcAudioItem {
+  creatorInfo: CreatorInfo
+  metadata: RecordMeta
+  record: GainforestAcAudioRecord
+}
+
+type GainforestAcAudioPage {
+  data: [GainforestAcAudioItem!]
+  pageInfo: PageInfo
+}
+
+"""Pure payload for app.gainforest.ac.audio."""
+type GainforestAcAudioRecord {
+  """The audio file blob stored on the PDS."""
+  blob: JSON
+
+  """Timestamp of record creation in the ATProto PDS."""
+  createdAt: DateTime
+
+  """A longer human-readable description of the audio recording content."""
+  description: JSON
+
+  """License for this recording (e.g., CC-BY-4.0, CC0-1.0)."""
+  license: String
+
+  """Technical audio metadata (codec, sample rate, duration, frequency bounds, etc.)."""
+  metadata: JSON
+
+  """A short human-readable name or label for this audio recording."""
+  name: String
+
+  """Name of the person or agent who made the recording."""
+  recordedBy: String
+
+  """AT-URI of the organization site record where this audio was captured."""
+  siteRef: String
+
+  """Freeform tags for the recording."""
+  tags: [String!]
+}
+
+"""GainforestAcNamespace namespace (gainforest.ac.*)."""
+type GainforestAcNamespace {
+  """Paginated list of app.gainforest.ac.audio records."""
+  audio(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestAcAudioPage
 }
 
 """A record from app.gainforest.organization.defaultSite."""
@@ -1117,8 +1158,6 @@ type GainforestOrganizationNamespace {
   """GainforestOrganizationPredictionsNamespace namespace."""
   predictions: GainforestOrganizationPredictionsNamespace
 
-  """GainforestOrganizationRecordingsNamespace namespace."""
-  recordings: GainforestOrganizationRecordingsNamespace
 }
 
 """A record from app.gainforest.organization.observations.dendogram."""
@@ -1301,38 +1340,7 @@ type GainforestOrganizationPredictionsNamespace {
   flora(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestOrganizationPredictionsFloraPage
 }
 
-"""An audio recording (app.gainforest.organization.recordings.audio)."""
-type GainforestOrganizationRecordingsAudioItem {
-  creatorInfo: CreatorInfo
-  metadata: RecordMeta
-  record: GainforestOrganizationRecordingsAudioRecord
-}
 
-type GainforestOrganizationRecordingsAudioPage {
-  data: [GainforestOrganizationRecordingsAudioItem!]
-  pageInfo: PageInfo
-}
-
-"""
-Pure payload for an audio recording (app.gainforest.organization.recordings.audio).
-"""
-type GainforestOrganizationRecordingsAudioRecord {
-  blob: BlobRef
-  createdAt: DateTime
-  description: JSON
-  metadata: GainforestOrganizationAudioMetadata
-  name: String
-}
-
-"""
-GainforestOrganizationRecordingsNamespace namespace (gainforest.organization.recordings.*).
-"""
-type GainforestOrganizationRecordingsNamespace {
-  """
-  Paginated list of app.gainforest.organization.recordings.audio records.
-  """
-  audio(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestOrganizationRecordingsAudioPage
-}
 
 """A record from org.hyperboards.board."""
 type HyperboardsBoardItem {
