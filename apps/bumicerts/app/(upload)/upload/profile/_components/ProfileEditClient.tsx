@@ -17,11 +17,14 @@
  * profile or was imported from Bluesky (i.e. the certified profile doesn't
  * override it).
  *
- * Save uses `certified.actor.profile.upsert` because the record may or may
- * not exist yet — upsert handles both create and update.
+ * Save strategy:
+ *   - If a certified profile already exists → uses `update` (partial patch,
+ *     preserves unchanged fields like avatar/banner automatically).
+ *   - If no certified profile exists yet → uses `upsert` (creates the record).
+ *   We detect existence from the fetched data.
  */
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc/client";
@@ -35,7 +38,7 @@ import ErrorPage from "@/components/error-page";
 import { EditableProfileHero, ProfileEditBar } from "./EditableProfileHero";
 import { ProfileViewHero } from "./ProfileViewHero";
 import { ProfileEditSkeleton } from "./ProfileEditSkeleton";
-import { useProfileEditStore } from "./store";
+import { useProfileEditStore, useHasChanges, FIELD_CLEARED } from "./store";
 import { useUploadMode } from "../../_hooks/useUploadMode";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -67,13 +70,16 @@ function extractImageUrl(blob: unknown): string | null {
   return null;
 }
 
+/** Query key used for the profile edit data — matches the queries registry pattern. */
+const profileQueryKey = (did: string) => ["certifiedProfile", { did }] as const;
+
 /**
  * Merge certified profile + Bluesky profile into a unified CertifiedProfileData.
  */
 function mergeProfiles(
   did: string,
   certified: Awaited<ReturnType<typeof queries.certifiedProfile.fetch>>
-): CertifiedProfileData {
+): CertifiedProfileData & { _hasCertifiedProfile: boolean } {
   const cp = certified.certifiedProfile;
   const bp = certified.bskyProfile;
 
@@ -94,6 +100,8 @@ function mergeProfiles(
     displayNameFromBluesky,
     descriptionFromBluesky,
     avatarFromBluesky,
+    // Track whether a certified profile record exists in the PDS
+    _hasCertifiedProfile: cp !== null,
   };
 }
 
@@ -104,6 +112,9 @@ export function ProfileEditClient({ did }: ProfileEditClientProps) {
   const [mode, setMode] = useUploadMode();
   const isEditing = mode === "edit";
 
+  // Track whether a certified profile already exists (for update vs upsert)
+  const hasCertifiedProfile = useRef(false);
+
   // ── Store ───────────────────────────────────────────────────────────────────
   const serverData = useProfileEditStore((s) => s.serverData);
   const isSaving = useProfileEditStore((s) => s.isSaving);
@@ -112,11 +123,11 @@ export function ProfileEditClient({ did }: ProfileEditClientProps) {
   const setSaveError = useProfileEditStore((s) => s.setSaveError);
   const onSaveSuccess = useProfileEditStore((s) => s.onSaveSuccess);
   const edits = useProfileEditStore((s) => s.edits);
-  const hasChanges = useProfileEditStore((s) => s.hasChanges);
+  const hasChanges = useHasChanges();
 
   // ── Data fetch ──────────────────────────────────────────────────────────────
   const { data: fetchedProfile, isLoading, error } = useQuery({
-    queryKey: ["profile-edit", did],
+    queryKey: profileQueryKey(did),
     queryFn: async () => {
       const result = await queries.certifiedProfile.fetch({ did });
       return mergeProfiles(did, result);
@@ -127,91 +138,147 @@ export function ProfileEditClient({ did }: ProfileEditClientProps) {
   useEffect(() => {
     if (fetchedProfile) {
       setServerData(fetchedProfile);
+      hasCertifiedProfile.current = fetchedProfile._hasCertifiedProfile;
     }
   }, [fetchedProfile, setServerData]);
 
   // ── Mutations ───────────────────────────────────────────────────────────────
+
+  // Shared success handler for both update and upsert
+  const handleMutationSuccess = useCallback((result: { record: Record<string, unknown> }) => {
+    // Snapshot edits before clearing — onSaveSuccess resets them
+    const currentEdits = useProfileEditStore.getState().edits;
+    const current = queryClient.getQueryData<CertifiedProfileData | null>(profileQueryKey(did));
+
+    if (current) {
+      const rec = result.record;
+
+      // Only create object URLs if user uploaded new files
+      const avatarUrl = currentEdits.avatar
+        ? URL.createObjectURL(currentEdits.avatar)
+        : current.avatarUrl;
+      const bannerUrl = currentEdits.banner
+        ? URL.createObjectURL(currentEdits.banner)
+        : current.bannerUrl;
+
+      const optimistic: CertifiedProfileData = {
+        ...current,
+        displayName: (rec.displayName as string) ?? current.displayName,
+        description: (rec.description as string) ?? current.description,
+        pronouns: (rec.pronouns as string) ?? null,
+        website: (rec.website as string) ?? null,
+        avatarUrl,
+        bannerUrl,
+        // Once saved to certified profile, fields are no longer "from Bluesky"
+        displayNameFromBluesky: false,
+        descriptionFromBluesky: false,
+        avatarFromBluesky: false,
+      };
+      queryClient.setQueryData(profileQueryKey(did), optimistic);
+    }
+
+    // Clear edit mode
+    setMode(null);
+    onSaveSuccess();
+
+    // Now the profile exists
+    hasCertifiedProfile.current = true;
+
+    // Background refetch to get real CDN URLs
+    void queryClient.invalidateQueries({ queryKey: profileQueryKey(did) });
+  }, [did, queryClient, setMode, onSaveSuccess]);
+
+  const handleMutationError = useCallback((mutationErr: unknown) => {
+    setSaving(false);
+    setSaveError(formatError(mutationErr));
+  }, [setSaving, setSaveError]);
+
+  const updateMutation = trpc.certified.actor.profile.update.useMutation({
+    onSuccess: handleMutationSuccess,
+    onError: handleMutationError,
+  });
+
   const upsertMutation = trpc.certified.actor.profile.upsert.useMutation({
-    onSuccess: (result) => {
-      // Update cache optimistically
-      const current = queryClient.getQueryData<CertifiedProfileData | null>(["profile-edit", did]);
-      if (current) {
-        const rec = result.record;
-        const avatarUrl = edits.avatar
-          ? URL.createObjectURL(edits.avatar)
-          : current.avatarUrl;
-        const bannerUrl = edits.banner
-          ? URL.createObjectURL(edits.banner)
-          : current.bannerUrl;
-
-        const optimistic: CertifiedProfileData = {
-          ...current,
-          displayName: rec.displayName ?? current.displayName,
-          description: rec.description ?? current.description,
-          pronouns: rec.pronouns ?? current.pronouns,
-          website: rec.website ?? current.website,
-          avatarUrl,
-          bannerUrl,
-          // Once saved to certified profile, fields are no longer "from Bluesky"
-          displayNameFromBluesky: !rec.displayName && current.displayNameFromBluesky,
-          descriptionFromBluesky: !rec.description && current.descriptionFromBluesky,
-          avatarFromBluesky: !avatarUrl && current.avatarFromBluesky,
-        };
-        queryClient.setQueryData(["profile-edit", did], optimistic);
-      }
-
-      // Clear edit mode
-      setMode(null);
-      onSaveSuccess();
-
-      // Background refetch
-      void queryClient.invalidateQueries({ queryKey: ["profile-edit", did] });
-    },
-    onError: (mutationErr) => {
-      setSaving(false);
-      setSaveError(formatError(mutationErr));
-    },
+    onSuccess: handleMutationSuccess,
+    onError: handleMutationError,
   });
 
   // ── Save handler ────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
-    if (!serverData || !hasChanges() || isSaving) return;
+    if (!serverData || !hasChanges || isSaving) return;
 
     setSaving(true);
     setSaveError(null);
 
-    // Build full record data for upsert — upsert needs all fields, not a patch.
-    // Start from current server data and overlay edits.
-    const data: Record<string, unknown> = {};
+    if (hasCertifiedProfile.current) {
+      // ── UPDATE path: send only changed fields as a partial patch ──────────
+      // The update mutation fetches the existing record from the PDS and merges,
+      // so omitted fields (like avatar/banner) are preserved automatically.
+      const data: Record<string, unknown> = {};
+      const unset: string[] = [];
 
-    // displayName — use edit or fallback to current
-    data.displayName = edits.displayName ?? (serverData.displayName || undefined);
+      if (edits.displayName !== null) {
+        data.displayName = edits.displayName;
+      }
 
-    // description
-    data.description = edits.description ?? (serverData.description || undefined);
+      if (edits.description !== null) {
+        data.description = edits.description;
+      }
 
-    // pronouns
-    const pronouns = edits.pronouns ?? serverData.pronouns;
-    if (pronouns) data.pronouns = pronouns;
+      if (edits.pronouns !== null) {
+        if (edits.pronouns === FIELD_CLEARED) {
+          unset.push("pronouns");
+        } else {
+          data.pronouns = edits.pronouns;
+        }
+      }
 
-    // website
-    const website = edits.website ?? serverData.website;
-    if (website) data.website = website;
+      if (edits.website !== null) {
+        if (edits.website === FIELD_CLEARED) {
+          unset.push("website");
+        } else {
+          data.website = edits.website as `${string}:${string}`;
+        }
+      }
 
-    // avatar — new file or preserve existing (avatar blob is re-uploaded from PDS by mutation)
-    if (edits.avatar !== null) {
-      data.avatar = { image: await toSerializableFile(edits.avatar) };
+      if (edits.avatar !== null) {
+        data.avatar = { image: await toSerializableFile(edits.avatar) };
+      }
+
+      if (edits.banner !== null) {
+        data.banner = { image: await toSerializableFile(edits.banner) };
+      }
+
+      updateMutation.mutate({ data, unset });
+    } else {
+      // ── UPSERT path: first-time creation, send all available fields ──────
+      const data: Record<string, unknown> = {};
+
+      const displayName = edits.displayName ?? (serverData.displayName || undefined);
+      if (displayName) data.displayName = displayName;
+
+      const description = edits.description ?? (serverData.description || undefined);
+      if (description) data.description = description;
+
+      const pronouns = edits.pronouns;
+      if (pronouns && pronouns !== FIELD_CLEARED) data.pronouns = pronouns;
+
+      const website = edits.website;
+      if (website && website !== FIELD_CLEARED) data.website = website;
+
+      if (edits.avatar !== null) {
+        data.avatar = { image: await toSerializableFile(edits.avatar) };
+      }
+
+      if (edits.banner !== null) {
+        data.banner = { image: await toSerializableFile(edits.banner) };
+      }
+
+      upsertMutation.mutate(data);
     }
+  }, [serverData, edits, hasChanges, isSaving, setSaving, setSaveError, updateMutation, upsertMutation]);
 
-    // banner — new file
-    if (edits.banner !== null) {
-      data.banner = { image: await toSerializableFile(edits.banner) };
-    }
-
-    upsertMutation.mutate(data);
-  }, [serverData, edits, hasChanges, isSaving, setSaving, setSaveError, upsertMutation]);
-
-  // ── Render states ──────────────────────────────────────────��────────────────
+  // ── Render states ───────────────────────────────────────────────────────────
 
   if (isLoading) {
     return <ProfileEditSkeleton />;

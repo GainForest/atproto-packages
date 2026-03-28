@@ -81,6 +81,7 @@ export function ProfileViewHero({
       {/* ── Top-right action buttons ── */}
       <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
         <motion.button
+          type="button"
           onClick={handleShare}
           whileTap={{ scale: 0.94 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}

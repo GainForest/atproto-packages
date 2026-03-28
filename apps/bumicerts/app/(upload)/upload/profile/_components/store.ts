@@ -6,14 +6,22 @@ import type { CertifiedProfileData } from "@/lib/types";
 // ─── Editable field shape ────────────────────────────────────────────────────
 
 /**
+ * Sentinel value for "field was explicitly cleared by the user".
+ * Distinct from `null` (unchanged) and `""` (empty string).
+ */
+export const FIELD_CLEARED = Symbol.for("field-cleared");
+export type FieldCleared = typeof FIELD_CLEARED;
+
+/**
  * Fields that can be modified in edit mode.
  * `null` means "unchanged from the server value".
+ * `FIELD_CLEARED` means "user explicitly cleared this field".
  */
 type EditableFields = {
   displayName: string | null;
   description: string | null;
-  pronouns: string | null;
-  website: string | null;
+  pronouns: string | FieldCleared | null;
+  website: string | FieldCleared | null;
   /** New avatar image file to upload (null = no change) */
   avatar: File | null;
   /** New banner image file to upload (null = no change) */
@@ -42,8 +50,6 @@ type ProfileEditActions = {
   cancelEditing: () => void;
   /** Update a single editable field. */
   setEdit: <K extends keyof EditableFields>(key: K, value: EditableFields[K]) => void;
-  /** True when at least one field has been modified. */
-  hasChanges: () => boolean;
   /** Mark save as in-flight. */
   setSaving: (saving: boolean) => void;
   /** Record a save error (null to clear). */
@@ -53,6 +59,16 @@ type ProfileEditActions = {
    */
   onSaveSuccess: () => void;
 };
+
+/**
+ * Derived state: true when at least one field has been modified.
+ * Computed from edits so that selectors re-render when edits change.
+ */
+function computeHasChanges(edits: EditableFields): boolean {
+  return (Object.keys(edits) as (keyof EditableFields)[]).some(
+    (k) => edits[k] !== null
+  );
+}
 
 // ─── Initial edits ────────────────────────────────────────────────────────────
 
@@ -69,7 +85,7 @@ const EMPTY_EDITS: EditableFields = {
 
 export const useProfileEditStore = create<
   ProfileEditState & ProfileEditActions
->((set, get) => ({
+>((set) => ({
   // State
   serverData: null,
   isSaving: false,
@@ -85,13 +101,6 @@ export const useProfileEditStore = create<
   setEdit: (key, value) =>
     set((state) => ({ edits: { ...state.edits, [key]: value } })),
 
-  hasChanges: () => {
-    const { edits } = get();
-    return (Object.keys(edits) as (keyof EditableFields)[]).some(
-      (k) => edits[k] !== null
-    );
-  },
-
   setSaving: (saving) => set({ isSaving: saving }),
 
   setSaveError: (error) => set({ saveError: error }),
@@ -103,5 +112,13 @@ export const useProfileEditStore = create<
       edits: { ...EMPTY_EDITS },
     }),
 }));
+
+/**
+ * Selector for derived hasChanges state.
+ * Unlike a method, this triggers re-renders when edits change.
+ */
+export function useHasChanges(): boolean {
+  return useProfileEditStore((s) => computeHasChanges(s.edits));
+}
 
 export type { EditableFields };

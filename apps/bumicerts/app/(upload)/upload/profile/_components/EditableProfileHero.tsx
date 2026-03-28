@@ -33,7 +33,7 @@ import { useModal } from "@/components/ui/modal/context";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import { ImageEditorModal } from "../../_modals/ImageEditorModal";
 import { WebsiteEditorModal } from "../../_modals/WebsiteEditorModal";
-import { useProfileEditStore } from "./store";
+import { useProfileEditStore, useHasChanges, FIELD_CLEARED } from "./store";
 import { useUploadMode } from "../../_hooks/useUploadMode";
 import type { CertifiedProfileData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -56,8 +56,8 @@ export function EditableProfileHero({ profile }: EditableProfileHeroProps) {
   // Resolved display values — edit buffer takes priority
   const displayName = edits.displayName ?? profile.displayName;
   const description = edits.description ?? profile.description;
-  const pronouns = edits.pronouns ?? profile.pronouns;
-  const website = edits.website ?? profile.website;
+  const pronouns = edits.pronouns === FIELD_CLEARED ? "" : (edits.pronouns ?? profile.pronouns);
+  const website = edits.website === FIELD_CLEARED ? "" : (edits.website ?? profile.website);
 
   // Image sources — use object URL for newly selected files
   const bannerObjectUrl = useMemo(
@@ -216,6 +216,7 @@ export function EditableProfileHero({ profile }: EditableProfileHeroProps) {
                     value={displayName}
                     onChange={(e) => setEdit("displayName", e.target.value || null)}
                     placeholder="Display name"
+                    aria-label="Display name"
                     className={cn(
                       "text-3xl sm:text-4xl md:text-5xl font-light tracking-[-0.02em] leading-none",
                       "bg-transparent border-b-2 border-white/40 focus:border-primary/60 outline-none",
@@ -252,6 +253,7 @@ export function EditableProfileHero({ profile }: EditableProfileHeroProps) {
                 placeholder="Tell people about yourself..."
                 rows={3}
                 maxLength={2560}
+                aria-label="Bio"
                 className={cn(
                   "w-full max-w-2xl text-sm md:text-base bg-transparent border-b-2 border-white/40",
                   "focus:border-primary/60 outline-none text-foreground/75 placeholder:text-foreground/40",
@@ -276,9 +278,10 @@ export function EditableProfileHero({ profile }: EditableProfileHeroProps) {
                 <input
                   type="text"
                   value={pronouns ?? ""}
-                  onChange={(e) => setEdit("pronouns", e.target.value || null)}
+                  onChange={(e) => setEdit("pronouns", e.target.value || FIELD_CLEARED)}
                   placeholder="Pronouns"
                   maxLength={200}
+                  aria-label="Pronouns"
                   className={cn(
                     "text-[10px] uppercase tracking-[0.08em] font-medium bg-transparent",
                     "border-b border-white/30 focus:border-primary/60 outline-none",
@@ -394,7 +397,7 @@ export function ProfileEditBar() {
   const isEditing = mode === "edit";
   const isSaving = useProfileEditStore((s) => s.isSaving);
   const saveError = useProfileEditStore((s) => s.saveError);
-  const hasChanges = useProfileEditStore((s) => s.hasChanges);
+  const hasChanges = useHasChanges();
   const cancelEditing = useProfileEditStore((s) => s.cancelEditing);
 
   if (!isEditing) return null;
@@ -419,7 +422,7 @@ export function ProfileEditBar() {
           <span className="text-destructive text-xs">{saveError}</span>
         ) : (
           <span>
-            {hasChanges() ? "You have unsaved changes." : "No changes yet."}
+            {hasChanges ? "You have unsaved changes." : "No changes yet."}
           </span>
         )}
       </div>
@@ -436,7 +439,7 @@ export function ProfileEditBar() {
         <button
           form="profile-edit-save-form"
           type="submit"
-          disabled={isSaving || !hasChanges()}
+          disabled={isSaving || !hasChanges}
           className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50"
         >
           <SaveIcon className="h-3.5 w-3.5" />
