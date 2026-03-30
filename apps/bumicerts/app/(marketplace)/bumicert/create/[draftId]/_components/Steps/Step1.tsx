@@ -199,23 +199,33 @@ const Step1 = () => {
                 onChange={(value) => setFormValue("workType", value)}
                 options={[
                   {
-                    value: "Community Resilience",
-                    label: "Community Resilience",
+                    value: "Ecological Restoration",
+                    label: "Ecological Restoration",
                   },
                   {
-                    value: "Biodiversity Monitoring",
-                    label: "Biodiversity Monitoring",
+                    value: "Agroforestry and Sustainable Agriculture",
+                    label: "Agroforestry and Sustainable Agriculture",
+                  },
+                  {
+                    value: "Climate Adaptation and Resilience",
+                    label: "Climate Adaptation and Resilience",
+                  },
+                  {
+                    value: "Biodiversity Monitoring and Conservation",
+                    label: "Biodiversity Monitoring and Conservation",
                   },
                   {
                     value: "Environmental Education",
                     label: "Environmental Education",
                   },
                   {
-                    value: "Mangrove Restoration",
-                    label: "Mangrove Restoration",
+                    value: "Indigenous and Local Knowledge Systems",
+                    label: "Indigenous and Local Knowledge Systems",
                   },
-                  { value: "Agroforestry", label: "Agroforestry" },
-                  { value: "Tree Planting", label: "Tree Planting" },
+                  {
+                    value: "Environmental Justice and Health",
+                    label: "Environmental Justice and Health",
+                  },
                 ]}
               />
             </FormField>
