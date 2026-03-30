@@ -13,20 +13,39 @@ import type { Period } from "@/lib/utils/leaderboard";
 /**
  * Extracts the donor identifier from a receipt.
  * Returns { id, type } or null if the receipt cannot be attributed.
+ *
+ * Order matters:
+ *   1. Check `notes` first — anonymous donors record their wallet address
+ *      in `notes` while `from.did` is set to the facilitator DID (not the
+ *      real donor).
+ *   2. Then check `from` — for identified donors, `from.did` is their real
+ *      DID and `notes` is empty.
+ *   3. Handle `from` as both `{ did: string }` (object) and plain DID
+ *      string, since the GraphQL JSON scalar may deserialize either way.
  */
 function extractDonor(
   item: FundingReceiptItem,
 ): { id: string; type: "did" | "wallet" } | null {
-  const from = item.record?.from as { did?: string } | null | undefined;
+  const from = item.record?.from;
   const notes = item.record?.notes;
 
-  if (from && typeof from === "object" && from.did) {
-    return { id: from.did, type: "did" };
+  // 1. Anonymous donor — wallet address in notes (check FIRST)
+  if (typeof notes === "string" && notes) {
+    const match = notes.match(/(?:wallet|address)[:\s]*(0x[a-fA-F0-9]{40})/i);
+    if (match?.[1]) return { id: match[1], type: "wallet" };
   }
 
-  if (notes) {
-    const match = notes.match(/Anonymous donor wallet:\s*(0x[a-fA-F0-9]+)/i);
-    if (match?.[1]) return { id: match[1], type: "wallet" };
+  // 2a. Identified donor — `from` as object { did: "did:..." }
+  if (from && typeof from === "object" && !Array.isArray(from)) {
+    const obj = from as Record<string, unknown>;
+    if (typeof obj.did === "string" && obj.did.startsWith("did:")) {
+      return { id: obj.did, type: "did" };
+    }
+  }
+
+  // 2b. Identified donor — `from` as plain DID string
+  if (typeof from === "string" && from.startsWith("did:")) {
+    return { id: from, type: "did" };
   }
 
   return null;
