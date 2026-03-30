@@ -33,6 +33,17 @@ function extractDonor(
 }
 
 /**
+ * Returns true if the receipt currency represents a USD-denominated token.
+ * Receipts may store "USDC", "USD", "usd", etc. — we accept all variants
+ * since the platform only handles USDC (pegged 1:1 to USD).
+ */
+function isUsdCurrency(currency: string | null | undefined): boolean {
+  if (!currency) return false;
+  const upper = currency.toUpperCase();
+  return upper === "USDC" || upper === "USD";
+}
+
+/**
  * Safely parses an amount string, returning 0 for any non-numeric value.
  * Prevents NaN from propagating through aggregation totals.
  */
@@ -85,7 +96,7 @@ export interface DashboardKPIs {
  * Computes top-level KPIs from a (already-period-filtered) list of receipts.
  */
 export function computeKPIs(receipts: FundingReceiptItem[]): DashboardKPIs {
-  const usdcOnly = receipts.filter((r) => r.record?.currency === "USDC");
+  const usdcOnly = receipts.filter((r) => isUsdCurrency(r.record?.currency));
 
   let totalRaised = 0;
   const donorIds = new Set<string>();
@@ -130,7 +141,7 @@ export function computeTimeSeries(
   receipts: FundingReceiptItem[],
   granularity: TimeGranularity,
 ): TimeSeriesPoint[] {
-  const usdcOnly = receipts.filter((r) => r.record?.currency === "USDC");
+  const usdcOnly = receipts.filter((r) => isUsdCurrency(r.record?.currency));
 
   const bucket = (d: Date): string => {
     if (granularity === "month") {
@@ -188,7 +199,7 @@ export function computeTopDonors(
   receipts: FundingReceiptItem[],
   limit = 50,
 ): TopDonorRow[] {
-  const usdcOnly = receipts.filter((r) => r.record?.currency === "USDC");
+  const usdcOnly = receipts.filter((r) => isUsdCurrency(r.record?.currency));
 
   const map = new Map<
     string,
@@ -250,7 +261,7 @@ export interface OrgRow {
  * Aggregates USDC receipts by recipient org DID.
  */
 export function computePerOrg(receipts: FundingReceiptItem[]): OrgRow[] {
-  const usdcOnly = receipts.filter((r) => r.record?.currency === "USDC");
+  const usdcOnly = receipts.filter((r) => isUsdCurrency(r.record?.currency));
 
   const map = new Map<
     string,
