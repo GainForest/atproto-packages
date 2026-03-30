@@ -37,6 +37,7 @@ export function DashboardClient() {
     () => (rawReceipts ?? []) as FundingReceiptItem[],
     [rawReceipts],
   );
+
   const periodFiltered = useMemo(() => filterByPeriod(receipts, period), [receipts, period]);
 
   const kpis = useMemo(() => computeKPIs(periodFiltered), [periodFiltered]);

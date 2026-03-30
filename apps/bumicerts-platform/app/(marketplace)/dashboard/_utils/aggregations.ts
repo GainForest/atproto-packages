@@ -14,14 +14,19 @@ import type { Period } from "@/lib/utils/leaderboard";
  * Extracts the donor identifier from a receipt.
  * Returns { id, type } or null if the receipt cannot be attributed.
  *
- * Order matters:
- *   1. Check `notes` first — anonymous donors record their wallet address
- *      in `notes` while `from.did` is set to the facilitator DID (not the
- *      real donor).
- *   2. Then check `from` — for identified donors, `from.did` is their real
- *      DID and `notes` is empty.
- *   3. Handle `from` as both `{ did: string }` (object) and plain DID
- *      string, since the GraphQL JSON scalar may deserialize either way.
+ * The data has two generations of receipts:
+ *
+ *   Legacy (migrated):
+ *     from = null
+ *     notes = "Original: 0.01 CELO from 0xWALLET"
+ *
+ *   Current (bumicerts-platform):
+ *     from = { did: "did:..." } (or null for anonymous)
+ *     notes = "Anonymous donor wallet: 0xWALLET"  (anonymous only)
+ *
+ * Strategy:
+ *   1. Check `notes` for any 0x address — covers both legacy and current.
+ *   2. Check `from` as { did } object or plain DID string — identified donors.
  */
 function extractDonor(
   item: FundingReceiptItem,
@@ -29,14 +34,16 @@ function extractDonor(
   const from = item.record?.from;
   const notes = item.record?.notes;
 
-  // 1. Anonymous donor — wallet address in notes (check FIRST)
+  // 1. Wallet address from notes — handles both:
+  //    "Anonymous donor wallet: 0xABC..."  (current format)
+  //    "Original: 0.01 CELO from 0xABC..."  (legacy format)
   if (typeof notes === "string" && notes) {
-    const match = notes.match(/(?:wallet|address)[:\s]*(0x[a-fA-F0-9]{40})/i);
+    const match = notes.match(/(0x[a-fA-F0-9]{40})/);
     if (match?.[1]) return { id: match[1], type: "wallet" };
   }
 
   // 2a. Identified donor — `from` as object { did: "did:..." }
-  if (from && typeof from === "object" && !Array.isArray(from)) {
+  if (from !== null && typeof from === "object" && !Array.isArray(from)) {
     const obj = from as Record<string, unknown>;
     if (typeof obj.did === "string" && obj.did.startsWith("did:")) {
       return { id: obj.did, type: "did" };
