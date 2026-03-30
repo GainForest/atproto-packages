@@ -65,7 +65,7 @@ function DonationCard({
 }) {
   const donor = resolveDonorLabel(item);
   const amount = parseFloat(item.record?.amount ?? "0");
-  const currency = item.record?.currency ?? "USDC";
+  const currency = item.record?.currency ?? "USD";
   const txId = item.record?.transactionId;
   const occurredAt = item.record?.occurredAt ?? item.record?.createdAt;
 
@@ -150,9 +150,7 @@ function DonationsSkeleton() {
 
 function TotalRaised({ receipts }: { receipts: FundingReceiptItem[] }) {
   const total = useMemo(() => {
-    return receipts
-      .filter((r) => r.record?.currency === "USDC")
-      .reduce((sum, r) => sum + parseFloat(r.record?.amount ?? "0"), 0);
+    return receipts.reduce((sum, r) => sum + parseFloat(r.record?.amount ?? "0"), 0);
   }, [receipts]);
 
   return (
@@ -162,7 +160,7 @@ function TotalRaised({ receipts }: { receipts: FundingReceiptItem[] }) {
       </span>
       <span className="text-2xl font-bold text-primary mt-0.5">
         ${total.toFixed(2)}{" "}
-        <span className="text-base font-normal text-primary/70">USDC</span>
+        <span className="text-base font-normal text-primary/70">USD</span>
       </span>
     </div>
   );
