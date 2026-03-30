@@ -198,34 +198,13 @@ const Step1 = () => {
                 value={workType}
                 onChange={(value) => setFormValue("workType", value)}
                 options={[
-                  {
-                    value: "Ecological Restoration",
-                    label: "Ecological Restoration",
-                  },
-                  {
-                    value: "Agroforestry and Sustainable Agriculture",
-                    label: "Agroforestry and Sustainable Agriculture",
-                  },
-                  {
-                    value: "Climate Adaptation and Resilience",
-                    label: "Climate Adaptation and Resilience",
-                  },
-                  {
-                    value: "Biodiversity Monitoring and Conservation",
-                    label: "Biodiversity Monitoring and Conservation",
-                  },
-                  {
-                    value: "Environmental Education",
-                    label: "Environmental Education",
-                  },
-                  {
-                    value: "Indigenous and Local Knowledge Systems",
-                    label: "Indigenous and Local Knowledge Systems",
-                  },
-                  {
-                    value: "Environmental Justice and Health",
-                    label: "Environmental Justice and Health",
-                  },
+                  { value: "Ecological Restoration", label: "Ecological Restoration" },
+                  { value: "Agroforestry", label: "Agroforestry" },
+                  { value: "Climate Adaptation", label: "Climate Adaptation" },
+                  { value: "Biodiversity Monitoring", label: "Biodiversity Monitoring" },
+                  { value: "Environmental Education", label: "Environmental Education" },
+                  { value: "Indigenous & Local Knowledge", label: "Indigenous & Local Knowledge" },
+                  { value: "Environmental Justice", label: "Environmental Justice" },
                 ]}
               />
             </FormField>
