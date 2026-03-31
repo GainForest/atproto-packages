@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "apps/*",
+    "apps/indexer",
+    "apps/bumicerts-docs",
     "GENERATED"
   ],
   "scripts": {
