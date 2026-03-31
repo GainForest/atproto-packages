@@ -10,9 +10,11 @@ interface StatCardProps {
   label: string;
   value: string;
   sub?: string;
+  /** Optional warning/caveat shown below sub in amber. */
+  disclaimer?: string;
 }
 
-function StatCard({ icon, label, value, sub }: StatCardProps) {
+function StatCard({ icon, label, value, sub, disclaimer }: StatCardProps) {
   return (
     <div className="rounded-2xl border border-border bg-background p-5 flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -29,6 +31,9 @@ function StatCard({ icon, label, value, sub }: StatCardProps) {
       </p>
       {sub !== undefined && (
         <p className="text-xs text-muted-foreground">{sub}</p>
+      )}
+      {disclaimer !== undefined && (
+        <p className="text-[10px] text-amber-500/80 leading-snug">{disclaimer}</p>
       )}
     </div>
   );
@@ -54,7 +59,8 @@ export function KPISummary({ kpis }: KPISummaryProps) {
         icon={<DollarSignIcon className="h-4 w-4" />}
         label="Total Raised"
         value={formatUSDC(kpis.totalRaised)}
-        sub="All USDC donations"
+        sub="Via bumicerts platform only"
+        disclaimer="Excludes Gitcoin grants & off-platform funding"
       />
       <StatCard
         icon={<HashIcon className="h-4 w-4" />}
