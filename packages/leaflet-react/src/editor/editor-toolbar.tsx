@@ -43,7 +43,7 @@ import {
   Minus,
   Link,
   Image,
-  Youtube,
+  Video,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -291,7 +291,7 @@ export function EditorToolbar({
         {isUploading ? spinnerSvg : <Image size={15} />}
       </ToolbarButton>
       <ToolbarButton onClick={handleYoutubeClick} title="Embed YouTube Video">
-        <Youtube size={15} />
+        <Video size={15} />
       </ToolbarButton>
 
       {/* Hidden file input */}
