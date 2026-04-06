@@ -439,6 +439,40 @@ type CertifiedBadgeResponseRecord {
   weight: String
 }
 
+"""A record from app.certified.link.evm."""
+type CertifiedLinkEvmItem {
+  creatorInfo: CreatorInfo
+  metadata: RecordMeta
+  record: CertifiedLinkEvmRecord
+}
+
+type CertifiedLinkEvmPage {
+  data: [CertifiedLinkEvmItem!]
+  pageInfo: PageInfo
+}
+
+"""
+Pure payload for app.certified.link.evm. A verifiable link between an ATProto DID and an EVM wallet address, proven via a cryptographic signature. Currently supports EOA wallets via EIP-712 typed data signatures; the proof field is an open union to allow future signature methods.
+"""
+type CertifiedLinkEvmRecord {
+  """EVM wallet address (0x-prefixed, with EIP-55 checksum recommended)."""
+  address: String
+
+  """Client-declared timestamp when this record was originally created."""
+  createdAt: DateTime
+
+  """
+  Cryptographic proof of wallet ownership. The union is open to allow future proof methods (e.g. ERC-1271, ERC-6492). Each variant bundles its signature with the corresponding message format.
+  """
+  proof: JSON
+}
+
+"""CertifiedLinkNamespace namespace (certified.link.*)."""
+type CertifiedLinkNamespace {
+  """Paginated list of app.certified.link.evm records."""
+  evm(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): CertifiedLinkEvmPage
+}
+
 """A record from app.certified.location."""
 type CertifiedLocationItem {
   creatorInfo: CreatorInfo
@@ -492,6 +526,9 @@ type CertifiedNamespace {
 
   """CertifiedBadgeNamespace namespace."""
   badge: CertifiedBadgeNamespace
+
+  """CertifiedLinkNamespace namespace."""
+  link: CertifiedLinkNamespace
 
   """Paginated list of app.certified.location records."""
   location(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): CertifiedLocationPage
@@ -557,6 +594,275 @@ input EvmLinkWhereInput {
   valid: Boolean
 }
 
+"""A record from app.gainforest.ac.audio."""
+type GainforestAcAudioItem {
+  creatorInfo: CreatorInfo
+  metadata: RecordMeta
+  record: GainforestAcAudioRecord
+}
+
+type GainforestAcAudioPage {
+  data: [GainforestAcAudioItem!]
+  pageInfo: PageInfo
+}
+
+"""Pure payload for app.gainforest.ac.audio."""
+type GainforestAcAudioRecord {
+  """The audio file blob stored on the PDS."""
+  blob: JSON
+
+  """Timestamp of record creation in the ATProto PDS."""
+  createdAt: DateTime
+
+  """
+  AT-URI of the ac.deployment record describing the recording device setup (device model, gain, location, schedule, etc.).
+  """
+  deploymentRef: String
+
+  """A longer human-readable description of the audio recording content."""
+  description: JSON
+
+  """
+  License for this recording (e.g., CC-BY-4.0, CC0-1.0). Aligns with AC dcterms:rights.
+  """
+  license: String
+
+  """
+  Technical audio metadata (codec, sample rate, duration, frequency bounds, etc.).
+  """
+  metadata: JSON
+
+  """A short human-readable name or label for this audio recording."""
+  name: String
+
+  """
+  AT-URI of the dwc.occurrence record this audio is evidence for. Use when this recording documents a specific species detection or biodiversity observation.
+  """
+  occurrenceRef: String
+
+  """
+  Name of the person or agent who made the recording. Aligns with AC dc:creator. For automated deployments, this is the person who deployed the device.
+  """
+  recordedBy: String
+
+  """AT-URI of the organization site record where this audio was captured."""
+  siteRef: String
+
+  """
+  Spectrogram image of the recording (visual frequency-time representation).
+  """
+  spectrogram: JSON
+
+  """
+  Freeform tags for the recording (e.g., 'dawn-chorus', 'rain', 'chainsaw', 'anthropogenic-noise'). Aligns with AC ac:tag.
+  """
+  tags: [String!]
+
+  """Thumbnail image for display in list views."""
+  thumbnail: JSON
+}
+
+"""A record from app.gainforest.ac.deployment."""
+type GainforestAcDeploymentItem {
+  creatorInfo: CreatorInfo
+  metadata: RecordMeta
+  record: GainforestAcDeploymentRecord
+}
+
+type GainforestAcDeploymentPage {
+  data: [GainforestAcDeploymentItem!]
+  pageInfo: PageInfo
+}
+
+"""Pure payload for app.gainforest.ac.deployment."""
+type GainforestAcDeploymentRecord {
+  """
+  Altitude of the deployment location in meters above sea level (e.g., '312').
+  """
+  altitude: String
+
+  """
+  Battery type used (e.g., 'AA alkaline x3', 'AA lithium x3', 'USB power bank', 'solar panel').
+  """
+  batteryType: String
+
+  """Timestamp of record creation in the ATProto PDS."""
+  createdAt: DateTime
+
+  """
+  Decimal latitude of the deployment location in WGS84 (e.g., '-3.7452'). Aligns with dwc:decimalLatitude.
+  """
+  decimalLatitude: String
+
+  """
+  Decimal longitude of the deployment location in WGS84 (e.g., '-62.2159'). Aligns with dwc:decimalLongitude.
+  """
+  decimalLongitude: String
+
+  """
+  Date and time the device was placed and activated at the deployment location.
+  """
+  deployedAt: DateTime
+
+  """
+  Recording device model name (e.g., 'AudioMoth 1.2.0', 'AudioMoth 1.1.0', 'Wildlife Acoustics Song Meter SM4', 'Cornell Lab Swift'). Aligns with AC ac:captureDevice.
+  """
+  deviceModel: String
+
+  """
+  Device serial number for inventory tracking and cross-referencing recordings.
+  """
+  deviceSerialNumber: String
+
+  """AT-URI of the dwc.event sampling event this deployment is part of."""
+  eventRef: String
+
+  """
+  Firmware version loaded on the device at time of deployment (e.g., '1.8.1').
+  """
+  firmwareVersion: String
+
+  """
+  Gain setting configured on the device (e.g., 'low', 'medium', 'high', 'medium-high', '36dB'). AudioMoth-specific values: low/medium/high/medium-high/medium-low.
+  """
+  gain: String
+
+  """
+  Brief habitat description at the deployment site (e.g., 'primary rainforest edge, closed canopy ~30m'). Aligns with dwc:habitat.
+  """
+  habitat: String
+
+  """
+  Microphone type used (e.g., 'built-in MEMS', 'external electret', 'ultrasonic MEMS', 'Knowles SPH0641LU4H-1').
+  """
+  microphoneType: String
+
+  """
+  Height above ground at which the device was mounted, in meters (e.g., '1.5').
+  """
+  mountingHeight: String
+
+  """
+  Orientation of the device microphone (e.g., 'horizontal', 'vertical-facing-up', 'vertical-facing-down', 'angled-45deg').
+  """
+  mountingOrientation: String
+
+  """
+  A short human-readable label for this deployment (e.g., 'Site A North — AudioMoth March 2024').
+  """
+  name: String
+
+  """
+  Human-readable description of the recording duty cycle and schedule (e.g., '5 min on / 10 min off, 18:00–06:00 UTC+0'). For AudioMoth, this reflects the schedule configured via the AudioMoth app.
+  """
+  recordingSchedule: String
+
+  """
+  Free-text remarks about the deployment (e.g., notable issues, vegetation around device, signs of disturbance).
+  """
+  remarks: String
+
+  """
+  Date and time the device was collected and deactivated. Null if still active.
+  """
+  retrievedAt: DateTime
+
+  """
+  Sample rate configured on the device in Hz (e.g., 48000, 192000, 384000 for ultrasonic bat detection).
+  """
+  sampleRateHz: Int
+
+  """AT-URI of the organization site record this deployment belongs to."""
+  siteRef: String
+
+  """
+  Storage media type and capacity (e.g., 'microSD 128GB SanDisk Endurance').
+  """
+  storageMedia: String
+}
+
+"""A record from app.gainforest.ac.multimedia."""
+type GainforestAcMultimediaItem {
+  creatorInfo: CreatorInfo
+  metadata: RecordMeta
+  record: GainforestAcMultimediaRecord
+}
+
+type GainforestAcMultimediaPage {
+  data: [GainforestAcMultimediaItem!]
+  pageInfo: PageInfo
+}
+
+"""Pure payload for app.gainforest.ac.multimedia."""
+type GainforestAcMultimediaRecord {
+  """
+  URI to the original full-resolution media resource (e.g. S3 URL). The PDS blob is a compressed variant; this points to the archival original.
+  """
+  accessUri: String
+
+  """Human-readable description of the media content."""
+  caption: String
+
+  """
+  Date and time the media resource was originally created (e.g. when the photo was taken).
+  """
+  createDate: DateTime
+
+  """Timestamp of record creation in the ATProto PDS."""
+  createdAt: DateTime
+
+  """Name of the person or agent who created the media resource."""
+  creator: String
+
+  """
+  The media file blob. Images up to 100MB, audio up to 100MB, video up to 100MB. For PDS-stored compressed versions; original full-res referenced via accessUri.
+  """
+  file: JSON
+
+  """
+  MIME type of the media file (e.g. image/webp, audio/flac). Should match the blob's actual content type.
+  """
+  format: String
+
+  """AT-URI of the dwc.occurrence record this media is evidence for."""
+  occurrenceRef: String
+
+  """AT-URI of the organization site record where this media was captured."""
+  siteRef: String
+
+  """
+  Viewing orientation relative to the subject, using TDWG Audubon Core subjectOrientation controlled values. Examples: dorsal, ventral, lateral, anterior, posterior.
+  """
+  subjectOrientation: String
+
+  """
+  The part of the organism depicted, using TDWG Audubon Core subjectPart controlled values (http://rs.tdwg.org/acpart/values/). Examples: entireOrganism, leaf, bark, flower, fruit, seed, stem, twig, bud, root.
+  """
+  subjectPart: String
+
+  """
+  Full IRI of the subjectPart term from the TDWG controlled vocabulary. Example: http://rs.tdwg.org/acpart/values/p0002 for bark.
+  """
+  subjectPartUri: String
+
+  """
+  AC variant describing the quality/size of this service access point. Values: Thumbnail, Lower Quality, Medium Quality, Good Quality, Best Quality, Offline.
+  """
+  variantLiteral: String
+}
+
+"""GainforestAcNamespace namespace (gainforest.ac.*)."""
+type GainforestAcNamespace {
+  """Paginated list of app.gainforest.ac.audio records."""
+  audio(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestAcAudioPage
+
+  """Paginated list of app.gainforest.ac.deployment records."""
+  deployment(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestAcDeploymentPage
+
+  """Paginated list of app.gainforest.ac.multimedia records."""
+  multimedia(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestAcMultimediaPage
+}
+
 """A record from app.gainforest.dwc.event."""
 type GainforestDwcEventItem {
   creatorInfo: CreatorInfo
@@ -573,6 +879,14 @@ type GainforestDwcEventPage {
 Pure payload for app.gainforest.dwc.event. A sampling or collecting event. Multiple dwc.occurrence records can reference the same event via eventRef, sharing location and protocol metadata.
 """
 type GainforestDwcEventRecord {
+  """Cloud cover percentage."""
+  cloudCover: String
+
+  """
+  Assessment of survey completeness (e.g., 'complete', 'partial - rain stopped survey', 'incomplete').
+  """
+  completeness: String
+
   """Uncertainty radius in meters around the coordinates."""
   coordinateUncertaintyInMeters: Int
 
@@ -593,6 +907,9 @@ type GainforestDwcEventRecord {
 
   """Geographic longitude in decimal degrees (WGS84). Range: -180 to 180."""
   decimalLongitude: String
+
+  """Description of equipment used during the event."""
+  equipmentUsed: String
 
   """
   The date or date range during which the event occurred. ISO 8601 format (e.g., '2024-03-15', '2024-03-15/2024-03-17').
@@ -623,6 +940,9 @@ type GainforestDwcEventRecord {
   """
   habitat: String
 
+  """Relative humidity percentage."""
+  humidity: String
+
   """Specific locality description."""
   locality: String
 
@@ -638,6 +958,19 @@ type GainforestDwcEventRecord {
   """Lower limit of elevation range in meters above sea level."""
   minimumElevationInMeters: Int
 
+  """
+  How often this type of event recurs (e.g., 'monthly', 'quarterly', 'annual', 'one-time').
+  """
+  monitoringFrequency: String
+
+  """
+  Name of the monitoring programme (e.g., 'Annual Biodiversity Survey 2025').
+  """
+  monitoringProgramme: String
+
+  """Moon phase (relevant for nocturnal surveys)."""
+  moonPhase: String
+
   """Third-level administrative division."""
   municipality: String
 
@@ -648,6 +981,25 @@ type GainforestDwcEventRecord {
 
   """AT-URI reference to the parent app.gainforest.dwc.event record."""
   parentEventRef: String
+
+  """Precipitation description (e.g., 'none', 'light rain', '5mm')."""
+  precipitation: String
+
+  """AT-URI reference to the organization info record."""
+  projectRef: String
+
+  """Notes on data quality issues encountered during or after the event."""
+  qualityControlNotes: String
+
+  """
+  Person(s) who conducted the event. Pipe-delimited for multiple people (e.g., 'Jane Smith | John Doe').
+  """
+  recordedBy: String
+
+  """
+  ORCID or other persistent identifiers for the recorder(s). Pipe-delimited for multiple IDs.
+  """
+  recordedByID: String
 
   """
   The unit of measurement for the sampleSizeValue (e.g., 'square meters', 'hectares', 'trap-nights').
@@ -669,8 +1021,32 @@ type GainforestDwcEventRecord {
   """
   samplingProtocol: String
 
+  """AT-URI reference to the organization site record."""
+  siteRef: String
+
   """First-level administrative division."""
   stateProvince: String
+
+  """Number of people involved in the event."""
+  teamSize: Int
+
+  """Temperature in Celsius during event."""
+  temperature: String
+
+  """Visibility conditions (e.g., 'clear', 'foggy', '10m underwater')."""
+  visibility: String
+
+  """Water level if aquatic survey (e.g., 'low', '2.3m')."""
+  waterLevel: String
+
+  """Water temperature in Celsius."""
+  waterTemperature: String
+
+  """General weather description."""
+  weatherRemarks: String
+
+  """Wind speed during event."""
+  windSpeed: String
 }
 
 """A record from app.gainforest.dwc.measurement."""
@@ -686,60 +1062,45 @@ type GainforestDwcMeasurementPage {
 }
 
 """
-Pure payload for app.gainforest.dwc.measurement. A measurement, fact, characteristic, or assertion about an occurrence. Multiple measurement records can reference the same occurrence, solving the Simple DwC one-measurement-per-record limitation.
+Pure payload for app.gainforest.dwc.measurement. A bundle of measurements, facts, or characteristics about an occurrence. One record per occurrence, with all measurements grouped inside a typed result union.
 """
 type GainforestDwcMeasurementRecord {
   """Timestamp of record creation in the ATProto PDS."""
   createdAt: DateTime
 
-  """
-  The description of the potential error associated with the measurementValue (e.g., '0.5 cm', '5%').
-  """
-  measurementAccuracy: String
-
-  """Person(s) who determined the measurement. Pipe-delimited for multiple."""
-  measurementDeterminedBy: String
-
-  """The date the measurement was made. ISO 8601 format."""
-  measurementDeterminedDate: String
+  """Person(s) who performed the measurements. Pipe-delimited for multiple."""
+  measuredBy: String
 
   """
-  An identifier for the measurement. Should be unique within the dataset.
+  ORCID or other persistent identifier(s) for the measurer(s). Pipe-delimited for multiple.
   """
-  measurementID: String
+  measuredByID: String
+
+  """Date the measurements were taken. ISO 8601 format."""
+  measurementDate: String
 
   """
-  The description of or reference to the method used to determine the measurement (e.g., 'diameter tape at 1.3m height', 'laser rangefinder', 'Bitterlich method').
+  General protocol or method used (e.g., 'ForestGEO standard protocol', 'mist-net examination').
   """
   measurementMethod: String
 
-  """Comments or notes accompanying the measurement."""
+  """Comments or notes about the measurement session."""
   measurementRemarks: String
 
   """
-  The nature of the measurement, fact, characteristic, or assertion (e.g., 'DBH', 'tree height', 'canopy cover', 'tail length', 'body mass', 'soil pH', 'water temperature').
-  """
-  measurementType: String
-
-  """
-  The units for the measurementValue (e.g., 'cm', 'm', 'kg', 'mm', '%', 'degrees Celsius').
-  """
-  measurementUnit: String
-
-  """
-  The value of the measurement, fact, characteristic, or assertion (e.g., '45.2', 'present', 'blue').
-  """
-  measurementValue: String
-
-  """
-  The occurrenceID of the linked occurrence record (for cross-system interoperability).
+  The occurrenceID of the linked occurrence record (for cross-system interoperability with GBIF/DwC-A exports).
   """
   occurrenceID: String
 
   """
-  AT-URI reference to the app.gainforest.dwc.occurrence record this measurement belongs to.
+  AT-URI reference to the app.gainforest.dwc.occurrence record these measurements belong to.
   """
   occurrenceRef: String
+
+  """
+  The typed measurement payload. Use floraMeasurement for sessile organisms (trees, plants, corals, sponges), faunaMeasurement for mobile organisms (mammals, birds, reptiles, amphibians, fish, insects), or genericMeasurement as a flexible fallback.
+  """
+  result: JSON
 }
 
 """GainforestDwcNamespace namespace (gainforest.dwc.*)."""
@@ -982,6 +1343,61 @@ type GainforestEvaluatorSubscriptionRecord {
   evaluator: String
 }
 
+"""A record from app.gainforest.gbif.dataset."""
+type GainforestGbifDatasetItem {
+  creatorInfo: CreatorInfo
+  metadata: RecordMeta
+  record: GainforestGbifDatasetRecord
+}
+
+type GainforestGbifDatasetPage {
+  data: [GainforestGbifDatasetItem!]
+  pageInfo: PageInfo
+}
+
+"""
+Pure payload for app.gainforest.gbif.dataset. A GBIF dataset registration record linking a PDS organization to its GBIF dataset UUID, installation, and archive blob.
+"""
+type GainforestGbifDatasetRecord {
+  """
+  Blob reference to the DwC-A archive ZIP. Storing as a proper blob ref prevents PDS garbage collection.
+  """
+  archiveBlob: JSON
+
+  """CID of the most recently uploaded DwC-A blob"""
+  archiveBlobCid: String
+
+  """Timestamp of record creation in the ATProto PDS"""
+  createdAt: DateTime
+
+  """Human-readable dataset title"""
+  datasetTitle: String
+
+  """GBIF dataset UUID returned by POST /dataset"""
+  gbifDatasetKey: String
+
+  """GBIF endpoint integer key returned by POST /dataset/{key}/endpoint"""
+  gbifEndpointKey: Int
+
+  """GBIF installation UUID used when creating the dataset"""
+  gbifInstallationKey: String
+
+  """Result of last GBIF crawl (NORMAL, ABORT, etc.)"""
+  lastCrawlFinishReason: String
+
+  """When the archive was last published to GBIF"""
+  lastPublishedAt: DateTime
+
+  """AT-URI of the organization info record this dataset belongs to"""
+  organizationRef: String
+}
+
+"""GainforestGbifNamespace namespace (gainforest.gbif.*)."""
+type GainforestGbifNamespace {
+  """Paginated list of app.gainforest.gbif.dataset records."""
+  dataset(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestGbifDatasetPage
+}
+
 """GainforestNamespace namespace (gainforest.*)."""
 type GainforestNamespace {
   """GainforestAcNamespace namespace."""
@@ -993,56 +1409,11 @@ type GainforestNamespace {
   """GainforestEvaluatorNamespace namespace."""
   evaluator: GainforestEvaluatorNamespace
 
+  """GainforestGbifNamespace namespace."""
+  gbif: GainforestGbifNamespace
+
   """GainforestOrganizationNamespace namespace."""
   organization: GainforestOrganizationNamespace
-}
-
-"""A record from app.gainforest.ac.audio."""
-type GainforestAcAudioItem {
-  creatorInfo: CreatorInfo
-  metadata: RecordMeta
-  record: GainforestAcAudioRecord
-}
-
-type GainforestAcAudioPage {
-  data: [GainforestAcAudioItem!]
-  pageInfo: PageInfo
-}
-
-"""Pure payload for app.gainforest.ac.audio."""
-type GainforestAcAudioRecord {
-  """The audio file blob stored on the PDS."""
-  blob: JSON
-
-  """Timestamp of record creation in the ATProto PDS."""
-  createdAt: DateTime
-
-  """A longer human-readable description of the audio recording content."""
-  description: JSON
-
-  """License for this recording (e.g., CC-BY-4.0, CC0-1.0)."""
-  license: String
-
-  """Technical audio metadata (codec, sample rate, duration, frequency bounds, etc.)."""
-  metadata: JSON
-
-  """A short human-readable name or label for this audio recording."""
-  name: String
-
-  """Name of the person or agent who made the recording."""
-  recordedBy: String
-
-  """AT-URI of the organization site record where this audio was captured."""
-  siteRef: String
-
-  """Freeform tags for the recording."""
-  tags: [String!]
-}
-
-"""GainforestAcNamespace namespace (gainforest.ac.*)."""
-type GainforestAcNamespace {
-  """Paginated list of app.gainforest.ac.audio records."""
-  audio(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestAcAudioPage
 }
 
 """A record from app.gainforest.organization.defaultSite."""
@@ -1066,6 +1437,78 @@ type GainforestOrganizationDefaultSiteRecord {
 
   """The reference to the default site record in the PDS"""
   site: String
+}
+
+"""A record from app.gainforest.organization.donation."""
+type GainforestOrganizationDonationItem {
+  creatorInfo: CreatorInfo
+  metadata: RecordMeta
+  record: GainforestOrganizationDonationRecord
+}
+
+type GainforestOrganizationDonationPage {
+  data: [GainforestOrganizationDonationItem!]
+  pageInfo: PageInfo
+}
+
+"""
+Pure payload for app.gainforest.organization.donation. A record of a donation or financial transaction for financial transparency
+"""
+type GainforestOrganizationDonationRecord {
+  """
+  Donation amount in the smallest unit of the currency (e.g., cents for USD)
+  """
+  amount: Int
+
+  """Equivalent amount in USD at time of donation"""
+  amountUsd: String
+
+  """Blockchain network the transaction was made on"""
+  blockchainNetwork: String
+
+  """Record creation timestamp"""
+  createdAt: DateTime
+
+  """Currency code (e.g., 'USD', 'EUR', 'CELO', 'SOL')"""
+  currency: String
+
+  """When the donation was made"""
+  donatedAt: DateTime
+
+  """Donor's ATProto DID if they have an account"""
+  donorDid: String
+
+  """Unique identifier for the donor (DID, email hash, or anonymous token)"""
+  donorIdentifier: String
+
+  """Donor name (may be anonymous)"""
+  donorName: String
+
+  """Whether the donor wishes to remain anonymous"""
+  isAnonymous: Boolean
+
+  """Additional notes"""
+  notes: String
+
+  """Payment method used for the donation"""
+  paymentMethod: String
+
+  """
+  What the donation is for (e.g., 'tree planting', 'equipment', 'salaries')
+  """
+  purpose: String
+
+  """URL to donation receipt"""
+  receiptUrl: String
+
+  """AT-URI to the member record who received funds"""
+  recipientMemberRef: String
+
+  """Blockchain transaction hash if crypto"""
+  transactionHash: String
+
+  """Type of transaction"""
+  transactionType: String
 }
 
 """An organization profile (app.gainforest.organization.info)."""
@@ -1113,26 +1556,158 @@ type GainforestOrganizationLayerPage {
 Pure payload for app.gainforest.organization.layer. A declaration of a layer for an organization
 """
 type GainforestOrganizationLayerRecord {
+  """Bounding box as 'west,south,east,north'"""
+  bounds: String
+
+  """
+  Layer category for grouping in UI (e.g., 'Biodiversity', 'Land Cover', 'Climate', 'Infrastructure')
+  """
+  category: String
+
+  """Named color scale for continuous data"""
+  colorScale: String
+
   """The date and time of the creation of the record"""
   createdAt: DateTime
+
+  """Date of the data (ISO 8601)"""
+  dataDate: String
+
+  """Attribution/source of the layer data"""
+  dataSource: String
 
   """The description of the layer"""
   description: String
 
+  """Ordering priority for display"""
+  displayOrder: Int
+
+  """Whether this layer should be shown by default"""
+  isDefault: Boolean
+
+  """Legend entries for the layer"""
+  legend: JSON
+
+  """Maximum value in the data range"""
+  maxValue: String
+
+  """Minimum value in the data range"""
+  minValue: String
+
   """The name of the site"""
   name: String
+
+  """Default opacity (0-1 as string, e.g., '0.7')"""
+  opacity: String
+
+  """
+  GeoJSON property key to use for choropleth coloring (e.g., 'species_richness')
+  """
+  propertyKey: String
+
+  """AT-URI reference to the site this layer belongs to"""
+  siteRef: String
+
+  """Preview thumbnail for the layer"""
+  thumbnail: JSON
+
+  """Maximum zoom level"""
+  tileMaxZoom: Int
+
+  """Minimum zoom level"""
+  tileMinZoom: Int
+
+  """
+  URL pattern for TMS tiles (e.g., 'https://tiles.example.com/{z}/{x}/{y}.png')
+  """
+  tilePattern: String
 
   """The type of the layer"""
   type: String
 
+  """
+  Unit of measurement for the layer data (e.g., 'species/ha', 'kg C/m²', 'mm/year')
+  """
+  unit: String
+
   """The URI of the layer"""
   uri: String
+}
+
+"""A record from app.gainforest.organization.member."""
+type GainforestOrganizationMemberItem {
+  creatorInfo: CreatorInfo
+  metadata: RecordMeta
+  record: GainforestOrganizationMemberRecord
+}
+
+type GainforestOrganizationMemberPage {
+  data: [GainforestOrganizationMemberItem!]
+  pageInfo: PageInfo
+}
+
+"""
+Pure payload for app.gainforest.organization.member. A community or team member of an organization
+"""
+type GainforestOrganizationMemberRecord {
+  """Biography of the member"""
+  bio: JSON
+
+  """The date and time the record was created"""
+  createdAt: DateTime
+
+  """ATProto DID if the member has their own account"""
+  did: String
+
+  """Full display name of the member"""
+  displayName: String
+
+  """Ordering priority for display (lower values appear first)"""
+  displayOrder: Int
+
+  """Contact email address of the member"""
+  email: String
+
+  """
+  Areas of expertise (e.g. 'botany', 'remote sensing', 'community engagement')
+  """
+  expertise: [String!]
+
+  """First name of the member"""
+  firstName: String
+
+  """Whether this member profile is publicly visible"""
+  isPublic: Boolean
+
+  """When the member joined the organization"""
+  joinedAt: DateTime
+
+  """Languages spoken by the member as BCP-47 codes"""
+  languages: [String!]
+
+  """Last name of the member"""
+  lastName: String
+
+  """ORCID identifier of the member"""
+  orcid: String
+
+  """Profile photo of the member"""
+  profileImage: JSON
+
+  """Role or title of the member within the organization"""
+  role: String
+
+  """Blockchain wallet addresses for receiving funds"""
+  walletAddresses: JSON
 }
 
 """GainforestOrganizationNamespace namespace (gainforest.organization.*)."""
 type GainforestOrganizationNamespace {
   """Paginated list of app.gainforest.organization.defaultSite records."""
   defaultSite(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestOrganizationDefaultSitePage
+
+  """Paginated list of app.gainforest.organization.donation records."""
+  donation(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestOrganizationDonationPage
 
   """
   Paginated list of app.gainforest.organization.info records. When `where` contains no text-filter fields (displayName/shortDescription/longDescription/text), returns all records ordered by time (sortBy/order apply). When any text field is present in `where`, runs a text search (sortBy/order are ignored; results ordered by indexed_at DESC).
@@ -1152,12 +1727,14 @@ type GainforestOrganizationNamespace {
   """Paginated list of app.gainforest.organization.layer records."""
   layer(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestOrganizationLayerPage
 
+  """Paginated list of app.gainforest.organization.member records."""
+  member(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestOrganizationMemberPage
+
   """GainforestOrganizationObservationsNamespace namespace."""
   observations: GainforestOrganizationObservationsNamespace
 
   """GainforestOrganizationPredictionsNamespace namespace."""
   predictions: GainforestOrganizationPredictionsNamespace
-
 }
 
 """A record from app.gainforest.organization.observations.dendogram."""
@@ -1176,11 +1753,48 @@ type GainforestOrganizationObservationsDendogramPage {
 Pure payload for app.gainforest.organization.observations.dendogram. A declaration of a dendogram observation for an organization
 """
 type GainforestOrganizationObservationsDendogramRecord {
+  """When the phylogenetic analysis was performed"""
+  analysisDate: DateTime
+
+  """
+  Method used to generate the dendogram (e.g., 'Maximum Likelihood with RAxML', 'Neighbor-Joining')
+  """
+  analysisMethod: String
+
   """The date and time of the creation of the record"""
   createdAt: DateTime
 
+  """Source of the sequence or trait data used in the analysis"""
+  dataSource: String
+
   """An SVG of the dendogram uploaded as blob"""
   dendogram: JSON
+
+  """Description of what this dendogram shows"""
+  description: JSON
+
+  """
+  Name or title of the dendogram (e.g., 'Flora Phylogenetic Tree - Site A 2025')
+  """
+  name: String
+
+  """The root taxon of the tree (e.g., 'Plantae')"""
+  rootTaxon: String
+
+  """AT-URI reference to the site this dendogram represents"""
+  siteRef: String
+
+  """Number of taxa represented in the dendogram"""
+  taxonCount: Int
+
+  """Which taxonomic groups are represented in the dendogram"""
+  taxonGroups: [String!]
+
+  """Thumbnail preview image of the dendogram"""
+  thumbnail: JSON
+
+  """Type of tree represented in the dendogram"""
+  treeType: String
 }
 
 """A record from app.gainforest.organization.observations.fauna."""
@@ -1247,11 +1861,59 @@ type GainforestOrganizationObservationsMeasuredTreesClusterPage {
 Pure payload for app.gainforest.organization.observations.measuredTreesCluster. A declaration of a measured trees cluster for an organization
 """
 type GainforestOrganizationObservationsMeasuredTreesClusterRecord {
+  """Area of the cluster in square meters"""
+  areaSqMeters: String
+
+  """Average diameter at breast height in cm"""
+  averageDbhCm: String
+
+  """Average tree height in meters"""
+  averageHeightMeters: String
+
   """The date and time of the creation of the record"""
   createdAt: DateTime
 
+  """Source of the data (e.g., 'KoBoToolbox', 'field survey')"""
+  dataSource: String
+
+  """Centroid latitude of the cluster"""
+  decimalLatitude: String
+
+  """Centroid longitude of the cluster"""
+  decimalLongitude: String
+
+  """Description of the cluster"""
+  description: JSON
+
+  """Most common species scientific name"""
+  dominantSpecies: String
+
+  """Data license"""
+  license: String
+
+  """Person(s) who measured the trees (pipe-delimited)"""
+  measuredBy: String
+
+  """Date range of measurements (ISO 8601 interval)"""
+  measurementDateRange: String
+
+  """Description of the measurement protocol used"""
+  measurementProtocol: String
+
+  """Name of the tree cluster/plot (e.g., 'Plot A - Riparian Zone')"""
+  name: String
+
   """A blob pointing to a shapefile of the measured trees cluster"""
   shapefile: JSON
+
+  """AT-URI reference to the site this cluster belongs to"""
+  siteRef: String
+
+  """Number of distinct species in the cluster"""
+  speciesCount: Int
+
+  """Total number of measured trees in the cluster"""
+  totalTreeCount: Int
 }
 
 """
@@ -1339,8 +2001,6 @@ type GainforestOrganizationPredictionsNamespace {
   """
   flora(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): GainforestOrganizationPredictionsFloraPage
 }
-
-
 
 """A record from org.hyperboards.board."""
 type HyperboardsBoardItem {
@@ -1438,20 +2098,26 @@ type HypercertsClaimActivityItem {
   record: HypercertsClaimActivityRecord
 
   """
-  Optional Hyperlabel quality metadata for this activity. Null when the author has not been labelled by the Hyperlabel labeller.
+  Optional quality metadata for this activity. Null when the activity has not been scored yet.
   """
   specialMetadata: HypercertsClaimActivitySpecialMetadata
 }
 
-"""Quality label from the Hyperlabel labeller (einstein.climateai.org)."""
+"""Quality label for an activity record."""
 type HypercertsClaimActivityLabel {
-  """When the labeller applied this label"""
+  """Score breakdown by criteria"""
+  breakdown: JSON
+
+  """When the label was applied"""
   labeledAt: DateTime
 
-  """DID of the labeller that issued this label"""
+  """Identifier of the labeller that issued this label"""
   labeler: String
 
-  """When the indexer last synced this label"""
+  """Quality score 0-100"""
+  score: Int
+
+  """When the label was last updated"""
   syncedAt: DateTime
 
   """Quality tier: high-quality | standard | draft | likely-test"""
@@ -1484,7 +2150,7 @@ type HypercertsClaimActivityRecord {
 }
 
 """
-Hyperlabel quality metadata for an activity record. Only present when the author has been labelled by the Hyperlabel labeller.
+Quality metadata for an activity record. Only present when the author's activity has been scored.
 """
 type HypercertsClaimActivitySpecialMetadata {
   """
@@ -1941,12 +2607,12 @@ type HypercertsFundingReceiptRecord {
   currency: String
 
   """
-  Optional reference to the activity, project, or organization this funding relates to.
+  Optional strong reference to the activity, project, or organization this funding relates to.
   """
-  for: String
+  for: StrongRef
 
   """
-  DID of the sender who transferred the funds. Leave empty if sender wants to stay anonymous.
+  The sender of the funds (either an account DID or a strong reference to a record). Optional — omit to represent anonymity.
   """
   from: JSON
 
@@ -1967,9 +2633,9 @@ type HypercertsFundingReceiptRecord {
   paymentRail: String
 
   """
-  The recipient of the funds. Can be identified by DID or a clear-text name.
+  The recipient of the funds (either an account DID or a strong reference to a record).
   """
-  to: String
+  to: JSON
 
   """
   Identifier of the underlying payment transaction (e.g. bank reference, onchain transaction hash, or processor-specific ID). Use paymentNetwork to specify the network where applicable.
@@ -2077,75 +2743,6 @@ type IiSubjectRef {
   uri: String
 }
 
-"""ImpactindexerNamespace namespace (impactindexer.*)."""
-type ImpactindexerNamespace {
-  """ImpactindexerReviewNamespace namespace."""
-  review: ImpactindexerReviewNamespace
-}
-
-"""A record from org.impactindexer.review.comment."""
-type ImpactindexerReviewCommentItem {
-  creatorInfo: CreatorInfo
-  metadata: RecordMeta
-  record: ImpactindexerReviewCommentRecord
-}
-
-type ImpactindexerReviewCommentPage {
-  data: [ImpactindexerReviewCommentItem!]
-  pageInfo: PageInfo
-}
-
-"""
-Pure payload for org.impactindexer.review.comment. A text comment on a subject.
-"""
-type ImpactindexerReviewCommentRecord {
-  """Timestamp when the comment was created."""
-  createdAt: DateTime
-
-  """
-  Optional AT-URI of another comment this is replying to, enabling threaded discussions.
-  """
-  replyTo: String
-
-  """The subject being commented on."""
-  subject: JSON
-
-  """The comment text."""
-  text: String
-}
-
-"""A record from org.impactindexer.review.like."""
-type ImpactindexerReviewLikeItem {
-  creatorInfo: CreatorInfo
-  metadata: RecordMeta
-  record: ImpactindexerReviewLikeRecord
-}
-
-type ImpactindexerReviewLikePage {
-  data: [ImpactindexerReviewLikeItem!]
-  pageInfo: PageInfo
-}
-
-"""
-Pure payload for org.impactindexer.review.like. A like on a subject. Create to like, delete to remove like.
-"""
-type ImpactindexerReviewLikeRecord {
-  """Timestamp when the like was created."""
-  createdAt: DateTime
-
-  """The subject being liked."""
-  subject: JSON
-}
-
-"""ImpactindexerReviewNamespace namespace (impactindexer.review.*)."""
-type ImpactindexerReviewNamespace {
-  """Paginated list of org.impactindexer.review.comment records."""
-  comment(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): ImpactindexerReviewCommentPage
-
-  """Paginated list of org.impactindexer.review.like records."""
-  like(cursor: String, limit: Int, order: SortOrder, sortBy: SortField, where: WhereInput): ImpactindexerReviewLikePage
-}
-
 """Arbitrary JSON value"""
 scalar JSON
 
@@ -2156,6 +2753,22 @@ type Mutation {
     """List of DIDs to add"""
     dids: [String!]!
   ): Boolean
+
+  """
+  Discover all DIDs that have records for the given collection NSID via the relay, then wipe and re-backfill each. Returns the number of DIDs reindexed.
+  """
+  reindexRepoByCollection(
+    """Collection NSID to reindex (e.g. org.hypercerts.claim.activity)"""
+    collection: String!
+  ): Int
+
+  """
+  Wipe all indexed records for the given DIDs, reset their Tap cursor, and trigger a fresh backfill from the PDS. Returns the number of DIDs reindexed.
+  """
+  reindexRepoByDid(
+    """List of DIDs to reindex"""
+    dids: [String!]!
+  ): Int
 
   """Stop tracking DIDs in Tap."""
   removeRepos(
@@ -2237,9 +2850,6 @@ type Query {
 
   """All HypercertsNamespace indexed records."""
   hypercerts: HypercertsNamespace
-
-  """All ImpactindexerNamespace indexed records."""
-  impactindexer: ImpactindexerNamespace
 }
 
 """AT Protocol envelope fields present on every indexed record."""

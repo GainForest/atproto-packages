@@ -1,11 +1,37 @@
 /**
  * Dashboard aggregation utilities.
  *
- * Pure functions that transform raw funding receipts into dashboard metrics.
- * All run client-side after receipts are fetched via trpc.funding.receipts.
+ * Convert raw funding receipts fetched via tRPC into dashboard metrics:
+ * top donors, recent donations, time series, etc.
  */
 
 import type { FundingReceiptItem } from "@/lib/graphql-dev/queries/fundingReceipts";
+
+// ── Helper to extract URI from StrongRef ─────────────────────────────────────
+
+/**
+ * Extracts the AT-URI from a StrongRef object or returns null.
+ * The `for` field is now a StrongRef: { uri: string, cid: string }
+ */
+function extractUriFromStrongRef(strongRef: unknown): string | null {
+  if (!strongRef || typeof strongRef !== "object") return null;
+  const ref = strongRef as Record<string, unknown>;
+  return typeof ref.uri === "string" ? ref.uri : null;
+}
+
+/**
+ * Extracts the DID from the `to` field union type.
+ * The `to` field is now a union: { did: string } | { uri: string, cid: string }
+ */
+function extractDidFromTo(to: unknown): string | null {
+  if (!to || typeof to !== "object") return null;
+  const obj = to as Record<string, unknown>;
+  // Check if it's a DID reference
+  if (typeof obj.did === "string") return obj.did;
+  // Check if it's a strongRef with a URI
+  if (typeof obj.uri === "string") return obj.uri;
+  return null;
+}
 import type { Period } from "@/lib/utils/leaderboard";
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -160,7 +186,7 @@ export function computeKPIs(receipts: FundingReceiptItem[]): DashboardKPIs {
     const donor = extractDonor(r);
     if (donor) donorIds.add(donor.id);
 
-    const uri = r.record?.for;
+    const uri = extractUriFromStrongRef(r.record?.for);
     if (uri) bumicertUris.add(uri);
   }
 
@@ -321,11 +347,11 @@ export function computePerOrg(receipts: FundingReceiptItem[]): OrgRow[] {
   >();
 
   for (const r of usdcOnly) {
-    const orgDid = r.record?.to;
+    const orgDid = extractDidFromTo(r.record?.to);
     if (!orgDid) continue;
 
     const amount = safeAmount(r.record?.amount);
-    const bumicertUri = r.record?.for ?? "";
+    const bumicertUri = extractUriFromStrongRef(r.record?.for);
     const donor = extractDonor(r);
 
     const existing = map.get(orgDid);
@@ -389,7 +415,7 @@ export function computeRecentTransactions(
         donorType: donor?.type ?? null,
         amount: safeAmount(r.record?.amount),
         currency: r.record?.currency ?? "USD",
-        bumicertUri: r.record?.for ?? null,
+        bumicertUri: extractUriFromStrongRef(r.record?.for),
         txHash: r.record?.transactionId ?? null,
         paymentNetwork: r.record?.paymentNetwork ?? null,
       };
