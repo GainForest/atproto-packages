@@ -203,7 +203,9 @@ export function OrgHero({
     organization.website;
 
   function handleShare() {
-    navigator.clipboard.writeText(window.location.href).then(() => {
+    // Always share the public organization profile URL, not the current route
+    const publicUrl = `${window.location.origin}${links.organization.home(organization.did)}`;
+    navigator.clipboard.writeText(publicUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
