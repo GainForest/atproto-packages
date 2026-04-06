@@ -106,6 +106,7 @@ const Step2 = () => {
         <div className="w-full relative">
           <div className="w-full rounded-md border border-border bg-background overflow-hidden pr-10">
             <BskyRichTextEditor
+              key={shortDescription}
               initialValue={{ text: shortDescription, facets: shortDescriptionFacets }}
               onChange={(text, facets) => {
                 setFormValue("shortDescription", text);
