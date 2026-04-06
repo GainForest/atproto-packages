@@ -13,7 +13,15 @@ export const organizationInfoSchema = z.object({
     (code) => code in countries,
     "Invalid country code"
   ),
-  website: z.string().url("Invalid website URL").optional().or(z.literal("")),
+  website: z.string()
+    .transform((val) => {
+      // Allow empty string
+      if (!val || val.trim() === "") return "";
+      // Prepend https:// if no protocol is present
+      const trimmed = val.trim();
+      return trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+    })
+    .pipe(z.string().url("Invalid website URL").optional().or(z.literal(""))),
   startDate: z.string().optional(),
 });
 
