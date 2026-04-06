@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { ChevronLeftIcon, ChevronRightIcon, LightbulbIcon, XIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, LightbulbIcon, XIcon, SaveIcon } from "lucide-react";
 import React, { useEffect, useEffectEvent, useMemo, useState } from "react";
 import useNewBumicertStore from "../store";
 import { STEPS, STEPS as steps } from "../_data/steps";
@@ -9,12 +9,15 @@ import { useStep5Store } from "./Steps/Step5/store";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { useNavbarContext } from "@/app/(marketplace)/_components/Navbar/context";
 import { AnimatePresence, motion } from "framer-motion";
+import { useModal } from "@/components/ui/modal/context";
+import SaveAsDraftModal, { SaveAsDraftModalId } from "./SaveAsDraftModal";
 
 const StepFooter = () => {
   const { currentStepIndex, setCurrentStepIndex } = useNewBumicertStore();
   const { viewport } = useNavbarContext();
   const showTipButton = viewport === "mobile";
   const [showTips, setShowTips] = useState(false);
+  const { pushModal, show } = useModal();
 
   // Hide the tips each time the viewport changes to mobile.
   const hideTipsOnViewportChangeToMobile = useEffectEvent(
@@ -49,6 +52,11 @@ const StepFooter = () => {
     // For step 5.
     return false;
   }, [currentStepIndex]);
+
+  const handleSaveDraft = () => {
+    pushModal({ id: SaveAsDraftModalId, content: <SaveAsDraftModal /> }, true);
+    show();
+  };
 
   return (
     <AnimatePresence>
@@ -94,8 +102,21 @@ const StepFooter = () => {
             </AnimatePresence>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant={"outline"} className="hidden">
-              <LightbulbIcon />
+            <Button 
+              variant="outline" 
+              onClick={handleSaveDraft}
+              className="hidden md:flex"
+            >
+              <SaveIcon />
+              Save as Draft
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleSaveDraft}
+              size="icon"
+              className="md:hidden"
+            >
+              <SaveIcon />
             </Button>
             {currentStepIndex < 4 && (
               <Button

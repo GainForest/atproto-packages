@@ -5,7 +5,6 @@ import { useFormStore } from "../form-store";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import StepHeader from "./StepProgress";
 import { useModal } from "@/components/ui/modal/context";
-import SaveAsDraftModal, { SaveAsDraftModalId } from "./SaveAsDraftModal";
 import DeleteDraftModal, { DeleteDraftModalId } from "./DeleteDraftModal";
 import { usePathname } from "next/navigation";
 import { Trash2Icon } from "lucide-react";
@@ -25,11 +24,6 @@ const RightContent = () => {
   const draftId = draftIdMatch ? parseInt(draftIdMatch[1], 10) : null;
   const showDeleteButton = draftId !== null && draftId !== 0 && !isNaN(draftId);
 
-  const handleSaveDraft = () => {
-    pushModal({ id: SaveAsDraftModalId, content: <SaveAsDraftModal /> }, true);
-    show();
-  };
-
   const handleDeleteDraft = () => {
     pushModal({ id: DeleteDraftModalId, content: <DeleteDraftModal /> }, true);
     show();
@@ -47,9 +41,6 @@ const RightContent = () => {
           <Trash2Icon />
         </Button>
       )}
-      <Button size={"sm"} onClick={handleSaveDraft}>
-        Save as Draft
-      </Button>
     </div>
   );
 };
