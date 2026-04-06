@@ -81,6 +81,66 @@ async function resolveRecipientWallet(
 }
 
 // ---------------------------------------------------------------------------
+// Activity CID resolver — fetches CID for an activity AT-URI from indexer
+// ---------------------------------------------------------------------------
+
+const ACTIVITY_CID_QUERY = `
+  query GetActivityCid($did: String!, $rkey: String!) {
+    hypercerts {
+      claim {
+        activity(where: { did: $did, rkey: $rkey }, limit: 1) {
+          data {
+            metadata {
+              cid
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+type ActivityCidQueryResult = {
+  hypercerts: {
+    claim: {
+      activity: {
+        data: Array<{
+          metadata: { cid: string | null };
+        }>;
+      };
+    };
+  };
+};
+
+async function getActivityCid(activityUri: string): Promise<string> {
+  // Parse AT-URI: at://did/collection/rkey
+  const match = activityUri.match(/^at:\/\/([^/]+)\/[^/]+\/([^/]+)$/);
+  if (!match) {
+    throw new Error(`Invalid activity AT-URI format: ${activityUri}`);
+  }
+  const [, did, rkey] = match;
+
+  try {
+    const client = new GraphQLClient(clientEnv.NEXT_PUBLIC_INDEXER_URL, {
+      headers: { "ngrok-skip-browser-warning": "true" },
+    });
+    const data = await client.request<ActivityCidQueryResult>(
+      ACTIVITY_CID_QUERY,
+      { did, rkey }
+    );
+    const records = data?.hypercerts?.claim?.activity?.data ?? [];
+    if (!records.length || !records[0].metadata.cid) {
+      throw new Error(`Activity CID not found for ${activityUri}`);
+    }
+    return records[0].metadata.cid;
+  } catch (error) {
+    throw new Error(
+      `Failed to fetch activity CID for ${activityUri}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Facilitator ATProto layer — writes receipts to facilitator's own repo
 // ---------------------------------------------------------------------------
 
@@ -208,10 +268,37 @@ export async function POST(req: NextRequest) {
 
   // Build `from` field:
   // - For anonymous donors: leave undefined
-  // - For identified donors: wrap their DID as { did: "did:..." }
+  // - For identified donors: wrap their DID as { $type, did }
   const fromValue = body.anonymous || !body.donorDid
     ? undefined
-    : { did: body.donorDid as `did:${string}:${string}` };
+    : { $type: "app.certified.defs#did" as const, did: body.donorDid as `did:${string}:${string}` };
+
+  // Build `to` field: wrap orgDid as { $type, did }
+  // Require orgDid - fail if missing (no fallback to recipientWallet)
+  if (!body.orgDid) {
+    return Response.json(
+      { success: false, error: "Missing orgDid in request body" },
+      { status: 400 }
+    );
+  }
+  const toValue = { $type: "app.certified.defs#did" as const, did: body.orgDid as `did:${string}:${string}` };
+
+  // Build `for` field: fetch CID for activity if activityUri is provided
+  let forValue: { uri: AtUriString; cid: string } | undefined;
+  if (body.activityUri) {
+    try {
+      const activityCid = await getActivityCid(body.activityUri);
+      forValue = { uri: body.activityUri as AtUriString, cid: activityCid };
+    } catch (error) {
+      return Response.json(
+        { 
+          success: false, 
+          error: `Failed to resolve activity CID: ${error instanceof Error ? error.message : String(error)}` 
+        },
+        { status: 400 }
+      );
+    }
+  }
 
   // Build notes with template: "${sender} paid ${amt}${currency} using ${mode}"
   const currency = body.currency ?? "USDC";
@@ -220,13 +307,13 @@ export async function POST(req: NextRequest) {
   const receiptEither = await Effect.runPromise(
     mutations.funding.receipt.create({
       from:           fromValue,
-      to:             body.orgDid ?? recipientWallet,
+      to:             toValue,
       amount,
       currency,
       paymentRail:    "x402-usdc-base",
       paymentNetwork: "base",
       transactionId:  transactionHash,
-      for:            body.activityUri as AtUriString | undefined,
+      for:            forValue,
       notes,
       occurredAt:     now,
     }).pipe(

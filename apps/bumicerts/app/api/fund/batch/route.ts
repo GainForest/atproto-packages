@@ -118,6 +118,66 @@ async function resolveRecipientWallet(
 }
 
 // ---------------------------------------------------------------------------
+// Activity CID resolver — fetches CID for an activity AT-URI from indexer
+// ---------------------------------------------------------------------------
+
+const ACTIVITY_CID_QUERY = `
+  query GetActivityCid($did: String!, $rkey: String!) {
+    hypercerts {
+      claim {
+        activity(where: { did: $did, rkey: $rkey }, limit: 1) {
+          data {
+            metadata {
+              cid
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+type ActivityCidQueryResult = {
+  hypercerts: {
+    claim: {
+      activity: {
+        data: Array<{
+          metadata: { cid: string | null };
+        }>;
+      };
+    };
+  };
+};
+
+async function getActivityCid(activityUri: string): Promise<string> {
+  // Parse AT-URI: at://did/collection/rkey
+  const match = activityUri.match(/^at:\/\/([^/]+)\/[^/]+\/([^/]+)$/);
+  if (!match) {
+    throw new Error(`Invalid activity AT-URI format: ${activityUri}`);
+  }
+  const [, did, rkey] = match;
+
+  try {
+    const client = new GraphQLClient(clientEnv.NEXT_PUBLIC_INDEXER_URL, {
+      headers: { "ngrok-skip-browser-warning": "true" },
+    });
+    const data = await client.request<ActivityCidQueryResult>(
+      ACTIVITY_CID_QUERY,
+      { did, rkey }
+    );
+    const records = data?.hypercerts?.claim?.activity?.data ?? [];
+    if (!records.length || !records[0].metadata.cid) {
+      throw new Error(`Activity CID not found for ${activityUri}`);
+    }
+    return records[0].metadata.cid;
+  } catch (error) {
+    throw new Error(
+      `Failed to fetch activity CID for ${activityUri}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Facilitator ATProto layer — writes receipts to facilitator's own repo
 // ---------------------------------------------------------------------------
 
@@ -263,12 +323,43 @@ export async function POST(req: NextRequest) {
 
   // Build `from` field:
   // - For anonymous donors: leave undefined
-  // - For identified donors: wrap their DID as { did: "did:..." }
+  // - For identified donors: wrap their DID as { $type, did }
   const fromValue = body.anonymous || !body.donorDid
     ? undefined
-    : { did: body.donorDid as `did:${string}:${string}` };
+    : { $type: "app.certified.defs#did" as const, did: body.donorDid as `did:${string}:${string}` };
 
   const currency = body.currency ?? "USDC";
+  
+  // Prefetch all activity CIDs in parallel to avoid N+1 queries
+  const activityCids = await Promise.all(
+    resolvedItems.map(async ({ item }) => {
+      try {
+        const cid = await getActivityCid(item.activityUri);
+        return { activityUri: item.activityUri, cid };
+      } catch (error) {
+        console.error(`[fund/batch] Failed to fetch CID for ${item.activityUri}:`, error);
+        return { activityUri: item.activityUri, cid: null };
+      }
+    })
+  );
+  
+  // Build lookup map for quick access
+  const cidMap = new Map(
+    activityCids.map((entry) => [entry.activityUri, entry.cid])
+  );
+  
+  // Check if any CIDs failed to resolve
+  const missingCids = activityCids.filter((entry) => !entry.cid);
+  if (missingCids.length > 0) {
+    return Response.json(
+      {
+        error: "Failed to resolve activity CIDs for some items",
+        missingCids: missingCids.map((entry) => entry.activityUri),
+      },
+      { status: 422 }
+    );
+  }
+
   const results: BatchItemResult[] = [];
 
   for (const { item, wallet } of resolvedItems) {
@@ -297,28 +388,39 @@ export async function POST(req: NextRequest) {
     if (success) {
       const notes = `${authorization.from} paid ${item.amount}${currency} using wallet`;
       
-      const receiptEither = await Effect.runPromise(
-        mutations.funding.receipt.create({
-          from:           fromValue,
-          to:             item.orgDid,
-          amount:         item.amount,
-          currency,
-          paymentRail:    "x402-usdc-base-batch",
-          paymentNetwork: "base",
-          transactionId:  transactionHash,
-          for:            item.activityUri as AtUriString,
-          notes,
-          occurredAt:     now,
-        }).pipe(
-          Effect.provide(agentLayer),
-          Effect.either
-        )
-      );
-
-      if (receiptEither._tag === "Right") {
-        receiptUri = receiptEither.right.uri;
+      // Build `to` field as { $type, did }
+      const toValue = { $type: "app.certified.defs#did" as const, did: item.orgDid as `did:${string}:${string}` };
+      
+      // Build `for` field with CID from prefetched map
+      const activityCid = cidMap.get(item.activityUri);
+      if (!activityCid) {
+        console.error(`[fund/batch] Missing CID for ${item.activityUri}, skipping receipt`);
       } else {
-        console.error(`[fund/batch] Failed to write receipt for ${item.activityUri}:`, receiptEither.left);
+        const forValue = { uri: item.activityUri as AtUriString, cid: activityCid };
+        
+        const receiptEither = await Effect.runPromise(
+          mutations.funding.receipt.create({
+            from:           fromValue,
+            to:             toValue,
+            amount:         item.amount,
+            currency,
+            paymentRail:    "x402-usdc-base-batch",
+            paymentNetwork: "base",
+            transactionId:  transactionHash,
+            for:            forValue,
+            notes,
+            occurredAt:     now,
+          }).pipe(
+            Effect.provide(agentLayer),
+            Effect.either
+          )
+        );
+
+        if (receiptEither._tag === "Right") {
+          receiptUri = receiptEither.right.uri;
+        } else {
+          console.error(`[fund/batch] Failed to write receipt for ${item.activityUri}:`, receiptEither.left);
+        }
       }
     }
 
