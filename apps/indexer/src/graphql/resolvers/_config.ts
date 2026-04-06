@@ -28,10 +28,6 @@ export const EXCLUDED_COLLECTIONS = new Set<string>([
   // Custom: has OrgInfoWhereInput text search (displayName/shortDescription/longDescription)
   "app.gainforest.organization.info",
 
-  // Custom: audio recordings have a nested sub-object (metadata) that needs
-  // its own GraphQL type (OrgAudioMetadataType), so we keep it manual.
-  "app.gainforest.organization.recordings.audio",
-
   // Custom: DWC occurrence blobs use extractBlobRef (typed BlobRefType) rather
   // than resolveBlobsInValue (raw JSON), which gives richer GQL types for each
   // evidence field.  Keep manual so that distinction is preserved.

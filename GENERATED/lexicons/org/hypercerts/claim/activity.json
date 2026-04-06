@@ -49,7 +49,6 @@
                     "contributors": {
                         "type": "array",
                         "description": "An array of contributor objects, each containing contributor information, weight, and contribution details.",
-                        "maxLength": 1000,
                         "items": {
                             "type": "ref",
                             "ref": "#contributor"
@@ -97,6 +96,7 @@
         },
         "contributor": {
             "type": "object",
+            "description": "A contributor to the activity, with identity, weight, and contribution details.",
             "required": [
                 "contributorIdentity"
             ],

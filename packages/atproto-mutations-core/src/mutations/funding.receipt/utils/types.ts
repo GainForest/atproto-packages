@@ -17,11 +17,17 @@ import type {
 /**
  * Input for createFundingReceipt.
  *
- * `from` is technically required by the lexicon but semantically optional —
- * for anonymous donors, pass the donor's wallet address (0x...) as a free
- * string (stored in `notes`) and leave `from` as an empty string or omit
- * it. The receipt is immutable/append-only so there is no update or delete.
+ * Field types (updated lexicon schema):
+ * - `from`: Union of `{ $type?: "app.certified.defs#did", did: "did:..." }` or 
+ *           `{ $type?: "com.atproto.repo.strongRef", uri: "at://...", cid: "..." }`,
+ *           or undefined for anonymous donors
+ * - `to`: Union of `{ $type?: "app.certified.defs#did", did: "did:..." }` or
+ *         `{ $type?: "com.atproto.repo.strongRef", uri: "at://...", cid: "..." }` (REQUIRED)
+ * - `for`: StrongRef object `{ uri: "at://...", cid: "..." }` — optional reference to activity/project
+ * - `notes`: Always set with the template `${wallet} paid ${amount}${currency} using wallet` 
+ *            to capture the actual wallet address for all donations (both anonymous and identified)
  *
+ * The receipt is immutable/append-only so there is no update or delete.
  * `rkey` is optional — PDS assigns a TID when absent.
  */
 export type CreateFundingReceiptInput = RecordCreateInput<FundingReceiptRecord>;

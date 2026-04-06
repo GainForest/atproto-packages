@@ -6,7 +6,6 @@
  *
  *   hypercertsClaimActivity        - Hyperlabel labels + ActivityWhereInput text search
  *   gainforestOrganizationInfo     - OrgInfoWhereInput text search + typed BlobRefType fields
- *   gainforestOrganizationRecordingsAudio - Nested OrgAudioMetadata sub-type
  *   gainforestDwcOccurrence        - Typed BlobRefType for evidence fields
  *   impactIndexerLinkAttestation   - Nested EIP-712 message sub-type
  *   bumicertsLinkEvm               - EIP-712 sig verification + valid metadata + EvmLinkWhereInput
@@ -26,10 +25,7 @@ export * from "./hypercertsClaimActivity.ts";
 // 2. Adds `info` to generated GainforestOrganizationNS
 export * from "./gainforestOrganizationInfo.ts";
 
-// 3. Creates GainforestOrganizationRecordingsNS, adds `recordings` to generated GainforestOrganizationNS
-export * from "./gainforestOrganizationRecordingsAudio.ts";
-
-// 4. Adds `occurrence` to generated GainforestDwcNS
+// 3. Adds `occurrence` to generated GainforestDwcNS
 export * from "./gainforestDwcOccurrence.ts";
 
 // 5. Creates ImpactindexerLinkNS, adds `link` to generated ImpactindexerNS

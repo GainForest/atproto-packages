@@ -3,10 +3,10 @@
  */
 
 import { l } from '@atproto/lex'
-import * as RepoStrongRef from './..\\..\\..\\com\\atproto\\repo\\strongRef.defs.ts'
-import * as HypercertsDefs from './..\\defs.defs.ts'
-import * as RichtextFacet from './..\\..\\..\\app\\bsky\\richtext\\facet.defs.ts'
-import * as PagesLinearDocument from './..\\..\\..\\pub\\leaflet\\pages\\linearDocument.defs.ts'
+import * as RepoStrongRef from '../../../com/atproto/repo/strongRef.defs.ts'
+import * as HypercertsDefs from '../defs.defs.ts'
+import * as RichtextFacet from '../../../app/bsky/richtext/facet.defs.ts'
+import * as PagesLinearDocument from '../../../pub/leaflet/pages/linearDocument.defs.ts'
 
 const $nsid = 'org.hypercerts.context.attachment'
 
@@ -22,9 +22,15 @@ type Main = {
   subjects?: RepoStrongRef.Main[]
 
   /**
-   * The type of attachment, e.g. report, audit, evidence, testimonial, methodology, etc.
+   * The type of attachment. Values beyond the known set are permitted.
    */
-  contentType?: string
+  contentType?:
+    | 'report'
+    | 'audit'
+    | 'evidence'
+    | 'testimonial'
+    | 'methodology'
+    | l.UnknownString
 
   /**
    * The files, documents, or external references included in this attachment record.
@@ -78,7 +84,18 @@ const main = l.record<'tid', Main>(
         maxLength: 100,
       }),
     ),
-    contentType: l.optional(l.string({ maxLength: 64 })),
+    contentType: l.optional(
+      l.string<{
+        knownValues: [
+          'report',
+          'audit',
+          'evidence',
+          'testimonial',
+          'methodology',
+        ]
+        maxLength: 64
+      }>({ maxLength: 64 }),
+    ),
     content: l.optional(
       l.array(
         l.typedUnion(

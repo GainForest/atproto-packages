@@ -3,9 +3,8 @@
  */
 
 import { l } from '@atproto/lex'
-import * as BadgeDefinition from './definition.defs.ts'
-import * as CertifiedDefs from './../defs.defs.ts'
-import * as RepoStrongRef from './../../../com/atproto/repo/strongRef.defs.ts'
+import * as RepoStrongRef from '../../../com/atproto/repo/strongRef.defs.ts'
+import * as CertifiedDefs from '../defs.defs.ts'
 
 const $nsid = 'app.certified.badge.award'
 
@@ -16,9 +15,9 @@ type Main = {
   $type: 'app.certified.badge.award'
 
   /**
-   * Reference to the badge definition for this award.
+   * Strong reference to the badge definition at the time of award. The record referenced must conform with the lexicon app.certified.badge.definition.
    */
-  badge: BadgeDefinition.Main
+  badge: RepoStrongRef.Main
 
   /**
    * Entity the badge award is for (either an account DID or any specific AT Protocol record), e.g. a user, a project, or a specific activity claim.
@@ -51,7 +50,7 @@ const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    badge: l.ref<BadgeDefinition.Main>((() => BadgeDefinition.main) as any),
+    badge: l.ref<RepoStrongRef.Main>((() => RepoStrongRef.main) as any),
     subject: l.typedUnion(
       [
         l.typedRef<CertifiedDefs.Did>((() => CertifiedDefs.did) as any),

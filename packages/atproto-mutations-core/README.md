@@ -20,7 +20,7 @@ Framework-agnostic ATProto mutation primitives. Typed results, structured errors
   - [certified.location](#certifiedlocation)
   - [organization.defaultSite](#organizationdefaultsite)
   - [organization.layer](#organizationlayer)
-  - [organization.recordings.audio](#organizationrecordingsaudio)
+  - [ac.audio](#acaudio)
 - [Blob / file handling](#blob--file-handling)
   - [SerializableFile](#serializablefile)
   - [Standalone blob upload](#standalone-blob-upload)
@@ -377,9 +377,9 @@ await Effect.runPromise(
 
 ---
 
-### organization.recordings.audio
+### ac.audio
 
-Per-rkey records (`app.gainforest.organization.recordings.audio`). Audio recordings with technical metadata.
+Per-rkey records (`app.gainforest.ac.audio`). Audio recordings with technical metadata for acoustic monitoring deployments.
 
 ```ts
 import {

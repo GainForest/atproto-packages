@@ -3,7 +3,7 @@
  */
 
 import { l } from '@atproto/lex'
-import * as BadgeAward from './award.defs.ts'
+import * as RepoStrongRef from '../../../com/atproto/repo/strongRef.defs.ts'
 
 const $nsid = 'app.certified.badge.response'
 
@@ -14,9 +14,9 @@ type Main = {
   $type: 'app.certified.badge.response'
 
   /**
-   * Reference to the badge award.
+   * Strong reference to the badge award being responded to. The record referenced must conform with the lexicon app.certified.badge.award.
    */
-  badgeAward: BadgeAward.Main
+  badgeAward: RepoStrongRef.Main
 
   /**
    * The recipient’s response for the badge (accepted or rejected).
@@ -41,7 +41,7 @@ const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    badgeAward: l.ref<BadgeAward.Main>((() => BadgeAward.main) as any),
+    badgeAward: l.ref<RepoStrongRef.Main>((() => RepoStrongRef.main) as any),
     response: l.string<{ knownValues: ['accepted', 'rejected'] }>(),
     weight: l.optional(l.string({ maxLength: 50 })),
     createdAt: l.string({ format: 'datetime' }),

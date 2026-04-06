@@ -3,9 +3,10 @@
  */
 
 import { l } from '@atproto/lex'
-import * as PagesLinearDocument from './../../pub/leaflet/pages/linearDocument.defs.ts'
+import * as RichtextFacet from '../../app/bsky/richtext/facet.defs.ts'
+import * as PagesLinearDocument from '../../pub/leaflet/pages/linearDocument.defs.ts'
 import * as HypercertsDefs from './defs.defs.ts'
-import * as RepoStrongRef from './../../com/atproto/repo/strongRef.defs.ts'
+import * as RepoStrongRef from '../../com/atproto/repo/strongRef.defs.ts'
 
 const $nsid = 'org.hypercerts.collection'
 
@@ -16,9 +17,9 @@ type Main = {
   $type: 'org.hypercerts.collection'
 
   /**
-   * The type of this collection. Possible fields can be 'favorites', 'project', or any other type of collection.
+   * The type of this collection. Values beyond the known set are permitted.
    */
-  type?: string
+  type?: 'favorites' | 'project' | 'portfolio' | 'program' | l.UnknownString
 
   /**
    * Display name for this collection (e.g. 'Q1 2025 Impact Projects')
@@ -26,9 +27,14 @@ type Main = {
   title: string
 
   /**
-   * Short summary of this collection, suitable for previews and list views
+   * Short summary of this collection, suitable for previews and list views. Rich text annotations may be provided via `shortDescriptionFacets`.
    */
   shortDescription?: string
+
+  /**
+   * Rich text annotations for `shortDescription` (mentions, URLs, hashtags, etc).
+   */
+  shortDescriptionFacets?: RichtextFacet.Main[]
 
   /**
    * Rich-text description, represented as a Leaflet linear document.
@@ -74,10 +80,18 @@ const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    type: l.optional(l.string({ maxLength: 64 })),
+    type: l.optional(
+      l.string<{
+        knownValues: ['favorites', 'project', 'portfolio', 'program']
+        maxLength: 64
+      }>({ maxLength: 64 }),
+    ),
     title: l.string({ maxLength: 800, maxGraphemes: 80 }),
     shortDescription: l.optional(
       l.string({ maxLength: 3000, maxGraphemes: 300 }),
+    ),
+    shortDescriptionFacets: l.optional(
+      l.array(l.ref<RichtextFacet.Main>((() => RichtextFacet.main) as any)),
     ),
     description: l.optional(
       l.ref<PagesLinearDocument.Main>((() => PagesLinearDocument.main) as any),
@@ -129,6 +143,7 @@ export const $assert = /*#__PURE__*/ main.assert.bind(main),
   $validate = /*#__PURE__*/ main.validate.bind(main),
   $safeValidate = /*#__PURE__*/ main.safeValidate.bind(main)
 
+/** An item in a collection, with an identifier and optional weight. */
 type Item = {
   $type?: 'org.hypercerts.collection#item'
 
@@ -145,6 +160,7 @@ type Item = {
 
 export type { Item }
 
+/** An item in a collection, with an identifier and optional weight. */
 const item = l.typedObject<Item>(
   $nsid,
   'item',

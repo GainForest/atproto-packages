@@ -3,11 +3,11 @@
  */
 
 import { l } from '@atproto/lex'
-import * as RichtextFacet from './../../../app/bsky/richtext/facet.defs.ts'
-import * as PagesLinearDocument from './../../../pub/leaflet/pages/linearDocument.defs.ts'
-import * as HypercertsDefs from './../defs.defs.ts'
-import * as WorkscopeCel from './../workscope/cel.defs.ts'
-import * as RepoStrongRef from './../../../com/atproto/repo/strongRef.defs.ts'
+import * as RichtextFacet from '../../../app/bsky/richtext/facet.defs.ts'
+import * as PagesLinearDocument from '../../../pub/leaflet/pages/linearDocument.defs.ts'
+import * as HypercertsDefs from '../defs.defs.ts'
+import * as WorkscopeCel from '../workscope/cel.defs.ts'
+import * as RepoStrongRef from '../../../com/atproto/repo/strongRef.defs.ts'
 
 const $nsid = 'org.hypercerts.claim.activity'
 
@@ -111,9 +111,7 @@ const main = l.record<'any', Main>(
       ),
     ),
     contributors: l.optional(
-      l.array(l.ref<Contributor>((() => contributor) as any), {
-        maxLength: 1000,
-      }),
+      l.array(l.ref<Contributor>((() => contributor) as any)),
     ),
     workScope: l.optional(
       l.typedUnion(
@@ -153,6 +151,7 @@ export const $assert = /*#__PURE__*/ main.assert.bind(main),
   $validate = /*#__PURE__*/ main.validate.bind(main),
   $safeValidate = /*#__PURE__*/ main.safeValidate.bind(main)
 
+/** A contributor to the activity, with identity, weight, and contribution details. */
 type Contributor = {
   $type?: 'org.hypercerts.claim.activity#contributor'
 
@@ -180,6 +179,7 @@ type Contributor = {
 
 export type { Contributor }
 
+/** A contributor to the activity, with identity, weight, and contribution details. */
 const contributor = l.typedObject<Contributor>(
   $nsid,
   'contributor',

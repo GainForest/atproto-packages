@@ -3,7 +3,8 @@
  */
 
 import { l } from '@atproto/lex'
-import * as CertifiedDefs from './..\\..\\..\\app\\certified\\defs.defs.ts'
+import * as CertifiedDefs from '../../../app/certified/defs.defs.ts'
+import * as RepoStrongRef from '../../../com/atproto/repo/strongRef.defs.ts'
 
 const $nsid = 'org.hypercerts.funding.receipt'
 
@@ -14,14 +15,20 @@ type Main = {
   $type: 'org.hypercerts.funding.receipt'
 
   /**
-   * DID of the sender who transferred the funds. This field is optional, and can be left undefined to represent anonymity.
+   * The sender of the funds (either an account DID or a strong reference to a record). Optional — omit to represent anonymity.
    */
-  from?: CertifiedDefs.Did
+  from?:
+    | l.$Typed<CertifiedDefs.Did>
+    | l.$Typed<RepoStrongRef.Main>
+    | l.Unknown$TypedObject
 
   /**
-   * The recipient of the funds. Can be identified by DID or a clear-text name.
+   * The recipient of the funds (either an account DID or a strong reference to a record).
    */
-  to: string
+  to:
+    | l.$Typed<CertifiedDefs.Did>
+    | l.$Typed<RepoStrongRef.Main>
+    | l.Unknown$TypedObject
 
   /**
    * Amount of funding received as a numeric string (e.g. '1000.50').
@@ -49,9 +56,9 @@ type Main = {
   transactionId?: string
 
   /**
-   * Optional reference to the activity, project, or organization this funding relates to.
+   * Optional strong reference to the activity, project, or organization this funding relates to.
    */
-  for?: l.AtUriString
+  for?: RepoStrongRef.Main
 
   /**
    * Optional notes or additional context for this funding receipt.
@@ -77,15 +84,29 @@ const main = l.record<'tid', Main>(
   $nsid,
   l.object({
     from: l.optional(
-      l.ref<CertifiedDefs.Did>((() => CertifiedDefs.did) as any),
+      l.typedUnion(
+        [
+          l.typedRef<CertifiedDefs.Did>((() => CertifiedDefs.did) as any),
+          l.typedRef<RepoStrongRef.Main>((() => RepoStrongRef.main) as any),
+        ],
+        false,
+      ),
     ),
-    to: l.string({ maxLength: 2048 }),
+    to: l.typedUnion(
+      [
+        l.typedRef<CertifiedDefs.Did>((() => CertifiedDefs.did) as any),
+        l.typedRef<RepoStrongRef.Main>((() => RepoStrongRef.main) as any),
+      ],
+      false,
+    ),
     amount: l.string({ maxLength: 50 }),
     currency: l.string({ maxLength: 10 }),
     paymentRail: l.optional(l.string({ maxLength: 50 })),
     paymentNetwork: l.optional(l.string({ maxLength: 50 })),
     transactionId: l.optional(l.string({ maxLength: 256 })),
-    for: l.optional(l.string({ format: 'at-uri' })),
+    for: l.optional(
+      l.ref<RepoStrongRef.Main>((() => RepoStrongRef.main) as any),
+    ),
     notes: l.optional(l.string({ maxLength: 500 })),
     occurredAt: l.optional(l.string({ format: 'datetime' })),
     createdAt: l.string({ format: 'datetime' }),

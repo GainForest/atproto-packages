@@ -3,7 +3,7 @@
  */
 
 import { l } from '@atproto/lex'
-import * as CertifiedDefs from './..\\defs.defs.ts'
+import * as CertifiedDefs from '../defs.defs.ts'
 
 const $nsid = 'app.certified.badge.definition'
 
@@ -14,9 +14,16 @@ type Main = {
   $type: 'app.certified.badge.definition'
 
   /**
-   * Category of the badge (e.g. endorsement, participation, affiliation).
+   * Category of the badge. Values beyond the known set are permitted.
    */
-  badgeType: string
+  badgeType:
+    | 'endorsement'
+    | 'verification'
+    | 'participation'
+    | 'certification'
+    | 'affiliation'
+    | 'recognition'
+    | l.UnknownString
 
   /**
    * Human-readable title of the badge.
@@ -26,7 +33,7 @@ type Main = {
   /**
    * Icon representing the badge, stored as a blob for compact visual display.
    */
-  icon: l.BlobRef
+  icon?: l.BlobRef
 
   /**
    * Optional short statement describing what the badge represents.
@@ -51,13 +58,25 @@ const main = l.record<'tid', Main>(
   'tid',
   $nsid,
   l.object({
-    badgeType: l.string({ maxLength: 100 }),
+    badgeType: l.string<{
+      knownValues: [
+        'endorsement',
+        'verification',
+        'participation',
+        'certification',
+        'affiliation',
+        'recognition',
+      ]
+      maxLength: 100
+    }>({ maxLength: 100 }),
     title: l.string({ maxLength: 256 }),
-    icon: l.blob({
-      accept: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'],
-      maxSize: 1048576,
-      allowLegacy: false,
-    }),
+    icon: l.optional(
+      l.blob({
+        accept: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'],
+        maxSize: 1048576,
+        allowLegacy: false,
+      }),
+    ),
     description: l.optional(l.string({ maxLength: 5000, maxGraphemes: 500 })),
     allowedIssuers: l.optional(
       l.array(l.ref<CertifiedDefs.Did>((() => CertifiedDefs.did) as any), {

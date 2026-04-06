@@ -3,9 +3,9 @@
  */
 
 import { l } from '@atproto/lex'
-import * as RepoStrongRef from './..\\..\\..\\com\\atproto\\repo\\strongRef.defs.ts'
-import * as CertifiedDefs from './..\\..\\..\\app\\certified\\defs.defs.ts'
-import * as HypercertsDefs from './..\\defs.defs.ts'
+import * as RepoStrongRef from '../../../com/atproto/repo/strongRef.defs.ts'
+import * as CertifiedDefs from '../../../app/certified/defs.defs.ts'
+import * as HypercertsDefs from '../defs.defs.ts'
 
 const $nsid = 'org.hypercerts.context.evaluation'
 
@@ -122,19 +122,19 @@ type Score = {
   $type?: 'org.hypercerts.context.evaluation#score'
 
   /**
-   * Minimum value of the scale, e.g. 0 or 1.
+   * Minimum value of the scale as a numeric string (e.g. '0', '1').
    */
-  min: number
+  min: string
 
   /**
-   * Maximum value of the scale, e.g. 5 or 10.
+   * Maximum value of the scale as a numeric string (e.g. '5', '10').
    */
-  max: number
+  max: string
 
   /**
-   * Score within the inclusive range [min, max].
+   * Score within the inclusive range [min, max] as a numeric string (e.g. '3.7').
    */
-  value: number
+  value: string
 }
 
 export type { Score }
@@ -143,7 +143,11 @@ export type { Score }
 const score = l.typedObject<Score>(
   $nsid,
   'score',
-  l.object({ min: l.integer(), max: l.integer(), value: l.integer() }),
+  l.object({
+    min: l.string({ maxLength: 50 }),
+    max: l.string({ maxLength: 50 }),
+    value: l.string({ maxLength: 50 }),
+  }),
 )
 
 export { score }
