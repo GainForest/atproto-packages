@@ -43,9 +43,13 @@ function formatWebsite(url: string): string {
 function formatSinceDate(dateStr: string | null): string | null {
   if (!dateStr) return null;
   try {
-    return new Date(dateStr).toLocaleDateString("en-US", {
+    // Parse as UTC to prevent timezone offset issues
+    // Dates stored as YYYY-MM-DD should be treated as UTC midnight
+    const date = new Date(`${dateStr}T00:00:00Z`);
+    return date.toLocaleDateString("en-US", {
       month: "short",
       year: "numeric",
+      timeZone: "UTC",
     });
   } catch {
     return null;
