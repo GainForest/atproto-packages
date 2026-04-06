@@ -17,6 +17,16 @@ function buildActivityUri(bumicert: BumicertData): string {
 }
 
 /**
+ * Extracts the AT-URI from a StrongRef object or returns null.
+ * The `for` field is now a StrongRef: { uri: string, cid: string }
+ */
+function extractUriFromStrongRef(strongRef: unknown): string | null {
+  if (!strongRef || typeof strongRef !== "object") return null;
+  const ref = strongRef as Record<string, unknown>;
+  return typeof ref.uri === "string" ? ref.uri : null;
+}
+
+/**
  * Extracts a human-readable donor label from a funding receipt.
  *
  * - If anonymous: checks `notes` for "Anonymous donor wallet: 0x..." and
@@ -189,7 +199,10 @@ export function DonationsSection({ bumicert }: DonationsSectionProps) {
   // Filter receipts to only those `for` this bumicert's AT-URI
   const receipts = useMemo(() => {
     if (!allReceipts) return [];
-    return (allReceipts as FundingReceiptItem[]).filter((r) => r.record?.for === activityUri);
+    return (allReceipts as FundingReceiptItem[]).filter((r) => {
+      const forUri = extractUriFromStrongRef(r.record?.for);
+      return forUri === activityUri;
+    });
   }, [allReceipts, activityUri]);
 
   // ── Loading ──────────────────────────────────────────────────────────────────

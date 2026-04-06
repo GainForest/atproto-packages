@@ -48,7 +48,10 @@ const byDidDocument = graphql(`
               paymentRail
               paymentNetwork
               transactionId
-              for
+              for {
+                uri
+                cid
+              }
               notes
               occurredAt
               createdAt
