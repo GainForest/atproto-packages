@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { UsersIcon, TargetIcon } from "lucide-react";
 import type { BumicertData } from "@/lib/types";
 import { LeafletRenderer } from "@/components/ui/leaflet-renderer";
+import { UserChip } from "@/components/ui/user-chip";
 
 // ── Section label ──────────────────────────────────────────────────────────────
 
@@ -55,22 +56,37 @@ export function DescriptionTab({ bumicert }: { bumicert: BumicertData }) {
           <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-5" />
           <SectionLabel icon={UsersIcon} label="Contributors" />
           <div className="flex flex-col gap-1">
-            {bumicert.contributors.map((c, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.06, ease: [0.25, 0.1, 0.25, 1] }}
-                className="flex items-center gap-3 py-2 border-b border-border/60 last:border-0"
-              >
-                <div className="h-7 w-7 rounded-full bg-muted border border-border flex items-center justify-center shrink-0">
-                  <span className="text-xs font-medium text-muted-foreground" style={{ fontFamily: "var(--font-garamond-var)" }}>
-                    {c.identity.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <span className="text-sm text-foreground/80">{c.identity}</span>
-              </motion.div>
-            ))}
+            {bumicert.contributors.map((c, i) => {
+              const isDid = c.identity.startsWith("did:");
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.06, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="flex items-center gap-3 py-2 border-b border-border/60 last:border-0"
+                >
+                  {isDid ? (
+                    <UserChip 
+                      did={c.identity}
+                      avatarSize={24}
+                      showCopyButton="hover"
+                      linkMode="user-page"
+                      className="border !border-transparent hover:!border-border"
+                    />
+                  ) : (
+                    <>
+                      <div className="h-7 w-7 rounded-full bg-muted border border-border flex items-center justify-center shrink-0">
+                        <span className="text-xs font-medium text-muted-foreground" style={{ fontFamily: "var(--font-garamond-var)" }}>
+                          {c.identity.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-sm text-foreground/80">{c.identity}</span>
+                    </>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       )}

@@ -3,28 +3,17 @@
 import { ExternalLinkIcon, ClockIcon } from "lucide-react";
 import { blockExplorerUrl } from "../_utils/aggregations";
 import type { TransactionRow } from "../_utils/aggregations";
+import { UserChip } from "@/components/ui/user-chip";
 
 interface RecentTransactionsTableProps {
   rows: TransactionRow[];
 }
 
-function truncateId(id: string): string {
-  if (id.startsWith("did:")) {
-    const parts = id.split(":");
-    const last = parts[parts.length - 1] ?? "";
-    return `${parts.slice(0, 2).join(":")}:…${last.slice(-6)}`;
-  }
-  return `${id.slice(0, 6)}…${id.slice(-4)}`;
-}
-
-function formatDonorLabel(donorId: string | null, donorType: "did" | "wallet" | null): string {
-  if (!donorId) return "Anonymous";
-  
-  const truncated = truncateId(donorId);
-  if (donorType === "wallet") {
-    return `Anonymous (${truncated})`;
-  }
-  return truncated;
+function formatWalletAddress(address: string): string {
+  const truncated = address.length > 12
+    ? `${address.slice(0, 6)}…${address.slice(-4)}`
+    : address;
+  return `Anonymous (${truncated})`;
 }
 
 function truncateBumicertUri(uri: string): string {
@@ -93,12 +82,21 @@ export function RecentTransactionsTable({ rows }: RecentTransactionsTableProps) 
                       : "—"}
                   </td>
                   <td className="py-2.5 px-3">
-                    <span
-                      className="text-xs text-foreground"
-                      title={row.donorId ?? undefined}
-                    >
-                      {formatDonorLabel(row.donorId, row.donorType)}
-                    </span>
+                    {!row.donorId ? (
+                      <span className="text-xs text-foreground">Anonymous</span>
+                    ) : row.donorType === "wallet" ? (
+                      <span className="text-xs text-foreground" title={row.donorId}>
+                        {formatWalletAddress(row.donorId)}
+                      </span>
+                    ) : (
+                      <UserChip 
+                        did={row.donorId}
+                        avatarSize={18}
+                        showCopyButton="hover"
+                        linkMode="user-page"
+                        className="border !border-transparent hover:!border-border"
+                      />
+                    )}
                   </td>
                   <td className="py-2.5 px-3 text-foreground tabular-nums font-medium whitespace-nowrap">
                     {new Intl.NumberFormat("en-US", {

@@ -33,7 +33,17 @@ export const links = {
   bumicert: {
     create: "/bumicert/create",
     createWithDraftId: (draftId: string) => `/bumicert/create/${draftId}`,
-    view: (bumicertId: string) => `/bumicert/${bumicertId}`,
+    // View a bumicert by either:
+    // 1. Full id (did-rkey format) - for backward compatibility
+    // 2. Separate did and rkey parameters
+    view: (didOrId: string, rkey?: string) => {
+      if (rkey) {
+        // Two parameters: did and rkey
+        return `/bumicert/${encodeURIComponent(didOrId)}-${encodeURIComponent(rkey)}`;
+      }
+      // One parameter: already formatted id (did-rkey)
+      return `/bumicert/${didOrId}`;
+    },
     api: {
       generateShortDescription: "/bumicert/create/api/generate-short-description",
     },

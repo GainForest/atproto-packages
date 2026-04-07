@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { HeartIcon, ExternalLinkIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UserChip } from "@/components/ui/user-chip";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { clientEnv } from "@/lib/env/client";
 import type { BumicertData } from "@/lib/types";
@@ -27,29 +28,18 @@ function extractUriFromStrongRef(strongRef: unknown): string | null {
 }
 
 /**
- * Extracts a human-readable donor label from a funding receipt.
- *
- * - If anonymous: checks `notes` for "Anonymous donor wallet: 0x..." and
- *   returns a truncated version. Falls back to "Anonymous".
- * - If identified: the `from` field is { did: "did:..." }. Return a
- *   truncated form of the DID.
+ * Extracts donor info from a funding receipt.
+ * Returns { type: "did", did: string } or { type: "wallet", label: string }
  */
-function resolveDonorLabel(item: FundingReceiptItem): string {
+function resolveDonorInfo(item: FundingReceiptItem): 
+  | { type: "did"; did: string }
+  | { type: "wallet"; label: string } {
   const from = item.record?.from as { did?: string } | null | undefined;
   const notes = item.record?.notes;
 
   // Identified donor: from.did exists
   if (from && typeof from === "object" && from.did) {
-    const did = from.did;
-    // Truncate long DIDs: show method:network:first8…last6
-    const parts = did.split(":");
-    if (parts.length >= 3) {
-      const id = parts.slice(2).join(":");
-      if (id.length > 18) {
-        return `${parts[0]}:${parts[1]}:${id.slice(0, 8)}…${id.slice(-6)}`;
-      }
-    }
-    return did;
+    return { type: "did", did: from.did };
   }
 
   // Anonymous donor: from is undefined, extract wallet from notes
@@ -59,11 +49,11 @@ function resolveDonorLabel(item: FundingReceiptItem): string {
     const walletMatch = notes.match(/^(0x[a-fA-F0-9]{40})/i) ?? notes.match(/Anonymous donor wallet:\s*(0x[a-fA-F0-9]+)/i);
     if (walletMatch) {
       const addr = walletMatch[1];
-      return `Anonymous (${addr.slice(0, 6)}…${addr.slice(-4)})`;
+      return { type: "wallet", label: `Anonymous (${addr.slice(0, 6)}…${addr.slice(-4)})` };
     }
   }
 
-  return "Anonymous";
+  return { type: "wallet", label: "Anonymous" };
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -75,9 +65,8 @@ function DonationCard({
   item: FundingReceiptItem;
   index: number;
 }) {
-  const donor = resolveDonorLabel(item);
+  const donorInfo = resolveDonorInfo(item);
   const amount = parseFloat(item.record?.amount ?? "0");
-  // Normalize USD-pegged currencies to "USD" for display
   const rawCurrency = item.record?.currency ?? "USD";
   const currency = ["USD", "USDC"].includes(rawCurrency.toUpperCase()) ? "USD" : rawCurrency;
   const txId = item.record?.transactionId;
@@ -111,15 +100,24 @@ function DonationCard({
 
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold text-sm text-foreground">
             ${amount.toFixed(2)}{" "}
             <span className="font-normal text-muted-foreground">{currency}</span>
           </span>
           <span className="text-xs text-muted-foreground">from</span>
-          <span className="text-xs font-mono text-foreground/70 truncate max-w-[140px]">
-            {donor}
-          </span>
+          {donorInfo.type === "did" ? (
+            <UserChip 
+              did={donorInfo.did}
+              showCopyButton="hover"
+              linkMode="user-page"
+              className="border !border-transparent hover:!border-border"
+            />
+          ) : (
+            <span className="text-xs font-mono text-foreground/70 truncate max-w-[140px]">
+              {donorInfo.label}
+            </span>
+          )}
         </div>
         {relativeTime && (
           <p className="text-xs text-muted-foreground mt-0.5">{relativeTime}</p>

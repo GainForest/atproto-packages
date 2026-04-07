@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { HeartIcon, WalletIcon, UserIcon } from "lucide-react";
+import { HeartIcon, WalletIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { LeaderboardEntry } from "@/lib/utils/leaderboard";
+import { UserChip } from "@/components/ui/user-chip";
 
 // ── Rank badge ────────────────────────────────────────────────────────────────
 
@@ -29,26 +30,13 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-// ── Truncate helper ───────────────────────────────────────────────────────────
+// ── Wallet address helper ─────────────────────────────────────────────────────
 
-function truncateDonorId(donorId: string, type: "did" | "wallet"): string {
-  if (type === "wallet") {
-    // Wallet addresses: Anonymous (0xAbcd...1234)
-    const truncated = donorId.length > 12
-      ? `${donorId.slice(0, 6)}…${donorId.slice(-4)}`
-      : donorId;
-    return `Anonymous (${truncated})`;
-  }
-
-  // DIDs: did:plc:abc123...xyz789
-  const parts = donorId.split(":");
-  if (parts.length >= 3) {
-    const id = parts.slice(2).join(":");
-    if (id.length > 14) {
-      return `${parts[0]}:${parts[1]}:${id.slice(0, 6)}…${id.slice(-4)}`;
-    }
-  }
-  return donorId;
+function formatWalletAddress(address: string): string {
+  const truncated = address.length > 12
+    ? `${address.slice(0, 6)}…${address.slice(-4)}`
+    : address;
+  return `Anonymous (${truncated})`;
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -59,8 +47,6 @@ interface DonorCardProps {
 }
 
 export function DonorCard({ entry, index }: DonorCardProps) {
-  const truncatedId = truncateDonorId(entry.donorId, entry.donorType);
-
   const relativeTime = entry.lastDonatedAt
     ? (() => {
         try {
@@ -71,7 +57,7 @@ export function DonorCard({ entry, index }: DonorCardProps) {
       })()
     : null;
 
-  const Icon = entry.donorType === "wallet" ? WalletIcon : UserIcon;
+  const isWallet = entry.donorType === "wallet";
 
   return (
     <motion.div
@@ -88,7 +74,7 @@ export function DonorCard({ entry, index }: DonorCardProps) {
 
       {/* Avatar/icon */}
       <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-        {entry.donorType === "wallet" ? (
+        {isWallet ? (
           <WalletIcon className="h-4 w-4 text-primary/70" />
         ) : (
           <HeartIcon className="h-4 w-4 text-primary" />
@@ -97,12 +83,18 @@ export function DonorCard({ entry, index }: DonorCardProps) {
 
       {/* Donor info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <Icon className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+        {isWallet ? (
           <span className="text-sm font-medium text-foreground truncate">
-            {truncatedId}
+            {formatWalletAddress(entry.donorId)}
           </span>
-        </div>
+        ) : (
+          <UserChip 
+            did={entry.donorId}
+            showCopyButton="hover"
+            linkMode="user-page"
+            className="border !border-transparent hover:!border-border"
+          />
+        )}
         <p className="text-xs text-muted-foreground mt-0.5">
           {entry.donationCount} donation{entry.donationCount !== 1 ? "s" : ""}
           {relativeTime && <span className="text-muted-foreground/60"> · last {relativeTime}</span>}

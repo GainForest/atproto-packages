@@ -23,31 +23,10 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+import { useProfile } from "@/hooks/use-profile";
 import { links } from "@/lib/links";
 
 // ── Data fetchers ─────────────────────────────────────────────────────────────
-
-interface BskyProfile {
-  did: string;
-  handle: string;
-  displayName?: string;
-  avatar?: string;
-  description?: string;
-}
-
-async function fetchBskyProfile(did: string): Promise<BskyProfile | null> {
-  try {
-    const url = new URL(
-      "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile",
-    );
-    url.searchParams.set("actor", did);
-    const res = await fetch(url.toString());
-    if (!res.ok) return null;
-    return (await res.json()) as BskyProfile;
-  } catch {
-    return null;
-  }
-}
 
 async function fetchIsOrganization(did: string): Promise<boolean> {
   try {
@@ -70,11 +49,7 @@ interface MentionCardProps {
 }
 
 function MentionCard({ did, handle }: MentionCardProps) {
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ["bsky-profile", did],
-    queryFn: () => fetchBskyProfile(did),
-    retry: false,
-  });
+  const { data: profile, isLoading: profileLoading } = useProfile(did);
 
   const { data: isOrg } = useQuery({
     queryKey: ["is-gainforest-org", did],
