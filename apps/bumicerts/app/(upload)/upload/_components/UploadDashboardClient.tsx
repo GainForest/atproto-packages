@@ -334,66 +334,71 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
     setSaving(true);
     setSaveError(null);
 
-    // Build partial data — only include fields that were actually edited.
-    // The update mutation fetches the existing record from the PDS and merges
-    // this patch, so omitted fields are preserved automatically.
-    const data: Record<string, unknown> = {};
+    try {
+      // Build partial data — only include fields that were actually edited.
+      // The update mutation fetches the existing record from the PDS and merges
+      // this patch, so omitted fields are preserved automatically.
+      const data: Record<string, unknown> = {};
 
-    if (edits.displayName !== null) {
-      data.displayName = edits.displayName;
+      if (edits.displayName !== null) {
+        data.displayName = edits.displayName;
+      }
+
+      if (edits.shortDescription !== null) {
+        const resolvedFacets = edits.shortDescriptionFacets ?? serverData.shortDescriptionFacets;
+        // Our Facet[] (from leaflet-react) and the generated RichtextFacet.Main[] are
+        // structurally identical at runtime (same app.bsky.richtext.facet JSON shape).
+        // Cast at this mutation boundary — safe by structural equivalence.
+        const shortDescriptionInput: Richtext = {
+          text: edits.shortDescription,
+          facets: resolvedFacets.length > 0
+            ? resolvedFacets as unknown as Richtext["facets"]
+            : undefined,
+        };
+        data.shortDescription = shortDescriptionInput;
+      }
+
+      if (edits.longDescription !== null) {
+        const normalizedLongDescription = normalizeLongDescriptionBlobRefs(edits.longDescription);
+        // Parse through generated lexicon validator client-side so this payload is
+        // guaranteed to match mutation input shape before we send it.
+        data.longDescription = parseLinearDocument(normalizedLongDescription);
+      }
+
+      if (edits.country !== null) {
+        data.country = edits.country;
+      }
+
+      if (edits.visibility !== null) {
+        data.visibility = edits.visibility;
+      }
+
+      // null in store = "unchanged" — omit from the patch so the update
+      // mutation preserves the existing PDS value automatically.
+      if (edits.website !== null) {
+        data.website = edits.website as `${string}:${string}`;
+      }
+
+      if (edits.startDate !== null) {
+        // Convert YYYY-MM-DD to full ISO datetime format
+        data.startDate = `${edits.startDate}T00:00:00.000Z` as `${string}-${string}-${string}T${string}:${string}:${string}Z`;
+      }
+
+      // Images must be wrapped in SmallImage shape { image: SerializableFile }
+      // so that resolveFileInputs can upload the file and replace it with a BlobRef.
+      if (edits.logo !== null) {
+        data.logo = { image: await toSerializableFile(edits.logo) };
+      }
+
+      if (edits.coverImage !== null) {
+        data.coverImage = { image: await toSerializableFile(edits.coverImage) };
+      }
+
+      updateMutation.mutate({ data });
+    } catch (err) {
+      setSaving(false);
+      setSaveError(formatError(err));
     }
-
-    if (edits.shortDescription !== null) {
-      const resolvedFacets = edits.shortDescriptionFacets ?? serverData.shortDescriptionFacets;
-      // Our Facet[] (from leaflet-react) and the generated RichtextFacet.Main[] are
-      // structurally identical at runtime (same app.bsky.richtext.facet JSON shape).
-      // Cast at this mutation boundary — safe by structural equivalence.
-      const shortDescriptionInput: Richtext = {
-        text: edits.shortDescription,
-        facets: resolvedFacets.length > 0
-          ? resolvedFacets as unknown as Richtext["facets"]
-          : undefined,
-      };
-      data.shortDescription = shortDescriptionInput;
-    }
-
-    if (edits.longDescription !== null) {
-      const normalizedLongDescription = normalizeLongDescriptionBlobRefs(edits.longDescription);
-      // Parse through generated lexicon validator client-side so this payload is
-      // guaranteed to match mutation input shape before we send it.
-      data.longDescription = parseLinearDocument(normalizedLongDescription);
-    }
-
-    if (edits.country !== null) {
-      data.country = edits.country;
-    }
-
-    if (edits.visibility !== null) {
-      data.visibility = edits.visibility;
-    }
-
-    // null in store = "unchanged" — omit from the patch so the update
-    // mutation preserves the existing PDS value automatically.
-    if (edits.website !== null) {
-      data.website = edits.website as `${string}:${string}`;
-    }
-
-    if (edits.startDate !== null) {
-      // Convert YYYY-MM-DD to full ISO datetime format
-      data.startDate = `${edits.startDate}T00:00:00.000Z` as `${string}-${string}-${string}T${string}:${string}:${string}Z`;
-    }
-
-    // Images must be wrapped in SmallImage shape { image: SerializableFile }
-    // so that resolveFileInputs can upload the file and replace it with a BlobRef.
-    if (edits.logo !== null) {
-      data.logo = { image: await toSerializableFile(edits.logo) };
-    }
-
-    if (edits.coverImage !== null) {
-      data.coverImage = { image: await toSerializableFile(edits.coverImage) };
-    }
-
-    updateMutation.mutate({ data });
   }, [serverData, edits, hasChanges, isSaving, setSaving, setSaveError, updateMutation]);
 
   // ── Render states ───────────────────────────────────────────────────────────

@@ -113,6 +113,8 @@ export interface LeafletEditorProps {
   editable?: boolean;
   /** Additional CSS class added to the wrapper `<div>`. */
   className?: string;
+  /** Enable image insertion/upload interactions. Defaults to true. */
+  enableImageUpload?: boolean;
 }
 
 export function LeafletEditor({
@@ -123,6 +125,7 @@ export function LeafletEditor({
   placeholder = "Start writing…",
   editable = true,
   className = "",
+  enableImageUpload = true,
 }: LeafletEditorProps) {
   const [imageError, setImageError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -199,7 +202,7 @@ export function LeafletEditor({
     editorProps: {
       // ── Drag-and-drop image upload ────────────────────────────────────
       handleDrop: (view, event, _slice, moved) => {
-        if (!moved && event.dataTransfer?.files?.length) {
+        if (enableImageUpload && !moved && event.dataTransfer?.files?.length) {
           const file = event.dataTransfer.files[0];
           if (file?.type.startsWith("image/")) {
             event.preventDefault();
@@ -221,6 +224,7 @@ export function LeafletEditor({
       },
       // ── Paste image upload ────────────────────────────────────────────
       handlePaste: (view, event) => {
+        if (!enableImageUpload) return false;
         const items = event.clipboardData?.items;
         if (!items) return false;
         for (const item of Array.from(items)) {
@@ -282,6 +286,7 @@ export function LeafletEditor({
           editor={editor}
           onImageUpload={handleImageUpload}
           isUploading={isUploading}
+          enableImageUpload={enableImageUpload}
         />
       )}
 
@@ -298,7 +303,7 @@ export function LeafletEditor({
         </div>
       )}
 
-      {isUploading && (
+      {enableImageUpload && isUploading && (
         <div className="leaflet-editor-banner leaflet-editor-banner--uploading">
           <svg
             className="leaflet-spinner"

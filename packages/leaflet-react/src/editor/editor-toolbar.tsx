@@ -100,12 +100,15 @@ export interface EditorToolbarProps {
   onImageUpload: (file: File) => Promise<ImageUploadResult>;
   /** Whether an upload is in progress (controlled externally). */
   isUploading?: boolean;
+  /** Enable image insertion controls in the toolbar. Defaults to true. */
+  enableImageUpload?: boolean;
 }
 
 export function EditorToolbar({
   editor,
   onImageUpload,
   isUploading: isExternalUploading,
+  enableImageUpload = true,
 }: EditorToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -283,28 +286,32 @@ export function EditorToolbar({
       >
         <Link size={15} />
       </ToolbarButton>
-      <ToolbarButton
-        onClick={() => fileInputRef.current?.click()}
-        title="Insert Image"
-        disabled={isUploading}
-      >
-        {isUploading ? spinnerSvg : <Image size={15} />}
-      </ToolbarButton>
+      {enableImageUpload && (
+        <ToolbarButton
+          onClick={() => fileInputRef.current?.click()}
+          title="Insert Image"
+          disabled={isUploading}
+        >
+          {isUploading ? spinnerSvg : <Image size={15} />}
+        </ToolbarButton>
+      )}
       <ToolbarButton onClick={handleYoutubeClick} title="Embed YouTube Video">
         <Video size={15} />
       </ToolbarButton>
 
       {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="leaflet-hidden"
-        onChange={handleImageFileChange}
-      />
+      {enableImageUpload && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="leaflet-hidden"
+          onChange={handleImageFileChange}
+        />
+      )}
 
       {/* Status / error banners */}
-      {isUploading && (
+      {enableImageUpload && isUploading && (
         <div className="leaflet-toolbar-status leaflet-toolbar-status--uploading">
           {spinnerSvg}
           Uploading image…
