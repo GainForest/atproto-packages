@@ -1,4 +1,6 @@
 import { Effect } from "effect";
+import { extractValidationIssues } from "../../validation";
+import type { ValidationIssue } from "../../result";
 import { $parse } from "@gainforest/generated/app/gainforest/dwc/measurement.defs";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { createRecord } from "../../utils/shared";
@@ -17,8 +19,8 @@ const COLLECTION = "app.gainforest.dwc.measurement";
 const makePdsError = (message: string, cause: unknown) =>
   new DwcMeasurementPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new DwcMeasurementValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new DwcMeasurementValidationError({ message, cause, issues });
 
 export const createDwcMeasurement = (
   input: CreateDwcMeasurementInput
@@ -66,11 +68,7 @@ export const createDwcMeasurement = (
     // Validate with lexicon $parse.
     const record = yield* Effect.try({
       try: () => $parse(candidate),
-      catch: (cause) =>
-        makeValidationError(
-          `dwc.measurement record failed lexicon validation: ${String(cause)}`,
-          cause
-        ),
+      catch: (cause) => { const issues = extractValidationIssues(cause); return makeValidationError("Validation failed", cause, issues); },
     });
 
     // Write to PDS.

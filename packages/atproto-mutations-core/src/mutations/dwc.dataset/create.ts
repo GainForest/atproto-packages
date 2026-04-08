@@ -1,4 +1,6 @@
 import { Effect } from "effect";
+import { extractValidationIssues } from "../../validation";
+import type { ValidationIssue } from "../../result";
 import { $parse } from "@gainforest/generated/app/gainforest/dwc/dataset.defs";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { createRecord } from "../../utils/shared";
@@ -17,8 +19,8 @@ const COLLECTION = "app.gainforest.dwc.dataset";
 const makePdsError = (message: string, cause: unknown) =>
   new DwcDatasetPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new DwcDatasetValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new DwcDatasetValidationError({ message, cause, issues });
 
 export const createDwcDataset = (
   input: CreateDwcDatasetInput
@@ -48,11 +50,7 @@ export const createDwcDataset = (
 
     const record = yield* Effect.try({
       try: () => $parse(candidate),
-      catch: (cause) =>
-        makeValidationError(
-          `dwc.dataset record failed lexicon validation: ${String(cause)}`,
-          cause
-        ),
+      catch: (cause) => { const issues = extractValidationIssues(cause); return makeValidationError("Validation failed", cause, issues); },
     });
 
     const { uri, cid } = yield* createRecord(COLLECTION, record, rkey, makePdsError);

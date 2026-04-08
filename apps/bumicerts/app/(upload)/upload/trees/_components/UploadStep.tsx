@@ -10,6 +10,7 @@ import { fetchPhotoFromUrl } from "@/lib/upload/fetch-photo-from-url";
 import { useModal } from "@/components/ui/modal/context";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import PhotoAttachModal from "@/components/global/modals/upload/photo-attachment";
+import { formatError } from "@/lib/utils/trpc-errors";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -247,7 +248,7 @@ export default function UploadStep({ validRows, establishmentMeans, datasetName,
         failures += 1;
         setRowStatuses((prev) => {
           const next = [...prev];
-          next[i] = { state: "error", error: String(err) };
+          next[i] = { state: "error", error: formatError(err) };
           return next;
         });
       }
@@ -354,7 +355,7 @@ export default function UploadStep({ validRows, establishmentMeans, datasetName,
         failures += 1;
         setPhotoFetchStatuses((prev) => ({
           ...prev,
-          [rowIndex]: { state: "photo-error", error: String(err) },
+          [rowIndex]: { state: "photo-error", error: formatError(err) },
         }));
       }
 

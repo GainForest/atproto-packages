@@ -1,4 +1,5 @@
 import { Data } from "effect";
+import type { ValidationIssue } from "../../../result";
 
 /**
  * Input failed validation against the org.hypercerts.context.attachment lexicon.
@@ -9,6 +10,7 @@ export class ContextAttachmentValidationError extends Data.TaggedError(
 )<{
   message: string;
   cause?: unknown;
+  issues?: ValidationIssue[];
 }> {}
 
 /**

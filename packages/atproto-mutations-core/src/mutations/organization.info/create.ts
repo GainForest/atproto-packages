@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import type { ValidationIssue } from "../../result";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import {
   $parse,
@@ -33,8 +34,8 @@ const BLOB_CONSTRAINTS = extractBlobConstraints(orgInfoSchema);
 const makePdsError = (message: string, cause: unknown) =>
   new OrganizationInfoPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new OrganizationInfoValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new OrganizationInfoValidationError({ message, cause, issues });
 
 export const createOrganizationInfo = (
   input: CreateOrganizationInfoInput

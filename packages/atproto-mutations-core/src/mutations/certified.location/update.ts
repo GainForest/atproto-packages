@@ -1,4 +1,6 @@
 import { Effect } from "effect";
+import { extractValidationIssues } from "../../validation";
+import type { ValidationIssue } from "../../result";
 import {
   $parse,
 } from "@gainforest/generated/app/certified/location.defs";
@@ -25,8 +27,8 @@ const MAX_SHAPEFILE_BYTES = 10 * 1024 * 1024; // 10 MB
 const makePdsError = (message: string, cause: unknown) =>
   new CertifiedLocationPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new CertifiedLocationValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new CertifiedLocationValidationError({ message, cause, issues });
 
 export const updateCertifiedLocation = (
   input: UpdateCertifiedLocationInput
@@ -108,7 +110,7 @@ export const updateCertifiedLocation = (
 
     const record = yield* Effect.try({
       try: () => $parse(merged),
-      catch: (cause) => makeValidationError(`certified.location record failed lexicon validation: ${String(cause)}`, cause),
+      catch: (cause) => { const issues = extractValidationIssues(cause); return makeValidationError("Validation failed", cause, issues); },
     });
 
     // 4. Write back.

@@ -1,4 +1,6 @@
 import { Effect } from "effect";
+import { extractValidationIssues } from "../../validation";
+import type { ValidationIssue } from "../../result";
 import { $parse } from "@gainforest/generated/app/gainforest/dwc/occurrence.defs";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { createRecord } from "../../utils/shared";
@@ -17,8 +19,8 @@ const COLLECTION = "app.gainforest.dwc.occurrence";
 const makePdsError = (message: string, cause: unknown) =>
   new DwcOccurrencePdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new DwcOccurrenceValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new DwcOccurrenceValidationError({ message, cause, issues });
 
 export const createDwcOccurrence = (
   input: CreateDwcOccurrenceInput
@@ -84,11 +86,7 @@ export const createDwcOccurrence = (
     // 2. Validate with $parse from generated types.
     const record = yield* Effect.try({
       try: () => $parse(candidate),
-      catch: (cause) =>
-        makeValidationError(
-          `dwc.occurrence record failed lexicon validation: ${String(cause)}`,
-          cause
-        ),
+      catch: (cause) => { const issues = extractValidationIssues(cause); return makeValidationError("Validation failed", cause, issues); },
     });
 
     // 3. Write to PDS (rkey optional — PDS assigns TID when omitted).

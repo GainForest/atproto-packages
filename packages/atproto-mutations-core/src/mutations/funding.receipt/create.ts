@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import type { ValidationIssue } from "../../result";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import {
   $parse,
@@ -25,8 +26,8 @@ const COLLECTION = "org.hypercerts.funding.receipt";
 const makePdsError = (message: string, cause: unknown) =>
   new FundingReceiptPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new FundingReceiptValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new FundingReceiptValidationError({ message, cause, issues });
 
 /**
  * Creates a new org.hypercerts.funding.receipt record in the authenticated

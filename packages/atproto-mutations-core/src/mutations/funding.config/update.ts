@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import type { ValidationIssue } from "../../result";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import {
   $parse,
@@ -28,8 +29,8 @@ const COLLECTION = "app.bumicerts.funding.config";
 const makePdsError = (message: string, cause: unknown) =>
   new FundingConfigPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new FundingConfigValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new FundingConfigValidationError({ message, cause, issues });
 
 export const updateFundingConfig = (
   input: UpdateFundingConfigInput

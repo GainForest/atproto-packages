@@ -1,4 +1,6 @@
 import { Effect } from "effect";
+import { extractValidationIssues } from "../../validation";
+import type { ValidationIssue } from "../../result";
 import { $parse } from "@gainforest/generated/app/gainforest/dwc/occurrence.defs";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { applyPatch, fetchRecord, putRecord } from "../../utils/shared";
@@ -23,8 +25,8 @@ const REQUIRED_FIELDS = new Set<string>([
 const makePdsError = (message: string, cause: unknown) =>
   new DwcOccurrencePdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new DwcOccurrenceValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new DwcOccurrenceValidationError({ message, cause, issues });
 
 export const updateDwcOccurrence = (
   input: UpdateDwcOccurrenceInput
@@ -62,11 +64,7 @@ export const updateDwcOccurrence = (
 
     const record = yield* Effect.try({
       try: () => $parse(candidate),
-      catch: (cause) =>
-        makeValidationError(
-          `dwc.occurrence record failed lexicon validation: ${String(cause)}`,
-          cause
-        ),
+      catch: (cause) => { const issues = extractValidationIssues(cause); return makeValidationError("Validation failed", cause, issues); },
     });
 
     const { uri, cid } = yield* putRecord(COLLECTION, rkey, record, makePdsError);

@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import type { ValidationIssue } from "../../result";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import {
   $parse,
@@ -25,8 +26,8 @@ const COLLECTION = "app.bumicerts.link.evm";
 const makePdsError = (message: string, cause: unknown) =>
   new LinkEvmPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new LinkEvmValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new LinkEvmValidationError({ message, cause, issues });
 
 /**
  * Creates a new app.bumicerts.link.evm record in the authenticated ATProto repo.

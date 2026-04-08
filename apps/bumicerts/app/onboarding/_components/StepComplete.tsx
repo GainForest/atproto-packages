@@ -75,9 +75,16 @@ export function StepComplete() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = (await response.json().catch(() => ({}))) as {
+          userMessage?: string;
+          message?: string;
+          error?: string;
+        };
         throw new Error(
-          errorData.message || errorData.error || "Failed to create account"
+          (typeof errorData.userMessage === "string" && errorData.userMessage) ||
+            (typeof errorData.message === "string" && errorData.message) ||
+            (typeof errorData.error === "string" && errorData.error) ||
+            "Failed to create account",
         );
       }
 
@@ -101,9 +108,7 @@ export function StepComplete() {
       updateData({ password: "", confirmPassword: "" });
     } catch (err) {
       console.error("Account creation error:", err);
-      setError(
-        err instanceof Error ? err.message : "An unexpected error occurred"
-      );
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setCompletionState("error");
       isSubmittingRef.current = false;
     }

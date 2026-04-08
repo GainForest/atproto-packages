@@ -2,6 +2,8 @@ import { Effect } from "effect";
 import { stubBlobRefs, resolveFileInputs } from "../../blob/helpers";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { BlobUploadError } from "../../blob/errors";
+import { extractValidationIssues } from "../../validation";
+import type { ValidationIssue } from "../../result";
 
 /**
  * Stub-validate a candidate record before any uploads.
@@ -16,13 +18,16 @@ import { BlobUploadError } from "../../blob/errors";
 export const stubValidate = <TValidationError>(
   candidate: object,
   parse: (v: unknown) => unknown,
-  makeValidationError: (message: string, cause: unknown) => TValidationError
+  makeValidationError: (message: string, cause: unknown, issues?: ValidationIssue[]) => TValidationError
 ): Effect.Effect<void, TValidationError> =>
   Effect.try({
     try: () => {
       parse(stubBlobRefs(candidate));
     },
-    catch: (cause) => makeValidationError(String(cause), cause),
+    catch: (cause) => {
+      const issues = extractValidationIssues(cause);
+      return makeValidationError("Validation failed", cause, issues);
+    },
   });
 
 /**
@@ -36,11 +41,14 @@ export const stubValidate = <TValidationError>(
 export const finalValidate = <TRecord, TValidationError>(
   resolved: object,
   parse: (v: unknown) => TRecord,
-  makeValidationError: (message: string, cause: unknown) => TValidationError
+  makeValidationError: (message: string, cause: unknown, issues?: ValidationIssue[]) => TValidationError
 ): Effect.Effect<TRecord, TValidationError> =>
   Effect.try({
     try: () => parse(resolved),
-    catch: (cause) => makeValidationError(String(cause), cause),
+    catch: (cause) => {
+      const issues = extractValidationIssues(cause);
+      return makeValidationError("Validation failed", cause, issues);
+    },
   });
 
 export { resolveFileInputs } from "../../blob/helpers";

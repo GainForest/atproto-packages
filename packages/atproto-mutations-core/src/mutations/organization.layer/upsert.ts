@@ -1,4 +1,6 @@
 import { Effect } from "effect";
+import { extractValidationIssues } from "../../validation";
+import type { ValidationIssue } from "../../result";
 import { $parse } from "@gainforest/generated/app/gainforest/organization/layer.defs";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { fetchRecord, createRecord, putRecord } from "../../utils/shared";
@@ -10,8 +12,8 @@ const COLLECTION = "app.gainforest.organization.layer";
 const makePdsError = (message: string, cause: unknown) =>
   new LayerPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new LayerValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new LayerValidationError({ message, cause, issues });
 
 /**
  * Upsert an organization.layer record.
@@ -51,7 +53,7 @@ export const upsertLayer = (
 
     const record = yield* Effect.try({
       try: () => $parse(candidate),
-      catch: (cause) => makeValidationError(`organization.layer record failed lexicon validation: ${String(cause)}`, cause),
+      catch: (cause) => { const issues = extractValidationIssues(cause); return makeValidationError("Validation failed", cause, issues); },
     });
 
     const isCreate = !rkey || existing === null;

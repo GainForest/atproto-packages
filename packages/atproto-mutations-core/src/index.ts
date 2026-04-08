@@ -29,9 +29,19 @@ export { MutationError } from "./error";
 // ---------------------------------------------------------------------------
 // Error formatting utilities
 // ---------------------------------------------------------------------------
-export { formatMutationError, formatMutationErrorMessage } from "./utils/formatError";
+export {
+  formatMutationError,
+  formatMutationErrorMessage,
+  formatValidationIssues,
+  formatValidationIssuesMessage,
+} from "./utils/formatError";
 export type { FormattedError, FieldLabels } from "./utils/formatError";
 export { adapt } from "./adapt";
+
+// ---------------------------------------------------------------------------
+// Validation utilities
+// ---------------------------------------------------------------------------
+export { extractValidationIssues, FIELD_LABELS } from "./validation";
 
 // Effect-based agent abstraction
 export { AtprotoAgent } from "./services/AtprotoAgent";

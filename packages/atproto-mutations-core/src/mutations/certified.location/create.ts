@@ -1,4 +1,6 @@
 import { Effect } from "effect";
+import { extractValidationIssues } from "../../validation";
+import type { ValidationIssue } from "../../result";
 import {
   $parse,
 } from "@gainforest/generated/app/certified/location.defs";
@@ -24,8 +26,8 @@ const MAX_SHAPEFILE_BYTES = 10 * 1024 * 1024; // 10 MB
 const makePdsError = (message: string, cause: unknown) =>
   new CertifiedLocationPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new CertifiedLocationValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new CertifiedLocationValidationError({ message, cause, issues });
 
 export const createCertifiedLocation = (
   input: CreateCertifiedLocationInput
@@ -88,7 +90,7 @@ export const createCertifiedLocation = (
 
     const record = yield* Effect.try({
       try: () => $parse(candidate),
-      catch: (cause) => makeValidationError(`certified.location record failed lexicon validation: ${String(cause)}`, cause),
+      catch: (cause) => { const issues = extractValidationIssues(cause); return makeValidationError("Validation failed", cause, issues); },
     });
 
     // 5. Write to the PDS.

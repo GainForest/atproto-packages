@@ -13,14 +13,32 @@ export const t = initTRPC.context<TRPCContext>().create({
         ? effectError.cause
         : undefined;
 
+    // Extract structured validation issues if present
+    const issues =
+      effectError && typeof effectError === "object" && "issues" in effectError
+        ? effectError.issues
+        : undefined;
+
     return {
       ...shape,
       data: {
         ...shape.data,
+        // User-safe message from error mapper (now field-specific for validation errors).
+        userMessage: error.message,
+        // Structured validation issues for field-level error display
+        issues,
         // Include the original Effect error tag if available for debugging
         effectTag:
           effectError && typeof effectError === "object" && "_tag" in effectError
             ? String(effectError._tag)
+            : undefined,
+        // Keep the original tagged error message for developer diagnostics.
+        debugMessage:
+          effectError &&
+          typeof effectError === "object" &&
+          "message" in effectError &&
+          typeof effectError.message === "string"
+            ? effectError.message
             : undefined,
         // Include the raw PDS / upstream error message for debugging
         causeMessage:

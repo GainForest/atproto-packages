@@ -194,8 +194,7 @@ export async function POST(req: NextRequest) {
     return Response.json(
       {
         error: "InternalServerError",
-        message:
-          err instanceof Error ? err.message : "Unexpected error occurred",
+        message: "Unable to fetch website information right now. Please try again.",
       },
       { status: 500 }
     );

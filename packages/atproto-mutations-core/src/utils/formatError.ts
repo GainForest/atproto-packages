@@ -314,6 +314,47 @@ export function formatMutationError(
 }
 
 /**
+ * Formats an array of ValidationIssue objects into human-readable error descriptors.
+ * Unlike `formatMutationError`, this works directly with issues — no `MutationError`
+ * instance required. Used by the tRPC error mapper to generate field-specific
+ * user messages server-side.
+ *
+ * @param issues - Array of structured validation issues
+ * @param fieldLabels - Optional map of lexicon field names to display labels
+ * @returns Array of FormattedError objects
+ *
+ * @example
+ * ```ts
+ * const issues = extractValidationIssues(cause);
+ * const formatted = formatValidationIssues(issues, FIELD_LABELS);
+ * // formatted[0].userMessage → "Display name must be at least 8 characters"
+ * ```
+ */
+export function formatValidationIssues(
+  issues: ValidationIssue[],
+  fieldLabels?: FieldLabels
+): FormattedError[] {
+  return issues.map((issue) => formatIssue(issue, fieldLabels));
+}
+
+/**
+ * Formats an array of ValidationIssue objects into a single joined message string.
+ * Convenience wrapper for server-side use in the tRPC error mapper.
+ *
+ * @param issues - Array of structured validation issues
+ * @param fieldLabels - Optional map of lexicon field names to display labels
+ * @returns A single string with all issue messages joined by ". "
+ */
+export function formatValidationIssuesMessage(
+  issues: ValidationIssue[],
+  fieldLabels?: FieldLabels
+): string {
+  return formatValidationIssues(issues, fieldLabels)
+    .map((e) => e.userMessage)
+    .join(". ");
+}
+
+/**
  * Convenience wrapper around `formatMutationError` that returns a single
  * joined string — suitable for setting a form error state directly.
  *

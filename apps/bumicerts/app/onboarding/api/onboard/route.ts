@@ -35,7 +35,10 @@ import {
   getClientIp,
   RATE_LIMITS,
 } from "@/lib/rate-limit";
-import { organizationInfoSchema } from "./schema";
+import {
+  organizationInfoSchema,
+  validateOrganizationInfoWithLexicon,
+} from "./schema";
 import { textToLinearDocument } from "@/lib/utils/linearDocument";
 import { Effect } from "effect";
 import {
@@ -67,9 +70,9 @@ const requestSchema = z.object({
     .refine((value) => ([...signupPDSDomains] as string[]).includes(value), {
       message: "Unsupported pdsDomain",
     }),
-  displayName: z.string().min(1).max(100),
-  shortDescription: z.string().min(1).max(500),
-  longDescription: z.string().min(50).max(5000),
+  displayName: z.string().min(1),
+  shortDescription: z.string().min(1),
+  longDescription: z.string().min(1),
   country: z.string().length(2),
   website: z.string().optional(),
   startDate: z.string().optional(),
@@ -82,6 +85,72 @@ type AccountCreationResponse = {
   accessJwt: string;
   refreshJwt: string;
 };
+
+type ApiErrorBody = {
+  error: string;
+  userMessage: string;
+  debugMessage?: string;
+  message: string;
+  issues?: unknown;
+};
+
+function jsonApiError(
+  status: number,
+  error: string,
+  userMessage: string,
+  debugMessage?: string,
+  issues?: unknown,
+) {
+  const body: ApiErrorBody = {
+    error,
+    userMessage,
+    message: userMessage,
+    ...(debugMessage ? { debugMessage } : {}),
+    ...(issues !== undefined ? { issues } : {}),
+  };
+  return Response.json(body, { status });
+}
+
+async function enqueueIndexerRepo(did: string): Promise<void> {
+  const indexerUrl =
+    process.env.NEXT_PUBLIC_INDEXER_URL || "http://localhost:4000/graphql";
+
+  try {
+    const response = await fetch(indexerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: "mutation AddRepos($dids: [String!]!) { addRepos(dids: $dids) }",
+        variables: { dids: [did] },
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      console.error("Indexer addRepos request failed:", {
+        did,
+        status: response.status,
+        body,
+      });
+      return;
+    }
+
+    const payload = (await response.json()) as {
+      data?: { addRepos?: boolean };
+      errors?: Array<{ message?: string }>;
+    };
+
+    if (payload.errors?.length || payload.data?.addRepos !== true) {
+      console.error("Indexer addRepos returned errors:", {
+        did,
+        errors: payload.errors,
+        data: payload.data,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to call indexer addRepos:", { did, error });
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -151,17 +220,17 @@ export async function POST(req: NextRequest) {
     const parsed = requestSchema.safeParse(rawData);
 
     if (!parsed.success) {
-      return Response.json(
-        {
-          error: "ValidationError",
-          message: `Error in ${parsed.error.issues[0].path.join(".")}: ${parsed.error.issues[0].message}`,
-          issues: parsed.error.issues,
-        },
-        { status: 400 },
+      const firstIssue = parsed.error.issues[0];
+      return jsonApiError(
+        400,
+        "ValidationError",
+        firstIssue?.message ?? "Please review your details and try again.",
+        firstIssue?.message,
+        parsed.error.issues,
       );
     }
 
-    // Additional organization info validation
+    // Additional organization info shape/normalization validation
     const orgInfoParsed = organizationInfoSchema.safeParse({
       displayName: parsed.data.displayName,
       shortDescription: parsed.data.shortDescription,
@@ -172,13 +241,29 @@ export async function POST(req: NextRequest) {
     });
 
     if (!orgInfoParsed.success) {
-      return Response.json(
-        {
-          error: "ValidationError",
-          message: `Error in ${orgInfoParsed.error.issues[0].path.join(".")}: ${orgInfoParsed.error.issues[0].message}`,
-          issues: orgInfoParsed.error.issues,
-        },
-        { status: 400 },
+      const firstIssue = orgInfoParsed.error.issues[0];
+      return jsonApiError(
+        400,
+        "ValidationError",
+        firstIssue?.message ?? "Organization details are invalid. Please check your inputs.",
+        firstIssue?.message,
+        orgInfoParsed.error.issues,
+      );
+    }
+
+    // Preflight with the same lexicon parser used by organization.info mutation
+    // so account creation never proceeds with invalid org payload.
+    const orgLexiconValidation = validateOrganizationInfoWithLexicon(
+      orgInfoParsed.data,
+      parsed.data.objectives,
+    );
+    if (!orgLexiconValidation.success) {
+      return jsonApiError(
+        400,
+        "ValidationError",
+        orgLexiconValidation.userMessage,
+        orgLexiconValidation.issues[0]?.message,
+        orgLexiconValidation.issues,
       );
     }
 
@@ -268,6 +353,10 @@ export async function POST(req: NextRequest) {
     const accountData =
       (await accountResponse.json()) as AccountCreationResponse;
     const { did } = accountData;
+
+    // Step 3.5: Register the newly created DID in the indexer for backfill/live tracking.
+    // Best-effort only: indexing should not block successful account creation.
+    await enqueueIndexerRepo(did);
 
     // Step 4: Initialize organization using mutations package
     let organizationInitialized = false;

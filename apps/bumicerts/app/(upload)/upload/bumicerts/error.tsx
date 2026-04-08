@@ -9,6 +9,7 @@ interface BumicertsErrorProps {
 }
 
 export default function BumicertsError({ error, reset }: BumicertsErrorProps) {
+  console.error("Bumicerts route error:", error);
   return (
     <Container className="pt-8 pb-8">
       <div className="flex flex-col items-center justify-center h-48 gap-4 text-center">
@@ -16,7 +17,7 @@ export default function BumicertsError({ error, reset }: BumicertsErrorProps) {
           Something went wrong
         </p>
         <p className="text-sm text-muted-foreground max-w-sm">
-          {error.message ?? "Failed to load bumicerts. Please try again."}
+          Failed to load bumicerts. Please try again.
         </p>
         <Button variant="outline" onClick={reset}>
           Try again

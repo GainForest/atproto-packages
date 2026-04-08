@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import type { ValidationIssue } from "../../result";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import {
   $parse,
@@ -30,8 +31,8 @@ const BLOB_CONSTRAINTS = extractBlobConstraints(contextAttachmentSchema);
 const makePdsError = (message: string, cause: unknown) =>
   new ContextAttachmentPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new ContextAttachmentValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new ContextAttachmentValidationError({ message, cause, issues });
 
 export const createContextAttachment = (
   input: CreateContextAttachmentInput

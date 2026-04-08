@@ -1,4 +1,6 @@
 import { Effect } from "effect";
+import { extractValidationIssues } from "../../validation";
+import type { ValidationIssue } from "../../result";
 import { $parse } from "@gainforest/generated/app/gainforest/ac/multimedia.defs";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { BlobUploadError, FileConstraintError } from "../../blob/errors";
@@ -34,8 +36,8 @@ const ACCEPTED_IMAGE_MIMES = new Set([
 const makePdsError = (message: string, cause: unknown) =>
   new AcMultimediaPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new AcMultimediaValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new AcMultimediaValidationError({ message, cause, issues });
 
 export const createAcMultimedia = (
   input: CreateAcMultimediaInput
@@ -116,7 +118,7 @@ export const createAcMultimedia = (
 
     const record = yield* Effect.try({
       try: () => $parse(candidate),
-      catch: (cause) => makeValidationError(`ac.multimedia record failed lexicon validation: ${String(cause)}`, cause),
+      catch: (cause) => { const issues = extractValidationIssues(cause); return makeValidationError("Validation failed", cause, issues); },
     });
 
     // 4. Write to PDS.

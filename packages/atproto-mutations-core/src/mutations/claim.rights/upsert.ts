@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+import type { ValidationIssue } from "../../result";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import {
   $parse,
@@ -32,8 +33,8 @@ const BLOB_CONSTRAINTS = extractBlobConstraints(claimRightsSchema);
 const makePdsError = (message: string, cause: unknown) =>
   new ClaimRightsPdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new ClaimRightsValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new ClaimRightsValidationError({ message, cause, issues });
 
 export const upsertClaimRights = (
   input: UpsertClaimRightsInput

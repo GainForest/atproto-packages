@@ -1,4 +1,6 @@
 import { Effect } from "effect";
+import { extractValidationIssues } from "../../validation";
+import type { ValidationIssue } from "../../result";
 import {
   $parse,
 } from "@gainforest/generated/app/gainforest/organization/defaultSite.defs";
@@ -22,8 +24,8 @@ const RKEY = "self";
 const makePdsError = (message: string, cause: unknown) =>
   new DefaultSitePdsError({ message, cause });
 
-const makeValidationError = (message: string, cause: unknown) =>
-  new DefaultSiteValidationError({ message, cause });
+const makeValidationError = (message: string, cause: unknown, issues?: ValidationIssue[]) =>
+  new DefaultSiteValidationError({ message, cause, issues });
 
 /**
  * Set (or replace) the organization's default site.
@@ -104,7 +106,7 @@ export const setDefaultSite = (
 
     const record = yield* Effect.try({
       try: () => $parse(candidate),
-      catch: (cause) => makeValidationError(`organization.defaultSite record failed lexicon validation: ${String(cause)}`, cause),
+      catch: (cause) => { const issues = extractValidationIssues(cause); return makeValidationError("Validation failed", cause, issues); },
     });
 
     // 5. Write (putRecord = singleton upsert at rkey "self").

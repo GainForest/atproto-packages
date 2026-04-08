@@ -9,6 +9,7 @@ import {
   updateDraftBumicertRequestSchema,
   deleteDraftBumicertRequestSchema,
 } from "./schema";
+import { apiError } from "@/lib/api/errors";
 
 /**
  * Helper function to get the authenticated user's DID from the OAuth session.
@@ -63,9 +64,11 @@ export async function GET(req: NextRequest) {
   const requestBodyValidation =
     getDraftBumicertRequestSchema.safeParse(queryParams);
   if (!requestBodyValidation.success) {
-    return NextResponse.json(
-      { error: requestBodyValidation.error.message },
-      { status: 400 }
+    return apiError(
+      400,
+      "VALIDATION_FAILED",
+      "Invalid request parameters. Please check your inputs.",
+      requestBodyValidation.error.issues[0]?.message
     );
   }
 
@@ -144,9 +147,11 @@ export async function POST(req: NextRequest) {
       const updateValidation =
         updateDraftBumicertRequestSchema.safeParse(requestBody);
       if (!updateValidation.success) {
-        return NextResponse.json(
-          { error: updateValidation.error.message },
-          { status: 400 }
+        return apiError(
+          400,
+          "VALIDATION_FAILED",
+          "Invalid draft data. Please check your inputs.",
+          updateValidation.error.issues[0]?.message
         );
       }
 
@@ -197,9 +202,11 @@ export async function POST(req: NextRequest) {
       const createValidation =
         createDraftBumicertRequestSchema.safeParse(requestBody);
       if (!createValidation.success) {
-        return NextResponse.json(
-          { error: createValidation.error.message },
-          { status: 400 }
+        return apiError(
+          400,
+          "VALIDATION_FAILED",
+          "Failed to create draft. Please check your data.",
+          createValidation.error.issues[0]?.message
         );
       }
 
@@ -268,9 +275,11 @@ export async function DELETE(req: NextRequest) {
   const requestBodyValidation =
     deleteDraftBumicertRequestSchema.safeParse(requestBody);
   if (!requestBodyValidation.success) {
-    return NextResponse.json(
-      { error: requestBodyValidation.error.message },
-      { status: 400 }
+    return apiError(
+      400,
+      "VALIDATION_FAILED",
+      "Invalid request. Please provide valid draft IDs.",
+      requestBodyValidation.error.issues[0]?.message
     );
   }
 

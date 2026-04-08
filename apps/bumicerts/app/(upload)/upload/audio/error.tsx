@@ -9,6 +9,7 @@ interface AudioErrorProps {
 }
 
 export default function AudioError({ error, reset }: AudioErrorProps) {
+  console.error("Audio route error:", error);
   return (
     <Container className="pt-8 pb-8">
       <div className="flex flex-col items-center justify-center h-48 gap-4 text-center">
@@ -16,7 +17,7 @@ export default function AudioError({ error, reset }: AudioErrorProps) {
           Something went wrong
         </p>
         <p className="text-sm text-muted-foreground max-w-sm">
-          {error.message ?? "Failed to load audio recordings. Please try again."}
+          Failed to load audio recordings. Please try again.
         </p>
         <Button variant="outline" onClick={reset}>
           Try again

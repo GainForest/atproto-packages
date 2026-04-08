@@ -1,10 +1,12 @@
 import { Data } from "effect";
+import type { ValidationIssue } from "../../../result";
 
 export class CertifiedLocationValidationError extends Data.TaggedError(
   "CertifiedLocationValidationError"
 )<{
   message: string;
   cause?: unknown;
+  issues?: ValidationIssue[];
 }> {}
 
 export class CertifiedLocationNotFoundError extends Data.TaggedError(
