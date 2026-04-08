@@ -46,6 +46,7 @@ const OCCURRENCE_OPTIONAL = TARGET_FIELDS.filter(
   (f) => f.category === "occurrence" && !f.required
 );
 const MEASUREMENTS = TARGET_FIELDS.filter((f) => f.category === "measurement");
+const MEDIA = TARGET_FIELDS.filter((f) => f.category === "media");
 
 /** Return the first non-empty value for a given column across all rows */
 function getSampleValue(
@@ -250,6 +251,16 @@ export default function ColumnMappingStep({
                       <SelectGroup>
                         <SelectLabel>Measurements</SelectLabel>
                         {MEASUREMENTS.map((f) => (
+                          <SelectItem key={f.field} value={f.field}>
+                            {f.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+
+                      {/* Media */}
+                      <SelectGroup>
+                        <SelectLabel>Media</SelectLabel>
+                        {MEDIA.map((f) => (
                           <SelectItem key={f.field} value={f.field}>
                             {f.label}
                           </SelectItem>

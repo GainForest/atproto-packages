@@ -49,7 +49,41 @@ const MeasurementFields = {
   canopyCover: z.coerce.number().min(0).max(100).optional(),
 };
 
-export const TreeRowSchema = OccurrenceRowSchema.merge(z.object(MeasurementFields));
+const VALID_SUBJECT_PARTS = new Set([
+  "entireOrganism",
+  "leaf",
+  "bark",
+  "flower",
+  "fruit",
+  "seed",
+  "stem",
+  "twig",
+  "bud",
+  "root",
+]);
+
+const MediaFields = {
+  photoUrl: z
+    .string()
+    .optional()
+    .transform((value) => {
+      if (!value || value.trim() === "") return undefined;
+      return value.trim();
+    }),
+  subjectPart: z
+    .string()
+    .optional()
+    .transform((value) => {
+      if (!value || value.trim() === "") return undefined;
+      const trimmed = value.trim();
+      // Accept known subject parts as-is; otherwise fall back to entireOrganism
+      return VALID_SUBJECT_PARTS.has(trimmed) ? trimmed : "entireOrganism";
+    }),
+};
+
+export const TreeRowSchema = OccurrenceRowSchema.merge(
+  z.object({ ...MeasurementFields, ...MediaFields })
+);
 
 type TreeRowOutput = z.output<typeof TreeRowSchema>;
 
@@ -111,7 +145,14 @@ export function parseAndValidateRows(rows: Record<string, string>[]): Validation
     if (result.success) {
       const occurrence = extractOccurrence(result.data);
       const floraMeasurement = extractFloraMeasurement(result.data);
-      valid.push({ index, occurrence, floraMeasurement });
+      const row: ValidatedRow = { index, occurrence, floraMeasurement };
+
+      if (result.data.photoUrl) {
+        row.photoUrl = result.data.photoUrl;
+        row.subjectPart = result.data.subjectPart ?? "entireOrganism";
+      }
+
+      valid.push(row);
     } else {
       const issues = result.error.issues.map((issue) => ({
         path: issue.path.join(".") || "root",

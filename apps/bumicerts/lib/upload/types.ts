@@ -21,6 +21,8 @@ export type OccurrenceInput = {
   habitat?: string;
   samplingProtocol?: string;
   kingdom?: string;
+  establishmentMeans?: string;
+  datasetRef?: string;
 };
 
 export type FloraMeasurementBundle = {
@@ -34,6 +36,8 @@ export type ValidatedRow = {
   index: number;
   occurrence: OccurrenceInput;
   floraMeasurement: FloraMeasurementBundle | null;
+  photoUrl?: string;
+  subjectPart?: string;
 };
 
 export type RowError = {
@@ -50,7 +54,7 @@ export type TargetField = {
   field: string;
   label: string;
   required: boolean;
-  category: "occurrence" | "measurement";
+  category: "occurrence" | "measurement" | "media";
 };
 
 export const TARGET_FIELDS: TargetField[] = [
@@ -72,4 +76,7 @@ export const TARGET_FIELDS: TargetField[] = [
   { field: "dbh", label: "DBH", required: false, category: "measurement" },
   { field: "diameter", label: "Diameter", required: false, category: "measurement" },
   { field: "canopyCoverPercent", label: "Canopy Cover (%)", required: false, category: "measurement" },
+  // Media (2)
+  { field: "photoUrl", label: "Photo URL", required: false, category: "media" },
+  { field: "subjectPart", label: "Subject Part", required: false, category: "media" },
 ];

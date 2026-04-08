@@ -60,6 +60,27 @@ const KNOWN_PATTERNS: { patterns: string[]; target: string }[] = [
     patterns: ["crown_diameter", "canopy_diameter", "canopy_cover"],
     target: "canopyCover",
   },
+
+  // Media fields
+  {
+    patterns: [
+      "photo_url",
+      "photourl",
+      "photo",
+      "image_url",
+      "imageurl",
+      "image",
+      "attachment",
+      "attachment_url",
+      "picture",
+      "picture_url",
+    ],
+    target: "photoUrl",
+  },
+  {
+    patterns: ["subject_part", "subjectpart", "organism_part", "part_photographed"],
+    target: "subjectPart",
+  },
 ];
 
 /**
