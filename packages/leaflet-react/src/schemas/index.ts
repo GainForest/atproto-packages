@@ -46,7 +46,7 @@ export const LeafletFacetSchema = z.object({
 
 export const LeafletBlobRefSchema = z.object({
   $type: z.literal("blob"),
-  ref: z.object({ $link: z.string() }),
+  ref: z.union([z.object({ $link: z.string() }), z.string()]),
   mimeType: z.string(),
   size: z.number(),
 });

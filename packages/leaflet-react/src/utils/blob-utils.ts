@@ -12,6 +12,11 @@ export function extractCid(image: unknown): string | null {
   if (!image || typeof image !== "object") return null;
   const obj = image as Record<string, unknown>;
 
+  // Direct string ref: { ref: "bafkrei..." }
+  if (typeof obj.ref === "string" && obj.ref.length > 0) {
+    return obj.ref;
+  }
+
   // Raw JSON wire format: { ref: { $link: "bafkrei..." } }
   if (
     obj.ref &&

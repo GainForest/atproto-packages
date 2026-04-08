@@ -14,6 +14,7 @@ import type {
   LeafletListItem,
 } from "../types/index.js";
 import { encoder, decoder } from "./byte-utils.js";
+import { extractCid } from "../utils/blob-utils.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Facet → TipTap marks
@@ -197,7 +198,8 @@ export function leafletToTiptap(
       }
 
       case "pub.leaflet.blocks.image": {
-        const cid = block.image.ref.$link;
+        const cid = extractCid(block.image);
+        if (!cid) break;
         const src = resolveImageCid ? resolveImageCid(cid) : cid;
         content.push({
           type: "image",

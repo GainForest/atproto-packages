@@ -68,8 +68,21 @@ export function isAnyBlobRef(v: unknown): boolean {
   if (v == null || typeof v !== "object") return false;
   // @atproto/lex plain-object BlobRef
   if (lexIsBlobRef(v)) return true;
+  // JSON wire-format blob-like object with ref.$link
+  const blobLike = v as Record<string, unknown>;
+  const blobLikeRef = blobLike["ref"];
+  if (
+    blobLike["$type"] === "blob" &&
+    typeof blobLike["mimeType"] === "string" &&
+    typeof blobLike["size"] === "number" &&
+    blobLikeRef != null &&
+    typeof blobLikeRef === "object" &&
+    typeof (blobLikeRef as Record<string, unknown>)["$link"] === "string"
+  ) {
+    return true;
+  }
   // @atproto/lexicon class BlobRef: has .ref (CID), .mimeType (string), .size (number)
-  const o = v as Record<string, unknown>;
+  const o = blobLike;
   return (
     typeof o["mimeType"] === "string" &&
     typeof o["size"] === "number" &&
@@ -87,8 +100,28 @@ export function isAnyBlobRef(v: unknown): boolean {
  */
 export function normalizeBlobRef(v: unknown): unknown {
   if (lexIsBlobRef(v)) return v; // already a valid plain BlobRef
+  // JSON wire-format blob-like object with ref.$link
+  const jsonBlob = v as Record<string, unknown>;
+  const jsonBlobRef = jsonBlob["ref"];
+  if (
+    jsonBlob["$type"] === "blob" &&
+    typeof jsonBlob["mimeType"] === "string" &&
+    typeof jsonBlob["size"] === "number" &&
+    jsonBlobRef != null &&
+    typeof jsonBlobRef === "object"
+  ) {
+    const link = (jsonBlobRef as Record<string, unknown>)["$link"];
+    if (typeof link === "string" && link.length > 0) {
+      return {
+        $type: "blob" as const,
+        ref: link,
+        mimeType: jsonBlob["mimeType"],
+        size: jsonBlob["size"],
+      };
+    }
+  }
   // @atproto/lexicon class BlobRef
-  const o = v as Record<string, unknown>;
+  const o = jsonBlob;
   if (
     typeof o["mimeType"] === "string" &&
     typeof o["size"] === "number" &&

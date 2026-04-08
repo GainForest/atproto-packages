@@ -12,6 +12,8 @@ import { Effect } from "effect";
 import {
   isSerializableFile,
   isBlobRef,
+  isAnyBlobRef,
+  normalizeBlobRef,
   isFileOrBlob,
   toSerializableFile,
   fromSerializableFile,
@@ -88,6 +90,28 @@ describe("isBlobRef", () => {
     expect(isBlobRef(null)).toBe(false);
     expect(isBlobRef(undefined)).toBe(false);
     expect(isBlobRef("string")).toBe(false);
+  });
+});
+
+describe("isAnyBlobRef + normalizeBlobRef", () => {
+  it("recognises and normalizes wire-format blob refs with ref.$link", () => {
+    const wireBlob = {
+      $type: "blob",
+      ref: { $link: "bafyreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku" },
+      mimeType: "image/png",
+      size: 1234,
+    };
+
+    expect(isAnyBlobRef(wireBlob)).toBe(true);
+    expect(isBlobRef(wireBlob)).toBe(false);
+
+    const normalized = normalizeBlobRef(wireBlob) as Record<string, unknown>;
+    expect(normalized["$type"]).toBe("blob");
+    expect(normalized["ref"]).toBe(
+      "bafyreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku"
+    );
+    expect(normalized["mimeType"]).toBe("image/png");
+    expect(normalized["size"]).toBe(1234);
   });
 });
 

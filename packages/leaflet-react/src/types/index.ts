@@ -42,7 +42,7 @@ export interface LeafletFacet {
  */
 export interface LeafletBlobRef {
   $type: "blob";
-  ref: { $link: string };
+  ref: { $link: string } | string;
   mimeType: string;
   size: number;
 }

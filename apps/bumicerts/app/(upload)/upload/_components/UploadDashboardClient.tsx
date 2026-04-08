@@ -34,8 +34,9 @@ import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { orgInfoToOrganizationData } from "@/lib/adapters";
 import type { GraphQLOrgInfoItem } from "@/lib/adapters";
 import type { OrganizationData } from "@/lib/types";
-import type { LinearDocument, Richtext } from "@gainforest/atproto-mutations-next";
+import type { Richtext } from "@gainforest/atproto-mutations-next";
 import { toSerializableFile } from "@gainforest/atproto-mutations-next";
+import { $parse as parseLinearDocument } from "@gainforest/generated/pub/leaflet/pages/linearDocument.defs";
 import { formatError } from "@/lib/utils/trpc-errors";
 
 import Container from "@/components/ui/container";
@@ -78,6 +79,44 @@ type PendingIndexerSync = {
 };
 
 const IMAGE_SYNC_FALLBACK_MS = 20_000;
+
+function normalizeLongDescriptionBlobRefs(
+  doc: OrganizationData["longDescription"]
+): OrganizationData["longDescription"] {
+  return {
+    ...doc,
+    blocks: doc.blocks.map((wrapper) => {
+      const block = wrapper.block;
+      if (block.$type !== "pub.leaflet.blocks.image") return wrapper;
+      const image = block.image as Record<string, unknown>;
+      const ref = image["ref"];
+      if (typeof ref === "object" && ref !== null) {
+        const link = (ref as Record<string, unknown>)["$link"];
+        if (typeof link === "string" && link.length > 0) {
+          const mimeType =
+            typeof image["mimeType"] === "string"
+              ? image["mimeType"]
+              : "application/octet-stream";
+          const size =
+            typeof image["size"] === "number" ? image["size"] : 0;
+          return {
+            ...wrapper,
+            block: {
+              ...block,
+              image: {
+                $type: "blob",
+                ref: link,
+                mimeType,
+                size,
+              },
+            },
+          };
+        }
+      }
+      return wrapper;
+    }),
+  };
+}
 
 function sameLongDescription(
   left: OrganizationData["longDescription"] | undefined,
@@ -319,9 +358,10 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
     }
 
     if (edits.longDescription !== null) {
-      // LeafletLinearDocument is structurally compatible with the generated LinearDocument
-      // at runtime (both serialize to the same JSON). Cast at this mutation boundary.
-      data.longDescription = edits.longDescription as unknown as LinearDocument;
+      const normalizedLongDescription = normalizeLongDescriptionBlobRefs(edits.longDescription);
+      // Parse through generated lexicon validator client-side so this payload is
+      // guaranteed to match mutation input shape before we send it.
+      data.longDescription = parseLinearDocument(normalizedLongDescription);
     }
 
     if (edits.country !== null) {

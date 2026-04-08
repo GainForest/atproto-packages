@@ -208,7 +208,8 @@ export function tiptapToLeaflet(doc: JSONContent): LeafletLinearDocument {
           $type: "pub.leaflet.blocks.image",
           image: {
             $type: "blob",
-            ref: { $link: cid || src },
+            // Use a direct CID string so ATProto lex validators accept this as BlobRef.
+            ref: cid || src,
             mimeType,
             size,
           },
