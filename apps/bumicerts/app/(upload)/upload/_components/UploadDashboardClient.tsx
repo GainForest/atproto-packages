@@ -27,7 +27,7 @@
  *      the optimistic data with real CDN URLs once the indexer has processed it.
  */
 
-import { useMemo, useCallback, useRef } from "react";
+import { useMemo, useCallback, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { trpc } from "@/lib/trpc/client";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
@@ -64,7 +64,7 @@ interface UploadDashboardClientProps {
  * likely to return current data. Even if it doesn't, the optimistic data
  * in the query cache is preserved until a matching refetch arrives.
  */
-const INVALIDATION_DELAY_MS = 2_000;
+const INVALIDATION_DELAY_MS = 5_000;
 
 function normalizeLongDescriptionBlobRefs(
   doc: OrganizationData["longDescription"]
@@ -104,7 +104,22 @@ function normalizeLongDescriptionBlobRefs(
   };
 }
 
+// ── Debug logging ─────────────────────────────────────────────────────────────
+// Temporary verbose logging to trace the optimistic update race condition.
+// Search for [ORGEDIT] in the browser console to filter these logs.
+// Remove once the bug is confirmed fixed.
+
+const DEBUG = true;
+const t0 = typeof performance !== "undefined" ? performance.now() : 0;
+function log(tag: string, ...args: unknown[]) {
+  if (!DEBUG) return;
+  const ms = (performance.now() - t0).toFixed(1);
+  console.log(`[ORGEDIT +${ms}ms] ${tag}`, ...args);
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
+
+let renderCount = 0;
 
 export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
   const indexerUtils = indexerTrpc.useUtils();
@@ -113,6 +128,11 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
 
   // Refs for object URLs that need cleanup
   const objectUrlsRef = useRef<string[]>([]);
+
+  // Guard: when true, the query is in the optimistic protection window.
+  // During this period, refetchOnWindowFocus is disabled and we control
+  // refetches explicitly via the delayed invalidation.
+  const [optimisticGuard, setOptimisticGuard] = useState(false);
 
   // ── Store (edit-only state) ────────────────────────────────────────────────
   const isSaving = useUploadDashboardStore((s) => s.isSaving);
@@ -127,142 +147,63 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
     data: orgData,
     isLoading,
     error,
+    dataUpdatedAt,
+    isFetching,
+    isStale,
+    status,
   } = indexerTrpc.organization.byDid.useQuery({ did }, {
     // Override the global staleTime: 0 so that optimistic data set via
     // setQueryData is treated as fresh and doesn't trigger an immediate
     // background refetch on the next render (e.g. after URL change).
-    // We control refetches explicitly via invalidate() after a delay.
-    staleTime: 10_000,
+    staleTime: optimisticGuard ? Infinity : 10_000,
+    // Disable automatic refetches during the optimistic protection window.
+    // Without this, React Query can schedule a background refetch that races
+    // against our setQueryData and overwrites optimistic data with stale
+    // indexer results.
+    refetchOnWindowFocus: !optimisticGuard,
+    refetchOnMount: !optimisticGuard,
+    refetchOnReconnect: !optimisticGuard,
   });
   const hasFetchedOrg = orgData?.org !== null && orgData?.org !== undefined;
+
+  // Log every render with query state
+  renderCount++;
+  const displayName = orgData?.org?.record?.displayName;
+  const shortDesc = orgData?.org?.record?.shortDescription;
+  log("RENDER", {
+    renderCount,
+    mode,
+    optimisticGuard,
+    isFetching,
+    isStale,
+    status,
+    dataUpdatedAt: dataUpdatedAt ? new Date(dataUpdatedAt).toISOString() : null,
+    displayName: typeof displayName === "string" ? displayName.slice(0, 40) : displayName,
+    shortDesc: typeof shortDesc === "string" ? shortDesc.slice(0, 60) : (shortDesc ? "[object]" : null),
+    isSaving,
+  });
 
   // Derive OrganizationData from the query cache — single source of truth.
   // No useEffect sync, no Zustand serverData. When setQueryData updates the
   // cache, this memo recomputes and the component re-renders with new data.
   const serverData = useMemo(() => {
     if (!orgData?.org) return null;
-    return orgInfoToOrganizationData(orgData.org as GraphQLOrgInfoItem, 0);
+    const result = orgInfoToOrganizationData(orgData.org as GraphQLOrgInfoItem, 0);
+    log("MEMO serverData recomputed", {
+      displayName: result.displayName?.slice(0, 40),
+      shortDescription: result.shortDescription?.slice(0, 60),
+    });
+    return result;
   }, [orgData]);
 
   // ── Mutations ──────────────────────────────────────────────────────────────
-  const updateMutation = trpc.organization.info.update.useMutation({
-    onSuccess: (result) => {
-      // 1. Read the current query cache to use as the base for optimistic data.
-      const cachedQueryData = indexerUtils.organization.byDid.getData({ did });
-      const cachedOrg = cachedQueryData?.org as GraphQLOrgInfoItem | null | undefined;
-      if (!cachedOrg?.record) {
-        // Shouldn't happen, but fall back to just clearing edit mode
-        onSaveSuccess();
-        setMode(null);
-        void indexerUtils.organization.byDid.invalidate({ did });
-        return;
-      }
-
-      // 2. Build optimistic image URLs: object URL if a new file was uploaded,
-      //    otherwise keep whatever was already in the cache.
-      //    Clean up any previous object URLs to avoid memory leaks.
-      for (const url of objectUrlsRef.current) {
-        URL.revokeObjectURL(url);
-      }
-      objectUrlsRef.current = [];
-
-      const currentRecord = cachedOrg.record;
-      let optimisticLogo = currentRecord.logo;
-      let optimisticCoverImage = currentRecord.coverImage;
-
-      if (edits.logo) {
-        const logoUrl = URL.createObjectURL(edits.logo);
-        objectUrlsRef.current.push(logoUrl);
-        optimisticLogo = {
-          cid: currentRecord.logo?.cid ?? null,
-          mimeType: (edits.logo.type || currentRecord.logo?.mimeType) ?? null,
-          size: edits.logo.size ?? currentRecord.logo?.size ?? null,
-          uri: logoUrl,
-        };
-      }
-
-      if (edits.coverImage) {
-        const coverUrl = URL.createObjectURL(edits.coverImage);
-        objectUrlsRef.current.push(coverUrl);
-        optimisticCoverImage = {
-          cid: currentRecord.coverImage?.cid ?? null,
-          mimeType: (edits.coverImage.type || currentRecord.coverImage?.mimeType) ?? null,
-          size: edits.coverImage.size ?? currentRecord.coverImage?.size ?? null,
-          uri: coverUrl,
-        };
-      }
-
-      // 3. Build optimistic values from the mutation result (authoritative for
-      //    text/scalar fields) and the edit state (for images).
-      const rec = result.record;
-
-      // 4. Cancel any in-flight or queued refetches BEFORE setting optimistic
-      //    data. With staleTime: 0 (the global default), React Query considers
-      //    data stale immediately and will trigger a background refetch on any
-      //    re-render (e.g. from the URL change below). That refetch would return
-      //    stale indexer data and overwrite our optimistic update. Cancelling
-      //    first ensures no pending fetch can race against us.
-      void indexerUtils.organization.byDid.cancel({ did });
-
-      // 5. Update the query cache directly. This is the React Query "true
-      //    optimistic update" pattern — the cache is the single source of truth,
-      //    and our useMemo above will recompute `serverData` immediately.
-      //
-      //    The updater receives the exact cache type and returns the same shape.
-      //    Only specific record fields are overridden — everything else (metadata,
-      //    activities, creatorInfo) passes through unchanged.
-      indexerUtils.organization.byDid.setData({ did }, (prev) => {
-        if (!prev?.org?.record) return prev;
-        const prevRecord = prev.org.record;
-        return {
-          ...prev,
-          org: {
-            ...prev.org,
-            record: {
-              ...prevRecord,
-              displayName: rec.displayName ?? prevRecord.displayName,
-              shortDescription: rec.shortDescription ?? prevRecord.shortDescription,
-              longDescription: rec.longDescription ?? prevRecord.longDescription,
-              country: rec.country ?? prevRecord.country,
-              website: rec.website ?? prevRecord.website,
-              startDate: rec.startDate ?? prevRecord.startDate,
-              visibility: rec.visibility ?? prevRecord.visibility,
-              logo: optimisticLogo,
-              coverImage: optimisticCoverImage,
-            },
-          },
-        };
-      });
-
-      // 6. Reset edit state and clear edit mode.
-      onSaveSuccess();
-      setMode(null);
-
-      // 7. Invalidate after a generous delay so the indexer has time to process
-      //    the update. The query cache already holds the optimistic data, so the
-      //    user never sees stale values. When the refetch arrives with real CDN
-      //    URLs, it simply replaces the object URLs.
-      //
-      //    IMPORTANT: We also cancel again right before invalidating. Between
-      //    steps 4–7, React Query may have scheduled another automatic refetch
-      //    (e.g. from refetchOnWindowFocus, refetchOnMount on re-render, or
-      //    staleTime expiring). Cancelling ensures only our controlled invalidate
-      //    triggers the actual network request.
-      setTimeout(() => {
-        void indexerUtils.organization.byDid.cancel({ did }).then(() => {
-          void indexerUtils.organization.byDid.invalidate({ did });
-        });
-      }, INVALIDATION_DELAY_MS);
-    },
-    onError: (mutationErr) => {
-      setSaving(false);
-      setSaveError(formatError(mutationErr));
-    },
-  });
+  const updateMutation = trpc.organization.info.update.useMutation();
 
   // ── Save handler ───────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     if (!serverData || !hasChanges() || isSaving) return;
+
+    log("SAVE:start", { editedFields: Object.keys(edits).filter((k) => edits[k as keyof typeof edits] !== null) });
 
     setSaving(true);
     setSaveError(null);
@@ -327,12 +268,147 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
         data.coverImage = { image: await toSerializableFile(edits.coverImage) };
       }
 
-      updateMutation.mutate({ data });
+      log("SAVE:mutateAsync sending", { dataKeys: Object.keys(data) });
+
+      // ── Send mutation and handle result inline ──────────────────────────
+      // Using mutateAsync (instead of mutate + onSuccess) so we can properly
+      // await cancel() before writing optimistic data to the cache.
+      const result = await updateMutation.mutateAsync({ data });
+
+      log("SAVE:mutateAsync resolved", {
+        resultDisplayName: result.record?.displayName,
+        resultShortDesc: typeof result.record?.shortDescription === "string"
+          ? (result.record.shortDescription as string).slice(0, 60)
+          : "[object/null]",
+      });
+
+      // ── Apply optimistic update to query cache ──────────────────────────
+      const cachedQueryData = indexerUtils.organization.byDid.getData({ did });
+      const cachedOrg = cachedQueryData?.org as GraphQLOrgInfoItem | null | undefined;
+      if (!cachedOrg?.record) {
+        log("SAVE:WARN no cached org record — fallback invalidate");
+        // Shouldn't happen, but fall back to just clearing edit mode
+        onSaveSuccess();
+        setMode(null);
+        void indexerUtils.organization.byDid.invalidate({ did });
+        return;
+      }
+
+      log("SAVE:cache before setData", {
+        cachedDisplayName: cachedOrg.record.displayName,
+      });
+
+      // Clean up any previous object URLs to avoid memory leaks.
+      for (const url of objectUrlsRef.current) {
+        URL.revokeObjectURL(url);
+      }
+      objectUrlsRef.current = [];
+
+      const currentRecord = cachedOrg.record;
+      let optimisticLogo = currentRecord.logo;
+      let optimisticCoverImage = currentRecord.coverImage;
+
+      if (edits.logo) {
+        const logoUrl = URL.createObjectURL(edits.logo);
+        objectUrlsRef.current.push(logoUrl);
+        optimisticLogo = {
+          cid: currentRecord.logo?.cid ?? null,
+          mimeType: (edits.logo.type || currentRecord.logo?.mimeType) ?? null,
+          size: edits.logo.size ?? currentRecord.logo?.size ?? null,
+          uri: logoUrl,
+        };
+      }
+
+      if (edits.coverImage) {
+        const coverUrl = URL.createObjectURL(edits.coverImage);
+        objectUrlsRef.current.push(coverUrl);
+        optimisticCoverImage = {
+          cid: currentRecord.coverImage?.cid ?? null,
+          mimeType: (edits.coverImage.type || currentRecord.coverImage?.mimeType) ?? null,
+          size: edits.coverImage.size ?? currentRecord.coverImage?.size ?? null,
+          uri: coverUrl,
+        };
+      }
+
+      const rec = result.record;
+
+      // 1. Enable the optimistic guard BEFORE cancelling/setting data.
+      //    This flips the query options to staleTime: Infinity and disables
+      //    all automatic refetches, so React Query cannot schedule any
+      //    background fetches that would overwrite our optimistic data.
+      log("SAVE:guard ON");
+      setOptimisticGuard(true);
+
+      // 2. Await cancel() — this ensures any in-flight refetch is fully
+      //    aborted before we write to the cache. The previous approach used
+      //    `void cancel()` (fire-and-forget), which allowed in-flight fetches
+      //    to resolve and overwrite optimistic data almost immediately.
+      log("SAVE:cancel() awaiting...");
+      await indexerUtils.organization.byDid.cancel({ did });
+      log("SAVE:cancel() done");
+
+      // 3. Update the query cache directly — single source of truth.
+      log("SAVE:setData() calling", {
+        newDisplayName: rec.displayName,
+        newShortDesc: typeof rec.shortDescription === "string"
+          ? (rec.shortDescription as string).slice(0, 60)
+          : "[object/null]",
+      });
+      indexerUtils.organization.byDid.setData({ did }, (prev) => {
+        log("SAVE:setData() updater executing", {
+          prevDisplayName: prev?.org?.record?.displayName,
+        });
+        if (!prev?.org?.record) return prev;
+        const prevRecord = prev.org.record;
+        return {
+          ...prev,
+          org: {
+            ...prev.org,
+            record: {
+              ...prevRecord,
+              displayName: rec.displayName ?? prevRecord.displayName,
+              shortDescription: rec.shortDescription ?? prevRecord.shortDescription,
+              longDescription: rec.longDescription ?? prevRecord.longDescription,
+              country: rec.country ?? prevRecord.country,
+              website: rec.website ?? prevRecord.website,
+              startDate: rec.startDate ?? prevRecord.startDate,
+              visibility: rec.visibility ?? prevRecord.visibility,
+              logo: optimisticLogo,
+              coverImage: optimisticCoverImage,
+            },
+          },
+        };
+      });
+
+      // Verify cache was actually updated
+      const verifyData = indexerUtils.organization.byDid.getData({ did });
+      log("SAVE:setData() verify", {
+        cachedDisplayNameAfter: verifyData?.org?.record?.displayName,
+      });
+
+      // 4. Reset edit state and clear edit mode.
+      log("SAVE:onSaveSuccess + setMode(null)");
+      onSaveSuccess();
+      setMode(null);
+
+      // 5. Lift the optimistic guard after a generous delay, then invalidate
+      //    so the cache is refreshed with real CDN URLs from the indexer.
+      //    The guard ensures no automatic refetch can race against our
+      //    optimistic data during this window.
+      log("SAVE:scheduling delayed invalidate", { delayMs: INVALIDATION_DELAY_MS });
+      setTimeout(() => {
+        log("SAVE:delayed invalidate firing — guard OFF");
+        setOptimisticGuard(false);
+        void indexerUtils.organization.byDid.invalidate({ did });
+      }, INVALIDATION_DELAY_MS);
+
+      log("SAVE:complete ✓");
     } catch (err) {
+      log("SAVE:ERROR", err);
       setSaving(false);
       setSaveError(formatError(err));
     }
-  }, [serverData, edits, hasChanges, isSaving, setSaving, setSaveError, updateMutation]);
+  }, [serverData, edits, hasChanges, isSaving, setSaving, setSaveError, onSaveSuccess, setMode, updateMutation, indexerUtils, did]);
 
   // ── Render states ──────────────────────────────────────────────────────────
 
