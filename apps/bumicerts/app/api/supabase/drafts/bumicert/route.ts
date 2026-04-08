@@ -4,12 +4,29 @@ import { auth } from "@/lib/auth";
 import type { Json } from "../../types";
 import {
   draftBumicertDataSchemaV0,
+  draftBumicertDataSchemaV1,
   getDraftBumicertRequestSchema,
   createDraftBumicertRequestSchema,
   updateDraftBumicertRequestSchema,
   deleteDraftBumicertRequestSchema,
 } from "./schema";
 import { apiError } from "@/lib/api/errors";
+
+/**
+ * Parse and validate draft data for a given version.
+ * Returns the validated data or null if validation fails.
+ */
+function parseDraftData(version: number, data: unknown) {
+  if (version === 0) {
+    const result = draftBumicertDataSchemaV0.safeParse(data);
+    return result.success ? result.data : null;
+  }
+  if (version === 1) {
+    const result = draftBumicertDataSchemaV1.safeParse(data);
+    return result.success ? result.data : null;
+  }
+  return null;
+}
 
 /**
  * Helper function to get the authenticated user's DID from the OAuth session.
@@ -106,7 +123,17 @@ export async function GET(req: NextRequest) {
           const safeParseResult = draftBumicertDataSchemaV0.safeParse(
             draft.data
           );
-          if (!safeParseResult.success) return;
+          if (!safeParseResult.success) return null;
+          return {
+            ...draft,
+            data: safeParseResult.data,
+          };
+        }
+        if (draft.version === 1) {
+          const safeParseResult = draftBumicertDataSchemaV1.safeParse(
+            draft.data
+          );
+          if (!safeParseResult.success) return null;
           return {
             ...draft,
             data: safeParseResult.data,
@@ -114,7 +141,9 @@ export async function GET(req: NextRequest) {
         }
         return null;
       })
-      .filter((draft) => !!draft);
+      .filter(
+        (draft): draft is NonNullable<typeof draft> => draft !== null
+      );
     return NextResponse.json(
       { drafts: typedDrafts, success: true },
       { status: 200 }
@@ -176,25 +205,15 @@ export async function POST(req: NextRequest) {
 
       // Validate the updated draft data
       const draft = updateResponse.data;
-      if (draft.version === 0) {
-        const safeParseResult = draftBumicertDataSchemaV0.safeParse(draft.data);
-        if (!safeParseResult.success) {
-          throw new Error("Invalid draft data format");
-        }
-        return NextResponse.json(
-          {
-            draft: {
-              ...draft,
-              data: safeParseResult.data,
-            },
-            success: true,
-          },
-          { status: 200 }
-        );
+      const validatedUpdate = parseDraftData(draft.version, draft.data);
+      if (!validatedUpdate) {
+        throw new Error("Invalid draft data format");
       }
-
       return NextResponse.json(
-        { draft: draft, success: true },
+        {
+          draft: { ...draft, data: validatedUpdate },
+          success: true,
+        },
         { status: 200 }
       );
     } else {
@@ -232,25 +251,15 @@ export async function POST(req: NextRequest) {
 
       // Validate the created draft data
       const draft = insertResponse.data;
-      if (draft.version === 0) {
-        const safeParseResult = draftBumicertDataSchemaV0.safeParse(draft.data);
-        if (!safeParseResult.success) {
-          throw new Error("Invalid draft data format");
-        }
-        return NextResponse.json(
-          {
-            draft: {
-              ...draft,
-              data: safeParseResult.data,
-            },
-            success: true,
-          },
-          { status: 201 }
-        );
+      const validatedCreate = parseDraftData(draft.version, draft.data);
+      if (!validatedCreate) {
+        throw new Error("Invalid draft data format");
       }
-
       return NextResponse.json(
-        { draft: draft, success: true },
+        {
+          draft: { ...draft, data: validatedCreate },
+          success: true,
+        },
         { status: 201 }
       );
     }

@@ -1,7 +1,6 @@
 "use client";
 
 import { create } from "zustand";
-import type { OrganizationData } from "@/lib/types";
 import type { LeafletLinearDocument } from "@gainforest/leaflet-react";
 import type { Facet } from "@gainforest/leaflet-react/richtext";
 
@@ -11,7 +10,7 @@ import type { Facet } from "@gainforest/leaflet-react/richtext";
  * Fields that can be modified in edit mode.
  * `null` means "unchanged from the server value".
  */
-type EditableFields = {
+export type EditableFields = {
   displayName: string | null;
   shortDescription: string | null;
   /**
@@ -37,8 +36,6 @@ type EditableFields = {
 // ─── Store state ─────────────────────────────────────────────────────────────
 
 type UploadDashboardState = {
-  /** Current server-fetched data — null before first load. */
-  serverData: OrganizationData | null;
   /** Whether a save mutation is in flight. */
   isSaving: boolean;
   /** Error message from the last save attempt (null = no error). */
@@ -50,8 +47,6 @@ type UploadDashboardState = {
 // ─── Store actions ────────────────────────────────────────────────────────────
 
 type UploadDashboardActions = {
-  /** Called once initial data is fetched by the client component. */
-  setServerData: (data: OrganizationData) => void;
   /** Discard buffered edits (called on cancel). */
   cancelEditing: () => void;
   /** Update a single editable field. */
@@ -64,8 +59,8 @@ type UploadDashboardActions = {
   setSaveError: (error: string | null) => void;
   /**
    * Called on successful save — reset edits and isSaving flag.
-   * The caller is responsible for invalidating the query so the page
-   * refetches fresh data from the indexer.
+   * The caller is responsible for updating the query cache so the page
+   * shows the new data immediately.
    */
   onSaveSuccess: () => void;
 };
@@ -91,14 +86,11 @@ export const useUploadDashboardStore = create<
   UploadDashboardState & UploadDashboardActions
 >((set, get) => ({
   // State
-  serverData: null,
   isSaving: false,
   saveError: null,
   edits: { ...EMPTY_EDITS },
 
   // Actions
-  setServerData: (data) => set({ serverData: data }),
-
   cancelEditing: () =>
     set({ edits: { ...EMPTY_EDITS }, saveError: null }),
 

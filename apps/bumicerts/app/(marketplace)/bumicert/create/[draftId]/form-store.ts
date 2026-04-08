@@ -219,21 +219,37 @@ const createStorageWithExpiry = (): StateStorage => ({
   setItem: (name: string, value: string): void => {
     if (typeof window === "undefined") return;
     
-    // IMPORTANT: Don't overwrite localStorage until the store is hydrated
-    // This prevents the initial empty state from overwriting saved data
+    // IMPORTANT: Don't overwrite localStorage until the store is hydrated.
+    // This prevents the initial empty state from overwriting saved data.
+    // However, if the form contains meaningful user data, allow the save
+    // even if the hydration flag wasn't set (edge-case recovery).
     try {
       const parsed = JSON.parse(value);
       const isHydrated = parsed?.state?.isHydrated;
-      if (!isHydrated) {
-        // Don't save if not hydrated yet - this prevents overwriting existing backup
+      if (isHydrated) {
+        localStorage.setItem(name, value);
         return;
       }
+      
+      // Not hydrated — only allow save if form has meaningful data
+      const formValues = parsed?.state?.formValues;
+      const hasProjectName =
+        typeof formValues?.[0]?.projectName === "string" &&
+        formValues[0].projectName.length > 0;
+      const hasDescription =
+        typeof formValues?.[1]?.shortDescription === "string" &&
+        formValues[1].shortDescription.length > 0;
+      if (!hasProjectName && !hasDescription) {
+        // Block empty-state saves before hydration
+        return;
+      }
+      
+      // Has meaningful data, allow the save
+      localStorage.setItem(name, value);
     } catch {
       // If we can't parse, don't save
       return;
     }
-    
-    localStorage.setItem(name, value);
   },
   removeItem: (name: string): void => {
     if (typeof window === "undefined") return;

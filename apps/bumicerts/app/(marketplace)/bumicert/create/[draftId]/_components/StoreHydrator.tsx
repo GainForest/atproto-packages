@@ -5,6 +5,7 @@ import {
   Step2FormValues,
   Step3FormValues,
   useFormStore,
+  getPersistedFormValues,
 } from "../form-store";
 import { textToLinearDocument } from "@/lib/utils/linearDocument";
 import { LeafletLinearDocumentSchema } from "@gainforest/leaflet-react/schemas";
@@ -226,12 +227,20 @@ const StoreHydrator = ({
         }
       } catch (error) {
         console.error("Error hydrating store:", error);
-        pushModal({
-          id: CreateBumicertHydrationErrorModalId,
-          content: <CreateBumicertHydrationErrorModalContent />,
-        });
-        show();
-        hydrate(null);
+        
+        // Try recovering from localStorage backup before falling back to empty state
+        const localBackup = getPersistedFormValues();
+        if (localBackup) {
+          console.info("Recovered form data from localStorage backup");
+          hydrate(localBackup);
+        } else {
+          pushModal({
+            id: CreateBumicertHydrationErrorModalId,
+            content: <CreateBumicertHydrationErrorModalContent />,
+          });
+          show();
+          hydrate(null);
+        }
       }
     };
 

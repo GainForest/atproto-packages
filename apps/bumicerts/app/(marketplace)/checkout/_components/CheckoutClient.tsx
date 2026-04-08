@@ -187,6 +187,13 @@ export function CheckoutClient() {
     );
   }, []);
 
+  // Handle setting all items to the same amount
+  const handleSetAllAmounts = useCallback((amount: number) => {
+    setCheckoutItems((prev) =>
+      prev.map((item) => ({ ...item, amount }))
+    );
+  }, []);
+
   // Handle remove item
   const handleRemoveItem = useCallback(
     (id: string) => {
@@ -289,6 +296,7 @@ export function CheckoutClient() {
             items={checkoutItems}
             onItemAmountChange={handleItemAmountChange}
             onRemoveItem={handleRemoveItem}
+            onSetAllAmounts={handleSetAllAmounts}
           />
         )}
 

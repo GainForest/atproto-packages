@@ -19,15 +19,15 @@
  *   - website / startDate are preserved unless explicitly changed
  *
  * On success:
- *   1. The mode param is cleared (returns to view mode).
- *   2. The query cache is updated immediately with the best data we have
- *      (text fields from the mutation result + object URLs for new images).
- *      This prevents the user seeing stale data while the indexer catches up.
- *   3. The query is invalidated so a background refetch replaces the
- *      optimistic data with real CDN URLs once the indexer has processed it.
+ *   1. The query cache is updated immediately via setQueryData with optimistic
+ *      data (text fields from the mutation result + object URLs for new images).
+ *      This ensures the user never sees stale data, even across URL changes.
+ *   2. The mode param is cleared (returns to view mode).
+ *   3. The query is invalidated after a delay so a background refetch replaces
+ *      the optimistic data with real CDN URLs once the indexer has processed it.
  */
 
-import { useEffect, useCallback, useRef } from "react";
+import { useMemo, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { trpc } from "@/lib/trpc/client";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
@@ -58,27 +58,13 @@ interface UploadDashboardClientProps {
   did: string;
 }
 
-type PendingIndexerSync = {
-  expected: Partial<
-    Pick<
-      OrganizationData,
-      | "displayName"
-      | "shortDescription"
-      | "longDescription"
-      | "country"
-      | "website"
-      | "startDate"
-      | "visibility"
-    >
-  >;
-  previousLogoUrl: string | null;
-  previousCoverImageUrl: string | null;
-  awaitLogoUrl: boolean;
-  awaitCoverImageUrl: boolean;
-  imageSyncDeadlineAt: number;
-};
-
-const IMAGE_SYNC_FALLBACK_MS = 20_000;
+/**
+ * Delay before invalidating the query after a successful save.
+ * Gives the indexer time to process the update so the first refetch is more
+ * likely to return current data. Even if it doesn't, the optimistic data
+ * in the query cache is preserved until a matching refetch arrives.
+ */
+const INVALIDATION_DELAY_MS = 2_000;
 
 function normalizeLongDescriptionBlobRefs(
   doc: OrganizationData["longDescription"]
@@ -118,208 +104,155 @@ function normalizeLongDescriptionBlobRefs(
   };
 }
 
-function sameLongDescription(
-  left: OrganizationData["longDescription"] | undefined,
-  right: OrganizationData["longDescription"] | undefined
-): boolean {
-  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
-}
-
-function matchesPendingIndexerSync(
-  org: OrganizationData,
-  pending: PendingIndexerSync
-): boolean {
-  const imageSyncTimedOut = Date.now() >= pending.imageSyncDeadlineAt;
-
-  if (
-    pending.expected.displayName !== undefined &&
-    org.displayName !== pending.expected.displayName
-  ) {
-    return false;
-  }
-
-  if (
-    pending.expected.shortDescription !== undefined &&
-    org.shortDescription !== pending.expected.shortDescription
-  ) {
-    return false;
-  }
-
-  if (
-    pending.expected.longDescription !== undefined &&
-    !sameLongDescription(org.longDescription, pending.expected.longDescription)
-  ) {
-    return false;
-  }
-
-  if (pending.expected.country !== undefined && org.country !== pending.expected.country) {
-    return false;
-  }
-
-  if (pending.expected.website !== undefined && org.website !== pending.expected.website) {
-    return false;
-  }
-
-  if (
-    pending.expected.startDate !== undefined &&
-    org.startDate !== pending.expected.startDate
-  ) {
-    return false;
-  }
-
-  if (
-    pending.expected.visibility !== undefined &&
-    org.visibility !== pending.expected.visibility
-  ) {
-    return false;
-  }
-
-  if (
-    pending.awaitLogoUrl &&
-    !imageSyncTimedOut &&
-    (!org.logoUrl || org.logoUrl === pending.previousLogoUrl)
-  ) {
-    return false;
-  }
-
-  if (
-    pending.awaitCoverImageUrl &&
-    !imageSyncTimedOut &&
-    (!org.coverImageUrl || org.coverImageUrl === pending.previousCoverImageUrl)
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
   const indexerUtils = indexerTrpc.useUtils();
   const [mode, setMode] = useUploadMode();
   const isEditing = mode === "edit";
-  const lastServerSyncAt = useRef(0);
-  const pendingIndexerSyncRef = useRef<PendingIndexerSync | null>(null);
 
-  // ── Store ───────────────────────────────────────────────────────────────────
-  const serverData = useUploadDashboardStore((s) => s.serverData);
+  // Refs for object URLs that need cleanup
+  const objectUrlsRef = useRef<string[]>([]);
+
+  // ── Store (edit-only state) ────────────────────────────────────────────────
   const isSaving = useUploadDashboardStore((s) => s.isSaving);
-  const setServerData = useUploadDashboardStore((s) => s.setServerData);
   const setSaving = useUploadDashboardStore((s) => s.setSaving);
   const setSaveError = useUploadDashboardStore((s) => s.setSaveError);
   const onSaveSuccess = useUploadDashboardStore((s) => s.onSaveSuccess);
   const edits = useUploadDashboardStore((s) => s.edits);
   const hasChanges = useUploadDashboardStore((s) => s.hasChanges);
 
-  // ── Data fetch ──────────────────────────────────────────────────────────────
+  // ── Data fetch ─────────────────────────────────────────────────────────────
   const {
     data: orgData,
-    dataUpdatedAt,
     isLoading,
     error,
-  } = indexerTrpc.organization.byDid.useQuery({ did });
+  } = indexerTrpc.organization.byDid.useQuery({ did }, {
+    // Override the global staleTime: 0 so that optimistic data set via
+    // setQueryData is treated as fresh and doesn't trigger an immediate
+    // background refetch on the next render (e.g. after URL change).
+    // We control refetches explicitly via invalidate() after a delay.
+    staleTime: 10_000,
+  });
   const hasFetchedOrg = orgData?.org !== null && orgData?.org !== undefined;
 
-  useEffect(() => {
-    if (!orgData?.org || dataUpdatedAt === 0 || lastServerSyncAt.current === dataUpdatedAt) {
-      return;
-    }
+  // Derive OrganizationData from the query cache — single source of truth.
+  // No useEffect sync, no Zustand serverData. When setQueryData updates the
+  // cache, this memo recomputes and the component re-renders with new data.
+  const serverData = useMemo(() => {
+    if (!orgData?.org) return null;
+    return orgInfoToOrganizationData(orgData.org as GraphQLOrgInfoItem, 0);
+  }, [orgData]);
 
-    const nextServerData = orgInfoToOrganizationData(orgData.org as GraphQLOrgInfoItem, 0);
-    const pendingIndexerSync = pendingIndexerSyncRef.current;
-
-    if (pendingIndexerSync && !matchesPendingIndexerSync(nextServerData, pendingIndexerSync)) {
-      return;
-    }
-
-    pendingIndexerSyncRef.current = null;
-    lastServerSyncAt.current = dataUpdatedAt;
-    setServerData(nextServerData);
-  }, [dataUpdatedAt, orgData, setServerData]);
-
-  // ── Mutations ───────────────────────────────────────────────────────────────
+  // ── Mutations ──────────────────────────────────────────────────────────────
   const updateMutation = trpc.organization.info.update.useMutation({
     onSuccess: (result) => {
-      // 1. Immediately update the query cache with the best data available:
-      //    - Text/scalar fields come from the mutation result record (authoritative).
-      //    - Image URLs: if the user uploaded a new file, create a temporary object URL
-      //      for instant preview. The background refetch will replace it with the real
-      //      CDN URL once the indexer processes the new blob.
-      //    - Fields the user didn't change fall back to the existing serverData values.
-      const cachedOrg = indexerUtils.organization.byDid.getData({ did });
-      const current: OrganizationData | null | undefined = cachedOrg?.org
-        ? orgInfoToOrganizationData(cachedOrg.org as GraphQLOrgInfoItem, 0)
-        : null;
-      if (current) {
-        const rec = result.record;
-        const shortDesc = rec.shortDescription;
+      // 1. Read the current query cache to use as the base for optimistic data.
+      const cachedQueryData = indexerUtils.organization.byDid.getData({ did });
+      const cachedOrg = cachedQueryData?.org as GraphQLOrgInfoItem | null | undefined;
+      if (!cachedOrg?.record) {
+        // Shouldn't happen, but fall back to just clearing edit mode
+        onSaveSuccess();
+        setMode(null);
+        void indexerUtils.organization.byDid.invalidate({ did });
+        return;
+      }
 
-        // Derive optimistic image URLs: object URL if a new file was uploaded,
-        // otherwise keep whatever was already in the cache.
-        const logoUrl = edits.logo
-          ? URL.createObjectURL(edits.logo)
-          : current.logoUrl;
-        const coverImageUrl = edits.coverImage
-          ? URL.createObjectURL(edits.coverImage)
-          : current.coverImageUrl;
+      // 2. Build optimistic image URLs: object URL if a new file was uploaded,
+      //    otherwise keep whatever was already in the cache.
+      //    Clean up any previous object URLs to avoid memory leaks.
+      for (const url of objectUrlsRef.current) {
+        URL.revokeObjectURL(url);
+      }
+      objectUrlsRef.current = [];
 
-        const optimistic: OrganizationData = {
-          ...current,
-          displayName: rec.displayName ?? current.displayName,
-          shortDescription: typeof shortDesc?.text === "string"
-            ? shortDesc.text
-            : current.shortDescription,
-          longDescription: rec.longDescription
-            ? (rec.longDescription as unknown as OrganizationData["longDescription"])
-            : current.longDescription,
-          country: rec.country ?? current.country,
-          website: rec.website ?? current.website,
-          startDate: rec.startDate ?? current.startDate,
-          visibility: (rec.visibility as OrganizationData["visibility"]) ?? current.visibility,
-          logoUrl,
-          coverImageUrl,
-        };
-        // Store the optimistic OrganizationData in the upload dashboard store
-        // so the UI updates instantly (the tRPC cache holds the raw org data shape,
-        // not the OrganizationData shape, so we update the store directly)
-        setServerData(optimistic);
+      const currentRecord = cachedOrg.record;
+      let optimisticLogo = currentRecord.logo;
+      let optimisticCoverImage = currentRecord.coverImage;
 
-        pendingIndexerSyncRef.current = {
-          expected: {
-            ...(edits.displayName !== null
-              ? { displayName: optimistic.displayName }
-              : {}),
-            ...(edits.shortDescription !== null
-              ? { shortDescription: optimistic.shortDescription }
-              : {}),
-            ...(edits.longDescription !== null
-              ? { longDescription: optimistic.longDescription }
-              : {}),
-            ...(edits.country !== null ? { country: optimistic.country } : {}),
-            ...(edits.website !== null ? { website: optimistic.website } : {}),
-            ...(edits.startDate !== null ? { startDate: optimistic.startDate } : {}),
-            ...(edits.visibility !== null
-              ? { visibility: optimistic.visibility }
-              : {}),
-          },
-          previousLogoUrl: current.logoUrl ?? null,
-          previousCoverImageUrl: current.coverImageUrl ?? null,
-          awaitLogoUrl: edits.logo !== null,
-          awaitCoverImageUrl: edits.coverImage !== null,
-          imageSyncDeadlineAt: Date.now() + IMAGE_SYNC_FALLBACK_MS,
+      if (edits.logo) {
+        const logoUrl = URL.createObjectURL(edits.logo);
+        objectUrlsRef.current.push(logoUrl);
+        optimisticLogo = {
+          cid: currentRecord.logo?.cid ?? null,
+          mimeType: (edits.logo.type || currentRecord.logo?.mimeType) ?? null,
+          size: edits.logo.size ?? currentRecord.logo?.size ?? null,
+          uri: logoUrl,
         };
       }
 
-      // 2. Clear edit mode — return to view mode.
+      if (edits.coverImage) {
+        const coverUrl = URL.createObjectURL(edits.coverImage);
+        objectUrlsRef.current.push(coverUrl);
+        optimisticCoverImage = {
+          cid: currentRecord.coverImage?.cid ?? null,
+          mimeType: (edits.coverImage.type || currentRecord.coverImage?.mimeType) ?? null,
+          size: edits.coverImage.size ?? currentRecord.coverImage?.size ?? null,
+          uri: coverUrl,
+        };
+      }
+
+      // 3. Build optimistic values from the mutation result (authoritative for
+      //    text/scalar fields) and the edit state (for images).
+      const rec = result.record;
+
+      // 4. Cancel any in-flight or queued refetches BEFORE setting optimistic
+      //    data. With staleTime: 0 (the global default), React Query considers
+      //    data stale immediately and will trigger a background refetch on any
+      //    re-render (e.g. from the URL change below). That refetch would return
+      //    stale indexer data and overwrite our optimistic update. Cancelling
+      //    first ensures no pending fetch can race against us.
+      void indexerUtils.organization.byDid.cancel({ did });
+
+      // 5. Update the query cache directly. This is the React Query "true
+      //    optimistic update" pattern — the cache is the single source of truth,
+      //    and our useMemo above will recompute `serverData` immediately.
+      //
+      //    The updater receives the exact cache type and returns the same shape.
+      //    Only specific record fields are overridden — everything else (metadata,
+      //    activities, creatorInfo) passes through unchanged.
+      indexerUtils.organization.byDid.setData({ did }, (prev) => {
+        if (!prev?.org?.record) return prev;
+        const prevRecord = prev.org.record;
+        return {
+          ...prev,
+          org: {
+            ...prev.org,
+            record: {
+              ...prevRecord,
+              displayName: rec.displayName ?? prevRecord.displayName,
+              shortDescription: rec.shortDescription ?? prevRecord.shortDescription,
+              longDescription: rec.longDescription ?? prevRecord.longDescription,
+              country: rec.country ?? prevRecord.country,
+              website: rec.website ?? prevRecord.website,
+              startDate: rec.startDate ?? prevRecord.startDate,
+              visibility: rec.visibility ?? prevRecord.visibility,
+              logo: optimisticLogo,
+              coverImage: optimisticCoverImage,
+            },
+          },
+        };
+      });
+
+      // 6. Reset edit state and clear edit mode.
+      onSaveSuccess();
       setMode(null);
 
-      // 3. Reset the store's edit state and saving flag.
-      onSaveSuccess();
-
-      // 4. Invalidate in the background so the real indexer data replaces the
-      //    optimistic state once it's available (mainly for image CDN URLs).
-      void indexerUtils.organization.byDid.invalidate({ did });
+      // 7. Invalidate after a generous delay so the indexer has time to process
+      //    the update. The query cache already holds the optimistic data, so the
+      //    user never sees stale values. When the refetch arrives with real CDN
+      //    URLs, it simply replaces the object URLs.
+      //
+      //    IMPORTANT: We also cancel again right before invalidating. Between
+      //    steps 4–7, React Query may have scheduled another automatic refetch
+      //    (e.g. from refetchOnWindowFocus, refetchOnMount on re-render, or
+      //    staleTime expiring). Cancelling ensures only our controlled invalidate
+      //    triggers the actual network request.
+      setTimeout(() => {
+        void indexerUtils.organization.byDid.cancel({ did }).then(() => {
+          void indexerUtils.organization.byDid.invalidate({ did });
+        });
+      }, INVALIDATION_DELAY_MS);
     },
     onError: (mutationErr) => {
       setSaving(false);
@@ -327,7 +260,7 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
     },
   });
 
-  // ── Save handler ────────────────────────────────────────────────────────────
+  // ── Save handler ───────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     if (!serverData || !hasChanges() || isSaving) return;
 
@@ -401,7 +334,7 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
     }
   }, [serverData, edits, hasChanges, isSaving, setSaving, setSaveError, updateMutation]);
 
-  // ── Render states ───────────────────────────────────────────────────────────
+  // ── Render states ──────────────────────────────────────────────────────────
 
   if (isLoading) {
     return <UploadDashboardSkeleton />;
@@ -430,12 +363,12 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
     );
   }
 
-  // Still waiting for serverData to be set in store after fetchedOrg arrives
+  // Still waiting for serverData to be derived from query
   if (!serverData) {
     return <UploadDashboardSkeleton />;
   }
 
-  // ── Edit mode ───────────────────────────────────────────────────────────────
+  // ── Edit mode ──────────────────────────────────────────────────────────────
 
   if (isEditing) {
     return (
@@ -468,7 +401,7 @@ export function UploadDashboardClient({ did }: UploadDashboardClientProps) {
     );
   }
 
-  // ── View mode ───────────────────────────────────────────────────────────────
+  // ── View mode ──────────────────────────────────────────────────────────────
 
   return (
     <Container className="pt-4 pb-8 space-y-2">
