@@ -643,6 +643,52 @@ export async function mapGainforestAcMultimedia(row: RecordRow) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// app.gainforest.dwc.dataset
+// ──────────────────────────────────────────────────────────────────────────
+
+export const GainforestDwcDatasetRecordType = builder.simpleObject("GainforestDwcDatasetRecord", {
+  description: "Pure payload for app.gainforest.dwc.dataset. A user-named dataset representing a batch of uploaded occurrence records.",
+  fields: (t) => ({
+        name: t.string({ nullable: true, description: "User-given name for the dataset (e.g. 'March 2025 Danum Valley Survey')." }),
+        description: t.string({ nullable: true, description: "Optional description of the dataset contents, methodology, or purpose." }),
+        recordCount: t.int({ nullable: true, description: "Number of occurrence records in this dataset. Set after upload completes." }),
+        establishmentMeans: t.string({ nullable: true, description: "Batch-level establishment means for all records in this dataset. Uses the GBIF controlled vocabulary." }),
+        createdAt: t.field({ type: "DateTime", nullable: true, description: "Timestamp of dataset creation in the ATProto PDS." }),
+  }),
+});
+
+export const GainforestDwcDatasetItemType = builder.simpleObject("GainforestDwcDatasetItem", {
+  description: "A record from app.gainforest.dwc.dataset.",
+  fields: (t) => ({
+    metadata:    t.field({ type: RecordMetaType }),
+    creatorInfo: t.field({ type: CreatorInfoType }),
+    record:      t.field({ type: GainforestDwcDatasetRecordType }),
+  }),
+});
+
+export const GainforestDwcDatasetPageType = builder.simpleObject("GainforestDwcDatasetPage", {
+  fields: (t) => ({
+    data:     t.field({ type: [GainforestDwcDatasetItemType] }),
+    pageInfo: t.field({ type: PageInfoType }),
+  }),
+});
+
+export async function mapGainforestDwcDataset(row: RecordRow) {
+  const p = payload(row);
+  return {
+    metadata:    rowToMeta(row),
+    creatorInfo: await resolveCreatorInfo(row.did),
+    record: {
+            name: s(p, "name"),
+            description: s(p, "description"),
+            recordCount: n(p, "recordCount"),
+            establishmentMeans: s(p, "establishmentMeans"),
+            createdAt: s(p, "createdAt"),
+    },
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // app.gainforest.dwc.event
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -2422,6 +2468,18 @@ builder.objectType(GainforestDwcNS, {
   name: "GainforestDwcNamespace",
   description: "GainforestDwcNamespace namespace (gainforest.dwc.*).",
   fields: (t) => ({
+    dataset: t.field({
+      type: GainforestDwcDatasetPageType,
+      description: "Paginated list of app.gainforest.dwc.dataset records.",
+      args: {
+        cursor: t.arg.string(),
+        limit: t.arg.int(),
+        where: t.arg({ type: WhereInputRef, required: false }),
+        sortBy: t.arg({ type: SortFieldEnum }),
+        order: t.arg({ type: SortOrderEnum }),
+      },
+      resolve: (_, args) => fetchCollectionPage("app.gainforest.dwc.dataset", args, mapGainforestDwcDataset),
+    }),
     event: t.field({
       type: GainforestDwcEventPageType,
       description: "Paginated list of app.gainforest.dwc.event records.",
