@@ -5,14 +5,15 @@
  * variables. Everywhere else must import from here.
  *
  * Priority (highest → lowest):
- *   1. NEXT_PUBLIC_BASE_URL          — explicit override. Set this in:
+ *   1. VERCEL_URL (preview only)     — On preview deployments, ALWAYS use the raw
+ *                                      deployment alias so OAuth redirects go back to
+ *                                      the preview, not the production custom domain.
+ *                                      This overrides NEXT_PUBLIC_BASE_URL intentionally.
+ *   2. NEXT_PUBLIC_BASE_URL          — explicit override. Set this in:
  *                                       • .env.local for local dev (e.g. http://127.0.0.1:3001
  *                                         or an ngrok tunnel URL)
  *                                       • Vercel "Production" env vars to pin a specific
  *                                         custom domain (e.g. https://alpha.fund.gainforest.app)
- *   2. VERCEL_URL (preview only)     — On preview deployments, use the raw deployment
- *                                      alias so OAuth redirects go back to the preview,
- *                                      not to the production custom domain.
  *   3. VERCEL_PROJECT_PRODUCTION_URL — Vercel system variable. The shortest production
  *                                      custom domain. Used for production deployments.
  *   4. VERCEL_URL                    — Vercel system variable. The raw deployment alias
@@ -39,17 +40,19 @@ import { clientEnv } from "@/lib/env/client";
  * Strips trailing slashes. Never includes a path segment.
  */
 export function getPublicUrl(): string | undefined {
-  // 1. Explicit override always wins (local dev, ngrok, etc.)
-  if (clientEnv.NEXT_PUBLIC_BASE_URL) {
-    return clientEnv.NEXT_PUBLIC_BASE_URL.trim().replace(/\/$/, "");
-  }
-
-  // 2. On Vercel preview deployments, use VERCEL_URL (the actual preview URL)
-  //    instead of VERCEL_PROJECT_PRODUCTION_URL (which is always the production
-  //    custom domain, even on preview deploys). This ensures OAuth redirect_uris
-  //    point back to the preview deployment, not production.
+  // 1. On Vercel preview deployments, ALWAYS use VERCEL_URL (the actual
+  //    preview deployment alias). This MUST come before the NEXT_PUBLIC_BASE_URL
+  //    check — otherwise a globally-set NEXT_PUBLIC_BASE_URL (e.g. set for
+  //    "All Environments" in the Vercel dashboard) would override the preview
+  //    URL. That causes OAuth redirect_uris to point to the production domain,
+  //    so after login the user is sent to production instead of the preview.
   if (serverEnv.VERCEL_ENV === "preview" && serverEnv.VERCEL_URL) {
     return `https://${serverEnv.VERCEL_URL.trim()}`;
+  }
+
+  // 2. Explicit override (local dev, ngrok, production custom domain, etc.)
+  if (clientEnv.NEXT_PUBLIC_BASE_URL) {
+    return clientEnv.NEXT_PUBLIC_BASE_URL.trim().replace(/\/$/, "");
   }
 
   // 3. Production: prefer the shortest custom domain, fall back to raw alias.
