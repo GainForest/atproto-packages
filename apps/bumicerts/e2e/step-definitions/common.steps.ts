@@ -5,12 +5,14 @@
  * - Health checks
  * - Navigation
  * - Page assertions
+ * - Authentication
  */
 
 import { Given, When, Then } from '@cucumber/cucumber'
 import { expect } from '@playwright/test'
 import type { AppWorld } from '../support/world.js'
 import { getPage, waitForAppReady } from '../support/utils.js'
+import { loginViaOAuth, logout, isAuthAvailable } from '../support/auth.js'
 
 /**
  * Health check: Verify the application is ready
@@ -60,4 +62,64 @@ Then('the page should be loaded', async function (this: AppWorld) {
 Then('the page title should contain {string}', async function (this: AppWorld, titlePart: string) {
   const page = getPage(this)
   await expect(page).toHaveTitle(new RegExp(titlePart, 'i'))
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Authentication Steps
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Authentication: Log in as the test user
+ *
+ * Automates the full OAuth login flow:
+ * 1. Opens login modal
+ * 2. Enters handle and selects PDS
+ * 3. Redirects to PDS authorization page
+ * 4. Enters password
+ * 5. Completes OAuth callback
+ *
+ * Requires E2E_TEST_HANDLE and E2E_TEST_PASSWORD in e2e/.env
+ */
+Given('I am logged in as the test user', async function (this: AppWorld) {
+  if (!isAuthAvailable(this)) {
+    return 'pending' as const
+  }
+  await loginViaOAuth(this)
+})
+
+/**
+ * Authentication: Log out
+ */
+Given('I am logged out', async function (this: AppWorld) {
+  await logout(this)
+})
+
+/**
+ * Assertion: Verify user is authenticated
+ */
+Then('I should be logged in', async function (this: AppWorld) {
+  const page = getPage(this)
+  // Check for presence of user menu or handle in the header
+  // Adjust selector based on your app's authenticated header structure
+  const userMenu = page.locator('[data-testid="user-menu"], [data-testid="user-avatar"]')
+  await expect(userMenu).toBeVisible({ timeout: 10000 })
+})
+
+/**
+ * Assertion: Verify user's handle appears in the header
+ */
+Then('I should see my handle in the header', async function (this: AppWorld) {
+  const page = getPage(this)
+  const { testHandle } = this.env
+  
+  if (!testHandle) {
+    throw new Error('E2E_TEST_HANDLE is not set')
+  }
+
+  // Extract just the username part (before the @domain)
+  const username = testHandle.split('.')[0] ?? testHandle
+
+  // Look for the username in the header (handle might be displayed without the domain)
+  const header = page.locator('header')
+  await expect(header).toContainText(username, { timeout: 10000 })
 })

@@ -11,7 +11,7 @@
  * - API response storage for assertions
  */
 
-import { World, type IWorldOptions } from '@cucumber/cucumber'
+import { World, setWorldConstructor, type IWorldOptions } from '@cucumber/cucumber'
 import type { Browser, BrowserContext, Page } from '@playwright/test'
 import { testEnv } from './env.js'
 
@@ -23,6 +23,9 @@ export interface AppWorld extends World {
   browser?: Browser
   context?: BrowserContext
   page?: Page
+
+  // Authentication state
+  isAuthenticated?: boolean
 
   // Generated test data
   testEmail?: string
@@ -45,6 +48,8 @@ export class CustomWorld extends World implements AppWorld {
   context?: BrowserContext
   page?: Page
 
+  isAuthenticated?: boolean
+
   testEmail?: string
   testHandle?: string
   testOtp?: string
@@ -57,8 +62,12 @@ export class CustomWorld extends World implements AppWorld {
   constructor(options: IWorldOptions) {
     super(options)
     this.env = testEnv
+    this.isAuthenticated = false
   }
 }
 
-// Set the custom world as the default
+// Set the custom world as the default for Cucumber
+setWorldConstructor(CustomWorld)
+
+// Export for type checking
 export { CustomWorld as World }

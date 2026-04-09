@@ -16,9 +16,9 @@ import type { AppWorld } from './world.js'
 
 let sharedBrowser: Browser
 
-// Set default timeout for all steps (30 seconds)
-// This is important for remote deployments with cold starts
-setDefaultTimeout(30_000)
+// Set default timeout for all steps (60 seconds)
+// This is important for remote deployments with cold starts and OAuth flows
+setDefaultTimeout(60_000)
 
 /**
  * Before all scenarios: Launch browser and ensure report directories exist
