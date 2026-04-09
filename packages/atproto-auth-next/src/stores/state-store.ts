@@ -30,7 +30,14 @@ export function createSupabaseStateStore(
         throw new Error("OAuth state expired");
       }
 
-      return data.value as NodeSavedState;
+      // Validate state structure before returning
+      const state = data.value;
+      if (!state || typeof state !== "object") {
+        console.warn(`[state-store] Invalid state data for ${k} — treating as non-existent`);
+        return undefined;
+      }
+
+      return state as NodeSavedState;
     },
 
     async set(k: string, state: NodeSavedState): Promise<void> {

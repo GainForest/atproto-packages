@@ -67,8 +67,8 @@ export const upsertClaimActivity = (
     }
 
     // rkey given — fetch existing to determine create vs. replace and resolve createdAt.
-    const existing = yield* fetchRecord<ClaimActivityRecord, ClaimActivityPdsError>(
-      COLLECTION, inputRkey, makePdsError
+    const existing = yield* fetchRecord(
+      COLLECTION, inputRkey, $parse, makePdsError
     );
 
     const createdAt = existing !== null ? existing.createdAt : new Date().toISOString();

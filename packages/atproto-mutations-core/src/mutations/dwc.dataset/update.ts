@@ -34,9 +34,10 @@ export const updateDwcDataset = (
   Effect.gen(function* () {
     const { rkey, data, unset } = input;
 
-    const existing = yield* fetchRecord<DwcDatasetRecord, DwcDatasetPdsError>(
+    const existing = yield* fetchRecord(
       COLLECTION,
       rkey,
+      $parse,
       makePdsError
     );
 

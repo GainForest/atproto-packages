@@ -71,8 +71,8 @@ export const upsertFundingConfig = (
     }
 
     // rkey given — fetch existing to determine create vs. replace.
-    const existing = yield* fetchRecord<FundingConfigRecord, FundingConfigPdsError>(
-      COLLECTION, inputRkey, makePdsError
+    const existing = yield* fetchRecord(
+      COLLECTION, inputRkey, $parse, makePdsError
     );
 
     const createdAt = existing !== null ? existing.createdAt : now;

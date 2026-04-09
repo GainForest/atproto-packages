@@ -81,9 +81,10 @@ export const updateAcMultimedia = (
       }
     }
 
-    const existing = yield* fetchRecord<AcMultimediaRecord, AcMultimediaPdsError>(
+    const existing = yield* fetchRecord(
       COLLECTION,
       rkey,
+      $parse,
       makePdsError
     );
 

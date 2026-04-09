@@ -45,8 +45,8 @@ export const updateFundingConfig = (
   Effect.gen(function* () {
     const { rkey } = input;
 
-    const existing = yield* fetchRecord<FundingConfigRecord, FundingConfigPdsError>(
-      COLLECTION, rkey, makePdsError
+    const existing = yield* fetchRecord(
+      COLLECTION, rkey, $parse, makePdsError
     );
 
     if (existing === null) {

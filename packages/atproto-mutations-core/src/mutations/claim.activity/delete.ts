@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import type { DeleteRecordInput, DeleteRecordResult } from "../../utils/shared/types";
+import { $parse } from "@gainforest/generated/org/hypercerts/claim/activity.defs";
 import {
   ClaimActivityNotFoundError,
   ClaimActivityPdsError,
@@ -24,7 +25,7 @@ export const deleteClaimActivity = (
     const repo = (yield* AtprotoAgent).assertDid;
     const uri = `at://${repo}/${COLLECTION}/${rkey}`;
 
-    const existing = yield* fetchRecord(COLLECTION, rkey, makePdsError);
+    const existing = yield* fetchRecord(COLLECTION, rkey, $parse, makePdsError);
 
     if (existing === null) {
       return yield* Effect.fail(new ClaimActivityNotFoundError({ rkey }));

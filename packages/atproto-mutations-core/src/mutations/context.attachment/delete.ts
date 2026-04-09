@@ -6,6 +6,7 @@ import {
   ContextAttachmentPdsError,
 } from "./utils/errors";
 import { fetchRecord, deleteRecord } from "../../utils/shared";
+import { $parse } from "@gainforest/generated/org/hypercerts/context/attachment.defs";
 
 const COLLECTION = "org.hypercerts.context.attachment";
 
@@ -24,7 +25,7 @@ export const deleteContextAttachment = (
     const repo = (yield* AtprotoAgent).assertDid;
     const uri = `at://${repo}/${COLLECTION}/${rkey}`;
 
-    const existing = yield* fetchRecord(COLLECTION, rkey, makePdsError);
+    const existing = yield* fetchRecord(COLLECTION, rkey, $parse, makePdsError);
 
     if (existing === null) {
       return yield* Effect.fail(new ContextAttachmentNotFoundError({ rkey }));

@@ -105,7 +105,15 @@ export async function fetchProfile(
         collection,
         rkey: "self",
       });
-      return (res.data.value as RawProfileRecord) ?? null;
+      const value = res.data.value;
+      
+      // Basic validation: ensure it's an object
+      if (!value || typeof value !== "object") {
+        debug.warn(`[profile] Invalid record from ${collection} for ${did}`);
+        return null;
+      }
+      
+      return value as RawProfileRecord;
     } catch {
       return null;
     }

@@ -50,10 +50,9 @@ export const updateDwcMeasurement = (
       );
     }
 
-    const existing = yield* fetchRecord<
-      DwcMeasurementRecord,
-      DwcMeasurementPdsError
-    >(COLLECTION, rkey, makePdsError);
+    const existing = yield* fetchRecord(
+      COLLECTION, rkey, $parse, makePdsError
+    );
 
     if (existing === null) {
       return yield* Effect.fail(new DwcMeasurementNotFoundError({ rkey }));

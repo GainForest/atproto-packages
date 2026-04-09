@@ -2,31 +2,72 @@ import { Effect } from "effect";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 
 /**
- * Fetch a record from the PDS by collection + rkey.
+ * Fetch a record from the PDS by collection + rkey, with lexicon validation.
  *
- * Returns `null` when the record does not exist (the underlying XRPC call
- * throws a 404 — we swallow it and return null so callers can branch on
- * presence without treating absence as an error).
+ * Returns `null` when:
+ * - The record does not exist (404 from PDS)
+ * - The record exists but fails lexicon validation (e.g., missing required
+ *   fields due to schema evolution)
  *
- * Any network or unexpected PDS error is surfaced as `TPdsError` via
- * `makePdsError`, keeping it in Effect's typed error channel.
+ * Validation failures are logged as warnings. This graceful degradation allows
+ * upsert operations to recreate records with the current schema when old
+ * records are missing newly-required fields.
+ *
+ * @param collection - ATProto collection NSID
+ * @param rkey - Record key
+ * @param parse - Lexicon parser function (e.g., `$parse` from generated types)
+ * @param makePdsError - Error factory for PDS failures
+ *
+ * @example
+ * ```ts
+ * import { $parse } from "@gainforest/generated/app/gainforest/organization/info.defs";
+ *
+ * const existing = yield* fetchRecord(
+ *   "app.gainforest.organization.info",
+ *   "self",
+ *   $parse,
+ *   makePdsError
+ * );
+ * // TypeScript infers the return type from $parse — no manual generic needed
+ * ```
  */
 export const fetchRecord = <TRecord, TPdsError>(
   collection: string,
   rkey: string,
+  parse: (v: unknown) => TRecord,
   makePdsError: (message: string, cause: unknown) => TPdsError
 ): Effect.Effect<TRecord | null, TPdsError, AtprotoAgent> =>
   Effect.gen(function* () {
     const agent = yield* AtprotoAgent;
     const repo = agent.assertDid;
-    return yield* Effect.tryPromise({
-      try: () =>
-        agent.com.atproto.repo
-          .getRecord({ repo, collection, rkey })
-          .then((res) => res.data.value as TRecord)
-          .catch(() => null),
+
+    const raw = yield* Effect.tryPromise({
+      try: async () => {
+        try {
+          const res = await agent.com.atproto.repo.getRecord({ repo, collection, rkey });
+          return res.data.value;
+        } catch {
+          // Record does not exist — return null
+          return null;
+        }
+      },
       catch: (cause) => makePdsError(`Failed to fetch ${collection} record at rkey "${rkey}"`, cause),
     });
+
+    if (raw === null) return null;
+
+    // Validate against lexicon schema
+    try {
+      return parse(raw);
+    } catch (error) {
+      // Invalid data — treat as non-existent.
+      // This handles schema migrations gracefully: the next upsert will write valid data.
+      console.warn(
+        `[fetchRecord] Record at ${collection}/${rkey} failed validation — treating as non-existent:`,
+        error
+      );
+      return null;
+    }
   });
 
 /**

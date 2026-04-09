@@ -74,8 +74,8 @@ export const upsertAudioRecording = (
     // 2. Check for existing record (only when rkey given).
     let existing: AudioRecordingRecord | null = null;
     if (rkey) {
-      existing = yield* fetchRecord<AudioRecordingRecord, AudioRecordingPdsError>(
-        COLLECTION, rkey, makePdsError
+      existing = yield* fetchRecord(
+        COLLECTION, rkey, $parse, makePdsError
       );
     }
 

@@ -49,8 +49,8 @@ export const upsertOrganizationInfo = (
   Effect.gen(function* () {
     yield* validateFileConstraints(input, BLOB_CONSTRAINTS);
 
-    const existing = yield* fetchRecord<OrganizationInfoRecord, OrganizationInfoPdsError>(
-      COLLECTION, RKEY, makePdsError
+    const existing = yield* fetchRecord(
+      COLLECTION, RKEY, $parse, makePdsError
     );
 
     const createdAt = existing !== null

@@ -26,8 +26,8 @@ export const updateLayer = (
   Effect.gen(function* () {
     const { rkey, data, unset } = input;
 
-    const existing = yield* fetchRecord<LayerRecord, LayerPdsError>(
-      COLLECTION, rkey, makePdsError
+    const existing = yield* fetchRecord(
+      COLLECTION, rkey, $parse, makePdsError
     );
     if (existing === null) {
       return yield* Effect.fail(new LayerNotFoundError({ rkey }));

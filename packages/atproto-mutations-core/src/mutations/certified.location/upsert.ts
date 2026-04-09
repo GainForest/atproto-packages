@@ -67,8 +67,8 @@ export const upsertCertifiedLocation = (
     // 3. Check for existing record if rkey is given.
     let existing: CertifiedLocationRecord | null = null;
     if (rkey) {
-      existing = yield* fetchRecord<CertifiedLocationRecord, CertifiedLocationPdsError>(
-        COLLECTION, rkey, makePdsError
+      existing = yield* fetchRecord(
+        COLLECTION, rkey, $parse, makePdsError
       );
     }
 

@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { deleteRecord, fetchRecord } from "../../utils/shared";
+import { $parse } from "@gainforest/generated/app/gainforest/dwc/measurement.defs";
 import {
   DwcMeasurementNotFoundError,
   DwcMeasurementPdsError,
@@ -25,7 +26,7 @@ export const deleteDwcMeasurement = (
     const repo = agent.assertDid;
     const uri = `at://${repo}/${COLLECTION}/${rkey}`;
 
-    const existing = yield* fetchRecord(COLLECTION, rkey, makePdsError);
+    const existing = yield* fetchRecord(COLLECTION, rkey, $parse, makePdsError);
 
     if (existing === null) {
       return yield* Effect.fail(new DwcMeasurementNotFoundError({ rkey }));

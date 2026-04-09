@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { deleteRecord, fetchRecord } from "../../utils/shared";
+import { $parse } from "@gainforest/generated/app/gainforest/dwc/dataset.defs";
 import {
   DwcDatasetNotFoundError,
   DwcDatasetPdsError,
@@ -22,9 +23,10 @@ export const deleteDwcDataset = (input: {
   Effect.gen(function* () {
     const { rkey } = input;
 
-    const existing = yield* fetchRecord<DwcDatasetRecord, DwcDatasetPdsError>(
+    const existing = yield* fetchRecord(
       COLLECTION,
       rkey,
+      $parse,
       makePdsError
     );
 

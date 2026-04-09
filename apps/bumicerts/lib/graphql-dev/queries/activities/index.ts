@@ -135,6 +135,7 @@ export async function fetch<P extends Params>(params: P): Promise<Result<P>> {
     });
     const activities = (res.hypercerts?.claim?.activity?.data ?? []) as Activity[];
     const org = (res.gainforest?.organization?.info?.data?.[0] ?? null) as ActivityOrgInfo | null;
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Type narrowing based on runtime param check: params has orgDid, so Result<P> is guaranteed to be { activities, org }
     return { activities, org } as Result<P>;
   }
 
@@ -157,6 +158,7 @@ export async function fetch<P extends Params>(params: P): Promise<Result<P>> {
   });
   const data = (res.hypercerts?.claim?.activity?.data ?? []) as Activity[];
   const pageInfo = res.hypercerts?.claim?.activity?.pageInfo ?? { endCursor: null, hasNextPage: false, count: 0 };
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Type narrowing: default case returns paginated list shape
   return { data, pageInfo } as Result<P>;
 }
 

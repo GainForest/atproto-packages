@@ -56,7 +56,7 @@ export const createOrganizationInfo = (
 
     yield* stubValidate(candidate, $parse, makeValidationError);
 
-    const existing = yield* fetchRecord(COLLECTION, RKEY, makePdsError);
+    const existing = yield* fetchRecord(COLLECTION, RKEY, $parse, makePdsError);
 
     if (existing !== null) {
       return yield* Effect.fail(

@@ -24,7 +24,14 @@ export function createSupabaseSessionStore(
       if (error) throw new Error(`session store get: ${error.message}`);
       if (!data) return undefined;
 
-      return data.value as NodeSavedSession;
+      // Validate session structure before returning
+      const session = data.value;
+      if (!session || typeof session !== "object") {
+        console.warn(`[session-store] Invalid session data for ${did} — treating as non-existent`);
+        return undefined;
+      }
+
+      return session as NodeSavedSession;
     },
 
     async set(did: string, session: NodeSavedSession): Promise<void> {

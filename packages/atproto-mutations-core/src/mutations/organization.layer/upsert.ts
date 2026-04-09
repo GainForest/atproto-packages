@@ -35,8 +35,8 @@ export const upsertLayer = (
 
     let existing: LayerRecord | null = null;
     if (rkey) {
-      existing = yield* fetchRecord<LayerRecord, LayerPdsError>(
-        COLLECTION, rkey, makePdsError
+      existing = yield* fetchRecord(
+        COLLECTION, rkey, $parse, makePdsError
       );
     }
 

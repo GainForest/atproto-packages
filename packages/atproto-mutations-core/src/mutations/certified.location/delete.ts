@@ -1,7 +1,10 @@
 import { Effect } from "effect";
-import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { fetchRecord, deleteRecord } from "../../utils/shared";
+import { AtprotoAgent } from "../../services/AtprotoAgent";
+import { $parse as parseDefaultSite } from "@gainforest/generated/app/gainforest/organization/defaultSite.defs";
+import type { CertifiedLocationRecord } from "./utils/types";
 import {
+  CertifiedLocationNotFoundError,
   CertifiedLocationPdsError,
   CertifiedLocationIsDefaultError,
 } from "./utils/errors";
@@ -36,8 +39,8 @@ export const deleteCertifiedLocation = (
     const locationUri = `at://${repo}/${COLLECTION}/${rkey}`;
 
     // 2. Check whether this location is currently set as the default site.
-    const defaultSite = yield* fetchRecord<{ site?: string }, CertifiedLocationPdsError>(
-      DEFAULT_SITE_COLLECTION, "self", makePdsError
+    const defaultSite = yield* fetchRecord(
+      DEFAULT_SITE_COLLECTION, "self", parseDefaultSite, makePdsError
     );
 
     if (defaultSite?.site === locationUri) {

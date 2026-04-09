@@ -53,8 +53,8 @@ export const updateClaimActivity = (
 
     yield* validateFileConstraints(input.data, BLOB_CONSTRAINTS);
 
-    const existing = yield* fetchRecord<ClaimActivityRecord, ClaimActivityPdsError>(
-      COLLECTION, rkey, makePdsError
+    const existing = yield* fetchRecord(
+      COLLECTION, rkey, $parse, makePdsError
     );
 
     if (existing === null) {

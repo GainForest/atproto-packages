@@ -6,6 +6,7 @@ import {
   LinkEvmPdsError,
 } from "./utils/errors";
 import { fetchRecord, deleteRecord } from "../../utils/shared";
+import { $parse } from "@gainforest/generated/app/bumicerts/link/evm.defs";
 
 const COLLECTION = "app.bumicerts.link.evm";
 
@@ -24,7 +25,7 @@ export const deleteLinkEvm = (
     const repo = (yield* AtprotoAgent).assertDid;
     const uri = `at://${repo}/${COLLECTION}/${rkey}`;
 
-    const existing = yield* fetchRecord(COLLECTION, rkey, makePdsError);
+    const existing = yield* fetchRecord(COLLECTION, rkey, $parse, makePdsError);
 
     if (existing === null) {
       return yield* Effect.fail(new LinkEvmNotFoundError({ rkey }));

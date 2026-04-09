@@ -14,6 +14,7 @@ const getSupabaseAdmin = (): SupabaseClient => {
   return _supabaseAdmin;
 };
 
+// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Proxy pattern: empty object is never accessed, all property access is trapped by the Proxy getter
 export const supabaseAdmin = new Proxy({} as SupabaseClient, {
   get(_, prop) {
     return (getSupabaseAdmin() as unknown as Record<string | symbol, unknown>)[prop];

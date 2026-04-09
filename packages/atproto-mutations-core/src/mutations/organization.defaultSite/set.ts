@@ -4,6 +4,7 @@ import type { ValidationIssue } from "../../result";
 import {
   $parse,
 } from "@gainforest/generated/app/gainforest/organization/defaultSite.defs";
+import { $parse as parseLocation } from "@gainforest/generated/app/certified/location.defs";
 import { AtprotoAgent } from "../../services/AtprotoAgent";
 import { fetchRecord, putRecord } from "../../utils/shared";
 import {
@@ -86,8 +87,8 @@ export const setDefaultSite = (
     }
 
     // 3. Verify the location record exists.
-    const location = yield* fetchRecord<unknown, DefaultSitePdsError>(
-      LOCATION_COLLECTION, locationRkey, makePdsError
+    const location = yield* fetchRecord(
+      LOCATION_COLLECTION, locationRkey, parseLocation, makePdsError
     );
 
     if (location === null) {

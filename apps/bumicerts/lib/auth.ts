@@ -85,6 +85,7 @@ function getAuth() {
  * - `auth.actions.*` — Server actions for client components
  * - `auth.session.*` — Session utilities for server-side code
  */
+// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Proxy pattern: empty object is never accessed, all property access is trapped by the Proxy getter
 export const auth = new Proxy({} as ReturnType<typeof createAuthSetup>, {
   get(_target, prop) {
     return (getAuth() as Record<string | symbol, unknown>)[prop];

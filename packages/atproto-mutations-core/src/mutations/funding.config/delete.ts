@@ -6,6 +6,7 @@ import {
   FundingConfigPdsError,
 } from "./utils/errors";
 import { fetchRecord, deleteRecord } from "../../utils/shared";
+import { $parse } from "@gainforest/generated/app/bumicerts/funding/config.defs";
 
 const COLLECTION = "app.bumicerts.funding.config";
 
@@ -24,7 +25,7 @@ export const deleteFundingConfig = (
     const repo = (yield* AtprotoAgent).assertDid;
     const uri = `at://${repo}/${COLLECTION}/${rkey}`;
 
-    const existing = yield* fetchRecord(COLLECTION, rkey, makePdsError);
+    const existing = yield* fetchRecord(COLLECTION, rkey, $parse, makePdsError);
 
     if (existing === null) {
       return yield* Effect.fail(new FundingConfigNotFoundError({ rkey }));

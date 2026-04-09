@@ -40,10 +40,9 @@ export const updateDwcOccurrence = (
   Effect.gen(function* () {
     const { rkey, data, unset } = input;
 
-    const existing = yield* fetchRecord<
-      DwcOccurrenceRecord,
-      DwcOccurrencePdsError
-    >(COLLECTION, rkey, makePdsError);
+    const existing = yield* fetchRecord(
+      COLLECTION, rkey, $parse, makePdsError
+    );
 
     if (existing === null) {
       return yield* Effect.fail(new DwcOccurrenceNotFoundError({ rkey }));

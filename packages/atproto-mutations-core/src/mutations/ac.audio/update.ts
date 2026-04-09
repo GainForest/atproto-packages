@@ -76,8 +76,8 @@ export const updateAudioRecording = (
     }
 
     // 2. Fetch the existing record.
-    const existing = yield* fetchRecord<AudioRecordingRecord, AudioRecordingPdsError>(
-      COLLECTION, rkey, makePdsError
+    const existing = yield* fetchRecord(
+      COLLECTION, rkey, $parse, makePdsError
     );
     if (existing === null) {
       return yield* Effect.fail(new AudioRecordingNotFoundError({ rkey }));

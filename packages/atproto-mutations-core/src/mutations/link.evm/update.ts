@@ -51,8 +51,8 @@ export const updateLinkEvm = (
   Effect.gen(function* () {
     const { rkey } = input;
 
-    const existing = yield* fetchRecord<LinkEvmRecord, LinkEvmPdsError>(
-      COLLECTION, rkey, makePdsError
+    const existing = yield* fetchRecord(
+      COLLECTION, rkey, $parse, makePdsError
     );
 
     if (existing === null) {

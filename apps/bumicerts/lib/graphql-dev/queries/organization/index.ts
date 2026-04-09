@@ -97,6 +97,7 @@ export async function fetch<P extends Params>(params: P): Promise<Result<P>> {
     const res = await graphqlClient.request(singleDocument, { did: params.did });
     const org = (res.gainforest?.organization?.info?.data?.[0] ?? null) as OrgInfo | null;
     const activities = (res.hypercerts?.claim?.activity?.data ?? []) as OrgActivity[];
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Type narrowing based on runtime param check: params has did, so Result<P> is guaranteed to be { org, activities }
     return { org, activities } as Result<P>;
   }
 
@@ -110,6 +111,7 @@ export async function fetch<P extends Params>(params: P): Promise<Result<P>> {
     hasNextPage: false,
     count: 0,
   };
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Type narrowing: default case returns paginated list shape
   return { data, pageInfo } as Result<P>;
 }
 
