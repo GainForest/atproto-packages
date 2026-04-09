@@ -2,6 +2,7 @@
   "name": "@gainforest/bumicerts",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
@@ -12,6 +13,8 @@
     "graphql:types": "gql.tada generate-output --tsconfig ./tsconfig.json",
     "graphql:codegen": "bun run graphql:schema && bun run graphql:types",
     "init-marketplace-route": "bun run scripts/init-marketplace-route.ts",
+    "test:e2e": "tsc --project e2e/tsconfig.e2e.json && bunx cucumber-js --config e2e/cucumber.mjs",
+    "test:e2e:headless": "E2E_HEADLESS=true tsc --project e2e/tsconfig.e2e.json && bunx cucumber-js --config e2e/cucumber.mjs",
     "prepare": "husky"
   },
   "dependencies": {
@@ -67,16 +70,21 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "^11.0.1",
+    "@playwright/test": "^1.49.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^25.3.3",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^16.4.7",
+    "esbuild-register": "^3.6.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "shadcn": "^3.8.5",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   },
   "trustedDependencies": [

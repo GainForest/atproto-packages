@@ -40,3 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+
+# E2E testing
+/reports/
+/e2e/.e2e-dist/
+/e2e/.env
