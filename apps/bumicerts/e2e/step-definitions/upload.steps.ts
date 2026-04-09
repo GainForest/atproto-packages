@@ -15,9 +15,10 @@ import { getPage } from '../support/utils.js'
 When('the user clicks the edit button', async function (this: AppWorld) {
   const page = getPage(this)
   
-  // Look for the Edit button in the org hero section
-  // The button might be labeled "Edit" or have a data-testid
-  const editButton = page.locator('button:has-text("Edit")').first()
+  // The Edit button is actually a Link (renders as <a> tag), not a button
+  // It has aria-label="Edit organisation profile"
+  // There may be multiple (mobile/desktop), so we click the first visible one
+  const editButton = page.locator('a[aria-label="Edit organisation profile"]').first()
   await editButton.click()
   
   // Wait for URL to update
@@ -70,12 +71,17 @@ When('the user modifies the organization description', async function (this: App
 Then('the edit bar should be visible', async function (this: AppWorld) {
   const page = getPage(this)
   
-  // The EditBar component should be visible with Save/Cancel buttons
-  const editBar = page.locator('[data-testid="edit-bar"]').or(
-    page.locator('div:has(button:has-text("Save")):has(button:has-text("Cancel"))')
-  )
+  // The EditBar shows "You have unsaved changes" message with Save/Cancel buttons
+  // There are mobile and desktop versions, so use .first()
+  const editBarMessage = page.getByText('You have unsaved changes').first()
   
-  await expect(editBar).toBeVisible({ timeout: 5000 })
+  await expect(editBarMessage).toBeVisible({ timeout: 5000 })
+  
+  // Also verify both buttons are present
+  const saveButton = page.locator('button:has-text("Save")').first()
+  const cancelButton = page.locator('button:has-text("Cancel")').first()
+  await expect(saveButton).toBeVisible()
+  await expect(cancelButton).toBeVisible()
 })
 
 /**
@@ -84,12 +90,10 @@ Then('the edit bar should be visible', async function (this: AppWorld) {
 Then('the edit bar should not be visible', async function (this: AppWorld) {
   const page = getPage(this)
   
-  // The EditBar should be hidden or removed from the DOM
-  const editBar = page.locator('[data-testid="edit-bar"]').or(
-    page.locator('div:has(button:has-text("Save")):has(button:has-text("Cancel"))')
-  )
+  // The EditBar should be hidden - check for the "unsaved changes" message
+  const editBarMessage = page.getByText('You have unsaved changes')
   
-  await expect(editBar).not.toBeVisible()
+  await expect(editBarMessage).not.toBeVisible()
 })
 
 /**
@@ -108,22 +112,17 @@ Then('the page URL should not contain {string}', async function (this: AppWorld,
 Then('the save operation should complete successfully', async function (this: AppWorld) {
   const page = getPage(this)
   
-  // Wait for either:
-  // 1. Success toast/notification
-  // 2. URL to change (mode=edit removed)
-  // 3. Edit bar to disappear
+  // The save operation should:
+  // 1. Show a success toast
+  // 2. Clear edit mode (setMode(null) on line 316 of UploadDashboardClient)
+  // 3. Hide the edit bar
   
-  // Check for success indicators (adjust selectors based on your UI)
-  const successToast = page.locator('[data-testid="toast-success"]').or(
-    page.locator('text=/saved|success|updated/i').first()
-  )
+  // Wait for the URL to NOT contain mode=edit (this happens after successful save)
+  await page.waitForURL(url => !url.toString().includes('mode=edit'), { timeout: 15000 })
   
-  // Wait for success indicator OR URL change
-  await Promise.race([
-    successToast.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {}),
-    page.waitForURL(/^(?!.*mode=edit).*$/, { timeout: 10000 }).catch(() => {}),
-  ])
+  // Also verify the edit bar message is no longer visible
+  const editBarMessage = page.getByText('You have unsaved changes')
+  await expect(editBarMessage).not.toBeVisible()
   
-  // Give a moment for the UI to settle
-  await page.waitForTimeout(1000)
+  console.log('✅ Save completed successfully - edit mode exited')
 })

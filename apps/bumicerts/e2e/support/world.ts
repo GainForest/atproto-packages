@@ -31,6 +31,7 @@ export interface AppWorld extends World {
   testEmail?: string
   testHandle?: string
   testOtp?: string
+  bumicertTitle?: string // For bumicert creation tests
 
   // API response storage (for API assertions)
   lastResponse?: {
@@ -53,6 +54,7 @@ export class CustomWorld extends World implements AppWorld {
   testEmail?: string
   testHandle?: string
   testOtp?: string
+  bumicertTitle?: string // For bumicert creation tests
 
   lastResponse?: {
     status: number
