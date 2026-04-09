@@ -19,6 +19,8 @@ import { mkdirSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { AppWorld } from './world.js'
 import { performAuthSetup } from './auth.js'
+import { checkDevServer } from './preflight.js'
+import { testEnv } from './env.js'
 
 let sharedBrowser: Browser
 const AUTH_STATE_PATH = resolve(process.cwd(), 'e2e/.auth/user.json')
@@ -28,9 +30,13 @@ const AUTH_STATE_PATH = resolve(process.cwd(), 'e2e/.auth/user.json')
 setDefaultTimeout(60_000)
 
 /**
- * Before all scenarios: Launch browser and ensure report directories exist
+ * Before all scenarios: Check dev server, launch browser, and ensure report directories exist
  */
 BeforeAll(async function () {
+  // CRITICAL: Check if dev server is running before launching browser
+  // This prevents the infinite loop issue where browser opens/closes repeatedly
+  await checkDevServer(testEnv.appUrl)
+  
   // Create reports directory if it doesn't exist
   try {
     mkdirSync(resolve(process.cwd(), 'reports'), { recursive: true })

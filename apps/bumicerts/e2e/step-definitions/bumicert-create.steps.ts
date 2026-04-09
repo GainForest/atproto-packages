@@ -164,14 +164,21 @@ When('the user selects today as start date', async function (this: AppWorld) {
   const page = getPage(this)
   
   // Click the date range picker button
-  const datePickerButton = page.locator('#project-date-range')
+  const datePickerButton = page.locator('#project-date-range').first()
   await datePickerButton.click()
   
-  // Wait for calendar to appear
-  await page.waitForTimeout(500)
+  // Wait for popover content to be visible (calendar is dynamically loaded)
+  await page.locator('[data-slot="popover-content"]').waitFor({ state: 'visible', timeout: 10000 })
   
-  // Click today's date (has class rdp-day_today)
-  const todayButton = page.locator('.rdp-day_today').first()
+  // Wait for calendar to fully load
+  await page.locator('[data-slot="calendar"]').waitFor({ state: 'visible', timeout: 10000 })
+  
+  // Get today's date as a string for the selector
+  const today = new Date()
+  const todayStr = today.toLocaleDateString()
+  
+  // Click today's date button using data-day attribute
+  const todayButton = page.locator(`button[data-day="${todayStr}"]`).first()
   await todayButton.click()
   
   console.log('📅 Selected today as start date')
@@ -183,7 +190,7 @@ When('the user selects today as start date', async function (this: AppWorld) {
 When('the user marks the project as ongoing', async function (this: AppWorld) {
   const page = getPage(this)
   
-  const ongoingCheckbox = page.locator('#is-ongoing')
+  const ongoingCheckbox = page.locator('#is-ongoing').first()
   await ongoingCheckbox.click()
   
   console.log('⏳ Marked project as ongoing')
@@ -195,11 +202,10 @@ When('the user marks the project as ongoing', async function (this: AppWorld) {
 When('the user selects work type {string}', async function (this: AppWorld, workType: string) {
   const page = getPage(this)
   
-  // Work types are capsule checkboxes, find by label text
-  const capsule = page.locator(`label:has-text("${workType}")`)
-  await capsule.click()
+  const workTypeLabel = page.locator(`label:has-text("${workType}")`).first()
+  await workTypeLabel.click()
   
-  console.log(`✅ Selected work type: ${workType}`)
+  console.log(`🏷️ Selected work type: ${workType}`)
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -246,12 +252,12 @@ When('the user adds themselves as a contributor', async function (this: AppWorld
   const page = getPage(this)
   
   // Switch to "Enter Name or ID" tab
-  const manualTab = page.locator('button:has-text("Enter Name or ID")')
+  const manualTab = page.locator('button:has-text("Enter Name or ID")').first()
   await manualTab.click()
   await page.waitForTimeout(300)
   
   // Enter the test handle
-  const input = page.locator('input[placeholder*="Contributor name"]')
+  const input = page.locator('input[placeholder*="Contributor name"]').first()
   await input.fill(this.env.testHandle ?? 'satyam-test-004.climateai.org')
   await input.press('Enter')
   
@@ -267,45 +273,59 @@ When('the user adds themselves as a contributor', async function (this: AppWorld
 When('the user ensures a test site exists', async function (this: AppWorld) {
   const page = getPage(this)
   
-  // Check if any sites exist
-  const siteButtons = page.locator('.grid button:has(.flex-col)')
-  const siteCount = await siteButtons.count()
+  // Wait for the sites section to load
+  await page.waitForTimeout(2000)
+  
+  // Check if there are any site buttons with "ha" (hectares) text - these indicate existing sites
+  const existingSiteButtons = page.locator('button:has-text("ha")')
+  const siteCount = await existingSiteButtons.count()
+  
+  console.log(`🔍 Found ${siteCount} existing sites`)
   
   if (siteCount === 0) {
     console.log('🗺️ No sites found - creating a test site...')
     
     // Click "Add a site" button
-    const addSiteButton = page.locator('button:has-text("Add a site")')
+    const addSiteButton = page.getByRole('button', { name: /add a site/i }).first()
     await addSiteButton.click()
     
-    // Wait for site editor modal to open
-    await page.waitForTimeout(1000)
+    // Wait for modal to appear by checking for the site name input
+    const siteNameInput = page.locator('#name-for-site')
+    await siteNameInput.waitFor({ state: 'visible', timeout: 10000 })
+    console.log('📝 Site editor modal opened')
     
     // Fill site name
-    const siteNameInput = page.locator('input[placeholder*="site name"]').or(
-      page.locator('input[name="siteName"]')
-    ).first()
     await siteNameInput.fill(`E2E Test Site ${Date.now()}`)
+    console.log('📝 Filled site name')
     
-    // For the polygon, we need to click on the map to draw points
-    // This is complex - let's try to find a "Use current location" or skip drawing for now
-    // Instead, look for a save button and try to save with minimal data
+    // Upload GeoJSON file - FileInput component has a hidden input[type="file"]
+    // We need to find the one inside the modal (last file input on page)
+    const geoJsonPath = resolve(process.cwd(), 'e2e/fixtures/test-site.geojson')
+    const fileInput = page.locator('input[type="file"]').last()
+    await fileInput.setInputFiles(geoJsonPath)
+    console.log('📁 Uploaded GeoJSON file')
     
-    // Try to find and click a save/create button
-    const saveButton = page.locator('button:has-text("Save")').or(
-      page.locator('button:has-text("Create")')
-    ).first()
+    // Wait for file processing
+    await page.waitForTimeout(1500)
     
-    const saveButtonExists = await saveButton.isVisible({ timeout: 2000 }).catch(() => false)
+    // Click "Add" button (mode === "add" so button text is "Add")
+    const addButton = page.getByRole('button', { name: 'Add', exact: true })
+    await addButton.click()
+    console.log('💾 Clicked Add button')
     
-    if (saveButtonExists) {
-      await saveButton.click()
-      await page.waitForTimeout(2000)
-    }
+    // Wait for success message and modal to update
+    await page.waitForSelector('text=Site added successfully', { state: 'visible', timeout: 10000 })
+    console.log('✅ Site added successfully')
     
-    console.log('✅ Created test site')
+    // Close the success modal by clicking "Close" button (use last one which is in the modal footer)
+    const closeButton = page.getByRole('button', { name: 'Close' }).last()
+    await closeButton.click()
+    
+    // Wait for modal to close and sites to reload
+    await page.waitForTimeout(2000)
+    console.log('🗺️ Site creation complete')
   } else {
-    console.log(`✅ Found ${siteCount} existing site(s)`)
+    console.log('✅ At least one site already exists - skipping creation')
   }
 })
 
@@ -315,11 +335,29 @@ When('the user ensures a test site exists', async function (this: AppWorld) {
 When('the user selects the first available site', async function (this: AppWorld) {
   const page = getPage(this)
   
-  // Site buttons are in a grid
-  const siteButtons = page.locator('.grid button:has(.flex-col)')
+  // Wait for sites to load
+  await page.waitForSelector('text=Loading your sites...', { state: 'hidden', timeout: 15000 }).catch(() => {
+    // Loading text might not appear if sites load instantly
+  })
+  
+  // Wait a bit for sites to render
+  await page.waitForTimeout(2000)
+  
+  // Site buttons have CircleDashedIcon when not selected or CheckIcon when selected
+  // They also have the site name as a span with font-medium class
+  // Find buttons that are NOT the "Add a site" button (which has PlusCircleIcon)
+  // Look for buttons with CircleDashedIcon specifically
+  const siteButtons = page.locator('button:has(svg.lucide-circle-dashed)')
+  
+  // Wait for at least one site button to appear
+  await siteButtons.first().waitFor({ state: 'visible', timeout: 10000 })
+  console.log(`🔍 Found ${await siteButtons.count()} site buttons`)
   
   // Click the first site button
   await siteButtons.first().click()
+  
+  // Wait for the site to be selected
+  await page.waitForTimeout(1000)
   
   console.log('🗺️ Selected first available site')
 })
@@ -330,8 +368,11 @@ When('the user selects the first available site', async function (this: AppWorld
 When('the user checks the permissions checkbox', async function (this: AppWorld) {
   const page = getPage(this)
   
-  const checkbox = page.locator('#confirm-permissions')
-  await checkbox.click()
+  // Try clicking the label which should also trigger the checkbox
+  const label = page.locator('label[for="confirm-permissions"]').first()
+  await label.scrollIntoViewIfNeeded()
+  await label.waitFor({ state: 'visible', timeout: 15000 })
+  await label.click()
   
   console.log('✅ Checked permissions checkbox')
 })
@@ -342,8 +383,11 @@ When('the user checks the permissions checkbox', async function (this: AppWorld)
 When('the user checks the terms and conditions checkbox', async function (this: AppWorld) {
   const page = getPage(this)
   
-  const checkbox = page.locator('#agree-tnc')
-  await checkbox.click()
+  // Try clicking the label which should also trigger the checkbox
+  const label = page.locator('label[for="agree-tnc"]').first()
+  await label.scrollIntoViewIfNeeded()
+  await label.waitFor({ state: 'visible', timeout: 15000 })
+  await label.click()
   
   console.log('✅ Checked T&C checkbox')
 })

@@ -43,7 +43,7 @@ Feature: Create Bumicert
     # Step 1: Cover Details
     When the user uploads a cover image
     And the user enters bumicert title "E2E Bumicert {timestamp}"
-    And the user selects today as start date
+    # Date range has valid defaults (Jan 1 - today), no need to change
     And the user marks the project as ongoing
     And the user selects work type "Agroforestry"
     And the user clicks "Continue"
