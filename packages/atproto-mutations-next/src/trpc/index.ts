@@ -6,3 +6,4 @@ export { mapEffectErrorToTRPC } from "./error-mapper";
 export { effectMutation } from "./effect-adapter";
 export { entityRouter } from "./entity-router";
 export { t, router, publicProcedure, middleware } from "./init";
+export { logTRPCError } from "./error-logger";
