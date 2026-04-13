@@ -5,7 +5,7 @@ import { useAtprotoStore } from "@/components/stores/atproto";
 import { SidebarHeader } from "./SidebarHeader";
 import { NavSection } from "./NavSection";
 import { SocialFooter } from "./SocialFooter";
-import { NAV_ITEMS, type NavSection as NavSectionType } from "./data";
+import { NAV_ITEMS } from "./data";
 
 /**
  * UnifiedSidebar
@@ -23,14 +23,6 @@ export function UnifiedSidebar() {
   const auth = useAtprotoStore((s) => s.auth);
   const isAuthenticated = auth.status === "AUTHENTICATED";
 
-  // Split sections into EXPLORE (top) and MANAGE (bottom)
-  const exploreSection = NAV_ITEMS.find(
-    (item) => item.kind === "section" && item.id === "explore"
-  ) as NavSectionType | undefined;
-  const manageSection = NAV_ITEMS.find(
-    (item) => item.kind === "section" && item.id === "manage"
-  ) as NavSectionType | undefined;
-
   return (
     <nav className="w-[240px] h-full flex flex-col p-4 border-r border-border bg-foreground/3 relative">
       {/* Top section */}
@@ -40,13 +32,19 @@ export function UnifiedSidebar() {
 
         {/* EXPLORE section */}
         <LayoutGroup id="unified-sidebar-nav">
-          {exploreSection && (
-            <NavSection
-              section={exploreSection}
-              isAuthenticated={isAuthenticated}
-              startIndex={0}
-            />
-          )}
+          {NAV_ITEMS.map((item) => {
+            if (item.kind === "section" && item.id === "explore") {
+              return (
+                <NavSection
+                  key={item.id}
+                  section={item}
+                  isAuthenticated={isAuthenticated}
+                  startIndex={0}
+                />
+              );
+            }
+            return null;
+          })}
         </LayoutGroup>
       </div>
 
@@ -57,13 +55,19 @@ export function UnifiedSidebar() {
       <div className="flex flex-col gap-2">
         {/* MANAGE section */}
         <LayoutGroup id="unified-sidebar-nav-manage">
-          {manageSection && (
-            <NavSection
-              section={manageSection}
-              isAuthenticated={isAuthenticated}
-              startIndex={0}
-            />
-          )}
+          {NAV_ITEMS.map((item) => {
+            if (item.kind === "section" && item.id === "manage") {
+              return (
+                <NavSection
+                  key={item.id}
+                  section={item}
+                  isAuthenticated={isAuthenticated}
+                  startIndex={0}
+                />
+              );
+            }
+            return null;
+          })}
         </LayoutGroup>
 
         <div className="h-px bg-border" />
