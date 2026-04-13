@@ -6,7 +6,7 @@ import { HeaderProvider } from "./_components/Header/context";
 import { ModalProvider } from "@/components/ui/modal/context";
 import { WagmiProvider } from "@/components/providers/WagmiProvider";
 import { TopNavbar } from "./_components/Navbar/TopNavbar";
-import { DesktopSidebar } from "./_components/Navbar/DesktopSidebar";
+import { UnifiedSidebar } from "@/components/layout/UnifiedSidebar";
 import { Header } from "./_components/Header/Header";
 import { MobileNavDrawer } from "@/components/ui/MobileNavDrawer";
 
@@ -36,7 +36,7 @@ export default function MarketplaceLayout({
           <ModalProvider>
             {/* Desktop: sidebar + content */}
             <div className="hidden md:flex h-screen overflow-hidden">
-              <DesktopSidebar />
+              <UnifiedSidebar />
               <main className="flex-1 relative overflow-y-auto">
                 {/* Header overlays content for translucency effect */}
                 <Header />
@@ -47,7 +47,7 @@ export default function MarketplaceLayout({
             {/* Mobile: full width + floating sidebar drawer */}
             <div className="md:hidden flex flex-col h-screen overflow-hidden">
               <MobileNavDrawer>
-                <DesktopSidebar />
+                <UnifiedSidebar />
               </MobileNavDrawer>
               <div className="flex-1 relative overflow-y-auto">
                 <Header />
