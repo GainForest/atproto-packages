@@ -144,7 +144,6 @@ export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
             className="flex-1 bg-transparent outline-none text-lg font-semibold"
             placeholder="25"
           />
-          <span className="text-xs text-muted-foreground">USDC</span>
         </div>
 
         <div className="flex gap-2 flex-wrap">
