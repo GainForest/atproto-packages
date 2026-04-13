@@ -3,7 +3,7 @@
 import { ModalProvider } from "@/components/ui/modal/context";
 import { HeaderProvider } from "@/app/(marketplace)/_components/Header/context";
 import { UploadHeader } from "./Header/UploadHeader";
-import { UploadDesktopSidebar } from "./Navbar/DesktopSidebar";
+import { UnifiedSidebar } from "@/components/layout/UnifiedSidebar";
 import { MobileNavDrawer } from "@/components/ui/MobileNavDrawer";
 
 interface UploadLayoutClientProps {
@@ -28,7 +28,7 @@ function UploadLayoutInner({ children }: { children: React.ReactNode }) {
     <>
       {/* Desktop: sidebar + content */}
       <div className="hidden md:flex h-screen overflow-hidden">
-        <UploadDesktopSidebar />
+        <UnifiedSidebar />
         <main className="flex-1 relative overflow-y-auto">
           <UploadHeader />
           {children}
@@ -38,7 +38,7 @@ function UploadLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Mobile: full width + floating sidebar drawer */}
       <div className="md:hidden flex flex-col h-screen overflow-hidden">
         <MobileNavDrawer>
-          <UploadDesktopSidebar />
+          <UnifiedSidebar />
         </MobileNavDrawer>
         <div className="flex-1 relative overflow-y-auto">
           <UploadHeader />
