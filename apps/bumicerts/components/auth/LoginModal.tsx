@@ -178,6 +178,52 @@ function EmailForm() {
   );
 }
 
+// ─── Error Message Helper ─────────────────────────────────────────────────────
+
+/**
+ * Converts OAuth/identity resolution errors into user-friendly messages.
+ * Differentiates between username not found vs server/network issues.
+ */
+function getAuthErrorMessage(err: unknown): string {
+  if (err instanceof Error) {
+    const message = err.message.toLowerCase();
+
+    // Identity/username resolution failures
+    if (
+      message.includes("does not resolve to a did") ||
+      message.includes("failed to resolve identity") ||
+      message.includes("does not include the handle")
+    ) {
+      return "Username not found. Please check your username and server.";
+    }
+
+    if (message.includes("invalid handle")) {
+      return "Invalid username format. Please use only letters, numbers, and hyphens.";
+    }
+
+    // PDS/server configuration or network failures
+    if (
+      message.includes("authorization server") ||
+      message.includes("pds") ||
+      message.includes("server metadata") ||
+      message.includes("fetch failed") ||
+      message.includes("network") ||
+      message.includes("econnrefused") ||
+      message.includes("timeout")
+    ) {
+      return "Unable to connect to the server. Please check your server address or try again later.";
+    }
+
+    // OAuth-specific errors
+    if (message.includes("oauth")) {
+      return "Sign-in failed. Please try again or contact support if the issue persists.";
+    }
+  }
+
+  // Generic fallback for unknown errors
+  return "Unable to start sign-in. Please try again.";
+}
+
 // ─── Handle Form ──────────────────────────────────────────────────────────────
 
 function HandleForm() {
@@ -227,7 +273,8 @@ function HandleForm() {
         const { authorizationUrl } = await authorize(fullHandle || handle.trim());
         window.location.href = authorizationUrl;
       } catch (err) {
-        setError("Unable to start sign-in. Please try again.");
+        const errorMessage = getAuthErrorMessage(err);
+        setError(errorMessage);
         console.error(err);
       }
     });
