@@ -119,7 +119,7 @@ export function ShareSuccess({
   // Copy link
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

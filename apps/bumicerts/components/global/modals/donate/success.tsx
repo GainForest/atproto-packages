@@ -119,8 +119,7 @@ export function SuccessModal({
 
   const handleCopyLink = async () => {
     try {
-      const copyText = bumicertId ? shareText : `${shareText} ${shareUrl}`;
-      await navigator.clipboard.writeText(copyText);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
