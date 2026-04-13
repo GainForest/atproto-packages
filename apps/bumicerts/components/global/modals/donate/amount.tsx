@@ -10,6 +10,7 @@ import {
   ModalFooter,
 } from "@/components/ui/modal/modal";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { useAccount } from "wagmi";
 import type { BumicertData, FundingConfigData } from "@/lib/types";
@@ -164,13 +165,12 @@ export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
       </div>
 
       {isAuthenticated && (
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
+        <label className="flex items-center gap-3 cursor-pointer pt-4">
+          <Checkbox
             checked={anonymous}
-            onChange={(e) => setAnonymous(e.target.checked)}
+            onCheckedChange={(checked) => setAnonymous(checked === true)}
           />
-          <div>
+          <div className="flex-1">
             <span className="text-sm font-medium">Donate anonymously</span>
             <p className="text-xs text-muted-foreground mt-0.5">
               Your wallet address will be recorded, but not your identity.
