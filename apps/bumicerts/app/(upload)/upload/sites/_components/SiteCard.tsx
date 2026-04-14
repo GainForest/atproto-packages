@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  ArrowUpRightIcon,
   BadgeCheckIcon,
   CrosshairIcon,
   Loader2Icon,
@@ -17,7 +15,6 @@ import { trpc } from "@/lib/trpc/client";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { useModal } from "@/components/ui/modal/context";
 import { SiteEditorModal, SiteEditorModalId } from "@/components/global/modals/upload/site/editor";
-import { getShapefilePreviewUrl } from "@/lib/shapefile";
 import type { CertifiedLocation } from "@/lib/graphql-dev/queries/locations";
 import { formatError } from "@/lib/utils/trpc-errors";
 import {
@@ -80,7 +77,6 @@ export function SiteCard({ site, defaultSiteUri }: SiteCardProps) {
 
   const locationUrl = extractLocationUrl(site.record?.location);
   const inlineCoord = extractInlineCoordinate(site.record?.location, site.record?.locationType ?? undefined);
-  const previewUrl = locationUrl ? getShapefilePreviewUrl(locationUrl) : null;
   const isDefault = !!(site.metadata?.uri && site.metadata.uri === defaultSiteUri);
 
   // Fetch GeoJSON to compute metrics.
@@ -170,19 +166,9 @@ export function SiteCard({ site, defaultSiteUri }: SiteCardProps) {
       transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
       className="rounded-xl border border-border overflow-hidden bg-background hover:border-primary/30 hover:shadow-md transition-all duration-300"
     >
-      {/* Preview header */}
+      {/* Header with default badge */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-        {previewUrl ? (
-          <Link
-            href={previewUrl}
-            target="_blank"
-            className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
-          >
-            Preview <ArrowUpRightIcon className="h-3 w-3" />
-          </Link>
-        ) : (
-          <span className="text-xs text-muted-foreground">No preview</span>
-        )}
+        <div className="flex-1" />
 
         <div className="flex items-center gap-1.5">
           {isDefault && (
