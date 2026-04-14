@@ -40,19 +40,26 @@ import { clientEnv } from "@/lib/env/client";
  * Strips trailing slashes. Never includes a path segment.
  */
 export function getPublicUrl(): string | undefined {
-  // 1. On Vercel preview deployments, ALWAYS use VERCEL_URL (the actual
-  //    preview deployment alias). This MUST come before the NEXT_PUBLIC_BASE_URL
-  //    check — otherwise a globally-set NEXT_PUBLIC_BASE_URL (e.g. set for
-  //    "All Environments" in the Vercel dashboard) would override the preview
-  //    URL. That causes OAuth redirect_uris to point to the production domain,
-  //    so after login the user is sent to production instead of the preview.
-  if (serverEnv.VERCEL_ENV === "preview" && serverEnv.VERCEL_URL) {
-    return `https://${serverEnv.VERCEL_URL.trim()}`;
-  }
-
-  // 2. Explicit override (local dev, ngrok, production custom domain, etc.)
+  // 1. Explicit override — always takes precedence (local dev, ngrok,
+  //    production custom domain, or preview deployments with custom domain).
+  //    This allows NEXT_PUBLIC_BASE_URL to override the raw preview alias.
   if (clientEnv.NEXT_PUBLIC_BASE_URL) {
     return clientEnv.NEXT_PUBLIC_BASE_URL.trim().replace(/\/$/, "");
+  }
+
+  // 2. On Vercel preview deployments, use VERCEL_PROJECT_PRODUCTION_URL if set
+  //    (the custom domain like alpha.fund.gainforest.app), otherwise fall back
+  //    to the raw VERCEL_URL alias. Only applies when NEXT_PUBLIC_BASE_URL is
+  //    not set — see priority 1 above.
+  if (
+    serverEnv.VERCEL_ENV === "preview" &&
+    serverEnv.VERCEL_PROJECT_PRODUCTION_URL
+  ) {
+    return `https://${serverEnv.VERCEL_PROJECT_PRODUCTION_URL.trim()}`;
+  }
+
+  if (serverEnv.VERCEL_ENV === "preview" && serverEnv.VERCEL_URL) {
+    return `https://${serverEnv.VERCEL_URL.trim()}`;
   }
 
   // 3. Production: prefer the shortest custom domain, fall back to raw alias.
