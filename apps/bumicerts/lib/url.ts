@@ -38,28 +38,28 @@ export function getPublicUrl(): string | undefined {
   if (deploymentBranch) {
     console.log(
       "Check prod",
-      serverEnv.PRODUCTION_BRANCH_NAME,
-      serverEnv.PRODUCTION_URL,
+      clientEnv.NEXT_PUBLIC_PRODUCTION_BRANCH_NAME,
+      clientEnv.NEXT_PUBLIC_PRODUCTION_URL,
     );
     if (
-      serverEnv.PRODUCTION_BRANCH_NAME &&
-      deploymentBranch === serverEnv.PRODUCTION_BRANCH_NAME &&
-      serverEnv.PRODUCTION_URL
+      clientEnv.NEXT_PUBLIC_PRODUCTION_BRANCH_NAME &&
+      deploymentBranch === clientEnv.NEXT_PUBLIC_PRODUCTION_BRANCH_NAME &&
+      clientEnv.NEXT_PUBLIC_PRODUCTION_URL
     ) {
-      return serverEnv.PRODUCTION_URL.trim().replace(/\/$/, "");
+      return clientEnv.NEXT_PUBLIC_PRODUCTION_URL.trim().replace(/\/$/, "");
     }
 
     console.log(
       "Check staging",
-      serverEnv.STAGING_BRANCH_NAME,
-      serverEnv.STAGING_URL,
+      clientEnv.NEXT_PUBLIC_STAGING_BRANCH_NAME,
+      clientEnv.NEXT_PUBLIC_STAGING_URL,
     );
     if (
-      serverEnv.STAGING_BRANCH_NAME &&
-      deploymentBranch === serverEnv.STAGING_BRANCH_NAME &&
-      serverEnv.STAGING_URL
+      clientEnv.NEXT_PUBLIC_STAGING_BRANCH_NAME &&
+      deploymentBranch === clientEnv.NEXT_PUBLIC_STAGING_BRANCH_NAME &&
+      clientEnv.NEXT_PUBLIC_STAGING_URL
     ) {
-      return serverEnv.STAGING_URL.trim().replace(/\/$/, "");
+      return clientEnv.NEXT_PUBLIC_STAGING_URL.trim().replace(/\/$/, "");
     }
 
     console.log("Check other", serverEnv.VERCEL_URL);
