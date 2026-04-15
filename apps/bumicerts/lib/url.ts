@@ -34,13 +34,7 @@ import { clientEnv } from "@/lib/env/client";
 export function getPublicUrl(): string | undefined {
   // 1. Branch-specific URLs for preview deployments
   const deploymentBranch = serverEnv.VERCEL_GIT_COMMIT_REF;
-  console.log("Deployment Branch:", deploymentBranch);
   if (deploymentBranch) {
-    console.log(
-      "Check prod",
-      clientEnv.NEXT_PUBLIC_PRODUCTION_BRANCH_NAME,
-      clientEnv.NEXT_PUBLIC_PRODUCTION_URL,
-    );
     if (
       clientEnv.NEXT_PUBLIC_PRODUCTION_BRANCH_NAME &&
       deploymentBranch === clientEnv.NEXT_PUBLIC_PRODUCTION_BRANCH_NAME &&
@@ -49,11 +43,6 @@ export function getPublicUrl(): string | undefined {
       return clientEnv.NEXT_PUBLIC_PRODUCTION_URL.trim().replace(/\/$/, "");
     }
 
-    console.log(
-      "Check staging",
-      clientEnv.NEXT_PUBLIC_STAGING_BRANCH_NAME,
-      clientEnv.NEXT_PUBLIC_STAGING_URL,
-    );
     if (
       clientEnv.NEXT_PUBLIC_STAGING_BRANCH_NAME &&
       deploymentBranch === clientEnv.NEXT_PUBLIC_STAGING_BRANCH_NAME &&
@@ -62,14 +51,12 @@ export function getPublicUrl(): string | undefined {
       return clientEnv.NEXT_PUBLIC_STAGING_URL.trim().replace(/\/$/, "");
     }
 
-    console.log("Check other", serverEnv.VERCEL_URL);
     // For any other branch preview, use the raw Vercel URL
     if (serverEnv.VERCEL_URL) {
       return `https://${serverEnv.VERCEL_URL.trim()}`;
     }
   }
 
-  console.log("Nothing");
   // 2. Explicit override (local dev, ngrok, production custom domain, etc.)
   if (clientEnv.NEXT_PUBLIC_BASE_URL) {
     return clientEnv.NEXT_PUBLIC_BASE_URL.trim().replace(/\/$/, "");
