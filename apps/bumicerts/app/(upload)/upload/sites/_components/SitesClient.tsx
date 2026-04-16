@@ -152,9 +152,9 @@ export function SitesClient({ did }: SitesClientProps) {
               <Button
                 size={"icon"}
                 variant={"outline"}
-                disabled={safeCurrentSiteIndex > allSiteRkeys.length - 1}
+                disabled={safeCurrentSiteIndex >= allSiteRkeys.length - 1}
                 onClick={() => {
-                  if (safeCurrentSiteIndex > allSiteRkeys.length - 1) return;
+                  if (safeCurrentSiteIndex >= allSiteRkeys.length - 1) return;
                   handleChangeSiteRkey(allSiteRkeys[safeCurrentSiteIndex + 1]);
                 }}
               >
