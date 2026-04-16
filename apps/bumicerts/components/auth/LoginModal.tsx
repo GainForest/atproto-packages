@@ -223,12 +223,12 @@ function HandleForm() {
     // Save the current page so we can redirect back after login
     localStorage.setItem("auth_redirect", window.location.pathname);
     startTransition(async () => {
-      try {
-        const { authorizationUrl } = await authorize(fullHandle || handle.trim());
-        window.location.href = authorizationUrl;
-      } catch (err) {
-        setError("Unable to start sign-in. Please try again.");
-        console.error(err);
+      const result = await authorize(fullHandle || handle.trim());
+      if ("authorizationUrl" in result) {
+        window.location.href = result.authorizationUrl;
+      } else {
+        // Error returned from server action (not thrown)
+        setError(result.error);
       }
     });
   };
