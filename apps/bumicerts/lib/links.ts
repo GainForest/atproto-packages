@@ -114,6 +114,7 @@ export const links = {
       const basePath = `${GREEN_GLOBE_PREVIEW_BASE_URL}/embed/${encodeURIComponent(did)}`;
       return queryString ? `${basePath}?${queryString}` : basePath;
     },
+    docs: "https://docs.fund.gainforest.app/",
     gbifPublisher:
       "https://www.gbif.org/publisher/c02486e8-eb54-4e94-81d8-1038cc58e208",
   },
