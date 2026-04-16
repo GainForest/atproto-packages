@@ -69,9 +69,16 @@ export const links = {
     ) => {
       const baseUrl = "https://polygons-gainforest.vercel.app";
       if (options) {
-        const searchParams = new URLSearchParams(
-          "params" in options ? options.params : undefined,
-        );
+        // Filter params because URLSearchParams produces the param value as "undefined" rather than omitting it.
+        const filteredParams =
+          "params" in options && options.params
+            ? Object.fromEntries(
+                Object.entries(options.params).filter(
+                  ([, v]) => v !== undefined,
+                ),
+              )
+            : undefined;
+        const searchParams = new URLSearchParams(filteredParams);
         const paramsString = searchParams.toString();
         return `${baseUrl}/${options.mode}${paramsString === "" ? "" : `?${paramsString}`}`;
       }
