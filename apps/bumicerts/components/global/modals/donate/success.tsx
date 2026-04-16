@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/modal/modal";
 import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
+import { getPublicUrlClient } from "@/lib/url";
+import Link from "next/link";
 import {
   CheckIcon,
   CopyIcon,
@@ -81,7 +83,7 @@ export function SuccessModal({
   };
 
   // Share functionality
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const baseUrl = getPublicUrlClient();
   const shareUrl = bumicertId
     ? `${baseUrl}${links.bumicert.view(bumicertId)}`
     : `${baseUrl}${links.leaderboard}`;
@@ -123,8 +125,7 @@ export function SuccessModal({
 
   const handleCopyLink = async () => {
     try {
-      const copyText = bumicertId ? shareText : `${shareText} ${shareUrl}`;
-      await navigator.clipboard.writeText(copyText);
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

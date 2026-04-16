@@ -9,6 +9,7 @@ import {
   ChevronLeftIcon,
   CirclePlusIcon,
   DatabaseIcon,
+  InfoIcon,
   Loader2,
   MapPin,
   RefreshCcw,
@@ -28,6 +29,11 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import Container from "@/components/ui/container";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useModal } from "@/components/ui/modal/context";
 import PhotoAttachModal, {
   type UploadedPhotoPayload,
@@ -45,6 +51,8 @@ import type {
 import { links } from "@/lib/links";
 import useMediaQuery from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
+import { getSelectableEstablishmentMeansOptions } from "@/lib/upload/establishment-means";
+import EstablishmentMeansInfoContent from "../../_components/EstablishmentMeansInfoContent";
 import { ManageConfirmModal } from "./ManageConfirmModal";
 import { TreesManageSkeleton } from "./TreesManageSkeleton";
 import {
@@ -98,15 +106,6 @@ const EMPTY_OCCURRENCE_DRAFT: TreeOccurrenceDraft = {
   establishmentMeans: "",
 };
 
-const ESTABLISHMENT_MEANS_OPTIONS = [
-  { value: "native", label: "Native" },
-  { value: "introduced", label: "Introduced" },
-  { value: "naturalised", label: "Naturalised" },
-  { value: "invasive", label: "Invasive" },
-  { value: "managed", label: "Managed" },
-  { value: "uncertain", label: "Uncertain" },
-] as const;
-
 const ESTABLISHMENT_MEANS_SENTINEL = "__none__";
 
 const EMPTY_MEASUREMENT_DRAFT: TreeMeasurementDraft = {
@@ -134,13 +133,15 @@ function formatSubjectPart(value: string | null): string {
 function getPhotoAltText(
   speciesName: string | null | undefined,
   subjectPart: string | null,
-  caption: string | null
+  caption: string | null,
 ): string {
   if (caption) {
     return caption;
   }
 
-  const part = subjectPart ? formatSubjectPart(subjectPart).toLowerCase() : "tree";
+  const part = subjectPart
+    ? formatSubjectPart(subjectPart).toLowerCase()
+    : "tree";
   const species = speciesName?.trim();
 
   return species ? `${part} photo of ${species}` : `${part} photo`;
@@ -168,7 +169,7 @@ function sameJsonValue(left: unknown, right: unknown): boolean {
 
 function sameOccurrenceRecord(
   left: NonNullable<OccurrenceItem["record"]>,
-  right: NonNullable<OccurrenceItem["record"]>
+  right: NonNullable<OccurrenceItem["record"]>,
 ): boolean {
   return (
     left.scientificName === right.scientificName &&
@@ -185,7 +186,10 @@ function sameOccurrenceRecord(
   );
 }
 
-function sameMeasurementItem(left: MeasurementItem, right: MeasurementItem): boolean {
+function sameMeasurementItem(
+  left: MeasurementItem,
+  right: MeasurementItem,
+): boolean {
   return (
     left.metadata.rkey === right.metadata.rkey &&
     left.record.occurrenceRef === right.record.occurrenceRef &&
@@ -198,7 +202,7 @@ function sameMeasurementItem(left: MeasurementItem, right: MeasurementItem): boo
 
 function sameMeasurementSet(
   left: MeasurementItem[],
-  right: MeasurementItem[]
+  right: MeasurementItem[],
 ): boolean {
   if (left.length !== right.length) {
     return false;
@@ -224,7 +228,7 @@ function createOptimisticMeasurementItem(
       measurementRemarks?: string;
       createdAt?: string;
     };
-  }
+  },
 ): MeasurementItem {
   return {
     metadata: {
@@ -254,7 +258,7 @@ function createOptimisticMeasurementItem(
 function createOptimisticPhotoItem(
   did: string,
   occurrenceUri: string,
-  uploadedPhoto: UploadedPhotoPayload
+  uploadedPhoto: UploadedPhotoPayload,
 ): MultimediaItem {
   return {
     metadata: {
@@ -272,7 +276,8 @@ function createOptimisticPhotoItem(
       subjectOrientation: uploadedPhoto.record.subjectOrientation ?? null,
       file: uploadedPhoto.record.file ?? null,
       format: uploadedPhoto.record.format ?? null,
-      accessUri: uploadedPhoto.previewUrl ?? uploadedPhoto.record.accessUri ?? null,
+      accessUri:
+        uploadedPhoto.previewUrl ?? uploadedPhoto.record.accessUri ?? null,
       variantLiteral: uploadedPhoto.record.variantLiteral ?? null,
       caption: uploadedPhoto.record.caption ?? null,
       creator: uploadedPhoto.record.creator ?? null,
@@ -297,11 +302,14 @@ function SectionCard({
     <section
       className={cn(
         "rounded-2xl border border-border bg-background p-4 md:p-5 space-y-4",
-        className
+        className,
       )}
     >
       <div className="space-y-1">
-        <h3 className="text-lg font-semibold" style={{ fontFamily: "var(--font-garamond-var)" }}>
+        <h3
+          className="text-lg font-semibold"
+          style={{ fontFamily: "var(--font-garamond-var)" }}
+        >
           {title}
         </h3>
         <p className="text-sm text-muted-foreground">{description}</p>
@@ -315,16 +323,21 @@ function Field({
   label,
   children,
   required = false,
+  labelInfo,
 }: {
   label: string;
   children: React.ReactNode;
   required?: boolean;
+  labelInfo?: React.ReactNode;
 }) {
   return (
     <label className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-      <span>
-        {label}
-        {required ? <span className="text-destructive ml-0.5">*</span> : null}
+      <span className="flex items-center gap-1.5">
+        <span>
+          {label}
+          {required ? <span className="text-destructive ml-0.5">*</span> : null}
+        </span>
+        {labelInfo}
       </span>
       {children}
     </label>
@@ -334,7 +347,10 @@ function Field({
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center h-64 gap-4 rounded-2xl border border-dashed border-border text-center px-6">
-      <p className="text-2xl text-muted-foreground" style={{ fontFamily: "var(--font-garamond-var)" }}>
+      <p
+        className="text-2xl text-muted-foreground"
+        style={{ fontFamily: "var(--font-garamond-var)" }}
+      >
         No trees uploaded yet
       </p>
       <p className="text-sm text-muted-foreground max-w-md">
@@ -342,7 +358,7 @@ function EmptyState() {
         measurements, and photos in one place.
       </p>
       <Button asChild>
-        <Link href={links.upload.trees}>
+        <Link href={links.manage.trees}>
           <CirclePlusIcon />
           Upload tree data
         </Link>
@@ -358,11 +374,11 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
   const [searchQuery, setSearchQuery] = useQueryState(
     "q",
-    parseAsString.withDefault("")
+    parseAsString.withDefault(""),
   );
   const [selectedTreeRkey, setSelectedTreeRkey] = useQueryState(
     "tree",
-    parseAsString.withDefault("")
+    parseAsString.withDefault(""),
   );
   const [datasetFilter, setDatasetFilter] = useState<string | null>(null);
 
@@ -378,38 +394,58 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
   const deleteMeasurement = trpc.dwc.measurement.delete.useMutation();
   const deleteMultimedia = trpc.ac.multimedia.delete.useMutation();
 
-  const [occurrenceDraft, setOccurrenceDraft] =
-    useState<TreeOccurrenceDraft>(EMPTY_OCCURRENCE_DRAFT);
+  const [occurrenceDraft, setOccurrenceDraft] = useState<TreeOccurrenceDraft>(
+    EMPTY_OCCURRENCE_DRAFT,
+  );
   const [initialOccurrenceDraft, setInitialOccurrenceDraft] =
     useState<TreeOccurrenceDraft>(EMPTY_OCCURRENCE_DRAFT);
   const [measurementDraft, setMeasurementDraft] =
     useState<TreeMeasurementDraft>(EMPTY_MEASUREMENT_DRAFT);
   const [initialMeasurementDraft, setInitialMeasurementDraft] =
     useState<TreeMeasurementDraft>(EMPTY_MEASUREMENT_DRAFT);
-  const [occurrenceFeedback, setOccurrenceFeedback] = useState<string | null>(null);
-  const [measurementFeedback, setMeasurementFeedback] = useState<string | null>(null);
+  const [occurrenceFeedback, setOccurrenceFeedback] = useState<string | null>(
+    null,
+  );
+  const [measurementFeedback, setMeasurementFeedback] = useState<string | null>(
+    null,
+  );
+
+  const selectableEstablishmentMeansOptions = useMemo(
+    () =>
+      getSelectableEstablishmentMeansOptions(
+        occurrenceDraft.establishmentMeans,
+      ),
+    [occurrenceDraft.establishmentMeans],
+  );
+  const selectedEstablishmentMeansOption = useMemo(
+    () =>
+      selectableEstablishmentMeansOptions.find(
+        (option) => option.value === occurrenceDraft.establishmentMeans,
+      ) ?? null,
+    [occurrenceDraft.establishmentMeans, selectableEstablishmentMeansOptions],
+  );
   const [occurrenceError, setOccurrenceError] = useState<string | null>(null);
   const [measurementError, setMeasurementError] = useState<string | null>(null);
-  const [optimisticOccurrenceRecords, setOptimisticOccurrenceRecords] = useState<
-    Record<string, NonNullable<OccurrenceItem["record"]>>
-  >({});
-  const [optimisticMeasurementRecords, setOptimisticMeasurementRecords] = useState<
-    Record<string, MeasurementItem[]>
-  >({});
+  const [optimisticOccurrenceRecords, setOptimisticOccurrenceRecords] =
+    useState<Record<string, NonNullable<OccurrenceItem["record"]>>>({});
+  const [optimisticMeasurementRecords, setOptimisticMeasurementRecords] =
+    useState<Record<string, MeasurementItem[]>>({});
   const [optimisticAddedPhotos, setOptimisticAddedPhotos] = useState<
     Record<string, MultimediaItem[]>
   >({});
-  const [optimisticDeletedPhotoRkeys, setOptimisticDeletedPhotoRkeys] = useState<
-    Record<string, true>
-  >({});
-  const [optimisticDeletedOccurrenceRkeys, setOptimisticDeletedOccurrenceRkeys] = useState<
-    Record<string, true>
-  >({});
+  const [optimisticDeletedPhotoRkeys, setOptimisticDeletedPhotoRkeys] =
+    useState<Record<string, true>>({});
+  const [
+    optimisticDeletedOccurrenceRkeys,
+    setOptimisticDeletedOccurrenceRkeys,
+  ] = useState<Record<string, true>>({});
   const optimisticAddedPhotosRef = useRef(optimisticAddedPhotos);
   const lastDraftResetKeyRef = useRef<string | null>(null);
 
   const isLoading =
-    occurrencesQuery.isLoading || measurementsQuery.isLoading || multimediaQuery.isLoading;
+    occurrencesQuery.isLoading ||
+    measurementsQuery.isLoading ||
+    multimediaQuery.isLoading;
   const queryError =
     occurrencesQuery.error ?? measurementsQuery.error ?? multimediaQuery.error;
 
@@ -419,18 +455,25 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
       const record = item.record;
       const rkey = metadata?.rkey;
 
-      if (!metadata || !record || !rkey || optimisticDeletedOccurrenceRkeys[rkey]) {
+      if (
+        !metadata ||
+        !record ||
+        !rkey ||
+        optimisticDeletedOccurrenceRkeys[rkey]
+      ) {
         return [];
       }
 
       const optimisticRecord = optimisticOccurrenceRecords[rkey];
-      return [{
-        ...item,
-        record:
-          optimisticRecord && !sameOccurrenceRecord(record, optimisticRecord)
-            ? optimisticRecord
-            : record,
-      }];
+      return [
+        {
+          ...item,
+          record:
+            optimisticRecord && !sameOccurrenceRecord(record, optimisticRecord)
+              ? optimisticRecord
+              : record,
+        },
+      ];
     });
   }, [
     occurrencesQuery.data,
@@ -440,7 +483,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
   const mergedMeasurements = useMemo(() => {
     const overriddenOccurrenceUris = new Set(
-      Object.keys(optimisticMeasurementRecords)
+      Object.keys(optimisticMeasurementRecords),
     );
 
     const baseMeasurements = measurementsQuery.data ?? [];
@@ -457,15 +500,15 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
       measurementsByOccurrence.set(occurrenceRef, existing);
     }
 
-    const mergedForOverrides = Object.entries(optimisticMeasurementRecords).flatMap(
-      ([occurrenceUri, optimisticItems]) => {
-        const serverItems = measurementsByOccurrence.get(occurrenceUri) ?? [];
+    const mergedForOverrides = Object.entries(
+      optimisticMeasurementRecords,
+    ).flatMap(([occurrenceUri, optimisticItems]) => {
+      const serverItems = measurementsByOccurrence.get(occurrenceUri) ?? [];
 
-        return sameMeasurementSet(serverItems, optimisticItems)
-          ? serverItems
-          : optimisticItems;
-      }
-    );
+      return sameMeasurementSet(serverItems, optimisticItems)
+        ? serverItems
+        : optimisticItems;
+    });
 
     const untouchedMeasurements = baseMeasurements.filter((item) => {
       const occurrenceRef = item.record.occurrenceRef;
@@ -484,7 +527,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     const basePhotoRkeys = new Set(
       basePhotos
         .map((item) => item.metadata?.rkey)
-        .filter((value): value is string => typeof value === "string")
+        .filter((value): value is string => typeof value === "string"),
     );
 
     const optimisticPhotos = Object.values(optimisticAddedPhotos)
@@ -499,20 +542,27 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
       });
 
     return [...optimisticPhotos, ...basePhotos];
-  }, [multimediaQuery.data, optimisticAddedPhotos, optimisticDeletedPhotoRkeys]);
+  }, [
+    multimediaQuery.data,
+    optimisticAddedPhotos,
+    optimisticDeletedPhotoRkeys,
+  ]);
 
   const treeItems = useMemo(
     () =>
       buildTreeManagerItems(
         mergedOccurrences,
         mergedMeasurements,
-        mergedMultimedia
+        mergedMultimedia,
       ),
-    [mergedOccurrences, mergedMeasurements, mergedMultimedia]
+    [mergedOccurrences, mergedMeasurements, mergedMultimedia],
   );
 
   // Dataset lookup: URI → DatasetItem for display + filtering
-  const datasetItems = useMemo(() => datasetsQuery.data ?? [], [datasetsQuery.data]);
+  const datasetItems = useMemo(
+    () => datasetsQuery.data ?? [],
+    [datasetsQuery.data],
+  );
   const datasetLookup = useMemo(() => {
     const map = new Map<string, DatasetItem>();
     for (const ds of datasetItems) {
@@ -548,7 +598,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
       // Resolve dataset name for search
       const datasetRef = record.datasetRef;
-      const datasetName = typeof datasetRef === "string" ? datasetLookup.get(datasetRef)?.record?.name : null;
+      const datasetName =
+        typeof datasetRef === "string"
+          ? datasetLookup.get(datasetRef)?.record?.name
+          : null;
 
       const haystack = [
         record.scientificName,
@@ -559,7 +612,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
         record.eventDate,
         datasetName,
       ]
-        .filter((value): value is string => typeof value === "string" && value.length > 0)
+        .filter(
+          (value): value is string =>
+            typeof value === "string" && value.length > 0,
+        )
         .join(" ")
         .toLowerCase();
 
@@ -574,22 +630,22 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
     return (
       treeItems.find(
-        (item) => item.occurrence.metadata?.rkey === selectedTreeRkey
+        (item) => item.occurrence.metadata?.rkey === selectedTreeRkey,
       ) ?? null
     );
   }, [selectedTreeRkey, treeItems]);
 
   const activeTree = isDesktop
-    ? selectedTree ?? filteredTrees[0] ?? null
+    ? (selectedTree ?? filteredTrees[0] ?? null)
     : selectedTree;
 
   useEffect(() => {
     const firstVisibleRkey = getSelectedRkey(filteredTrees[0] ?? null);
     const isSelectionVisible = Boolean(
       selectedTreeRkey &&
-        filteredTrees.some(
-          (item) => item.occurrence.metadata?.rkey === selectedTreeRkey
-        )
+      filteredTrees.some(
+        (item) => item.occurrence.metadata?.rkey === selectedTreeRkey,
+      ),
     );
 
     if (isDesktop) {
@@ -607,12 +663,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     if (selectedTreeRkey && !isSelectionVisible) {
       void setSelectedTreeRkey(null);
     }
-  }, [
-    filteredTrees,
-    isDesktop,
-    selectedTreeRkey,
-    setSelectedTreeRkey,
-  ]);
+  }, [filteredTrees, isDesktop, selectedTreeRkey, setSelectedTreeRkey]);
 
   const activeTreeResetKey = activeTree?.occurrence.metadata?.rkey ?? null;
 
@@ -627,7 +678,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
       ? getTreeOccurrenceDraft(activeTree.occurrence.record)
       : EMPTY_OCCURRENCE_DRAFT;
     const nextMeasurementDraft = getTreeMeasurementDraft(
-      activeTree?.floraMeasurement ?? null
+      activeTree?.floraMeasurement ?? null,
     );
 
     const resetHandle = window.setTimeout(() => {
@@ -661,22 +712,25 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
       setOptimisticOccurrenceRecords((current) => {
         let changed = false;
         const serverByRkey = new Map(
-          (occurrencesQuery.data ?? [])
-            .flatMap((item) => {
-              const rkey = item.metadata?.rkey;
-              const record = item.record;
-              return rkey && record ? [[rkey, record] as const] : [];
-            })
+          (occurrencesQuery.data ?? []).flatMap((item) => {
+            const rkey = item.metadata?.rkey;
+            const record = item.record;
+            return rkey && record ? [[rkey, record] as const] : [];
+          }),
         );
 
-        const remainingEntries = Object.entries(current).filter(([rkey, optimisticRecord]) => {
-          const serverRecord = serverByRkey.get(rkey);
-          const keep = !serverRecord || !sameOccurrenceRecord(serverRecord, optimisticRecord);
-          if (!keep) {
-            changed = true;
-          }
-          return keep;
-        });
+        const remainingEntries = Object.entries(current).filter(
+          ([rkey, optimisticRecord]) => {
+            const serverRecord = serverByRkey.get(rkey);
+            const keep =
+              !serverRecord ||
+              !sameOccurrenceRecord(serverRecord, optimisticRecord);
+            if (!keep) {
+              changed = true;
+            }
+            return keep;
+          },
+        );
 
         return changed
           ? (Object.fromEntries(remainingEntries) as typeof current)
@@ -698,14 +752,16 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
           serverByOccurrence.set(occurrenceRef, existing);
         }
 
-        const remainingEntries = Object.entries(current).filter(([occurrenceUri, optimisticItems]) => {
-          const serverItems = serverByOccurrence.get(occurrenceUri) ?? [];
-          const keep = !sameMeasurementSet(serverItems, optimisticItems);
-          if (!keep) {
-            changed = true;
-          }
-          return keep;
-        });
+        const remainingEntries = Object.entries(current).filter(
+          ([occurrenceUri, optimisticItems]) => {
+            const serverItems = serverByOccurrence.get(occurrenceUri) ?? [];
+            const keep = !sameMeasurementSet(serverItems, optimisticItems);
+            if (!keep) {
+              changed = true;
+            }
+            return keep;
+          },
+        );
 
         return changed
           ? (Object.fromEntries(remainingEntries) as typeof current)
@@ -716,8 +772,14 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     return () => window.clearTimeout(resetHandle);
   }, [measurementsQuery.data, occurrencesQuery.data]);
 
-  const occurrenceHasChanges = !isDraftEqual(occurrenceDraft, initialOccurrenceDraft);
-  const measurementHasChanges = !isDraftEqual(measurementDraft, initialMeasurementDraft);
+  const occurrenceHasChanges = !isDraftEqual(
+    occurrenceDraft,
+    initialOccurrenceDraft,
+  );
+  const measurementHasChanges = !isDraftEqual(
+    measurementDraft,
+    initialMeasurementDraft,
+  );
 
   const occurrenceValidationError = occurrenceHasChanges
     ? validateOccurrenceDraft(occurrenceDraft)
@@ -744,7 +806,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
   const handleOccurrenceFieldChange = (
     field: OccurrenceField,
-    value: string
+    value: string,
   ) => {
     setOccurrenceDraft((current) => ({ ...current, [field]: value }));
     setOccurrenceFeedback(null);
@@ -753,7 +815,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
   const handleMeasurementFieldChange = (
     field: keyof TreeMeasurementDraft,
-    value: string
+    value: string,
   ) => {
     setMeasurementDraft((current) => ({ ...current, [field]: value }));
     setMeasurementFeedback(null);
@@ -777,13 +839,13 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
       Object.entries(occurrenceDraft).map(([key, value]) => [
         key,
         normalizeDraftValue(value),
-      ])
+      ]),
     ) as TreeOccurrenceDraft;
     const normalizedInitial = Object.fromEntries(
       Object.entries(initialOccurrenceDraft).map(([key, value]) => [
         key,
         normalizeDraftValue(value),
-      ])
+      ]),
     ) as TreeOccurrenceDraft;
 
     const data: Partial<Record<OccurrenceField, string>> = {};
@@ -830,10 +892,13 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
             ...Object.fromEntries(
               Object.entries(normalizedCurrent).map(([key, value]) => [
                 key,
-                value === "" && OPTIONAL_OCCURRENCE_FIELDS.includes(key as OptionalOccurrenceField)
+                value === "" &&
+                OPTIONAL_OCCURRENCE_FIELDS.includes(
+                  key as OptionalOccurrenceField,
+                )
                   ? null
                   : value,
-              ])
+              ]),
             ),
           },
         };
@@ -851,7 +916,8 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
   const handleSaveMeasurement = async () => {
     const occurrenceUri = getOccurrenceUri(activeTree);
-    const measurementRkey = activeTree?.preferredMeasurement?.metadata?.rkey ?? null;
+    const measurementRkey =
+      activeTree?.preferredMeasurement?.metadata?.rkey ?? null;
 
     if (!occurrenceUri) {
       return;
@@ -863,7 +929,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
       activeTree?.hasDuplicateBundledMeasurements
     ) {
       setMeasurementError(
-        "This tree has measurement records that need manual review before editing here."
+        "This tree has measurement records that need manual review before editing here.",
       );
       return;
     }
@@ -878,7 +944,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
       Object.entries(measurementDraft).map(([key, value]) => [
         key,
         normalizeDraftValue(value),
-      ])
+      ]),
     ) as TreeMeasurementDraft;
 
     if (isDraftEqual(normalizedCurrent, initialMeasurementDraft)) {
@@ -927,7 +993,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
         });
         setOptimisticMeasurementRecords((current) => ({
           ...current,
-          [occurrenceUri]: [createOptimisticMeasurementItem(did, occurrenceUri, result)],
+          [occurrenceUri]: [
+            createOptimisticMeasurementItem(did, occurrenceUri, result),
+          ],
         }));
         setMeasurementFeedback("Measurements added.");
       }
@@ -951,7 +1019,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
     pushModal(
       {
-        id: MODAL_IDS.UPLOAD_PHOTO_ATTACH,
+        id: MODAL_IDS.MANAGE_PHOTO_ATTACH,
         content: (
           <PhotoAttachModal
             occurrenceUri={occurrenceUri}
@@ -962,7 +1030,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                 const optimisticItem = createOptimisticPhotoItem(
                   did,
                   occurrenceUri,
-                  uploadedPhoto
+                  uploadedPhoto,
                 );
 
                 return {
@@ -975,7 +1043,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
           />
         ),
       },
-      true
+      true,
     );
     void show();
   };
@@ -1023,7 +1091,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
           />
         ),
       },
-      true
+      true,
     );
     void show();
   };
@@ -1034,7 +1102,8 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
       return;
     }
 
-    const hasLinkedChildren = item.photos.length > 0 || item.measurements.length > 0;
+    const hasLinkedChildren =
+      item.photos.length > 0 || item.measurements.length > 0;
     if (hasLinkedChildren) {
       return;
     }
@@ -1060,7 +1129,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
         ),
         dialogWidth: "max-w-md",
       },
-      true
+      true,
     );
     void show();
   };
@@ -1086,7 +1155,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
             <AlertTriangle className="size-5 text-destructive" />
           </div>
           <div className="space-y-1">
-            <h1 className="text-2xl" style={{ fontFamily: "var(--font-garamond-var)" }}>
+            <h1
+              className="text-2xl"
+              style={{ fontFamily: "var(--font-garamond-var)" }}
+            >
               Couldn&apos;t load tree records
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -1106,7 +1178,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     <Container className="pt-4 pb-8 space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-garamond-var)" }}>
+          <h1
+            className="text-2xl font-bold"
+            style={{ fontFamily: "var(--font-garamond-var)" }}
+          >
             Tree Manager
           </h1>
           <p className="text-sm text-muted-foreground max-w-2xl">
@@ -1117,10 +1192,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
-            <Link href={links.upload.home}>Back to upload</Link>
+            <Link href={links.manage.home}>Back to upload</Link>
           </Button>
           <Button asChild>
-            <Link href={links.upload.trees}>
+            <Link href={links.manage.trees}>
               <CirclePlusIcon />
               Upload more trees
             </Link>
@@ -1134,7 +1209,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
             <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchQuery}
-              onChange={(event) => void setSearchQuery(event.target.value || null)}
+              onChange={(event) =>
+                void setSearchQuery(event.target.value || null)
+              }
               placeholder="Search by species, locality, recorder, or date"
               className="pl-9"
             />
@@ -1142,7 +1219,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
           {datasetItems.length > 0 && (
             <Select
               value={datasetFilter ?? "__all__"}
-              onValueChange={(value) => setDatasetFilter(value === "__all__" ? null : value)}
+              onValueChange={(value) =>
+                setDatasetFilter(value === "__all__" ? null : value)
+              }
             >
               <SelectTrigger className="w-full lg:w-56 shrink-0">
                 <div className="flex items-center gap-1.5 truncate">
@@ -1177,7 +1256,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
         <EmptyState />
       ) : filteredTrees.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-56 gap-3 rounded-2xl border border-dashed border-border text-center px-6">
-          <p className="text-2xl text-muted-foreground" style={{ fontFamily: "var(--font-garamond-var)" }}>
+          <p
+            className="text-2xl text-muted-foreground"
+            style={{ fontFamily: "var(--font-garamond-var)" }}
+          >
             No trees match your search
           </p>
           <p className="text-sm text-muted-foreground">
@@ -1192,9 +1274,12 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
           {(isDesktop || !activeTree) && (
             <section className="rounded-2xl border border-border bg-background overflow-hidden">
               <div className="border-b border-border px-4 py-3">
-                <p className="text-sm font-medium text-foreground">Uploaded trees</p>
+                <p className="text-sm font-medium text-foreground">
+                  Uploaded trees
+                </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Select a record to review its details, measurements, and photos.
+                  Select a record to review its details, measurements, and
+                  photos.
                 </p>
               </div>
 
@@ -1206,7 +1291,8 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                     return null;
                   }
 
-                  const isSelected = activeTree?.occurrence.metadata?.rkey === metadata.rkey;
+                  const isSelected =
+                    activeTree?.occurrence.metadata?.rkey === metadata.rkey;
 
                   return (
                     <button
@@ -1215,7 +1301,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       onClick={() => void setSelectedTreeRkey(metadata.rkey)}
                       className={cn(
                         "w-full px-4 py-3 text-left transition-colors",
-                        isSelected ? "bg-primary/5" : "hover:bg-muted/35"
+                        isSelected ? "bg-primary/5" : "hover:bg-muted/35",
                       )}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -1243,23 +1329,32 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                         <div className="flex flex-col items-end gap-1 shrink-0">
                           {(() => {
                             const dsRef = record.datasetRef;
-                            const dsName = typeof dsRef === "string" ? datasetLookup.get(dsRef)?.record?.name : null;
+                            const dsName =
+                              typeof dsRef === "string"
+                                ? datasetLookup.get(dsRef)?.record?.name
+                                : null;
                             return dsName ? (
-                              <Badge variant="outline" className="max-w-[10rem] truncate text-[10px]">
+                              <Badge
+                                variant="outline"
+                                className="max-w-[10rem] truncate text-[10px]"
+                              >
                                 <DatabaseIcon className="size-2.5 shrink-0 mr-0.5" />
                                 {dsName}
                               </Badge>
                             ) : null;
                           })()}
                           {item.photos.length > 0 ? (
-                            <Badge variant="outline">{item.photos.length} photos</Badge>
+                            <Badge variant="outline">
+                              {item.photos.length} photos
+                            </Badge>
                           ) : null}
-                            {item.hasDuplicateBundledMeasurements ? (
-                              <Badge variant="secondary">Needs cleanup</Badge>
-                            ) : item.floraMeasurement ? (
-                              <Badge variant="success">Measurements</Badge>
-                            ) : item.hasLegacyMeasurements || item.hasUnsupportedMeasurements ? (
-                              <Badge variant="secondary">Migration needed</Badge>
+                          {item.hasDuplicateBundledMeasurements ? (
+                            <Badge variant="secondary">Needs cleanup</Badge>
+                          ) : item.floraMeasurement ? (
+                            <Badge variant="success">Measurements</Badge>
+                          ) : item.hasLegacyMeasurements ||
+                            item.hasUnsupportedMeasurements ? (
+                            <Badge variant="secondary">Migration needed</Badge>
                           ) : null}
                         </div>
                       </div>
@@ -1294,7 +1389,8 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                         className="text-3xl leading-none text-foreground truncate"
                         style={{ fontFamily: "var(--font-garamond-var)" }}
                       >
-                        {activeTree.occurrence.record?.scientificName ?? "Untitled tree"}
+                        {activeTree.occurrence.record?.scientificName ??
+                          "Untitled tree"}
                       </h2>
                       {activeTree.occurrence.record?.vernacularName ? (
                         <p className="text-sm italic text-muted-foreground">
@@ -1309,11 +1405,16 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                         {formatTreeSubtitle(activeTree)}
                       </span>
                       <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1">
-                        {formatEventDate(activeTree.occurrence.record?.eventDate)}
+                        {formatEventDate(
+                          activeTree.occurrence.record?.eventDate,
+                        )}
                       </span>
                       {(() => {
                         const dsRef = activeTree.occurrence.record?.datasetRef;
-                        const dsName = typeof dsRef === "string" ? datasetLookup.get(dsRef)?.record?.name : null;
+                        const dsName =
+                          typeof dsRef === "string"
+                            ? datasetLookup.get(dsRef)?.record?.name
+                            : null;
                         return dsName ? (
                           <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1">
                             <DatabaseIcon className="size-3" />
@@ -1325,12 +1426,15 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                   </div>
 
                   <div className="flex flex-wrap gap-2 shrink-0">
-                    <Badge variant="outline">{activeTree.photos.length} photos</Badge>
+                    <Badge variant="outline">
+                      {activeTree.photos.length} photos
+                    </Badge>
                     {activeTree.hasDuplicateBundledMeasurements ? (
                       <Badge variant="secondary">Needs cleanup</Badge>
                     ) : activeTree.floraMeasurement ? (
                       <Badge variant="success">Measurements ready</Badge>
-                    ) : activeTree.hasLegacyMeasurements || activeTree.hasUnsupportedMeasurements ? (
+                    ) : activeTree.hasLegacyMeasurements ||
+                      activeTree.hasUnsupportedMeasurements ? (
                       <Badge variant="secondary">Migration needed</Badge>
                     ) : (
                       <Badge variant="outline">No measurements yet</Badge>
@@ -1356,7 +1460,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                     <Input
                       value={occurrenceDraft.scientificName}
                       onChange={(event) =>
-                        handleOccurrenceFieldChange("scientificName", event.target.value)
+                        handleOccurrenceFieldChange(
+                          "scientificName",
+                          event.target.value,
+                        )
                       }
                     />
                   </Field>
@@ -1364,7 +1471,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                     <Input
                       value={occurrenceDraft.vernacularName}
                       onChange={(event) =>
-                        handleOccurrenceFieldChange("vernacularName", event.target.value)
+                        handleOccurrenceFieldChange(
+                          "vernacularName",
+                          event.target.value,
+                        )
                       }
                     />
                   </Field>
@@ -1372,7 +1482,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                     <Input
                       value={occurrenceDraft.eventDate}
                       onChange={(event) =>
-                        handleOccurrenceFieldChange("eventDate", event.target.value)
+                        handleOccurrenceFieldChange(
+                          "eventDate",
+                          event.target.value,
+                        )
                       }
                       placeholder="YYYY-MM-DD"
                     />
@@ -1381,7 +1494,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                     <Input
                       value={occurrenceDraft.recordedBy}
                       onChange={(event) =>
-                        handleOccurrenceFieldChange("recordedBy", event.target.value)
+                        handleOccurrenceFieldChange(
+                          "recordedBy",
+                          event.target.value,
+                        )
                       }
                     />
                   </Field>
@@ -1391,7 +1507,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       onChange={(event) =>
                         handleOccurrenceFieldChange(
                           "decimalLatitude",
-                          event.target.value
+                          event.target.value,
                         )
                       }
                     />
@@ -1402,7 +1518,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       onChange={(event) =>
                         handleOccurrenceFieldChange(
                           "decimalLongitude",
-                          event.target.value
+                          event.target.value,
                         )
                       }
                     />
@@ -1411,7 +1527,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                     <Input
                       value={occurrenceDraft.country}
                       onChange={(event) =>
-                        handleOccurrenceFieldChange("country", event.target.value)
+                        handleOccurrenceFieldChange(
+                          "country",
+                          event.target.value,
+                        )
                       }
                     />
                   </Field>
@@ -1419,7 +1538,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                     <Input
                       value={occurrenceDraft.locality}
                       onChange={(event) =>
-                        handleOccurrenceFieldChange("locality", event.target.value)
+                        handleOccurrenceFieldChange(
+                          "locality",
+                          event.target.value,
+                        )
                       }
                     />
                   </Field>
@@ -1427,31 +1549,69 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                     <Textarea
                       value={occurrenceDraft.habitat}
                       onChange={(event) =>
-                        handleOccurrenceFieldChange("habitat", event.target.value)
+                        handleOccurrenceFieldChange(
+                          "habitat",
+                          event.target.value,
+                        )
                       }
                       rows={3}
                     />
                   </Field>
-                  <Field label="Establishment means">
+                  <Field
+                    label="Establishment means"
+                    labelInfo={
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="h-5 w-5 rounded-full bg-transparent p-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
+                            aria-label="Show establishment means guidance"
+                          >
+                            <InfoIcon />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="w-72 p-3">
+                          <EstablishmentMeansInfoContent
+                            currentValue={occurrenceDraft.establishmentMeans}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    }
+                  >
                     <Select
-                      value={occurrenceDraft.establishmentMeans || ESTABLISHMENT_MEANS_SENTINEL}
+                      value={
+                        occurrenceDraft.establishmentMeans ||
+                        ESTABLISHMENT_MEANS_SENTINEL
+                      }
                       onValueChange={(value) =>
                         handleOccurrenceFieldChange(
                           "establishmentMeans",
-                          value === ESTABLISHMENT_MEANS_SENTINEL ? "" : value
+                          value === ESTABLISHMENT_MEANS_SENTINEL ? "" : value,
                         )
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Not specified" />
+                        <SelectValue placeholder="Not specified">
+                          {selectedEstablishmentMeansOption?.label ??
+                            "Not specified"}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={ESTABLISHMENT_MEANS_SENTINEL}>
-                          <span className="text-muted-foreground">Not specified</span>
+                          <span className="text-muted-foreground">
+                            Not specified
+                          </span>
                         </SelectItem>
-                        {ESTABLISHMENT_MEANS_OPTIONS.map((option) => (
+                        {selectableEstablishmentMeansOptions.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            <div className="flex flex-col items-start gap-0.5">
+                              <span>{option.label}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {option.description}
+                              </span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1463,7 +1623,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       onChange={(event) =>
                         handleOccurrenceFieldChange(
                           "occurrenceRemarks",
-                          event.target.value
+                          event.target.value,
                         )
                       }
                       rows={3}
@@ -1478,7 +1638,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                         {occurrenceError ?? occurrenceValidationError}
                       </span>
                     ) : occurrenceFeedback ? (
-                      <span className="text-muted-foreground">{occurrenceFeedback}</span>
+                      <span className="text-muted-foreground">
+                        {occurrenceFeedback}
+                      </span>
                     ) : null}
                   </div>
                   <Button
@@ -1489,7 +1651,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       updateOccurrence.isPending
                     }
                   >
-                    {updateOccurrence.isPending ? <Loader2 className="animate-spin" /> : null}
+                    {updateOccurrence.isPending ? (
+                      <Loader2 className="animate-spin" />
+                    ) : null}
                     Save details
                   </Button>
                 </div>
@@ -1512,7 +1676,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                         <Input
                           value={measurementDraft.dbh}
                           onChange={(event) =>
-                            handleMeasurementFieldChange("dbh", event.target.value)
+                            handleMeasurementFieldChange(
+                              "dbh",
+                              event.target.value,
+                            )
                           }
                         />
                       </Field>
@@ -1522,7 +1689,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                           onChange={(event) =>
                             handleMeasurementFieldChange(
                               "totalHeight",
-                              event.target.value
+                              event.target.value,
                             )
                           }
                         />
@@ -1531,7 +1698,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                         <Input
                           value={measurementDraft.diameter}
                           onChange={(event) =>
-                            handleMeasurementFieldChange("diameter", event.target.value)
+                            handleMeasurementFieldChange(
+                              "diameter",
+                              event.target.value,
+                            )
                           }
                         />
                       </Field>
@@ -1541,7 +1711,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                           onChange={(event) =>
                             handleMeasurementFieldChange(
                               "canopyCoverPercent",
-                              event.target.value
+                              event.target.value,
                             )
                           }
                         />
@@ -1555,10 +1725,13 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                             {measurementError ?? measurementValidationError}
                           </span>
                         ) : measurementFeedback ? (
-                          <span className="text-muted-foreground">{measurementFeedback}</span>
+                          <span className="text-muted-foreground">
+                            {measurementFeedback}
+                          </span>
                         ) : !activeTree.preferredMeasurement ? (
                           <span className="text-muted-foreground">
-                            Add one or more values to create a bundled flora measurement.
+                            Add one or more values to create a bundled flora
+                            measurement.
                           </span>
                         ) : null}
                       </div>
@@ -1580,7 +1753,8 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                         deleteMeasurement.isPending ? (
                           <Loader2 className="animate-spin" />
                         ) : null}
-                        {activeTree.preferredMeasurement && !hasAnyMeasurementValue(measurementDraft)
+                        {activeTree.preferredMeasurement &&
+                        !hasAnyMeasurementValue(measurementDraft)
                           ? "Remove measurements"
                           : activeTree.preferredMeasurement
                             ? "Save measurements"
@@ -1604,7 +1778,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
                 {activeTree.photos.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border px-6 py-10 text-center">
-                    <p className="text-muted-foreground">No photos linked to this tree yet.</p>
+                    <p className="text-muted-foreground">
+                      No photos linked to this tree yet.
+                    </p>
                     <Button variant="outline" onClick={openAddPhotoModal}>
                       <Camera />
                       Attach first photo
@@ -1622,7 +1798,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       const photoAlt = getPhotoAltText(
                         activeTree.occurrence.record?.scientificName,
                         photo.record.subjectPart,
-                        photo.record.caption
+                        photo.record.caption,
                       );
 
                       return (
@@ -1669,7 +1845,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                                 variant="ghost"
                                 size="icon-sm"
                                 className="text-muted-foreground hover:text-destructive"
-                                onClick={() => openDeletePhotoModal(metadata.rkey)}
+                                onClick={() =>
+                                  openDeletePhotoModal(metadata.rkey)
+                                }
                               >
                                 <Trash2 className="size-4" />
                               </Button>
@@ -1707,7 +1885,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                     disabled={!canDeleteTree || deleteOccurrence.isPending}
                     onClick={() => openDeleteTreeModal(activeTree)}
                   >
-                    {deleteOccurrence.isPending ? <Loader2 className="animate-spin" /> : null}
+                    {deleteOccurrence.isPending ? (
+                      <Loader2 className="animate-spin" />
+                    ) : null}
                     <Trash2 />
                     Delete tree
                   </Button>
