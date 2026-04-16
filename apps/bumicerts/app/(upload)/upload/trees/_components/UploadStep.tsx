@@ -20,6 +20,7 @@ import { useModal } from "@/components/ui/modal/context";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import PhotoAttachModal from "@/components/global/modals/upload/photo-attachment";
 import { formatError } from "@/lib/utils/trpc-errors";
+import { buildTreeDynamicProperties } from "@/lib/upload/tree-dynamic-properties";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -250,6 +251,7 @@ export default function UploadStep({
           ...row.occurrence,
           ...(establishmentMeans ? { establishmentMeans } : {}),
           ...(datasetUri ? { datasetRef: datasetUri } : {}),
+          dynamicProperties: buildTreeDynamicProperties(datasetUri),
         };
         const occInput = occurrenceInputToCreateInput(occurrence);
         const occResult = await createOccurrence.mutateAsync(occInput);
