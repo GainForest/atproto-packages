@@ -24,10 +24,11 @@ export const links = {
 
   /** Tab routes for an organization profile page. */
   organization: {
-    home:      (did: string) => `/organization/${encodeURIComponent(did)}`,
-    bumicerts: (did: string) => `/organization/${encodeURIComponent(did)}/bumicerts`,
+    home: (did: string) => `/organization/${encodeURIComponent(did)}`,
+    bumicerts: (did: string) =>
+      `/organization/${encodeURIComponent(did)}/bumicerts`,
   },
-  upload: {
+  manage: {
     home: "/upload",
     edit: "/upload?mode=edit",
     sites: "/upload/sites",
@@ -53,7 +54,8 @@ export const links = {
       return `/bumicert/${didOrId}`;
     },
     api: {
-      generateShortDescription: "/bumicert/create/api/generate-short-description",
+      generateShortDescription:
+        "/bumicert/create/api/generate-short-description",
     },
   },
   external: {
@@ -61,8 +63,35 @@ export const links = {
      * Legacy Gainforest map viewer with a GeoJSON shapefile loaded.
      * Pass the resolved blob URL as `shapefileUrl`.
      */
-    gainforestMapViewer: (shapefileUrl: string) =>
-      `https://legacy.gainforest.app/?shapefile=${encodeURIComponent(shapefileUrl)}&showUI=false`,
+    polygonsAppUrl: (
+      options?:
+        | {
+            mode: "view";
+            params: {
+              certifiedLocationRecordUri?: `at://did:plc:${string}/app.certified.location/${string}`;
+            };
+          }
+        | {
+            mode: "draw";
+          },
+    ) => {
+      const baseUrl = "https://polygons-gainforest.vercel.app";
+      if (options) {
+        // Filter params because URLSearchParams produces the param value as "undefined" rather than omitting it.
+        const filteredParams =
+          "params" in options && options.params
+            ? Object.fromEntries(
+                Object.entries(options.params).filter(
+                  ([, v]) => v !== undefined,
+                ),
+              )
+            : undefined;
+        const searchParams = new URLSearchParams(filteredParams);
+        const paramsString = searchParams.toString();
+        return `${baseUrl}/${options.mode}${paramsString === "" ? "" : `?${paramsString}`}`;
+      }
+      return baseUrl;
+    },
     basescan: (txHash: string) => `https://basescan.org/tx/${txHash}`,
     github: "https://github.com/GainForest/bumicerts-monorepo",
     twitter: "https://www.x.com/GainForestNow",

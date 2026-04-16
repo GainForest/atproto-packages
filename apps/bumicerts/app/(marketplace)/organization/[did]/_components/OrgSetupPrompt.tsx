@@ -10,7 +10,7 @@ interface OrgSetupPromptProps {
 }
 
 /**
- * Displayed when a user navigates to /upload but hasn't set up their
+ * Displayed when a user navigates to /manage but hasn't set up their
  * organization yet. Prompts them to complete org setup first.
  */
 export function OrgSetupPrompt({ did }: OrgSetupPromptProps) {
@@ -27,7 +27,7 @@ export function OrgSetupPrompt({ did }: OrgSetupPromptProps) {
         profile. This only takes a few minutes.
       </p>
       <Button asChild>
-        <Link href={links.organization.home(did)}>
+        <Link href={links.manage.home}>
           Set Up Organization
           <ArrowRightIcon />
         </Link>

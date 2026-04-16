@@ -10,6 +10,7 @@ import {
   ModalFooter,
 } from "@/components/ui/modal/modal";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { useAccount } from "wagmi";
 import type { BumicertData, FundingConfigData } from "@/lib/types";
@@ -58,7 +59,7 @@ interface AmountModalProps {
 }
 
 export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
-  const { pushModal, stack, hide, popModal } = useModal();
+  const { pushModal, hide, clear } = useModal();
   const auth = useAtprotoStore((state) => state.auth);
   const isAuthenticated = auth.status === "AUTHENTICATED";
   const { address, isConnected } = useAccount();
@@ -73,12 +74,9 @@ export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
   const [customInput, setCustomInput] = useState<string>(String(initialAmount));
   const [anonymous, setAnonymous] = useState(false);
 
-  const handleClose = () => {
-    if (stack.length === 1) {
-      hide().then(() => popModal());
-    } else {
-      popModal();
-    }
+  const handleCancel = async () => {
+    await hide();
+    clear();
   };
 
   const handlePreset = (preset: number) => {
@@ -114,7 +112,7 @@ export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
 
   return (
     <ModalContent dismissible={false}>
-      <ModalHeader backAction={stack.length > 1 ? handleClose : undefined}>
+      <ModalHeader>
         <ModalTitle>Support Bumicert</ModalTitle>
         <ModalDescription>
           {bumicert.title}
@@ -146,7 +144,6 @@ export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
             className="flex-1 bg-transparent outline-none text-lg font-semibold"
             placeholder="25"
           />
-          <span className="text-xs text-muted-foreground">USDC</span>
         </div>
 
         <div className="flex gap-2 flex-wrap">
@@ -167,13 +164,12 @@ export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
       </div>
 
       {isAuthenticated && (
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
+        <label className="flex items-center gap-3 cursor-pointer pt-4">
+          <Checkbox
             checked={anonymous}
-            onChange={(e) => setAnonymous(e.target.checked)}
+            onCheckedChange={(checked) => setAnonymous(checked === true)}
           />
-          <div>
+          <div className="flex-1">
             <span className="text-sm font-medium">Donate anonymously</span>
             <p className="text-xs text-muted-foreground mt-0.5">
               Your wallet address will be recorded, but not your identity.
@@ -191,7 +187,7 @@ export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
           Continue with Card
           <span className="text-xs bg-muted-foreground text-muted px-1 rounded-xs uppercase font-mono">Coming soon</span>
         </Button> */}
-        <Button variant="ghost" onClick={handleClose} className="w-full">
+        <Button variant="outline" onClick={handleCancel} className="w-full">
           Cancel
         </Button>
       </ModalFooter>
