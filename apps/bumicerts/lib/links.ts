@@ -97,10 +97,13 @@ export const links = {
     twitter: "https://www.x.com/GainForestNow",
     gainforest: "https://www.gainforest.earth",
     greenGlobePreviewBase: GREEN_GLOBE_PREVIEW_BASE_URL,
-    greenGlobeTreePreview: (did: string, options?: {
-      treeUri?: string | null;
-      datasetRef?: string | null;
-    }) => {
+    greenGlobeTreePreview: (
+      did: string,
+      options?: {
+        treeUri?: string | null;
+        datasetRef?: string | null;
+      },
+    ) => {
       const query = new URLSearchParams();
 
       if (options?.treeUri) {
@@ -116,6 +119,9 @@ export const links = {
     },
     gbifPublisher:
       "https://www.gbif.org/publisher/c02486e8-eb54-4e94-81d8-1038cc58e208",
+  },
+  public: {
+    icon: "/assets/media/images/app-icon.png",
   },
   assets: {
     treeDataTemplate: "/templates/tree-data-template.csv",
