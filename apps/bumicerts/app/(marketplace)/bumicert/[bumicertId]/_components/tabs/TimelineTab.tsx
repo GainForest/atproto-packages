@@ -172,7 +172,11 @@ function TimelineEntry({ item, isLast, index, isOwner }: EntryProps) {
         "uri" in contentItem &&
         typeof (contentItem as { uri: unknown }).uri === "string"
       ) {
-        contentLinks.push((contentItem as { uri: string }).uri);
+        const uri = (contentItem as { uri: string }).uri;
+        // Only include HTTP/HTTPS URLs, filter out AT Protocol URIs (at://...)
+        if (uri.startsWith("http://") || uri.startsWith("https://")) {
+          contentLinks.push(uri);
+        }
       }
     }
   }
