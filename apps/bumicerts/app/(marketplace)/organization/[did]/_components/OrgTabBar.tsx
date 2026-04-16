@@ -67,7 +67,7 @@ export function OrgTabBar({ did }: OrgTabBarProps) {
                 <Icon className="h-3.5 w-3.5 shrink-0" />
                 {tab.label}
 
-                {/* Sliding underline — springs between tabs */}
+                {/* Underline to highlight the active tab */}
                 {active && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
                 )}
