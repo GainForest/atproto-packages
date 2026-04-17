@@ -59,10 +59,9 @@ export const links = {
     },
   },
   external: {
-    /**
-     * Legacy Gainforest map viewer with a GeoJSON shapefile loaded.
-     * Pass the resolved blob URL as `shapefileUrl`.
-     */
+    certifiedApp: {
+      profileUrl: didCatcher((did) => `https://certified.app/profile/${did}`),
+    },
     polygonsAppUrl: (
       options?:
         | {
@@ -97,10 +96,13 @@ export const links = {
     twitter: "https://www.x.com/GainForestNow",
     gainforest: "https://www.gainforest.earth",
     greenGlobePreviewBase: GREEN_GLOBE_PREVIEW_BASE_URL,
-    greenGlobeTreePreview: (did: string, options?: {
-      treeUri?: string | null;
-      datasetRef?: string | null;
-    }) => {
+    greenGlobeTreePreview: (
+      did: string,
+      options?: {
+        treeUri?: string | null;
+        datasetRef?: string | null;
+      },
+    ) => {
       const query = new URLSearchParams();
 
       if (options?.treeUri) {
