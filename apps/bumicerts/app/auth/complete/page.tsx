@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 const getHasSeenOnboardingInPast = (did: string) => {
   if (typeof localStorage === "undefined") return false;
@@ -83,7 +84,7 @@ export default function AuthCompletePage() {
   return (
     <Container className="flex flex-col items-center justify-center min-h-screen">
       <LayoutBumicertsIcon showAnimations />
-      <motion.span
+      <motion.div
         initial={{ scale: 0.2, filter: "blur(20px)", opacity: 0.5 }}
         animate={{ scale: 1, filter: "blur(0px", opacity: 1 }}
         transition={{
@@ -94,7 +95,14 @@ export default function AuthCompletePage() {
       >
         <Loader2Icon className="animate-spin size-6 text-primary" />
         Signing you in...
-      </motion.span>
+        {shouldRedirect && (
+          <Link href={redirectToUri} className="mt-2">
+            <Button size={"sm"} variant={"link"}>
+              Taking too long? Click here to redirect.
+            </Button>
+          </Link>
+        )}
+      </motion.div>
       <AnimatePresence>
         {isOnboardingInProgress && (
           <motion.div
