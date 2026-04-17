@@ -26,6 +26,7 @@ export function occurrenceInputToCreateInput(occurrence: OccurrenceInput): {
   kingdom?: string;
   establishmentMeans?: string;
   datasetRef?: string;
+  dynamicProperties?: string;
 } {
   const input: ReturnType<typeof occurrenceInputToCreateInput> = {
     scientificName: occurrence.scientificName,
@@ -57,6 +58,8 @@ export function occurrenceInputToCreateInput(occurrence: OccurrenceInput): {
     input.establishmentMeans = occurrence.establishmentMeans;
   if (occurrence.datasetRef !== undefined)
     input.datasetRef = occurrence.datasetRef;
+  if (occurrence.dynamicProperties !== undefined)
+    input.dynamicProperties = occurrence.dynamicProperties;
 
   return input;
 }
