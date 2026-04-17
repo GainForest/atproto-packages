@@ -99,7 +99,7 @@ function MentionCard({ did, handle }: MentionCardProps) {
 
       {/* View on Certified — always available */}
       <a
-        href={`https://certified.app/profile/${did}`}
+        href={links.external.certifiedApp.profileUrl(did)}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
