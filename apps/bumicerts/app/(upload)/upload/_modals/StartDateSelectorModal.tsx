@@ -56,6 +56,8 @@ export function StartDateSelectorModal({
           mode="single"
           selected={selected}
           onSelect={setSelected}
+          hidden={{ after: new Date() }}
+          autoFocus
         />
       </div>
 

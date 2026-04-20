@@ -80,7 +80,9 @@ export function DeleteWalletModal({
 
       <p className="mt-6 text-center text-pretty">
         You are about to remove{" "}
-        <span className="font-medium text-foreground">&quot;{name}&quot;</span>{" "}
+        <span className="font-medium text-foreground">
+          &quot;{name ?? "Untitled"}&quot;
+        </span>{" "}
         from your linked wallets.
       </p>
       <div className="bg-muted/50 rounded-2xl p-4 mt-4 grid grid-cols-[1fr_2rem_1fr] overflow-hidden">
