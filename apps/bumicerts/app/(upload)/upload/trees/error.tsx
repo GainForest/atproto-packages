@@ -1,8 +1,8 @@
 "use client";
 
-import { TreesManageErrorState } from "../_components/TreesManageErrorState";
+import { TreesManageErrorState } from "./_components/TreesManageErrorState";
 
-export default function TreesManageError({
+export default function TreesError({
   error,
   reset,
 }: {

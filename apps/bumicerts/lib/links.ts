@@ -35,6 +35,7 @@ export const links = {
     audio: "/upload/audio",
     bumicerts: "/upload/bumicerts",
     trees: "/upload/trees",
+    treesUpload: "/upload/trees/upload",
     treesManage: "/upload/trees/manage",
     treesManageFiltered: (options?: {
       dataset?: string | null;

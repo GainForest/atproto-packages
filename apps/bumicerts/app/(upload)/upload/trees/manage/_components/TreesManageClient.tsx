@@ -359,7 +359,7 @@ function EmptyState() {
         measurements, and photos in one place.
       </p>
       <Button asChild>
-        <Link href={links.manage.trees}>
+        <Link href={links.manage.treesUpload}>
           <CirclePlusIcon />
           Upload tree data
         </Link>
@@ -1199,7 +1199,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
             <Link href={links.manage.home}>Back to upload</Link>
           </Button>
           <Button asChild>
-            <Link href={links.manage.trees}>
+            <Link href={links.manage.treesUpload}>
               <CirclePlusIcon />
               Upload more trees
             </Link>
