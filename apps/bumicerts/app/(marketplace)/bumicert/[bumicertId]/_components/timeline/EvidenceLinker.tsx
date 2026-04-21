@@ -15,6 +15,8 @@ import {
   MapPinIcon,
   ExternalLinkIcon,
   LinkIcon,
+  FileIcon,
+  ChevronLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,16 +31,17 @@ import { formatError } from "@/lib/utils/trpc-errors";
 import { links } from "@/lib/links";
 import Link from "next/link";
 import type { LeafletLinearDocument } from "@gainforest/leaflet-react";
+import FileInput from "@/components/ui/FileInput";
 
 // ── Tab types ─────────────────────────────────────────────────────────────────
 
-type TabId = "audio" | "trees" | "sites";
+type TabId = "audio" | "trees" | "sites" | "files";
 
 const TABS: {
   id: TabId;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  manageHref: string;
+  manageHref?: string;
 }[] = [
   {
     id: "audio",
@@ -57,6 +60,11 @@ const TABS: {
     label: "Sites",
     icon: MapPinIcon,
     manageHref: links.manage.sites,
+  },
+  {
+    id: "files",
+    label: "Files",
+    icon: FileIcon,
   },
 ];
 
@@ -177,7 +185,7 @@ export function EvidenceLinker({
   const auth = useAtprotoStore((state) => state.auth);
   const indexerUtils = indexerTrpc.useUtils();
 
-  const [activeTab, setActiveTab] = useState<TabId>("audio");
+  const [activeTab, setActiveTab] = useState<TabId>();
   const [selectedUris, setSelectedUris] = useState<Set<string>>(new Set());
   const [description, setDescription] =
     useState<LeafletLinearDocument>(EMPTY_DOC);
@@ -293,35 +301,56 @@ export function EvidenceLinker({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Panel header */}
-      <div className="flex items-center gap-2">
-        <LinkIcon className="h-4 w-4 text-primary" />
-        <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-          Link Evidence
+  if (activeTab === undefined)
+    return (
+      <div className="flex flex-col">
+        <span className="text-muted-foreground italic font-instrument text-2xl font-medium">
+          Add Evidence
         </span>
+        <span className="text-sm text-muted-foreground">
+          Select the type of evidence to add.
+        </span>
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          {TABS.map(({ id, label, icon: Icon }) => {
+            return (
+              <Button
+                key={id}
+                variant={"secondary"}
+                onClick={() => setActiveTab(id)}
+                className="h-auto hover:bg-accent hover:text-primary rounded-2xl shadow-none flex flex-col items-start justify-between"
+              >
+                <Icon className="size-6 opacity-40" />
+                <span className="text-xl">{label}</span>
+              </Button>
+            );
+          })}
+        </div>
       </div>
+    );
 
-      {/* Tab bar */}
-      <div className="flex gap-1 bg-muted/50 rounded-xl p-1">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setActiveTab(id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-1.5 rounded-lg transition-all duration-150 ${
-              activeTab === id
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Icon className="h-3 w-3" />
-            {label}
-          </button>
-        ))}
+  return (
+    <div className="flex flex-col">
+      {/* Panel header */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant={"secondary"}
+          size={"icon-sm"}
+          className="shadow-none"
+          onClick={() => {
+            setActiveTab(undefined);
+          }}
+        >
+          <ChevronLeft />
+        </Button>
+        <div className="flex flex-col">
+          <span className="text-muted-foreground italic font-instrument text-2xl font-medium">
+            Add {TABS.find((tab) => tab.id === activeTab)?.label}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            Select the evidence to add.
+          </span>
+        </div>
       </div>
-
       {/* Record list */}
       <div className="flex flex-col gap-1.5 max-h-[300px] overflow-y-auto pr-0.5">
         {isLoading ? (
@@ -389,53 +418,62 @@ export function EvidenceLinker({
               );
             })
           )
-        ) : locationItems.length === 0 ? (
-          <ListEmpty tab="sites" manageHref={activeManageHref} />
+        ) : activeTab === "sites" ? (
+          locationItems.length === 0 ? (
+            <ListEmpty tab="sites" manageHref={activeManageHref} />
+          ) : (
+            locationItems.map((item) => {
+              const uri = item.metadata?.uri;
+              if (!uri) return null;
+              return (
+                <CheckRow
+                  key={uri}
+                  selected={selectedUris.has(uri)}
+                  onToggle={() => toggle(uri)}
+                  icon={MapPinIcon}
+                  primary={item.record?.name ?? "Unnamed site"}
+                  secondary={item.record?.locationType ?? undefined}
+                />
+              );
+            })
+          )
         ) : (
-          locationItems.map((item) => {
-            const uri = item.metadata?.uri;
-            if (!uri) return null;
-            return (
-              <CheckRow
-                key={uri}
-                selected={selectedUris.has(uri)}
-                onToggle={() => toggle(uri)}
-                icon={MapPinIcon}
-                primary={item.record?.name ?? "Unnamed site"}
-                secondary={item.record?.locationType ?? undefined}
-              />
-            );
-          })
+          <div className="mt-4 w-full">
+            <span className="bg-muted text-destructive text-sm rounded-xl flex items-center justify-center text-center w-full px-2 py-1">
+              Coming soon
+            </span>
+            <FileInput className="mt-1" />
+          </div>
         )}
       </div>
 
       {/* Manage link */}
-      <div className="flex justify-end -mt-2">
-        <Link
-          href={activeManageHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-        >
-          Manage
-          <ExternalLinkIcon className="h-3 w-3" />
-        </Link>
-      </div>
+      {activeManageHref.length !== 0 && (
+        <div className="flex justify-end -mt-2">
+          <Link
+            href={activeManageHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            Manage
+            <ExternalLinkIcon className="h-3 w-3" />
+          </Link>
+        </div>
+      )}
 
       {/* Optional note */}
-      <div>
+      <div className="mt-2 flex flex-col w-full">
         <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-[0.1em]">
           Optional Note
         </p>
-        <div className="border border-border rounded-xl overflow-hidden">
-          <LeafletEditor
-            content={description}
-            onChange={setDescription}
-            ownerDid={auth.user?.did ?? organizationDid}
-            placeholder="Add context about this evidence…"
-            className="p-3 text-sm min-h-[72px]"
-          />
-        </div>
+        <LeafletEditor
+          content={description}
+          onChange={setDescription}
+          ownerDid={auth.user?.did ?? organizationDid}
+          placeholder="Add context about this evidence…"
+          className="text-sm min-h-18!"
+        />
       </div>
 
       {/* Error / success feedback */}
