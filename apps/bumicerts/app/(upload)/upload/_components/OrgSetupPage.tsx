@@ -337,6 +337,18 @@ export function OrgSetupPage({ did }: { did: string }) {
         logo: logoInput,
       });
 
+      // Fire-and-forget: track the user's repo in the indexer when they enter MANAGE
+      fetch("/api/indexer/trpc", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: "mutation AddRepos($dids: [String!]!) { addRepos(dids: $dids) }",
+          variables: { dids: [did] },
+        }),
+      }).catch(() => {
+        // No-op: don't track if it failed or passed
+      });
+
       // Step 5: Show success state with countdown, then refresh.
       setIsSubmitting(false);
       setSaveSuccess(true);
