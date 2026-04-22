@@ -15,6 +15,8 @@
  *   onChange={setLinearDoc}
  *   ownerDid={auth.user.did}
  *   placeholder="Describe your impact story..."
+ *   initialHeight={240}
+ *   minHeight={160}
  * />
  * ```
  */
@@ -47,6 +49,11 @@ export interface BumicertsLeafletEditorProps extends Omit<
   pdsHost?: string;
   placeholder?: string;
   className?: string;
+  /**
+   * Convenience alias used by bumicerts forms.
+   * When true, maps to `editable={false}` on the underlying editor.
+   */
+  disabled?: boolean;
 }
 
 export function LeafletEditor({
@@ -56,6 +63,9 @@ export function LeafletEditor({
   pdsHost = DEFAULT_PDS_HOST,
   placeholder,
   className,
+  editable,
+  disabled,
+  ...rest
 }: BumicertsLeafletEditorProps) {
   const resolveImageUrl = useCallback(
     (cid: string): string => buildBlobUrl(pdsHost, ownerDid, cid),
@@ -71,8 +81,10 @@ export function LeafletEditor({
       onImageUpload={async () => {
         throw new Error("Image upload is temporarily disabled.");
       }}
+      editable={disabled ? false : editable}
       placeholder={placeholder}
       className={className}
+      {...rest}
     />
   );
 }

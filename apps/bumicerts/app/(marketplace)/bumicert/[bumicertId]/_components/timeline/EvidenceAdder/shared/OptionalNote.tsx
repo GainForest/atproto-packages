@@ -39,7 +39,9 @@ const OptionalNote = ({
         onChange={setDescription}
         ownerDid={ownerDid}
         placeholder="Add context about this evidence…"
-        className="text-sm min-h-18!"
+        initialHeight={96}
+        minHeight={72}
+        maxHeight={280}
         disabled={disabled}
       />
     </div>

@@ -88,7 +88,9 @@ const Step2 = () => {
             onChange={(doc) => setFormValue("description", doc)}
             ownerDid={ownerDid}
             placeholder="Describe your impact story..."
-            className="min-h-[200px]"
+            initialHeight={260}
+            minHeight={200}
+            maxHeight={560}
           />
         </div>
       </FormField>

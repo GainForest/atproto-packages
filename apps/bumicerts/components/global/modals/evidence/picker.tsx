@@ -586,7 +586,9 @@ export function EvidencePickerModal({
             onChange={setDescription}
             ownerDid={auth.user?.did ?? organizationDid}
             placeholder="Add context about this evidence…"
-            className="p-3 text-sm min-h-[80px]"
+            initialHeight={120}
+            minHeight={80}
+            maxHeight={280}
           />
         </div>
       </div>

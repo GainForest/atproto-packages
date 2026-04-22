@@ -618,7 +618,9 @@ export function OrgSetupPage({ did }: { did: string }) {
                 onChange={(doc) => updateForm({ longDescription: doc })}
                 ownerDid={did}
                 placeholder="Describe your organization's mission and impact..."
-                className="h-80 resize-y"
+                initialHeight={320}
+                minHeight={200}
+                maxHeight={640}
               />
               {/*</div>*/}
               {brandInfoFetched && (
