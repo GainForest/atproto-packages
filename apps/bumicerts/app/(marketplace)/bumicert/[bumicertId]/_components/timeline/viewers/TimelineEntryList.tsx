@@ -1,0 +1,22 @@
+import type { AttachmentItem } from "@/lib/graphql-dev/queries/attachments";
+import { TimelineEntry } from "./TimelineEntry";
+
+interface TimelineEntryListProps {
+  entries: AttachmentItem[];
+  isOwner: boolean;
+}
+
+export function TimelineEntryList({ entries, isOwner }: TimelineEntryListProps) {
+  return (
+    <div className="flex flex-col gap-0">
+      {entries.map((item, index) => (
+        <TimelineEntry
+          key={item.metadata?.uri ?? index}
+          item={item}
+          index={index}
+          isOwner={isOwner}
+        />
+      ))}
+    </div>
+  );
+}
