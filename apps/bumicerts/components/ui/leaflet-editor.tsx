@@ -29,8 +29,10 @@ import { useCallback } from "react";
 // The PDS host for gainforest-hosted users.
 const DEFAULT_PDS_HOST = "https://bsky.network";
 
-interface BumicertsLeafletEditorProps
-  extends Omit<LeafletEditorProps, "resolveImageUrl" | "onImageUpload" | "enableImageUpload"> {
+export interface BumicertsLeafletEditorProps extends Omit<
+  LeafletEditorProps,
+  "resolveImageUrl" | "onImageUpload" | "enableImageUpload"
+> {
   content?: LeafletLinearDocument;
   onChange: (content: LeafletLinearDocument) => void;
   /**
@@ -57,7 +59,7 @@ export function LeafletEditor({
 }: BumicertsLeafletEditorProps) {
   const resolveImageUrl = useCallback(
     (cid: string): string => buildBlobUrl(pdsHost, ownerDid, cid),
-    [pdsHost, ownerDid]
+    [pdsHost, ownerDid],
   );
 
   return (

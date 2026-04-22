@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { formatError } from "@/lib/utils/trpc-errors";
-import { EvidenceLinker } from "../timeline/EvidenceLinker";
+import { EvidenceLinker } from "../timeline/EvidenceAdder";
 import Image from "next/image";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
