@@ -7,7 +7,7 @@ import { toSerializableFile } from "@/lib/mutations-utils";
 import { trpc } from "@/lib/trpc/client";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { formatError } from "@/lib/utils/trpc-errors";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { useEvidenceAdderStore } from "./evidenceAdderStore";
 import { buildOptimisticAttachmentItem } from "./optimisticAttachmentItem";
@@ -136,12 +136,13 @@ const Mutator = ({
         disabled={isSubmitting || data.contents.length === 0}
         className="w-full"
       >
+        {isSubmitting ? <Loader2Icon className="animate-spin" /> : null}
         {isSubmitting
           ? "Linking…"
           : data.contents.length === 0
-            ? "Select records to link"
-            : `Link ${data.contents.length} selection${data.contents.length !== 1 ? "s" : ""}`}
-        <ArrowRightIcon />
+            ? "Select evidence to link"
+            : `Link ${data.contents.length} item${data.contents.length !== 1 ? "s" : ""}`}
+        {!isSubmitting ? <ArrowRightIcon /> : null}
       </Button>
     </>
   );
