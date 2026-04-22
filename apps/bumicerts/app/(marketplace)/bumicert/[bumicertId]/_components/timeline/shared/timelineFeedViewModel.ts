@@ -117,11 +117,13 @@ function fromBlob(item: ParsedAttachmentBlobItem, tileId: string): TimelineFeedT
   }
 
   const preview = getPreviewFromHref(item.uri, item.mimeType);
+  const caption = cleanText(item.name) ?? getFileNameFromHref(item.uri);
+
   return {
     id: tileId,
     kind: tileKindFromPreview(preview),
     title: preview.title,
-    caption: getFileNameFromHref(item.uri),
+    caption,
     preview,
   };
 }

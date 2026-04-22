@@ -1,13 +1,16 @@
 "use client";
 
+import { useAtprotoStore } from "@/components/stores/atproto";
 import { Button } from "@/components/ui/button";
 import { BumicertsLeafletEditorProps } from "@/components/ui/leaflet-editor";
+import { toSerializableFile } from "@/lib/mutations-utils";
 import { trpc } from "@/lib/trpc/client";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { formatError } from "@/lib/utils/trpc-errors";
 import { ArrowRightIcon } from "lucide-react";
 import { useState } from "react";
 import { useEvidenceAdderStore } from "./evidenceAdderStore";
+import { buildOptimisticAttachmentItem } from "./optimisticAttachmentItem";
 
 export type AttachmentData = {
   title: string;
@@ -31,6 +34,8 @@ const Mutator = ({
   const setIsSubmitting = useEvidenceAdderStore(
     (state) => state.setIsSubmitting,
   );
+  const viewerDid = useAtprotoStore((state) => state.auth.user?.did ?? null);
+  const organizationDid = useEvidenceAdderStore((state) => state.organizationDid);
   const indexerUtils = indexerTrpc.useUtils();
 
   const createAttachment = trpc.context.attachment.create.useMutation();
@@ -40,12 +45,23 @@ const Mutator = ({
 
   const mutate = async () => {
     if (contents.length === 0) return;
+
     setErrorMessage(undefined);
     setIsSubmitting(true);
     const hasDescription = description && description.blocks.length > 0;
 
+    const resolvedContents = await Promise.all(
+      contents.map(async (content) => {
+        if (typeof content === "string") {
+          return content;
+        }
+
+        return toSerializableFile(content);
+      }),
+    );
+
     try {
-      await createAttachment.mutateAsync({
+      const created = await createAttachment.mutateAsync({
         title,
         contentType,
         subjects: [
@@ -55,7 +71,7 @@ const Mutator = ({
             cid: subjectInfo.cid,
           },
         ],
-        content: contents.map((content) => {
+        content: resolvedContents.map((content) => {
           if (typeof content === "string") {
             return { $type: "org.hypercerts.defs#uri", uri: content };
           } else {
@@ -64,9 +80,42 @@ const Mutator = ({
         }),
         ...(hasDescription ? { description } : {}),
       });
-      onSuccess?.();
 
-      await indexerUtils.context.attachments.invalidate();
+      if (organizationDid) {
+        const optimisticItem = buildOptimisticAttachmentItem({
+          did: viewerDid ?? organizationDid,
+          uri: created.uri,
+          rkey: created.rkey,
+          cid: created.cid,
+          title,
+          contentType,
+          description,
+          subjectInfo,
+          contents,
+        });
+
+        const applyOptimisticUpdate = () => {
+          indexerUtils.context.attachments.setData(
+            { did: organizationDid },
+            (previous) => {
+              const current = previous ?? [];
+              const deduped = current.filter(
+                (item) => item.metadata?.rkey !== created.rkey,
+              );
+              return [optimisticItem, ...deduped];
+            },
+          );
+        };
+
+        applyOptimisticUpdate();
+        onSuccess?.();
+
+        await indexerUtils.context.attachments.invalidate();
+        applyOptimisticUpdate();
+      } else {
+        onSuccess?.();
+        await indexerUtils.context.attachments.invalidate();
+      }
     } catch (e) {
       setErrorMessage(formatError(e));
     } finally {

@@ -14,14 +14,23 @@ function isLeafletLinearDocument(value: unknown): value is LeafletLinearDocument
   return Array.isArray(blocks);
 }
 
+export function hasTimelineOptionalNote(
+  note: unknown,
+  ownerDid?: string | null,
+): note is LeafletLinearDocument {
+  return Boolean(ownerDid && isLeafletLinearDocument(note) && note.blocks.length > 0);
+}
+
 export function TimelineOptionalNote({ note, ownerDid }: TimelineOptionalNoteProps) {
-  if (!ownerDid || !isLeafletLinearDocument(note) || note.blocks.length === 0) {
+  if (!hasTimelineOptionalNote(note, ownerDid) || !ownerDid) {
     return null;
   }
 
+  const resolvedOwnerDid = ownerDid;
+
   return (
     <div className="py-2 text-sm text-foreground/90">
-      <LeafletRenderer document={note} ownerDid={ownerDid} />
+      <LeafletRenderer document={note} ownerDid={resolvedOwnerDid} />
     </div>
   );
 }

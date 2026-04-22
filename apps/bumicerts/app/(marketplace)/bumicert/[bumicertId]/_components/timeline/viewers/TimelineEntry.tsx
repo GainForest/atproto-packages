@@ -14,7 +14,10 @@ import { getEvidenceContentTypeLabel } from "../shared/evidenceContentTypeRegist
 import { useResolvedAttachmentReferences } from "./shared/referenceResolution/useResolvedAttachmentReferences";
 import { TimelineDeleteConfirm } from "./shared/TimelineDeleteConfirm";
 import { TimelineFeedHeader } from "./shared/TimelineFeedHeader";
-import { TimelineOptionalNote } from "./shared/TimelineOptionalNote";
+import {
+  TimelineOptionalNote,
+  hasTimelineOptionalNote,
+} from "./shared/TimelineOptionalNote";
 import { TimelinePreviewPanel } from "./shared/TimelinePreviewPanel";
 import { TimelineTileRow } from "./shared/TimelineTileRow";
 import { useTimelineViewerStore } from "./shared/timelineViewerStore";
@@ -58,6 +61,7 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
   const activeInlinePreview = previewTiles.find((tile) => tile.id === activeTileId)?.preview ?? null;
   const shouldShowThumbnailRow = previewTiles.length > 1;
   const shouldUseStackedLayout = isOwner;
+  const hasNote = hasTimelineOptionalNote(item.record?.description, item.metadata?.did);
 
   const indexerUtils = indexerTrpc.useUtils();
   const deleteAttachment = trpc.context.attachment.delete.useMutation();
@@ -113,12 +117,17 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
       <div
         className={cn(
           "mt-2 grid gap-3",
-          !shouldUseStackedLayout && "lg:grid-cols-2 lg:items-start lg:gap-x-4",
+          !shouldUseStackedLayout && hasNote && "lg:grid-cols-2 lg:items-start lg:gap-x-4",
         )}
       >
-        <div>
-          <TimelineOptionalNote note={item.record?.description} ownerDid={item.metadata?.did} />
-        </div>
+        {hasNote ? (
+          <div>
+            <TimelineOptionalNote
+              note={item.record?.description}
+              ownerDid={item.metadata?.did}
+            />
+          </div>
+        ) : null}
 
         <div>
           <TimelinePreviewPanel preview={activeInlinePreview} />

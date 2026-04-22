@@ -14,6 +14,7 @@ type ParsedAttachmentBlobItem = {
   sourceType: "small-blob-definition" | "resolved-blob";
   uri: string | null;
   uriKind: AttachmentUriKind | null;
+  name: string | null;
   mimeType: string | null;
   size: number | null;
   cid: string | null;
@@ -53,7 +54,11 @@ function getNumberField(record: JsonRecord, key: string): number | null {
 
 function getUriKind(uri: string): AttachmentUriKind {
   if (uri.startsWith("at://")) return "at-uri";
-  if (uri.startsWith("https://") || uri.startsWith("http://")) {
+  if (
+    uri.startsWith("https://") ||
+    uri.startsWith("http://") ||
+    uri.startsWith("blob:")
+  ) {
     return "http-url";
   }
   return "other-uri";
@@ -69,6 +74,7 @@ function parseBlobRecord(
     sourceType,
     uri,
     uriKind: uri ? getUriKind(uri) : null,
+    name: getStringField(blobRecord, "name"),
     mimeType: getStringField(blobRecord, "mimeType"),
     size: getNumberField(blobRecord, "size"),
     cid: getStringField(blobRecord, "cid"),

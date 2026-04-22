@@ -38,12 +38,12 @@ export function TimelineTab({
       <div
         className={`grid grid-cols-1 gap-6 ${isOwner ? "xl:grid-cols-[minmax(0,1fr)_300px]" : ""}`}
       >
-        <div>
+        <div className={isOwner ? "order-2 xl:order-1" : undefined}>
           <TimelinePanel entries={entries} isLoading={isLoading} isOwner={isOwner} />
         </div>
 
         {isOwner && (
-          <div className="xl:sticky xl:top-24 xl:self-start">
+          <div className="order-1 xl:order-2 xl:sticky xl:top-24 xl:self-start">
             <div className="rounded-2xl border border-border/40 bg-muted/15 p-4">
               <EvidenceAdder
                 activityUri={activityUri}

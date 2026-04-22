@@ -53,7 +53,11 @@ export function EvidenceAdder({
   activityCid,
 }: EvidenceAdderProps) {
   return (
-    <EvidenceAdderStoreProvider activityUri={activityUri} activityCid={activityCid}>
+    <EvidenceAdderStoreProvider
+      organizationDid={organizationDid}
+      activityUri={activityUri}
+      activityCid={activityCid}
+    >
       <EvidenceAdderContent organizationDid={organizationDid} />
     </EvidenceAdderStoreProvider>
   );

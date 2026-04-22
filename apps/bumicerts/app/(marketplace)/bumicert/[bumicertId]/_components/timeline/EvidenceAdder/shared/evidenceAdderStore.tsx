@@ -12,6 +12,7 @@ type EvidenceAdderState = {
   activeTab: EvidenceTabId | undefined;
   description: LeafletLinearDocument;
   isSubmitting: boolean;
+  organizationDid: string;
   activityUri: string;
   activityCid: string;
 };
@@ -28,6 +29,7 @@ type EvidenceAdderStore = EvidenceAdderState & EvidenceAdderActions;
 type EvidenceAdderStoreApi = StoreApi<EvidenceAdderStore>;
 
 function createEvidenceAdderStore(init: {
+  organizationDid: string;
   activityUri: string;
   activityCid: string;
 }): EvidenceAdderStoreApi {
@@ -35,6 +37,7 @@ function createEvidenceAdderStore(init: {
     activeTab: undefined,
     description: EMPTY_DOC,
     isSubmitting: false,
+    organizationDid: init.organizationDid,
     activityUri: init.activityUri,
     activityCid: init.activityCid,
     setActiveTab: (value) => set({ activeTab: value }),
@@ -49,16 +52,18 @@ const EvidenceAdderStoreContext = createContext<EvidenceAdderStoreApi | null>(
 );
 
 export function EvidenceAdderStoreProvider({
+  organizationDid,
   activityUri,
   activityCid,
   children,
 }: {
+  organizationDid: string;
   activityUri: string;
   activityCid: string;
   children: ReactNode;
 }) {
   const [store] = useState(() =>
-    createEvidenceAdderStore({ activityUri, activityCid }),
+    createEvidenceAdderStore({ organizationDid, activityUri, activityCid }),
   );
 
   return (
