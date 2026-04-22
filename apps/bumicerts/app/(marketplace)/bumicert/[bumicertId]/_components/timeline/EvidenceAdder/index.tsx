@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * EvidenceLinker — inline sticky panel (owner only) that lets an org
+ * EvidenceAdder — inline sticky panel (owner only) that lets an org
  * link existing records (audio, tree occurrences, sites, files) as evidence on
  * a bumicert by creating org.hypercerts.context.attachment records.
  *
@@ -9,54 +9,23 @@
  */
 
 import { useState } from "react";
-import { MicIcon, TreesIcon, MapPinIcon, FileIcon, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AudioRecordingItem } from "@/lib/graphql-dev/queries/audio";
 import type { OccurrenceItem } from "@/lib/graphql-dev/queries/occurrences";
 import type { CertifiedLocation } from "@/lib/graphql-dev/queries/locations";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
-import { links } from "@/lib/links";
 import type { LeafletLinearDocument } from "@gainforest/leaflet-react";
-import AudioViewer from "./AudioViewer";
-import TreeViewer from "./TreeViewer";
+import AudioEvidencePicker from "./AudioEvidencePicker";
+import TreeEvidencePicker from "./TreeEvidencePicker";
+import SiteEvidencePicker from "./SiteEvidencePicker";
+import FileEvidencePicker from "./FileEvidencePicker";
 import { ListSkeleton } from "./shared/RecordList";
-import SiteViewer from "./SiteViewer";
-import FileViewer from "./FileViewer";
-
-// ── Tab types ─────────────────────────────────────────────────────────────────
-
-type TabId = "audio" | "trees" | "sites" | "files";
-
-const TABS: {
-  id: TabId;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  manageHref?: string;
-}[] = [
-  {
-    id: "audio",
-    label: "Audio",
-    icon: MicIcon,
-    manageHref: links.manage.audio,
-  },
-  {
-    id: "trees",
-    label: "Trees",
-    icon: TreesIcon,
-    manageHref: links.manage.trees,
-  },
-  {
-    id: "sites",
-    label: "Sites",
-    icon: MapPinIcon,
-    manageHref: links.manage.sites,
-  },
-  {
-    id: "files",
-    label: "Files",
-    icon: FileIcon,
-  },
-];
+import {
+  EVIDENCE_TABS,
+  getEvidenceTabLabel,
+  type EvidenceTabId,
+} from "./shared/evidenceRegistry";
 
 const LoadingWrapper = ({
   isLoading,
@@ -71,7 +40,7 @@ const LoadingWrapper = ({
 
 const EMPTY_DOC: LeafletLinearDocument = { blocks: [] };
 
-interface EvidenceLinkerProps {
+interface EvidenceAdderProps {
   activityUri: string;
   activityCid: string;
   bumicertTitle: string;
@@ -79,16 +48,12 @@ interface EvidenceLinkerProps {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-export type SubjectInfo = {
-  activityUri: string;
-  activityCid: string;
-};
-export function EvidenceLinker({
+export function EvidenceAdder({
   activityUri,
   activityCid,
   organizationDid,
-}: EvidenceLinkerProps) {
-  const [activeTab, setActiveTab] = useState<TabId>();
+}: EvidenceAdderProps) {
+  const [activeTab, setActiveTab] = useState<EvidenceTabId>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [description, setDescription] =
     useState<LeafletLinearDocument>(EMPTY_DOC);
@@ -118,7 +83,7 @@ export function EvidenceLinker({
           Select the type of evidence to add.
         </span>
         <div className="grid grid-cols-2 gap-2 mt-4">
-          {TABS.map(({ id, label, icon: Icon }) => {
+          {EVIDENCE_TABS.map(({ id, label, icon: Icon }) => {
             return (
               <Button
                 key={id}
@@ -152,7 +117,7 @@ export function EvidenceLinker({
         </Button>
         <div className="flex flex-col">
           <span className="text-muted-foreground italic font-instrument text-2xl font-medium">
-            Add {TABS.find((tab) => tab.id === activeTab)?.label}
+            Add {getEvidenceTabLabel(activeTab)}
           </span>
           <span className="text-sm text-muted-foreground">
             Select the evidence to add.
@@ -163,7 +128,7 @@ export function EvidenceLinker({
       <div className="mt-4 flex flex-col gap-2">
         {activeTab === "audio" ? (
           <LoadingWrapper isLoading={audioLoading}>
-            <AudioViewer
+            <AudioEvidencePicker
               data={audioItems}
               description={description}
               setDescription={setDescription}
@@ -175,7 +140,7 @@ export function EvidenceLinker({
           </LoadingWrapper>
         ) : activeTab === "trees" ? (
           <LoadingWrapper isLoading={occurrenceLoading}>
-            <TreeViewer
+            <TreeEvidencePicker
               data={occurrenceItems}
               description={description}
               setDescription={setDescription}
@@ -187,7 +152,7 @@ export function EvidenceLinker({
           </LoadingWrapper>
         ) : activeTab === "sites" ? (
           <LoadingWrapper isLoading={locationLoading}>
-            <SiteViewer
+            <SiteEvidencePicker
               data={locationItems}
               description={description}
               setDescription={setDescription}
@@ -198,7 +163,7 @@ export function EvidenceLinker({
             />
           </LoadingWrapper>
         ) : (
-          <FileViewer
+          <FileEvidencePicker
             description={description}
             setDescription={setDescription}
             isSubmitting={isSubmitting}

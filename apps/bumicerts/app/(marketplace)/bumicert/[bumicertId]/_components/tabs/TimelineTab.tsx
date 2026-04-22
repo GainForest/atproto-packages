@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { formatError } from "@/lib/utils/trpc-errors";
-import { EvidenceLinker } from "../timeline/EvidenceAdder";
+import { EvidenceAdder } from "../timeline/EvidenceAdder";
 import Image from "next/image";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -401,7 +401,7 @@ export function TimelineTab({
         {isOwner && (
           <div className="lg:sticky lg:top-24 lg:self-start">
             <div className="border border-border rounded-2xl p-4">
-              <EvidenceLinker
+              <EvidenceAdder
                 activityUri={activityUri}
                 activityCid={activityCid}
                 bumicertTitle={bumicertTitle}

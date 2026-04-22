@@ -1,9 +1,12 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { links } from "@/lib/links";
 import { ExternalLinkIcon } from "lucide-react";
 import Link from "next/link";
+import {
+  getManagedEvidenceTabConfig,
+  type ManagedEvidenceTabId,
+} from "./evidenceRegistry";
 
 export function ListSkeleton() {
   return (
@@ -15,25 +18,20 @@ export function ListSkeleton() {
   );
 }
 
-const TABS = {
-  audio: { label: "audio recordings", href: links.manage.audio },
-  trees: { label: "tree occurrences", href: links.manage.trees },
-  sites: { label: "sites", href: links.manage.sites },
-};
-export function ListEmpty({ tabId }: { tabId: "audio" | "trees" | "sites" }) {
-  const tab = TABS[tabId];
+export function ListEmpty({ tabId }: { tabId: ManagedEvidenceTabId }) {
+  const tab = getManagedEvidenceTabConfig(tabId);
   return (
     <div className="flex flex-col items-center gap-2 py-6 text-center">
       <p className="text-xs text-muted-foreground">
-        No {tab.label} uploaded yet.
+        No {tab.emptyLabel} uploaded yet.
       </p>
       <Link
-        href={tab.href}
+        href={tab.manageHref}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
       >
-        Upload {tab.label}
+        Upload {tab.emptyLabel}
         <ExternalLinkIcon className="h-3 w-3" />
       </Link>
     </div>

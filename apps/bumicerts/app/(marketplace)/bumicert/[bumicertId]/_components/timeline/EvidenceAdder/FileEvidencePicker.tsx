@@ -1,9 +1,10 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useState } from "react";
 import FileInput from "@/components/ui/FileInput";
 import { ListLayout } from "./shared/RecordList";
-import OptionalNote, { OptionalNoteProps } from "./shared/OptionalNote";
-import { SubjectInfo } from ".";
-import Mutator, { AttachmentData } from "./shared/Mutator";
+import OptionalNote from "./shared/OptionalNote";
+import Mutator, { type AttachmentData } from "./shared/Mutator";
+import type { ViewerSharedProps } from "./shared/evidenceTypes";
+import { getEvidenceAttachmentDefaults } from "./shared/evidenceRegistry";
 
 const BROAD_SUPPORTED_FILE_TYPES = [
   "image/*",
@@ -26,20 +27,17 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-const FileViewer = ({
+const FileEvidencePicker = ({
   description,
   setDescription,
   isSubmitting,
   setIsSubmitting,
   ...props
-}: {
-  isSubmitting: boolean;
-  setIsSubmitting: Dispatch<SetStateAction<boolean>>;
-} & OptionalNoteProps &
-  SubjectInfo) => {
+}: ViewerSharedProps) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [filePickerValue, setFilePickerValue] = useState<File | null>(null);
   const [filePickerKey, setFilePickerKey] = useState(0);
+  const fileAttachmentDefaults = getEvidenceAttachmentDefaults("files");
 
   const appendFile = (file: File) => {
     setSelectedFiles((prev) => {
@@ -63,8 +61,8 @@ const FileViewer = ({
   };
 
   const computedMutationData: AttachmentData = {
-    title: "Files",
-    contentType: "evidence",
+    title: fileAttachmentDefaults.title,
+    contentType: fileAttachmentDefaults.contentType,
     description,
     subjectInfo: {
       uri: props.activityUri,
@@ -151,4 +149,4 @@ const FileViewer = ({
   );
 };
 
-export default FileViewer;
+export default FileEvidencePicker;
