@@ -415,7 +415,6 @@ export function LoginModal({ onClose }: LoginModalProps) {
           alt="GainForest"
           width={40}
           height={40}
-          className="dark:invert"
         />
       </div>
 
