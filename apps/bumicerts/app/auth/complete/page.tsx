@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -21,7 +22,6 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 
 const HAS_SEEN_ONBOARDING_IN_PAST_KEY = (did: string) =>
   `has-${did}-seen-onboarding-in-past`;
@@ -46,15 +46,21 @@ export default function AuthCompletePage() {
   const router = useRouter();
   const auth = useAtprotoStore((state) => state.auth);
   const userDid = auth.user?.did;
+  const redirectToUriRef = useRef<string | null>(null);
 
-  // Persist redirectToUri, because if the redirect fails and user clicks redirect himself, it might not work
-  // correctly because redirect() already clears local storage key.
-  const redirectToUri = useMemo(() => getRedirectToUri(), []);
+  const getRedirectToUriCached = useCallback(() => {
+    if (redirectToUriRef.current) return redirectToUriRef.current;
+
+    const redirectToUri = getRedirectToUri();
+    redirectToUriRef.current = redirectToUri;
+    return redirectToUri;
+  }, []);
 
   const redirect = useCallback(() => {
+    const redirectToUri = getRedirectToUriCached();
     router.replace(redirectToUri);
     localStorage.removeItem(AUTH_REDIRECT_KEY);
-  }, [router, redirectToUri]);
+  }, [router, getRedirectToUriCached]);
 
   // One time state to track if user has stayed on the page for more than 10 seconds.
   const [hasWaitedEnough, setHasWaitedEnough] = useState(false);
@@ -76,6 +82,7 @@ export default function AuthCompletePage() {
         HAS_SEEN_ONBOARDING_IN_PAST_KEY(userDid ?? "unknown"),
         "true",
       );
+      localStorage.removeItem(AUTH_REDIRECT_KEY);
       setTimeout(() => {
         router.replace(href);
       });
@@ -111,11 +118,9 @@ export default function AuthCompletePage() {
         <Loader2Icon className="animate-spin size-6 text-primary" />
         Signing you in...
         {shouldRedirect && (
-          <Link href={redirectToUri} className="mt-2">
-            <Button size={"sm"} variant={"link"}>
-              Taking too long? Click here to redirect.
-            </Button>
-          </Link>
+          <Button size={"sm"} variant={"link"} className="mt-2" onClick={redirect}>
+            Taking too long? Click here to redirect.
+          </Button>
         )}
       </motion.div>
       <AnimatePresence>
@@ -159,7 +164,9 @@ export default function AuthCompletePage() {
                 </p>
                 <div className="grid grid-rows-2 gap-2 mt-4 w-full">
                   <OnboardingOption
-                    onClick={() => handleOnboardingOptionClick(redirectToUri)}
+                    onClick={() =>
+                      handleOnboardingOptionClick(getRedirectToUriCached())
+                    }
                     Icon={HandHeartIcon}
                     optionName="Funder"
                     optionDescription="Explore and fund impactful regenerative projects"
