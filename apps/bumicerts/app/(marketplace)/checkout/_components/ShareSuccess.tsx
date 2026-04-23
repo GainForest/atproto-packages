@@ -53,12 +53,14 @@ export function ShareSuccess({
 }: {
   checkoutResults: CheckoutResult;
 }) {
-  const totalAmountFormatted = parseFloat(checkoutResults.totalAmount).toFixed(
-    2,
-  );
   const successfulResults = checkoutResults.results.filter(
     (result) => result.success,
   );
+  const successfulTotalAmount = successfulResults.reduce((sum, result) => {
+    const parsedAmount = Number.parseFloat(result.amount);
+    return Number.isFinite(parsedAmount) ? sum + parsedAmount : sum;
+  }, 0);
+  const totalAmountFormatted = successfulTotalAmount.toFixed(2);
   const successfulItemCount =
     checkoutResults.successCount > 0
       ? checkoutResults.successCount
