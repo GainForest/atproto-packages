@@ -251,12 +251,16 @@ function HandleForm() {
     // Save the current page so we can redirect back after login
     localStorage.setItem("auth_redirect", window.location.pathname);
     startTransition(async () => {
-      const result = await authorize(fullHandle || handle.trim());
-      if ("authorizationUrl" in result) {
-        window.location.href = result.authorizationUrl;
-      } else {
-        // Error returned from server action (not thrown)
-        setError(result.error);
+      try {
+        const result = await authorize(fullHandle || handle.trim());
+        if ("authorizationUrl" in result) {
+          window.location.href = result.authorizationUrl;
+        } else {
+          // Error returned from server action (not thrown)
+          setError(result.error);
+        }
+      } catch {
+        setError("Something went wrong. Please try again.");
       }
     });
   };

@@ -162,7 +162,6 @@ export function ManageDashboardClient({ did }: ManageDashboardClientProps) {
 
   // ── Save handler ───────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
-    console.log("Trying to save");
     if (!serverData || !hasChanges() || isSaving) return;
 
     setSaving(true);

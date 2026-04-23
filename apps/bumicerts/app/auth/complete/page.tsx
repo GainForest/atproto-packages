@@ -1,6 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import Container from "@/components/ui/container";
@@ -18,14 +23,17 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+const HAS_SEEN_ONBOARDING_IN_PAST_KEY = (did: string) =>
+  `has-${did}-seen-onboarding-in-past`;
 const getHasSeenOnboardingInPast = (did: string) => {
   if (typeof localStorage === "undefined") return false;
-  return localStorage.getItem(`has-seen-onboarding-in-past-${did}`) !== null;
+  return localStorage.getItem(HAS_SEEN_ONBOARDING_IN_PAST_KEY(did)) !== null;
 };
 
+const AUTH_REDIRECT_KEY = "auth_redirect";
 const getRedirectToUri = () => {
   if (typeof localStorage === "undefined") return "/";
-  return localStorage.getItem("auth_redirect") ?? "/";
+  return localStorage.getItem(AUTH_REDIRECT_KEY) ?? "/";
 };
 /**
  * Lightweight page that handles post-login redirect.
@@ -39,11 +47,14 @@ export default function AuthCompletePage() {
   const auth = useAtprotoStore((state) => state.auth);
   const userDid = auth.user?.did;
 
-  const redirectToUri = getRedirectToUri();
+  // Persist redirectToUri, because if the redirect fails and user clicks redirect himself, it might not work
+  // correctly because redirect() already clears local storage key.
+  const redirectToUri = useMemo(() => getRedirectToUri(), []);
+
   const redirect = useCallback(() => {
-    const redirectTo = getRedirectToUri();
-    router.replace(redirectTo);
-  }, [router]);
+    router.replace(redirectToUri);
+    localStorage.removeItem(AUTH_REDIRECT_KEY);
+  }, [router, redirectToUri]);
 
   // One time state to track if user has stayed on the page for more than 10 seconds.
   const [hasWaitedEnough, setHasWaitedEnough] = useState(false);
@@ -60,7 +71,11 @@ export default function AuthCompletePage() {
 
   const handleOnboardingOptionClick = useCallback(
     (href: string) => {
-      localStorage.setItem(`has-seen-onboarding-in-past-${userDid}`, "true");
+      // Silenty set the has seen onboarding value. Even if userDid is a nullish value.
+      localStorage.setItem(
+        HAS_SEEN_ONBOARDING_IN_PAST_KEY(userDid ?? "unknown"),
+        "true",
+      );
       setTimeout(() => {
         router.replace(href);
       });
@@ -86,7 +101,7 @@ export default function AuthCompletePage() {
       <LayoutBumicertsIcon showAnimations />
       <motion.div
         initial={{ scale: 0.2, filter: "blur(20px)", opacity: 0.5 }}
-        animate={{ scale: 1, filter: "blur(0px", opacity: 1 }}
+        animate={{ scale: 1, filter: "blur(0px)", opacity: 1 }}
         transition={{
           delay: 0.5,
           duration: 0.5,
@@ -136,31 +151,34 @@ export default function AuthCompletePage() {
               </Button>
               <div className="flex flex-col items-center p-4 pt-8">
                 <LayoutBumicertsIcon />
-                <h1 className="font-medium text-xl mt-3">Welcome</h1>
+                <h1 className="font-medium text-xl mt-3">
+                  How will you use Bumicerts?
+                </h1>
                 <p className="text-muted-foreground text-sm">
-                  Select an option to continue...
+                  Choose your role to get started...
                 </p>
                 <div className="grid grid-rows-2 gap-2 mt-4 w-full">
+                  <OnboardingOption
+                    onClick={() => handleOnboardingOptionClick(redirectToUri)}
+                    Icon={HandHeartIcon}
+                    optionName="Funder"
+                    optionDescription="Explore and fund impactful regenerative projects"
+                  />
                   <OnboardingOption
                     onClick={() =>
                       handleOnboardingOptionClick(links.manage.home)
                     }
                     Icon={Building2Icon}
-                    optionName="Organization"
-                    optionDescription="Manage your organization data and create bumicerts"
-                  />
-                  <OnboardingOption
-                    onClick={() => handleOnboardingOptionClick(redirectToUri)}
-                    Icon={HandHeartIcon}
                     optionName="Nature Steward"
-                    optionDescription="Explore regenerative projects and fund impactful"
+                    optionDescription="Manage your organization, issue Bumicerts and upload supporting evidence"
                   />
                 </div>
                 <Button
                   className="mt-4 w-full"
+                  variant={"ghost"}
                   onClick={() => setDidUserCancelOnboarding(true)}
                 >
-                  I will do it later <ChevronRight />
+                  I&apos;ll decide later <ChevronRight />
                 </Button>
               </div>
             </motion.div>

@@ -4,6 +4,7 @@ import {
 } from "@/lib/adapters";
 import { AllOrgsShell } from "./_components/AllOrgsShell";
 import { getIndexerCaller } from "@/lib/trpc/indexer/server";
+import ErrorPage from "@/components/error-page";
 
 export const metadata = {
   title: "Organizations — Bumicerts",
@@ -30,14 +31,12 @@ export default async function AllOrganizationsPage() {
 
   if (fetchError) {
     return (
-      <div className="w-full pt-20 flex items-center justify-center">
-        <div className="text-center space-y-3 max-w-md px-6">
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            We couldn&apos;t load organizations right now. Please try again in a
-            moment.
-          </p>
-        </div>
-      </div>
+      <ErrorPage
+        title="Something went wrong"
+        description="We were unable to load the organizations. Please try refreshing the page."
+        showRefreshButton
+        showHomeButton={false}
+      />
     );
   }
 
