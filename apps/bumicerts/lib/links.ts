@@ -138,7 +138,6 @@ export const links = {
   api: {
     upload: {
       trees: {
-        appendExistingDataset: "/api/upload/trees/append-existing-dataset",
         datasets: "/api/upload/trees/datasets",
       },
     },

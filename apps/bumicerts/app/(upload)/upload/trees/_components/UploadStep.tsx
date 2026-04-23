@@ -24,10 +24,11 @@ import { fetchPhotoFromUrl } from "@/lib/upload/fetch-photo-from-url";
 import { useModal } from "@/components/ui/modal/context";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import PhotoAttachModal from "@/components/global/modals/upload/photo-attachment";
-import { formatError } from "@/lib/utils/trpc-errors";
+import { formatError, isErrorCode } from "@/lib/utils/trpc-errors";
 import { buildTreeDynamicProperties } from "@/lib/upload/tree-dynamic-properties";
 import {
-  appendExistingDatasetUpload,
+  APPEND_EXISTING_DWC_DATASET_CLIENT_ROWS,
+  toAppendExistingDatasetRows,
 } from "@/lib/upload/append-existing-dataset";
 import { uploadTreeDatasetsQueryKey } from "@/lib/upload/tree-upload-datasets";
 import {
@@ -83,6 +84,10 @@ export const STORAGE_KEY = "upload-trees-pending";
 const SESSION_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const REFRESH_WARNING_MESSAGE =
   "The upload finished, but some views may take a moment to refresh.";
+const EXISTING_DATASET_UNAVAILABLE_MESSAGE =
+  "The selected dataset disappeared during upload. Remaining rows were not added.";
+const UNCONFIRMED_EXISTING_DATASET_CHUNK_MESSAGE =
+  "This chunk could not be confirmed. Some trees may already be saved; review Tree Manager before retrying.";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -107,6 +112,16 @@ function getOccurrenceUriFromStatus(status: RowStatus | undefined): string | nul
 
 function hasPersistedOccurrence(status: RowStatus | undefined): boolean {
   return getOccurrenceUriFromStatus(status) !== null;
+}
+
+function getOccurrenceRkey(status: RowStatus | undefined): string | null {
+  const occurrenceUri = getOccurrenceUriFromStatus(status);
+  if (!occurrenceUri) {
+    return null;
+  }
+
+  const rkey = occurrenceUri.split("/").pop();
+  return typeof rkey === "string" && rkey.length > 0 ? rkey : null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -139,7 +154,9 @@ export default function UploadStep({
   const createDataset = trpc.dwc.dataset.create.useMutation();
   const deleteDataset = trpc.dwc.dataset.delete.useMutation();
   const updateDataset = trpc.dwc.dataset.update.useMutation();
+  const appendExistingDataset = trpc.dwc.dataset.appendExisting.useMutation();
   const createOccurrence = trpc.dwc.occurrence.create.useMutation();
+  const updateOccurrence = trpc.dwc.occurrence.update.useMutation();
   const deleteOccurrence = trpc.dwc.occurrence.delete.useMutation();
   const createMeasurement = trpc.dwc.measurement.create.useMutation();
   const indexerUtils = indexerTrpc.useUtils();
@@ -209,6 +226,10 @@ export default function UploadStep({
     datasetSelection.mode === "existing"
       ? datasetSelection.dataset
       : null;
+  const appendExistingDatasetRows = useMemo(
+    () => toAppendExistingDatasetRows(validRows),
+    [validRows],
+  );
 
   // ── Photo attachment ──────────────────────────────────────────────────────
   const handleAddPhoto = (
@@ -285,6 +306,77 @@ export default function UploadStep({
     }
   }, [did, indexerUtils, queryClient, setRefreshWarning]);
 
+  const detachUploadedRowsFromUnavailableDataset = useCallback(
+    async (statuses: RowStatus[], endExclusive: number) => {
+      let demotedSuccesses = 0;
+
+      for (let index = 0; index < endExclusive; index += 1) {
+        const status = statuses[index];
+        if (!status || (status.state !== "success" && status.state !== "partial")) {
+          continue;
+        }
+
+        const baseError =
+          "The selected dataset disappeared during upload, so this tree was kept without dataset grouping. Review it in Tree Manager.";
+        const fallbackError =
+          "The selected dataset disappeared during upload and this tree could not be moved out of that dataset automatically. Review it in Tree Manager.";
+        const nextBaseError =
+          status.state === "partial" ? `${status.error} ${baseError}` : baseError;
+        const nextFallbackError =
+          status.state === "partial"
+            ? `${status.error} ${fallbackError}`
+            : fallbackError;
+        const rkey = getOccurrenceRkey(status);
+
+        if (!rkey) {
+          if (status.state === "success") {
+            demotedSuccesses += 1;
+          }
+          statuses[index] = {
+            state: "partial",
+            occurrenceUri: status.occurrenceUri,
+            photoCount: status.photoCount,
+            error: nextFallbackError,
+          };
+          continue;
+        }
+
+        try {
+          await updateOccurrence.mutateAsync({
+            rkey,
+            data: {
+              dynamicProperties: buildTreeDynamicProperties(),
+            },
+            unset: ["datasetRef"],
+          });
+
+          if (status.state === "success") {
+            demotedSuccesses += 1;
+          }
+          statuses[index] = {
+            state: "partial",
+            occurrenceUri: status.occurrenceUri,
+            photoCount: status.photoCount,
+            error: nextBaseError,
+          };
+        } catch {
+          if (status.state === "success") {
+            demotedSuccesses += 1;
+          }
+          statuses[index] = {
+            state: "partial",
+            occurrenceUri: status.occurrenceUri,
+            photoCount: status.photoCount,
+            error: nextFallbackError,
+          };
+        }
+      }
+
+      return demotedSuccesses;
+    },
+    [updateOccurrence],
+  );
+
   // ── Upload logic ──────────────────────────────────────────────────────────
   const runUpload = useCallback(async () => {
     if (uploadRef.current) return;
@@ -320,70 +412,171 @@ export default function UploadStep({
         return;
       }
     } else if (datasetSelection.mode === "existing") {
-      try {
-        const response = await appendExistingDatasetUpload({
-          datasetRkey: datasetSelection.dataset.rkey,
-          validRows,
-          establishmentMeans,
-        });
-        const nextStatuses = validRows.map<RowStatus>(() => ({ state: "pending" }));
-        let successes = 0;
-        let partials = 0;
-        let failures = 0;
+      const nextStatuses = validRows.map<RowStatus>(() => ({ state: "pending" }));
+      let successes = 0;
+      let partials = 0;
+      let failures = 0;
+      let stopExistingDatasetUpload = false;
 
-        for (const result of response.results) {
-          if (result.state === "success") {
-            successes += 1;
-            nextStatuses[result.index] = {
-              state: "success",
-              occurrenceUri: result.occurrenceUri,
-              photoCount: result.photoCount,
-            };
-            continue;
-          }
+      for (
+        let chunkStart = 0;
+        chunkStart < appendExistingDatasetRows.length;
+        chunkStart += APPEND_EXISTING_DWC_DATASET_CLIENT_ROWS
+      ) {
+        const chunkRows = appendExistingDatasetRows.slice(
+          chunkStart,
+          chunkStart + APPEND_EXISTING_DWC_DATASET_CLIENT_ROWS,
+        );
+        const chunkEnd = chunkStart + chunkRows.length;
+        const chunkLabel =
+          chunkRows.length === 1
+            ? (validRows[chunkStart]?.occurrence.scientificName ||
+              `Row ${chunkStart + 1}`)
+            : `Rows ${chunkStart + 1}-${chunkEnd}`;
 
-          if (result.state === "partial") {
-            partials += 1;
-            nextStatuses[result.index] = {
-              state: "partial",
-              occurrenceUri: result.occurrenceUri,
-              photoCount: result.photoCount,
+        for (const [chunkIndex] of chunkRows.entries()) {
+          nextStatuses[chunkStart + chunkIndex] = { state: "uploading" };
+        }
+        setRowStatuses([...nextStatuses]);
+        setProgress((prev) => ({
+          ...prev,
+          current: Math.min(chunkStart + 1, validRows.length),
+          currentRow: chunkLabel,
+        }));
+
+        try {
+          const response = await appendExistingDataset.mutateAsync({
+            datasetRkey: datasetSelection.dataset.rkey,
+            rows: chunkRows,
+            establishmentMeans,
+          });
+          const handledIndexes = new Set<number>();
+
+          setUploadedDatasetUri(
+            response.datasetBecameUnavailable ? null : response.datasetUri,
+          );
+
+          for (const result of response.results) {
+            const globalIndex = chunkStart + result.index;
+            handledIndexes.add(globalIndex);
+
+            if (result.state === "success") {
+              successes += 1;
+              nextStatuses[globalIndex] = {
+                state: "success",
+                occurrenceUri: result.occurrenceUri,
+                photoCount: result.photoCount,
+              };
+              continue;
+            }
+
+            if (result.state === "partial") {
+              partials += 1;
+              nextStatuses[globalIndex] = {
+                state: "partial",
+                occurrenceUri: result.occurrenceUri,
+                photoCount: result.photoCount,
+                error: result.error,
+              };
+              continue;
+            }
+
+            failures += 1;
+            nextStatuses[globalIndex] = {
+              state: "error",
               error: result.error,
             };
-            continue;
           }
 
-          failures += 1;
-          nextStatuses[result.index] = {
-            state: "error",
-            error: result.error,
-          };
+          for (const [chunkIndex] of chunkRows.entries()) {
+            const globalIndex = chunkStart + chunkIndex;
+            if (handledIndexes.has(globalIndex)) {
+              continue;
+            }
+
+            failures += 1;
+            nextStatuses[globalIndex] = {
+              state: "error",
+              error: "Unexpected append response for this row.",
+            };
+          }
+
+          if (response.datasetBecameUnavailable) {
+            const demotedSuccesses = await detachUploadedRowsFromUnavailableDataset(
+              nextStatuses,
+              chunkStart,
+            );
+            successes -= demotedSuccesses;
+            partials += demotedSuccesses;
+            setUploadedDatasetUri(null);
+
+            for (
+              let remainingIndex = chunkEnd;
+              remainingIndex < nextStatuses.length;
+              remainingIndex += 1
+            ) {
+              nextStatuses[remainingIndex] = {
+                state: "error",
+                error: EXISTING_DATASET_UNAVAILABLE_MESSAGE,
+              };
+              failures += 1;
+            }
+            stopExistingDatasetUpload = true;
+          }
+        } catch (error) {
+          const baseMessage = formatError(error);
+          const datasetUnavailable = isErrorCode(error, "PRECONDITION_FAILED");
+          const chunkMessage =
+            datasetUnavailable
+              ? EXISTING_DATASET_UNAVAILABLE_MESSAGE
+              : `${baseMessage} ${UNCONFIRMED_EXISTING_DATASET_CHUNK_MESSAGE}`;
+
+          if (datasetUnavailable) {
+            const demotedSuccesses = await detachUploadedRowsFromUnavailableDataset(
+              nextStatuses,
+              chunkStart,
+            );
+            successes -= demotedSuccesses;
+            partials += demotedSuccesses;
+            setUploadedDatasetUri(null);
+          }
+
+          for (
+            let remainingIndex = chunkStart;
+            remainingIndex < nextStatuses.length;
+            remainingIndex += 1
+          ) {
+            nextStatuses[remainingIndex] = {
+              state: "error",
+              error: chunkMessage,
+            };
+            failures += 1;
+          }
+
+          stopExistingDatasetUpload = true;
         }
 
-        setUploadedDatasetUri(
-          response.datasetBecameUnavailable ? null : response.datasetUri,
-        );
-        setRowStatuses(nextStatuses);
+        setRowStatuses([...nextStatuses]);
         setProgress({
-          current: validRows.length,
+          current: successes + partials + failures,
           total: validRows.length,
           successes,
           partials,
           failures,
           currentRow: "",
         });
-        if (successes + partials > 0) {
-          await invalidateTreeQueries();
+
+        if (stopExistingDatasetUpload) {
+          break;
         }
-        setUploadDone(true);
-        return;
-      } catch (error) {
-        setUploadFatalError(
-          formatError(error),
-        );
-        setUploadDone(true);
-        return;
       }
+
+      if (successes + partials > 0) {
+        await invalidateTreeQueries();
+      }
+
+      setUploadDone(true);
+      return;
     }
 
     // ── Phase 1: Create occurrences + measurements ────────────────────────
@@ -529,9 +722,12 @@ export default function UploadStep({
 
     setUploadDone(true);
   }, [
+    appendExistingDataset,
+    appendExistingDatasetRows,
     createDataset,
     deleteDataset,
     deleteOccurrence,
+    detachUploadedRowsFromUnavailableDataset,
     createOccurrence,
     createMeasurement,
     datasetSelection,
@@ -666,14 +862,31 @@ export default function UploadStep({
 
   // Auto-start photo fetch after Phase 1 completes
   useEffect(() => {
-    if (uploadDone && hasPhotoUrls && !photoFetchStarted && !uploadFatalError) {
+    if (
+      uploadDone
+      && hasPhotoUrls
+      && progress.successes + progress.partials > 0
+      && !photoFetchStarted
+      && !uploadFatalError
+    ) {
       void runPhotoFetch();
     }
-  }, [uploadDone, hasPhotoUrls, photoFetchStarted, runPhotoFetch, uploadFatalError]);
+  }, [
+    hasPhotoUrls,
+    photoFetchStarted,
+    progress.partials,
+    progress.successes,
+    runPhotoFetch,
+    uploadDone,
+    uploadFatalError,
+  ]);
 
   // ── Derived values ────────────────────────────────────────────────────────
   const { current, total, successes, partials, failures, currentRow } = progress;
   const progressPercent = total > 0 ? Math.round((current / total) * 100) : 0;
+  const progressLabel = uploadStarted
+    ? `Uploading row ${current} of ${total}${currentRow ? ` — ${currentRow}` : ""}...`
+    : "Preparing upload...";
   const selectedDatasetName =
     datasetSelection.mode === "new"
       ? datasetSelection.name
@@ -731,9 +944,7 @@ export default function UploadStep({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
-              {uploadStarted
-                ? `Uploading row ${current} of ${total}${currentRow ? ` — ${currentRow}` : ""}…`
-                : "Preparing upload…"}
+              {progressLabel}
             </span>
             <span className="text-muted-foreground font-mono">
               {progressPercent}%
