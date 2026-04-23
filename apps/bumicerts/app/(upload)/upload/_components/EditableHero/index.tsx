@@ -577,7 +577,7 @@ export function EditBar() {
           Cancel
         </button>
         <button
-          form="upload-dashboard-save-form"
+          form="manage-dashboard-save-form"
           type="submit"
           disabled={isSaving || !hasChanges()}
           className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50"

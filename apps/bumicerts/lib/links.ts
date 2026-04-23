@@ -132,6 +132,9 @@ export const links = {
     gbifPublisher:
       "https://www.gbif.org/publisher/c02486e8-eb54-4e94-81d8-1038cc58e208",
   },
+  public: {
+    icon: "/assets/media/images/app-icon.png",
+  },
   assets: {
     treeDataTemplate: "/templates/tree-data-template.csv",
   },
