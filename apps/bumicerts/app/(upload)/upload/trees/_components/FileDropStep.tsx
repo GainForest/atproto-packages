@@ -399,7 +399,8 @@ export default function FileDropStep({
           <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
             <div className="space-y-1.5">
               <label htmlFor="dataset-name" className="text-sm font-medium">
-                Dataset name
+                Dataset name{" "}
+                <span className="text-muted-foreground font-normal">(recommended)</span>
               </label>
               <Input
                 id="dataset-name"
