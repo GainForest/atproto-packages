@@ -902,6 +902,7 @@ export default function UploadStep({
   const allPhasesComplete = uploadFatalError
     ? uploadDone
     : uploadDone && (!hasPhotoUrls || photoFetchDone);
+  const isUploadInProgress = uploadStarted && !allPhasesComplete;
   const photoFetchPercent =
     photoFetchProgress.total > 0
       ? Math.round(
@@ -915,6 +916,23 @@ export default function UploadStep({
   const treeManagerLabel = uploadedDatasetUri
     ? "View Dataset in Tree Manager"
     : "View Trees in Tree Manager";
+
+  useEffect(() => {
+    if (!isUploadInProgress) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isUploadInProgress]);
 
   const attentionRows = rowStatuses
     .map((status, i) => ({ status, row: validRows[i], index: i }))
@@ -938,6 +956,19 @@ export default function UploadStep({
           </p>
         ) : null}
       </div>
+
+      {isUploadInProgress ? (
+        <div className="flex items-start gap-3 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-300">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-medium">Do not refresh or close this page</p>
+            <p>
+              Keep this tab open until the upload completes. Refreshing now may
+              interrupt saving records or photos.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {/* Progress bar */}
       {!uploadDone && (
