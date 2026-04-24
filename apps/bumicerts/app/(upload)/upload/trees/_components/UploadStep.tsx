@@ -905,6 +905,7 @@ export default function UploadStep({
     ? uploadDone
     : uploadDone && (!hasPhotoUrls || photoFetchDone);
   const isUploadInProgress = uploadStarted && !allPhasesComplete;
+  const showBackNavigation = !uploadDone;
   const photoFetchPercent =
     photoFetchProgress.total > 0
       ? Math.round(
@@ -1279,14 +1280,20 @@ export default function UploadStep({
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-border">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          disabled={uploadStarted && !allPhasesComplete}
-        >
-          {backLabel}
-        </Button>
+      <div
+        className={`flex items-center pt-2 border-t border-border ${
+          showBackNavigation ? "justify-between" : "justify-end"
+        }`}
+      >
+        {showBackNavigation ? (
+          <Button
+            variant="outline"
+            onClick={onBack}
+            disabled={uploadStarted && !allPhasesComplete}
+          >
+            {backLabel}
+          </Button>
+        ) : null}
 
         {allPhasesComplete && (
           <div className="flex gap-2">
