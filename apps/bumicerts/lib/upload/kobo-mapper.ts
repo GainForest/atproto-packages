@@ -52,11 +52,11 @@ const KOBO_PATTERNS: KoboPattern[] = [
   // Measurements
   { pattern: "dbh", targetField: "dbh" },
   { pattern: "diameter_breast_height", targetField: "dbh" },
-  { pattern: "height", targetField: "totalHeight" },
-  { pattern: "tree_height", targetField: "totalHeight" },
+  { pattern: "height", targetField: "height" },
+  { pattern: "tree_height", targetField: "height" },
   { pattern: "diameter", targetField: "diameter" },
-  { pattern: "canopy_cover", targetField: "canopyCover" },
-  { pattern: "canopy", targetField: "canopyCover" },
+  { pattern: "canopy_cover", targetField: "canopyCoverPercent" },
+  { pattern: "canopy", targetField: "canopyCoverPercent" },
 
   // Date / time — explicit date fields take priority over submission_time
   // koboSpecific: FCD tree time field is KoboToolbox-specific
