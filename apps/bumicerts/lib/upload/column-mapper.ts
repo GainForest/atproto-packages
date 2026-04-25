@@ -104,8 +104,6 @@ const KNOWN_PATTERNS: { patterns: string[]; target: string }[] = [
       "canopycoverpercent",
       "canopy_cover_percent",
       "canopy_cover_pct",
-      "crown_diameter",
-      "canopy_diameter",
       "canopy_cover",
     ],
     target: "canopyCoverPercent",

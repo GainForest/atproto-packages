@@ -155,7 +155,7 @@ export default function TreeDataGuide() {
     <Accordion type="single" collapsible className="rounded-lg border">
       <AccordionItem value="guide" className="border-b-0">
         <AccordionTrigger className="px-4 hover:no-underline">
-          New to tree data? See accepted fields and download the template
+          New to tree data? See accepted fields and download templates
         </AccordionTrigger>
 
         <AccordionContent className="px-4">
