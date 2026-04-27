@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowRightIcon,
+  ArrowUpRightIcon,
   CircleAlertIcon,
   CircleCheckIcon,
-  ExternalLinkIcon,
   HandIcon,
   Loader2Icon,
   LucideIcon,
@@ -24,11 +24,18 @@ import { useStep5Store } from "./store";
 import { links } from "@/lib/links";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { toSerializableFile, parseAtUri, toStrongRefs } from "@/lib/mutations-utils";
+import {
+  toSerializableFile,
+  parseAtUri,
+  toStrongRefs,
+} from "@/lib/mutations-utils";
 import { queryKeys } from "@/lib/query-keys"; // drafts key only
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { trackBumicertPublished, getFlowDurationSeconds } from "@/lib/analytics/hotjar";
+import {
+  trackBumicertPublished,
+  getFlowDurationSeconds,
+} from "@/lib/analytics/hotjar";
 import { trpc } from "@/lib/trpc/client";
 import { formatError } from "@/lib/utils/trpc-errors";
 import type { LinearDocument } from "@gainforest/atproto-mutations-next";
@@ -70,7 +77,7 @@ const ProgressItem = ({
     <motion.div
       className={cn(
         "flex items-start gap-4 p-4 relative",
-        status === "success" && "items-center"
+        status === "success" && "items-center",
       )}
       initial={{
         opacity: 0,
@@ -89,7 +96,7 @@ const ProgressItem = ({
         <motion.div
           className={cn(
             "absolute z-0 top-8 left-8 w-4 rounded-full bg-primary transition-colors",
-            status === "error" && "bg-destructive"
+            status === "error" && "bg-destructive",
           )}
           animate={{
             bottom: status === "success" ? "-2rem" : "unset",
@@ -102,7 +109,7 @@ const ProgressItem = ({
           "relative h-12 w-12 z-5 bg-primary rounded-full border border-transparent flex items-center justify-center",
           status === "error" && "bg-destructive",
           status === "pending" && "bg-background border-border",
-          status === "input" && "bg-background border-border"
+          status === "input" && "bg-background border-border",
         )}
       >
         {status === "error" ? (
@@ -126,7 +133,7 @@ const ProgressItem = ({
             "text-xl font-medium",
             status === "error" && "text-destructive",
             status === "success" && "text-primary",
-            status === "input" && "text-foreground"
+            status === "input" && "text-foreground",
           )}
         >
           {title}
@@ -139,19 +146,6 @@ const ProgressItem = ({
     </motion.div>
   );
 };
-
-interface CreateBumicertResponse {
-  uri: string;
-  cid: string;
-}
-
-interface PublishedBumicertPreview {
-  coverImage: File;
-  title: string;
-  objectives: string[];
-  organizationName: string;
-  logoUrl: string | null;
-}
 
 const Step5 = () => {
   const auth = useAtprotoStore((state) => state.auth);
@@ -169,26 +163,31 @@ const Step5 = () => {
   const step2FormValues = formValues[1];
   const step3FormValues = formValues[2];
 
+  const overallStatus = useStep5Store((state) => state.overallStatus);
   const setOverallStatus = useStep5Store((state) => state.setOverallStatus);
+  const createdBumicertResponse = useStep5Store(
+    (state) => state.createdBumicertResponse,
+  );
+  const setCreatedBumicertResponse = useStep5Store(
+    (state) => state.setCreatedBumicertResponse,
+  );
+  const publishedPreview = useStep5Store((state) => state.publishedPreview);
+  const setPublishedPreview = useStep5Store((state) => state.setPublishedPreview);
+  const resetSuccessState = useStep5Store((state) => state.resetSuccessState);
   const resetFormStore = useFormStore((state) => state.reset);
   const { setCurrentStepIndex } = useNewBumicertStore();
 
-  const [createdBumicertResponse, setCreatedBumicertResponse] =
-    useState<CreateBumicertResponse | null>(null);
   const [createBumicertError, setCreateBumicertError] = useState<string | null>(
-    null
+    null,
   );
   const [
     isBumicertCreationMutationInFlight,
     setIsBumicertCreationMutationInFlight,
   ] = useState(false);
   const [hasClickedPublish, setHasClickedPublish] = useState(false);
-  const [publishedPreview, setPublishedPreview] =
-    useState<PublishedBumicertPreview | null>(null);
-
   const { data: orgData } = indexerTrpc.organization.byDid.useQuery(
     { did: auth.user?.did ?? "" },
-    { enabled: !!auth.user?.did }
+    { enabled: !!auth.user?.did },
   );
 
   const organizationName = orgData?.org?.record?.displayName ?? "";
@@ -199,6 +198,8 @@ const Step5 = () => {
   const createBumicertStatus: "pending" | "success" | "error" | "input" =
     createBumicertError
       ? "error"
+      : overallStatus === "success"
+        ? "success"
       : createdBumicertResponse === null
         ? isBumicertCreationMutationInFlight
           ? "pending"
@@ -255,11 +256,13 @@ const Step5 = () => {
       console.error("Failed to publish bumicert:", error);
       setCreateBumicertError(formatError(error));
       setHasClickedPublish(false);
+      resetSuccessState();
       // Reset to idle so step navigation (back/edit) is re-enabled after a failure
       setOverallStatus("idle");
     },
     onMutate: () => {
       setIsBumicertCreationMutationInFlight(true);
+      resetSuccessState();
       setOverallStatus("pending");
     },
     onSettled: () => {
@@ -285,14 +288,14 @@ const Step5 = () => {
 
     if (step1FormValues.coverImage.size > BUMICERT_COVER_IMAGE_MAX_SIZE_BYTES) {
       setCreateBumicertError(
-        `Cover image must be ${BUMICERT_COVER_IMAGE_MAX_SIZE_MB}MB or smaller`
+        `Cover image must be ${BUMICERT_COVER_IMAGE_MAX_SIZE_MB}MB or smaller`,
       );
       return;
     }
 
     if (
       !BUMICERT_COVER_IMAGE_SUPPORTED_TYPES.some(
-        (type) => type === step1FormValues.coverImage.type
+        (type) => type === step1FormValues.coverImage.type,
       )
     ) {
       setCreateBumicertError("Cover image must be JPG, PNG, or WebP");
@@ -319,10 +322,15 @@ const Step5 = () => {
       // (CID class vs plain { $link } object). Since we serialize to JSON before
       // sending to the PDS, these are runtime-compatible. We cast through the
       // generated LinearDocument type at this boundary.
-      const descriptionForMutation = step2FormValues.description as unknown as LinearDocument;
+      const descriptionForMutation =
+        step2FormValues.description as unknown as LinearDocument;
       setPublishedPreview({
         coverImage: step1FormValues.coverImage,
         title: step1FormValues.projectName,
+        description:
+          step2FormValues.shortDescription.length > 0
+            ? step2FormValues.shortDescription
+            : undefined,
         objectives: [...step1FormValues.workType],
         organizationName,
         logoUrl: organizationLogoUrl,
@@ -336,10 +344,12 @@ const Step5 = () => {
           $type: "org.hypercerts.claim.activity#workScopeString" as const,
           scope: step1FormValues.workType.join(", "),
         },
-        startDate: step1FormValues.projectDateRange[0].toISOString() as `${string}-${string}-${string}T${string}:${string}:${string}Z`,
+        startDate:
+          step1FormValues.projectDateRange[0].toISOString() as `${string}-${string}-${string}T${string}:${string}:${string}Z`,
         // endDate is null when the work is ongoing — omit it from the mutation
         ...(step1FormValues.projectDateRange[1] !== null && {
-          endDate: step1FormValues.projectDateRange[1].toISOString() as `${string}-${string}-${string}T${string}:${string}:${string}Z`,
+          endDate:
+            step1FormValues.projectDateRange[1].toISOString() as `${string}-${string}-${string}T${string}:${string}:${string}Z`,
         }),
         contributors: step3FormValues.contributors.map((contributor) => ({
           contributorIdentity: {
@@ -348,7 +358,10 @@ const Step5 = () => {
           },
         })),
         locations: toStrongRefs(
-          step3FormValues.siteBoundaries.map((sb) => ({ uri: sb.uri, cid: sb.cid }))
+          step3FormValues.siteBoundaries.map((sb) => ({
+            uri: sb.uri,
+            cid: sb.cid,
+          })),
         ),
         image: {
           $type: "org.hypercerts.defs#smallImage" as const,
@@ -358,7 +371,9 @@ const Step5 = () => {
     } catch (error) {
       console.error(error);
       setCreateBumicertError(
-        error instanceof Error ? error.message : "Failed to prepare publish data."
+        error instanceof Error
+          ? error.message
+          : "Failed to prepare publish data.",
       );
     }
   };
@@ -382,100 +397,96 @@ const Step5 = () => {
           />
         ),
       },
-      true
+      true,
     );
     show();
   };
 
   return (
     <div>
-      <ProgressItem
-        iconset={{
-          Error: ShieldXIcon,
-          Success: ShieldCheckIcon,
-        }}
-        title="Authenticated"
-        description={
-          authStatus === "pending"
-            ? "We are checking if you are authenticated."
-            : "You are not signed in. Please sign in to continue."
-        }
-        status={authStatus}
-      />
-      {authStatus === "success" && (
-        <ProgressItem
-          iconset={{
-            Error: CircleAlertIcon,
-            Success: CircleCheckIcon,
-            Input: HandIcon,
-          }}
-          title={
-            createBumicertError
-              ? "Failed to publish."
-              : createBumicertStatus === "success"
-                ? "Published!"
-                : createBumicertStatus === "pending"
-                  ? "Publishing your bumicert"
-                  : "Ready to publish your bumicert"
-          }
-          description={
-            createBumicertError
-              ? createBumicertError
-              : isBumicertCreationMutationInFlight
-                ? "We are publishing your bumicert."
-                : "Please click the button below to publish your bumicert."
-          }
-          status={createBumicertStatus}
-          isLastStep={true}
-        >
-          {createBumicertStatus !== "success" && (
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={handlePublishClick}
-                disabled={isBumicertCreationMutationInFlight}
-              >
-                {createBumicertError ? "Retry" : "Publish Bumicert"} <ArrowRightIcon />
-              </Button>
-              {createBumicertError && (
+      {createBumicertStatus !== "success" && (
+        <>
+          <ProgressItem
+            iconset={{
+              Error: ShieldXIcon,
+              Success: ShieldCheckIcon,
+            }}
+            title="Authenticated"
+            description={
+              authStatus === "pending"
+                ? "We are checking if you are authenticated."
+                : "You are not signed in. Please sign in to continue."
+            }
+            status={authStatus}
+          />
+          {authStatus === "success" && (
+            <ProgressItem
+              iconset={{
+                Error: CircleAlertIcon,
+                Success: CircleCheckIcon,
+                Input: HandIcon,
+              }}
+              title={
+                createBumicertError
+                  ? "Failed to publish."
+                  : createBumicertStatus === "pending"
+                    ? "Publishing your bumicert"
+                    : "Ready to publish your bumicert"
+              }
+              description={
+                createBumicertError
+                  ? createBumicertError
+                  : isBumicertCreationMutationInFlight
+                    ? "We are publishing your bumicert."
+                    : "Please click the button below to publish your bumicert."
+              }
+              status={createBumicertStatus}
+              isLastStep={true}
+            >
+              <div className="flex flex-wrap gap-2">
                 <Button
-                  variant="outline"
-                  onClick={() => setCurrentStepIndex(3)}
+                  onClick={handlePublishClick}
+                  disabled={isBumicertCreationMutationInFlight}
                 >
-                  Edit details
+                  {createBumicertError ? "Retry" : "Publish Bumicert"}{" "}
+                  <ArrowRightIcon />
                 </Button>
-              )}
-            </div>
+                {createBumicertError && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStepIndex(3)}
+                  >
+                    Edit details
+                  </Button>
+                )}
+              </div>
+            </ProgressItem>
           )}
-        </ProgressItem>
+        </>
       )}
-      {createBumicertStatus === "success" &&
-        createdBumicertResponse?.cid && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              scale: 0.5,
-              y: 10,
-              filter: "blur(10px)",
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              y: 0,
-              filter: "blur(0px)",
-            }}
-            className="mt-4 flex flex-col items-center border border-border rounded-lg p-6"
-          >
-            <PartyPopperIcon className="size-10 text-primary" />
-            <span className="mt-1 text-center">
-              Your bumicert was published successfully!
-            </span>
-
+      {createBumicertStatus === "success" && createdBumicertResponse?.cid && (
+        <motion.div
+          initial={{
+            opacity: 0,
+            scale: 0.5,
+            y: 10,
+            filter: "blur(10px)",
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            filter: "blur(0px)",
+          }}
+        >
+          <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-center md:items-stretch">
             {publishedPreview && (
-              <div className="mt-4 w-full max-w-xs aspect-3/4">
+              <div className="w-full max-w-xs aspect-3/4 shrink-0">
                 <BumicertCardVisual
                   logoUrl={publishedPreview.logoUrl}
                   coverImage={publishedPreview.coverImage}
                   title={publishedPreview.title}
+                  description={publishedPreview.description}
                   organizationName={publishedPreview.organizationName}
                   objectives={publishedPreview.objectives}
                   className="h-full"
@@ -483,44 +494,55 @@ const Step5 = () => {
               </div>
             )}
 
-            {/* Action buttons */}
-            <div className="mt-4 flex flex-col gap-2 w-full max-w-xs">
-              {/* Primary: View Bumicert */}
-              <Button className="w-full" asChild>
-                <Link
-                  href={links.bumicert.view(
-                    `${parseAtUri(createdBumicertResponse.uri).did}-${parseAtUri(createdBumicertResponse.uri).rkey}`
-                  )}
-                >
-                  View Bumicert <ArrowRightIcon />
-                </Link>
-              </Button>
+            <div className="w-full md:flex-1 flex flex-col justify-center items-center">
+              <div className="h-12 w-12 relative">
+                <PartyPopperIcon className="text-primary size-12" />
+                <div className="absolute inset-0 bg-primary/50 blur-xl animate-pulse"></div>
+              </div>
+              <span className="text-center font-medium text-xl mt-6">
+                Your Bumicert was published successfully!
+              </span>
 
-              {/* Secondary: Set Up Donations */}
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleOpenFundingConfig}
-              >
-                <SettingsIcon />
-                Set Up Donations
-              </Button>
+              {/* Action buttons */}
+              <div className="mt-4 flex flex-col gap-2 w-full items-center">
+                {/* Primary: View Bumicert */}
+                <Button className="w-full md:w-fit" asChild>
+                  <Link
+                    href={links.bumicert.view(
+                      `${parseAtUri(createdBumicertResponse.uri).did}-${parseAtUri(createdBumicertResponse.uri).rkey}`,
+                    )}
+                  >
+                    View Bumicert <ArrowRightIcon />
+                  </Link>
+                </Button>
 
-              {/* Tertiary: Share Feedback (external link) */}
-              <Button variant="ghost" className="w-full" asChild>
-                <a
-                  href={FEEDBACK_FORM_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                {/* Secondary: Set Up Donations */}
+                <Button
+                  variant="outline"
+                  className="w-full md:w-fit"
+                  onClick={handleOpenFundingConfig}
                 >
-                  <MessageSquareHeartIcon />
-                  Share Feedback
-                  <ExternalLinkIcon className="ml-auto" />
-                </a>
-              </Button>
+                  <SettingsIcon />
+                  Set Up Donations
+                </Button>
+
+                {/* Tertiary: Share Feedback (external link) */}
+                <Button variant="ghost" className="w-full md:w-fit" asChild>
+                  <a
+                    href={FEEDBACK_FORM_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageSquareHeartIcon />
+                    Share Feedback
+                    <ArrowUpRightIcon className="ml-auto" />
+                  </a>
+                </Button>
+              </div>
             </div>
-          </motion.div>
-        )}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };

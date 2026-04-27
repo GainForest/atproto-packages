@@ -9,6 +9,7 @@ import { BumicertCardVisual } from "@/app/(marketplace)/explore/_components/Bumi
 
 const BumicertPreviewCard = () => {
   const step1FormValues = useFormStore((state) => state.formValues[0]);
+  const step2FormValues = useFormStore((state) => state.formValues[1]);
   const {
     coverImage,
     projectName: title,
@@ -26,7 +27,11 @@ const BumicertPreviewCard = () => {
   );
 
   const logoFromData = isOlderData ? undefined : (orgData?.org?.record?.logo?.uri ?? null);
-  const organizationName = orgData?.org?.record?.displayName ?? "";
+  const organizationNameFromData = isOlderData
+    ? undefined
+    : orgData?.org?.record?.displayName;
+  const organizationName =
+    organizationNameFromData ?? auth.user?.displayName ?? auth.user?.handle ?? "";
   const logoUrl = logoFromData ?? null;
 
   const isLoadingOrganizationInfo = isPendingOrganizationInfo || isOlderData;
@@ -73,6 +78,11 @@ const BumicertPreviewCard = () => {
                 logoUrl={logoUrl}
                 coverImage={coverImage}
                 title={title}
+                description={
+                  step2FormValues.shortDescription.length > 0
+                    ? step2FormValues.shortDescription
+                    : undefined
+                }
                 organizationName={organizationName}
                 objectives={objectives}
                 className="h-full"

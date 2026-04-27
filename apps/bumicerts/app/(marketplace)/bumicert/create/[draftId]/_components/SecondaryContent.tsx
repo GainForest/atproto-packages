@@ -72,6 +72,7 @@ const SecondaryContent = () => {
     (state) => state.formCompletionPercentages
   );
   const step1FormValues = useFormStore((state) => state.formValues[0]);
+  const step2FormValues = useFormStore((state) => state.formValues[1]);
   const step1Progress = completionPercentages[0];
   const auth = useAtprotoStore((state) => state.auth);
 
@@ -139,6 +140,11 @@ const SecondaryContent = () => {
                         EMPTY_COVER_IMAGE
                       }
                       title={step1FormValues.projectName}
+                      description={
+                        step2FormValues.shortDescription.length > 0
+                          ? step2FormValues.shortDescription
+                          : undefined
+                      }
                       organizationName={organizationName}
                       objectives={step1FormValues.workType}
                       className="h-full"
