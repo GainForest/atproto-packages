@@ -36,6 +36,11 @@ import { useModal } from "@/components/ui/modal/context";
 import useNewBumicertStore from "../../../store";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import { FundingConfigModal } from "@/components/global/modals/funding/config";
+import {
+  BUMICERT_COVER_IMAGE_MAX_SIZE_BYTES,
+  BUMICERT_COVER_IMAGE_MAX_SIZE_MB,
+  BUMICERT_COVER_IMAGE_SUPPORTED_TYPES,
+} from "../../../constants";
 
 const FEEDBACK_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSfCTtRzKzfwmnpJoPFYyOeGokTlRcKkvpb-Urme84gpBrCCPA/viewform";
@@ -253,8 +258,24 @@ const Step5 = () => {
 
     setCreateBumicertError(null);
 
-    if (!step1FormValues.coverImage) {
+    if (!step1FormValues.coverImage || step1FormValues.coverImage.size === 0) {
       setCreateBumicertError("Cover image is required");
+      return;
+    }
+
+    if (step1FormValues.coverImage.size > BUMICERT_COVER_IMAGE_MAX_SIZE_BYTES) {
+      setCreateBumicertError(
+        `Cover image must be ${BUMICERT_COVER_IMAGE_MAX_SIZE_MB}MB or smaller`
+      );
+      return;
+    }
+
+    if (
+      !BUMICERT_COVER_IMAGE_SUPPORTED_TYPES.some(
+        (type) => type === step1FormValues.coverImage.type
+      )
+    ) {
+      setCreateBumicertError("Cover image must be JPG, PNG, or WebP");
       return;
     }
 

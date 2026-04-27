@@ -9,6 +9,16 @@ import {
 
 type TRPCAppError = TRPCClientError<AppRouter>;
 
+function isNonJsonRequestEntityError(message: string): boolean {
+  const normalized = message.toLowerCase();
+
+  return (
+    normalized.includes("unexpected token") &&
+    normalized.includes("not valid json") &&
+    (normalized.includes("request en") || normalized.includes("entity too large"))
+  );
+}
+
 /**
  * Type guard for tRPC client errors.
  */
@@ -107,9 +117,16 @@ export function getFormattedErrors(
  */
 export function formatError(error: unknown): string {
   if (!isTRPCError(error)) {
+    if (error instanceof Error && isNonJsonRequestEntityError(error.message)) {
+      return "Your request payload is too large. Please use a cover image that is 5MB or smaller (JPG, PNG, or WebP).";
+    }
     if (error instanceof Error && error.message.trim()) return error.message;
     if (typeof error === "string" && error.trim()) return error;
     return "An error occurred";
+  }
+
+  if (isNonJsonRequestEntityError(error.message)) {
+    return "Your request payload is too large. Please use a cover image that is 5MB or smaller (JPG, PNG, or WebP).";
   }
 
   const userMessage = (error.data as Record<string, unknown> | undefined)?.userMessage;
