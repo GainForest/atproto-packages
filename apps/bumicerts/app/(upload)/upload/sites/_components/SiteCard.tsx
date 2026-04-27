@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  ArrowUpRightIcon,
   BadgeCheckIcon,
   CrosshairIcon,
   Loader2Icon,
@@ -197,7 +195,7 @@ export function SiteCard({
         isPreviewing ? "border-primary!" : "border-border",
       )}
     >
-      {/* Preview header */}
+      {/* Header with default badge */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         {previewUrl ? (
           <Button

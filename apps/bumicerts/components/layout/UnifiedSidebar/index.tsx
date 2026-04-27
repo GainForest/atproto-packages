@@ -6,6 +6,7 @@ import { SidebarHeader } from "./SidebarHeader";
 import { NavSection } from "./NavSection";
 import { SocialFooter } from "./SocialFooter";
 import { NAV_ITEMS } from "./data";
+import BumicertCreationCard from "./BumicertCreationCard";
 
 /**
  * UnifiedSidebar
@@ -50,8 +51,8 @@ export function UnifiedSidebar() {
 
       {/* Spacer */}
       <div className="flex-1" />
-
       {/* Bottom section */}
+      <BumicertCreationCard />
       <div className="flex flex-col gap-2">
         {/* MANAGE section */}
         <LayoutGroup id="unified-sidebar-nav-manage">

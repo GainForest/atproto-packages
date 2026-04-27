@@ -365,7 +365,7 @@ export function EditableHero({ organization }: EditableHeroProps) {
                 type="text"
                 value={displayName}
                 onChange={(e) => setEdit("displayName", e.target.value || null)}
-                placeholder="Organisation name"
+                placeholder="Organization name"
                 className={cn(
                   "text-3xl sm:text-4xl md:text-5xl font-light tracking-[-0.02em] leading-none",
                   "bg-transparent border-b-2 border-white/40 focus:border-primary/60 outline-none",
@@ -577,7 +577,7 @@ export function EditBar() {
           Cancel
         </button>
         <button
-          form="upload-dashboard-save-form"
+          form="manage-dashboard-save-form"
           type="submit"
           disabled={isSaving || !hasChanges()}
           className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50"

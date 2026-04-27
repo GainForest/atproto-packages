@@ -47,9 +47,9 @@ import { EditableHero, EditBar } from "./EditableHero/index";
 import { EditableAbout } from "./EditableAbout";
 import { ManageNavGrid } from "./UploadNavGrid";
 import { ManageDashboardSkeleton } from "./UploadDashboardSkeleton";
-import { OrgSetupPrompt } from "./OrgSetupPrompt";
 import { useManageDashboardState } from "./store";
 import { useManageMode } from "../_hooks/useUploadMode";
+import { OrgSetupPage } from "./OrgSetupPage";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -365,8 +365,8 @@ export function ManageDashboardClient({ did }: ManageDashboardClientProps) {
     return (
       <Container className="pt-4">
         <ErrorPage
-          title="Couldn't load your organisation"
-          description="We had trouble fetching your organisation data. Please try refreshing."
+          title="Couldn't load your organization"
+          description="We had trouble fetching your organization data. Please try refreshing."
           error={error}
           showRefreshButton
           showHomeButton={false}
@@ -375,11 +375,11 @@ export function ManageDashboardClient({ did }: ManageDashboardClientProps) {
     );
   }
 
-  // Organization doesn't exist yet — prompt user to set it up
+  // Organization doesn't exist yet — show the user the form to set it up
   if (!hasFetchedOrg && !serverData) {
     return (
       <Container className="pt-4">
-        <OrgSetupPrompt did={did} />
+        <OrgSetupPage did={did} />
       </Container>
     );
   }
