@@ -367,7 +367,8 @@ export function OrgSetupPage({ did, onSetupSaved }: OrgSetupPageProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          query: "mutation AddRepos($dids: [String!]!) { addRepos(dids: $dids) }",
+          query:
+            "mutation AddRepos($dids: [String!]!) { addRepos(dids: $dids) }",
           variables: { dids: [did] },
         }),
       }).catch(() => {
@@ -689,7 +690,9 @@ export function OrgSetupPage({ did, onSetupSaved }: OrgSetupPageProps) {
           {saveSuccess ? (
             <div className="flex flex-col items-center gap-2 text-sm text-primary">
               <div className="flex items-center gap-2">
-                <Loader2Icon className="size-4 animate-spin" />
+                {isFinalizing && !redirectError && (
+                  <Loader2Icon className="size-4 animate-spin" />
+                )}
                 <span>
                   {countdown > 0
                     ? `Saved successfully! Redirecting in ${countdown}…`
