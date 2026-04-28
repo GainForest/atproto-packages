@@ -4,6 +4,13 @@ import { useMemo, useState } from "react";
 import { DatabaseIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ModalContent,
   ModalDescription,
   ModalFooter,
@@ -41,6 +48,15 @@ function formatDatasetDate(value: string | null | undefined): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function formatDatasetOptionLabel(dataset: DatasetItem): string {
+  const count = dataset.record?.recordCount ?? 0;
+  const createdAt = formatDatasetDate(
+    dataset.record?.createdAt ?? dataset.metadata?.createdAt,
+  );
+
+  return `${dataset.record?.name ?? "Unnamed dataset"} (${count} tree${count === 1 ? "" : "s"} - ${createdAt})`;
 }
 
 export function AddToDatasetModal({
@@ -138,29 +154,29 @@ export function AddToDatasetModal({
           <div className="space-y-3">
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Dataset</label>
-              <select
-                className="border-input bg-background text-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-full rounded-md border px-3 py-2 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+              <Select
                 value={selectedDatasetUri}
-                onChange={(event) => setSelectedDatasetUri(event.target.value)}
+                onValueChange={setSelectedDatasetUri}
+                disabled={isPending}
               >
-                {selectableDatasets.map((dataset) => {
-                  const uri = getDatasetUri(dataset);
-                  if (!uri) {
-                    return null;
-                  }
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a dataset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectableDatasets.map((dataset) => {
+                    const uri = getDatasetUri(dataset);
+                    if (!uri) {
+                      return null;
+                    }
 
-                  const count = dataset.record?.recordCount ?? 0;
-                  const createdAt = formatDatasetDate(
-                    dataset.record?.createdAt ?? dataset.metadata?.createdAt,
-                  );
-
-                  return (
-                    <option key={uri} value={uri}>
-                      {`${dataset.record?.name ?? "Unnamed dataset"} (${count} tree${count === 1 ? "" : "s"} - ${createdAt})`}
-                    </option>
-                  );
-                })}
-              </select>
+                    return (
+                      <SelectItem key={uri} value={uri}>
+                        {formatDatasetOptionLabel(dataset)}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
 
             {selectedDataset ? (

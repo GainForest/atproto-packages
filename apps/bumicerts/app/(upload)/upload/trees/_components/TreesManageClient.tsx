@@ -1658,32 +1658,38 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
             />
           </div>
           {!showDatasetLanding && datasetCards.length > 0 && (
-            <div className="relative w-full lg:w-56 shrink-0">
-              <DatabaseIcon className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <select
-                value={datasetFilter ?? "__all__"}
-                onChange={(event) => handleDatasetFilterChange(event.target.value)}
-                className="border-input bg-background text-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border py-2 pl-8 pr-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="__all__">All datasets</option>
+            <Select
+              value={datasetFilter ?? "__all__"}
+              onValueChange={handleDatasetFilterChange}
+            >
+              <SelectTrigger className="w-full lg:w-56 shrink-0">
+                <div className="flex items-center gap-1.5 truncate">
+                  <DatabaseIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                  <SelectValue placeholder="All datasets" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All datasets</SelectItem>
                 {isViewingUngroupedDataset && !hasUngroupedDatasetCard ? (
-                  <option value={UNGROUPED_DATASET_FILTER}>
+                  <SelectItem value={UNGROUPED_DATASET_FILTER}>
                     Ungrouped trees (0)
-                  </option>
+                  </SelectItem>
                 ) : null}
                 {isPendingDatasetFilter && datasetFilter ? (
-                  <option value={datasetFilter}>Dataset still indexing…</option>
+                  <SelectItem value={datasetFilter}>
+                    Dataset still indexing…
+                  </SelectItem>
                 ) : null}
                 {datasetCards.map((datasetCard) => {
                   return (
-                    <option key={datasetCard.id} value={datasetCard.id}>
+                    <SelectItem key={datasetCard.id} value={datasetCard.id}>
                       {datasetCard.name}
                       {` (${datasetCard.treeCount})`}
-                    </option>
+                    </SelectItem>
                   );
                 })}
-              </select>
-            </div>
+              </SelectContent>
+            </Select>
           )}
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
