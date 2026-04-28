@@ -1,4 +1,4 @@
-import { clientEnv } from "@/lib/env/client";
+import { clientEnv } from "./env/client";
 
 type DidDynamicLink = (did?: string) => string;
 const didCatcher = (callback: (did: string) => string): DidDynamicLink => {
@@ -35,7 +35,19 @@ export const links = {
     audio: "/upload/audio",
     bumicerts: "/upload/bumicerts",
     trees: "/upload/trees",
-    treesManage: "/upload/trees/manage",
+    treesUpload: "/upload/trees?mode=upload",
+    treesFiltered: (options?: {
+      dataset?: string | null;
+    }) => {
+      const searchParams = new URLSearchParams();
+
+      if (options?.dataset) {
+        searchParams.set("dataset", options.dataset);
+      }
+
+      const queryString = searchParams.toString();
+      return `/upload/trees${queryString ? `?${queryString}` : ""}`;
+    },
   },
   user: didCatcher((did) => `/user/${did}`),
   explore: "/explore",
@@ -59,10 +71,9 @@ export const links = {
     },
   },
   external: {
-    /**
-     * Legacy Gainforest map viewer with a GeoJSON shapefile loaded.
-     * Pass the resolved blob URL as `shapefileUrl`.
-     */
+    certifiedApp: {
+      profileUrl: didCatcher((did) => `https://certified.app/profile/${did}`),
+    },
     polygonsAppUrl: (
       options?:
         | {
@@ -96,11 +107,22 @@ export const links = {
     github: "https://github.com/GainForest/bumicerts-monorepo",
     twitter: "https://www.x.com/GainForestNow",
     gainforest: "https://www.gainforest.earth",
+    share: {
+      x: (text: string) =>
+        `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`,
+      bluesky: (text: string) =>
+        `https://bsky.app/intent/compose?text=${encodeURIComponent(text)}`,
+      telegram: (text: string) =>
+        `tg://msg?text=${encodeURIComponent(text)}`,
+    },
     greenGlobePreviewBase: GREEN_GLOBE_PREVIEW_BASE_URL,
-    greenGlobeTreePreview: (did: string, options?: {
-      treeUri?: string | null;
-      datasetRef?: string | null;
-    }) => {
+    greenGlobeTreePreview: (
+      did: string,
+      options?: {
+        treeUri?: string | null;
+        datasetRef?: string | null;
+      },
+    ) => {
       const query = new URLSearchParams();
 
       if (options?.treeUri) {
@@ -118,10 +140,20 @@ export const links = {
     gbifPublisher:
       "https://www.gbif.org/publisher/c02486e8-eb54-4e94-81d8-1038cc58e208",
   },
+  public: {
+    icon: "/assets/media/images/app-icon.png",
+  },
   assets: {
     treeDataTemplate: "/templates/tree-data-template.csv",
+    treeDataBasicTemplate: "/templates/tree-data-basic-template.csv",
+    treeDataDetailedTemplate: "/templates/tree-data-detailed-template.csv",
   },
   api: {
+    upload: {
+      trees: {
+        datasets: "/api/upload/trees/datasets",
+      },
+    },
     onboarding: {
       sendVerificationCode: "/onboarding/api/send-verification-code",
       verifyEmailCode: "/onboarding/api/verify-email-code",

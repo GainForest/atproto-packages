@@ -65,6 +65,12 @@ interface ManageDashboardClientProps {
  * in the query cache is preserved until a matching refetch arrives.
  */
 const INVALIDATION_DELAY_MS = 5_000;
+const SETUP_REFETCH_INTERVAL_MS = 1_000;
+const SETUP_REFETCH_MAX_ATTEMPTS = 15;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function normalizeLongDescriptionBlobRefs(
   doc: OrganizationData["longDescription"],
@@ -74,23 +80,33 @@ function normalizeLongDescriptionBlobRefs(
     blocks: doc.blocks.map((wrapper) => {
       const block = wrapper.block;
       if (block.$type !== "pub.leaflet.blocks.image") return wrapper;
-      const image = block.image as Record<string, unknown>;
-      const ref = image["ref"];
-      if (typeof ref === "object" && ref !== null) {
-        const link = (ref as Record<string, unknown>)["$link"];
-        if (typeof link === "string" && link.length > 0) {
+
+      const image = block.image;
+      if (typeof image === "object" && image !== null && "ref" in image) {
+        const ref = image.ref;
+        if (
+          typeof ref === "object" &&
+          ref !== null &&
+          "$link" in ref &&
+          typeof ref.$link === "string" &&
+          ref.$link.length > 0
+        ) {
           const mimeType =
-            typeof image["mimeType"] === "string"
-              ? image["mimeType"]
+            "mimeType" in image && typeof image.mimeType === "string"
+              ? image.mimeType
               : "application/octet-stream";
-          const size = typeof image["size"] === "number" ? image["size"] : 0;
+          const size =
+            "size" in image && typeof image.size === "number"
+              ? image.size
+              : 0;
+
           return {
             ...wrapper,
             block: {
               ...block,
               image: {
                 $type: "blob",
-                ref: link,
+                ref: ref.$link,
                 mimeType,
                 size,
               },
@@ -98,6 +114,7 @@ function normalizeLongDescriptionBlobRefs(
           };
         }
       }
+
       return wrapper;
     }),
   };
@@ -131,6 +148,7 @@ export function ManageDashboardClient({ did }: ManageDashboardClientProps) {
     data: orgData,
     isLoading,
     error,
+    refetch,
   } = indexerTrpc.organization.byDid.useQuery(
     { did },
     {
@@ -148,6 +166,21 @@ export function ManageDashboardClient({ did }: ManageDashboardClientProps) {
     },
   );
   const hasFetchedOrg = orgData?.org !== null && orgData?.org !== undefined;
+
+  const handleSetupSaved = useCallback(async (): Promise<boolean> => {
+    for (let attempt = 0; attempt < SETUP_REFETCH_MAX_ATTEMPTS; attempt += 1) {
+      const queryResult = await refetch();
+      if (queryResult.data?.org) {
+        return true;
+      }
+
+      if (attempt < SETUP_REFETCH_MAX_ATTEMPTS - 1) {
+        await wait(SETUP_REFETCH_INTERVAL_MS);
+      }
+    }
+
+    return false;
+  }, [refetch]);
 
   // Derive OrganizationData from the query cache — single source of truth.
   // No useEffect sync, no Zustand serverData. When setQueryData updates the
@@ -365,8 +398,8 @@ export function ManageDashboardClient({ did }: ManageDashboardClientProps) {
     return (
       <Container className="pt-4">
         <ErrorPage
-          title="Couldn't load your organisation"
-          description="We had trouble fetching your organisation data. Please try refreshing."
+          title="Couldn't load your organization"
+          description="We had trouble fetching your organization data. Please try refreshing."
           error={error}
           showRefreshButton
           showHomeButton={false}
@@ -379,7 +412,7 @@ export function ManageDashboardClient({ did }: ManageDashboardClientProps) {
   if (!hasFetchedOrg && !serverData) {
     return (
       <Container className="pt-4">
-        <OrgSetupPage did={did} />
+        <OrgSetupPage did={did} onSetupSaved={handleSetupSaved} />
       </Container>
     );
   }

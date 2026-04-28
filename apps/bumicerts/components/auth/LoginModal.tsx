@@ -155,7 +155,10 @@ function EmailForm() {
     setIsRedirecting(true);
     setTimeout(() => setIsRedirecting(false), 10_000);
     // Save the current page so we can redirect back after login
-    localStorage.setItem("auth_redirect", window.location.pathname);
+    localStorage.setItem(
+      "auth_redirect",
+      `${window.location.pathname}${window.location.search}`,
+    );
     const url = email
       ? `/api/oauth/epds/login?email=${encodeURIComponent(email)}`
       : "/api/oauth/epds/login";
@@ -249,14 +252,21 @@ function HandleForm() {
     if (!canSubmit) return;
     setError(null);
     // Save the current page so we can redirect back after login
-    localStorage.setItem("auth_redirect", window.location.pathname);
+    localStorage.setItem(
+      "auth_redirect",
+      `${window.location.pathname}${window.location.search}`,
+    );
     startTransition(async () => {
-      const result = await authorize(fullHandle || handle.trim());
-      if ("authorizationUrl" in result) {
-        window.location.href = result.authorizationUrl;
-      } else {
-        // Error returned from server action (not thrown)
-        setError(result.error);
+      try {
+        const result = await authorize(fullHandle || handle.trim());
+        if ("authorizationUrl" in result) {
+          window.location.href = result.authorizationUrl;
+        } else {
+          // Error returned from server action (not thrown)
+          setError(result.error);
+        }
+      } catch {
+        setError("Something went wrong. Please try again.");
       }
     });
   };
@@ -405,7 +415,6 @@ export function LoginModal({ onClose }: LoginModalProps) {
           alt="GainForest"
           width={40}
           height={40}
-          className="dark:invert"
         />
       </div>
 

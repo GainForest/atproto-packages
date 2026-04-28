@@ -54,27 +54,12 @@ import { BskyRichTextEditor } from "@/components/ui/bsky-richtext-editor";
 import type { Facet } from "@gainforest/leaflet-react/richtext";
 import type { app } from "@gainforest/generated";
 import { countries } from "@/lib/countries";
+import { formatOrganizationSinceDate } from "@/lib/date";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatWebsite(url: string): string {
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-}
-
-function formatSinceDate(dateStr: string | null): string | null {
-  if (!dateStr) return null;
-  try {
-    // Parse as UTC to prevent timezone offset issues
-    // Dates stored as YYYY-MM-DD should be treated as UTC midnight
-    const date = new Date(`${dateStr}T00:00:00Z`);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      year: "numeric",
-      timeZone: "UTC",
-    });
-  } catch {
-    return null;
-  }
 }
 
 // ── EditChip ──────────────────────────────────────────────────────────────────
@@ -186,13 +171,14 @@ export function EditableHero({ organization }: EditableHeroProps) {
   const logoUrl = logoObjectUrl ?? organization.logoUrl;
 
   const initial = displayName.charAt(0).toUpperCase();
-  const sinceLabel = formatSinceDate(startDate);
+  const sinceDate = formatOrganizationSinceDate(startDate);
+  const sinceLabel = sinceDate.label;
   const countryName = country ? (countries[country]?.name ?? country) : null;
   const countryFlag = countries[country]?.emoji ?? "";
 
   const hasPillRow =
     isEditing ||
-    sinceLabel !== null ||
+    sinceDate.state === "valid" ||
     countryName !== null ||
     organization.objectives.length > 0 ||
     website !== null;
@@ -365,7 +351,7 @@ export function EditableHero({ organization }: EditableHeroProps) {
                 type="text"
                 value={displayName}
                 onChange={(e) => setEdit("displayName", e.target.value || null)}
-                placeholder="Organisation name"
+                placeholder="Organization name"
                 className={cn(
                   "text-3xl sm:text-4xl md:text-5xl font-light tracking-[-0.02em] leading-none",
                   "bg-transparent border-b-2 border-white/40 focus:border-primary/60 outline-none",
@@ -435,10 +421,18 @@ export function EditableHero({ organization }: EditableHeroProps) {
               <EditChip
                 onClick={openStartDate}
                 isEditing={isEditing}
-                isEmpty={!sinceLabel}
+                isEmpty={
+                  isEditing
+                    ? sinceDate.state === "empty"
+                    : sinceDate.state !== "valid"
+                }
               >
                 <CalendarIcon className="h-3 w-3 shrink-0" />
-                {sinceLabel ? `Since ${sinceLabel}` : "Add start date"}
+                {sinceDate.state === "valid"
+                  ? `Since ${sinceLabel}`
+                  : isEditing && sinceDate.state === "invalid"
+                    ? "Invalid Date"
+                    : "Add start date"}
               </EditChip>
 
               <EditChip
@@ -577,7 +571,7 @@ export function EditBar() {
           Cancel
         </button>
         <button
-          form="upload-dashboard-save-form"
+          form="manage-dashboard-save-form"
           type="submit"
           disabled={isSaving || !hasChanges()}
           className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50"

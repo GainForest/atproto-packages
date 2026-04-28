@@ -10,7 +10,7 @@
  *   Edit Profile  → /manage?mode=edit
  *   Sites         → /manage/sites
  *   Audio         → /manage/audio
- *   Trees         → /manage/trees/manage
+ *   Trees         → /manage/trees
  *   Bumicerts     → /manage/bumicerts
  */
 
@@ -41,7 +41,7 @@ const NAV_CARDS: NavCard[] = [
     id: "edit",
     label: "Edit Profile",
     description:
-      "Update your organisation name, description, logo, and cover image.",
+      "Update your organization name, description, logo, and cover image.",
     href: links.manage.edit,
     Icon: PencilIcon,
   },
@@ -64,7 +64,7 @@ const NAV_CARDS: NavCard[] = [
     id: "trees",
     label: "Trees",
     description: "Manage tree records, and linked photos.",
-    href: links.manage.treesManage,
+    href: links.manage.trees,
     Icon: TreesIcon,
   },
   {

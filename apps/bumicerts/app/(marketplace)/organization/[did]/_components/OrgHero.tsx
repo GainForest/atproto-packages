@@ -30,6 +30,7 @@ import type { OrganizationData } from "@/lib/types";
 import { links } from "@/lib/links";
 import { BskyRichTextDisplay } from "@/components/ui/bsky-richtext-display";
 import { countries } from "@/lib/countries";
+import { formatOrganizationSinceDate } from "@/lib/date";
 
 interface OrgHeroProps {
   organization: OrganizationData;
@@ -41,22 +42,6 @@ function formatWebsite(url: string): string {
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
-function formatSinceDate(dateStr: string | null): string | null {
-  if (!dateStr) return null;
-  try {
-    // Parse as UTC to prevent timezone offset issues
-    // Dates stored as YYYY-MM-DD should be treated as UTC midnight
-    const date = new Date(`${dateStr}T00:00:00Z`);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      year: "numeric",
-      timeZone: "UTC",
-    });
-  } catch {
-    return null;
-  }
-}
-
 export function OrgHero({
   organization,
   showEditButton = false,
@@ -64,7 +49,8 @@ export function OrgHero({
   const [copied, setCopied] = useState(false);
 
   const initial = organization.displayName.charAt(0).toUpperCase();
-  const sinceLabel = formatSinceDate(organization.startDate);
+  const sinceDate = formatOrganizationSinceDate(organization.startDate);
+  const sinceLabel = sinceDate.label;
   const countryCode = organization.country;
   const allCountryCodes = Object.keys(countries);
   const country = countryCode
@@ -73,7 +59,7 @@ export function OrgHero({
       : null
     : null;
   const hasPillRow =
-    sinceLabel ||
+    sinceDate.state === "valid" ||
     country ||
     organization.objectives.length > 0 ||
     organization.website;
@@ -167,7 +153,7 @@ export function OrgHero({
           <Link
             href={links.manage.edit}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground border border-primary/20 shadow-lg transition-colors"
-            aria-label="Edit organisation profile"
+            aria-label="Edit organization profile"
           >
             <PencilIcon className="h-3.5 w-3.5 shrink-0" />
             <span className="text-xs font-medium">Edit</span>
