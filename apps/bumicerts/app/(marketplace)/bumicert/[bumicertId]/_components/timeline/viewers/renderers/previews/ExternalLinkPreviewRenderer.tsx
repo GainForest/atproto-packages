@@ -12,9 +12,24 @@ export function ExternalLinkPreviewRenderer({
     return null;
   }
 
+  const safeHref = (() => {
+    try {
+      const parsed = new URL(preview.href);
+      return parsed.protocol === "http:" || parsed.protocol === "https:"
+        ? preview.href
+        : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  if (!safeHref) {
+    return null;
+  }
+
   return (
     <a
-      href={preview.href}
+      href={safeHref}
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm text-foreground hover:bg-muted/30"

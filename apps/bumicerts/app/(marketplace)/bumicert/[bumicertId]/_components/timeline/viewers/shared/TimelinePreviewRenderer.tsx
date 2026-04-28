@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import type { TimelinePreviewPayload } from "../../shared/timelineFeedViewModel";
 import { ExternalLinkPreviewRenderer } from "../renderers/previews/ExternalLinkPreviewRenderer";
 import { MediaPreviewRenderer } from "../renderers/previews/MediaPreviewRenderer";
@@ -16,7 +17,10 @@ const PREVIEW_RENDERER_REGISTRY = {
   pdf: MediaPreviewRenderer,
   link: ExternalLinkPreviewRenderer,
   text: TextPreviewRenderer,
-} as const;
+} satisfies Record<
+  TimelinePreviewPayload["kind"],
+  ComponentType<PreviewRendererProps>
+>;
 
 export function TimelinePreviewRenderer({ preview }: PreviewRendererProps) {
   const Renderer = PREVIEW_RENDERER_REGISTRY[preview.kind];

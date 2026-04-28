@@ -20,7 +20,10 @@ export function parseAtUri(uri: string): ParsedAtUri | null {
 export function isCertifiedLocationRecordUri(
   uri: string,
 ): uri is `at://did:plc:${string}/app.certified.location/${string}` {
-  return /^at:\/\/did:plc:[a-z0-9]+\/app\.certified\.location\/[a-zA-Z0-9._:-]+$/.test(
-    uri,
+  const parsed = parseAtUri(uri);
+  return (
+    parsed?.did.startsWith("did:plc:") === true &&
+    parsed.collection === "app.certified.location" &&
+    parsed.rkey.length > 0
   );
 }

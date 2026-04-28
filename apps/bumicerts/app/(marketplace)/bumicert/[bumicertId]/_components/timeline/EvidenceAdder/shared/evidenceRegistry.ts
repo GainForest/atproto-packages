@@ -3,10 +3,15 @@ import { links } from "@/lib/links";
 
 export type EvidenceTabId = "audio" | "trees" | "sites" | "files";
 export type ManagedEvidenceTabId = Exclude<EvidenceTabId, "files">;
+export type EvidenceAttachmentContentType =
+  | "audio"
+  | "occurrence"
+  | "location"
+  | "evidence";
 
 type AttachmentDefaults = {
   title: string;
-  contentType: string;
+  contentType: EvidenceAttachmentContentType;
 };
 
 type TabBaseConfig = {

@@ -38,7 +38,7 @@ const TreeEvidencePicker = ({
         ]
           .filter(Boolean)
           .join(" · ");
-        return secondary || undefined;
+        return secondary.length > 0 ? secondary : undefined;
       }}
     />
   );

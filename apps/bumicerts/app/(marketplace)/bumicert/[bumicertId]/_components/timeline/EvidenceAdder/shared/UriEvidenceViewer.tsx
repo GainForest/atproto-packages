@@ -3,7 +3,10 @@ import CheckRow from "./CheckRow";
 import ManageOption from "./ManageOption";
 import OptionalNote from "./OptionalNote";
 import Mutator, { type AttachmentData } from "./Mutator";
-import { type ManagedEvidenceTabId } from "./evidenceRegistry";
+import {
+  type EvidenceAttachmentContentType,
+  type ManagedEvidenceTabId,
+} from "./evidenceRegistry";
 import { useEvidenceAdderStore } from "./evidenceAdderStore";
 import { useUriSelection } from "./useUriSelection";
 
@@ -13,7 +16,7 @@ type UriEvidencePickerProps<TItem> = {
   icon: React.ComponentType<{ className?: string }>;
   mutation: {
     title: string;
-    contentType: string;
+    contentType: EvidenceAttachmentContentType;
   };
   getUri: (item: TItem) => string | undefined;
   getPrimary: (item: TItem) => string;
@@ -41,13 +44,15 @@ function UriEvidencePicker<TItem>({
   const isSubmitting = useEvidenceAdderStore((state) => state.isSubmitting);
   const activityUri = useEvidenceAdderStore((state) => state.activityUri);
   const activityCid = useEvidenceAdderStore((state) => state.activityCid);
-  const rows: RowData<TItem>[] = data.flatMap((item) => {
+  const rowsByUri = new Map<string, RowData<TItem>>();
+  data.forEach((item) => {
     const uri = getUri(item);
-    if (!uri) {
-      return [];
+    if (!uri || rowsByUri.has(uri)) {
+      return;
     }
-    return [{ item, uri }];
+    rowsByUri.set(uri, { item, uri });
   });
+  const rows = Array.from(rowsByUri.values());
 
   const availableUris = new Set(rows.map((row) => row.uri));
   const { selectedUris, selectedContents, toggleUri, resetSelection } =
