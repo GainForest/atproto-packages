@@ -57,7 +57,8 @@ function getUriKind(uri: string): AttachmentUriKind {
   if (
     uri.startsWith("https://") ||
     uri.startsWith("http://") ||
-    uri.startsWith("blob:")
+    uri.startsWith("blob:") ||
+    uri.startsWith("data:")
   ) {
     return "http-url";
   }

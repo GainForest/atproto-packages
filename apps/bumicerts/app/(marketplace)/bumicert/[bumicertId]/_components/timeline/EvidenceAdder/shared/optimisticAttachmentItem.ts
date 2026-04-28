@@ -1,7 +1,20 @@
 import type { BumicertsLeafletEditorProps } from "@/components/ui/leaflet-editor";
 import type { AttachmentItem } from "@/lib/graphql-dev/queries/attachments";
 
-function toOptimisticContent(contents: Array<string | File>): unknown[] {
+export type OptimisticAttachmentContent =
+  | string
+  | {
+      name: string;
+      type: string;
+      size: number;
+      dataUrl: string;
+    };
+
+function getOptimisticMimeType(type: string): string {
+  return type.length > 0 ? type : "application/octet-stream";
+}
+
+function toOptimisticContent(contents: OptimisticAttachmentContent[]): unknown[] {
   return contents.map((content) => {
     if (typeof content === "string") {
       return { $type: "org.hypercerts.defs#uri", uri: content };
@@ -10,9 +23,9 @@ function toOptimisticContent(contents: Array<string | File>): unknown[] {
     return {
       $type: "org.hypercerts.defs#smallBlob",
       blob: {
-        uri: URL.createObjectURL(content),
+        uri: content.dataUrl,
         cid: null,
-        mimeType: content.type || "application/octet-stream",
+        mimeType: getOptimisticMimeType(content.type),
         size: content.size,
         name: content.name,
       },
@@ -32,7 +45,7 @@ export function buildOptimisticAttachmentItem(args: {
     uri: string;
     cid: string;
   };
-  contents: Array<string | File>;
+  contents: OptimisticAttachmentContent[];
 }): AttachmentItem {
   const createdAt = new Date().toISOString();
 

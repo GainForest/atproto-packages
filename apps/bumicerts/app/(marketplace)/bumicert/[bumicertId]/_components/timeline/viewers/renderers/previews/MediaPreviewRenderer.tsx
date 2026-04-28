@@ -34,6 +34,8 @@ export function MediaPreviewRenderer({ preview }: MediaPreviewRendererProps) {
         title={preview.title}
         src={preview.href}
         className="h-[420px] w-full rounded-xl border border-border/40 bg-muted/20"
+        sandbox="allow-downloads allow-same-origin"
+        referrerPolicy="no-referrer"
       />
     );
   }

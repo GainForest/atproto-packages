@@ -15,6 +15,7 @@ export function SitePreviewRenderer({ preview }: SitePreviewRendererProps) {
       src={preview.href}
       className="h-[320px] w-full rounded-xl border border-border/40 bg-muted/20"
       loading="lazy"
+      sandbox="allow-scripts allow-forms allow-popups"
       referrerPolicy="no-referrer"
     />
   );

@@ -10,7 +10,10 @@ import { formatError } from "@/lib/utils/trpc-errors";
 import { ArrowRightIcon, Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { useEvidenceAdderStore } from "./evidenceAdderStore";
-import { buildOptimisticAttachmentItem } from "./optimisticAttachmentItem";
+import {
+  buildOptimisticAttachmentItem,
+  type OptimisticAttachmentContent,
+} from "./optimisticAttachmentItem";
 
 export type AttachmentData = {
   title: string;
@@ -48,19 +51,19 @@ const Mutator = ({
 
     setErrorMessage(undefined);
     setIsSubmitting(true);
-    const hasDescription = description && description.blocks.length > 0;
-
-    const resolvedContents = await Promise.all(
-      contents.map(async (content) => {
-        if (typeof content === "string") {
-          return content;
-        }
-
-        return toSerializableFile(content);
-      }),
-    );
 
     try {
+      const hasDescription = description && description.blocks.length > 0;
+      const resolvedContents = await Promise.all(
+        contents.map(async (content) => {
+          if (typeof content === "string") {
+            return content;
+          }
+
+          return toSerializableFile(content);
+        }),
+      );
+
       const created = await createAttachment.mutateAsync({
         title,
         contentType,
@@ -82,6 +85,25 @@ const Mutator = ({
       });
 
       if (organizationDid) {
+        const optimisticContents: OptimisticAttachmentContent[] =
+          resolvedContents.map((content) => {
+            if (typeof content === "string") {
+              return content;
+            }
+
+            const mimeType =
+              content.type.length > 0
+                ? content.type
+                : "application/octet-stream";
+
+            return {
+              name: content.name,
+              type: mimeType,
+              size: content.size,
+              dataUrl: `data:${mimeType};base64,${content.data}`,
+            };
+          });
+
         const optimisticItem = buildOptimisticAttachmentItem({
           did: viewerDid ?? organizationDid,
           uri: created.uri,
@@ -91,7 +113,7 @@ const Mutator = ({
           contentType,
           description,
           subjectInfo,
-          contents,
+          contents: optimisticContents,
         });
 
         const applyOptimisticUpdate = () => {
