@@ -1,9 +1,41 @@
 import { describe, expect, it } from "bun:test";
 import type { Agent } from "@atproto/api";
 import { Effect, Layer } from "effect";
+import { makeCredentialAgentLayer } from "../../../layers/credential";
 import { AtprotoAgent } from "../../../services/AtprotoAgent";
 import { attachExistingDwcDatasetOccurrences } from "../attachExistingOccurrences";
+import { DwcDatasetValidationError } from "../utils/errors";
 import { ATTACH_EXISTING_DWC_DATASET_MAX_OCCURRENCES } from "../utils/types";
+
+// ---------------------------------------------------------------------------
+// Load test credentials from the package-level tests/.env.test-credentials.
+// ---------------------------------------------------------------------------
+
+await Bun.file(new URL("../../../../tests/.env.test-credentials", import.meta.url))
+  .text()
+  .then((text) => {
+    for (const line of text.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) {
+        continue;
+      }
+
+      const separatorIndex = trimmed.indexOf("=");
+      if (separatorIndex === -1) {
+        continue;
+      }
+
+      process.env[trimmed.slice(0, separatorIndex).trim()] = trimmed
+        .slice(separatorIndex + 1)
+        .trim();
+    }
+  })
+  .catch(() => {});
+
+const service = process.env["ATPROTO_SERVICE"] ?? "";
+const identifier = process.env["ATPROTO_IDENTIFIER"] ?? "";
+const password = process.env["ATPROTO_PASSWORD"] ?? "";
+const credentialsProvided = service !== "" && identifier !== "" && password !== "";
 
 const DID = "did:plc:testdatasetattach";
 const DATASET_RKEY = "target-dataset";
@@ -261,6 +293,27 @@ async function runAttachInput(options: {
 }
 
 describe("attachExistingDwcDatasetOccurrences", () => {
+  it("loads test credentials through the credential layer when available", async () => {
+    if (!credentialsProvided) {
+      console.log("[skip] Credentials not set.");
+      return;
+    }
+
+    const layer = makeCredentialAgentLayer({ service, identifier, password });
+
+    const result = await Effect.runPromise(
+      attachExistingDwcDatasetOccurrences({
+        datasetRkey: " ",
+        occurrenceRkeys: ["tree-1"],
+      }).pipe(Effect.either, Effect.provide(layer)),
+    );
+
+    expect(result._tag).toBe("Left");
+    if (result._tag === "Left") {
+      expect(result.left).toBeInstanceOf(DwcDatasetValidationError);
+    }
+  });
+
   it("attaches an ungrouped occurrence and increments dataset count", async () => {
     const { agent, state } = makeFakeAgent({
       initialRecordCount: 0,
