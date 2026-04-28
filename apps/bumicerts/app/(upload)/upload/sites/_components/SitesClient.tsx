@@ -67,6 +67,9 @@ export function SitesClient({ did }: SitesClientProps) {
     isLoading,
     error,
   } = indexerTrpc.locations.list.useQuery({ did });
+  const { data: defaultSiteUri } = indexerTrpc.organization.defaultSite.useQuery({
+    did,
+  });
   const allSiteRkeys = sites
     ?.map((site) => site.metadata?.rkey)
     .filter((r) => typeof r === "string");
@@ -199,7 +202,7 @@ export function SitesClient({ did }: SitesClientProps) {
                   key={site.metadata?.uri ?? rkey}
                   site={site}
                   onChange={() => handleChangeSiteRkey(rkey)}
-                  defaultSiteUri={null}
+                  defaultSiteUri={defaultSiteUri ?? null}
                   isPreviewing={rkey === siteRkey}
                 />
               );
