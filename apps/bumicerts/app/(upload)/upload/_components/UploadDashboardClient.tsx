@@ -80,23 +80,33 @@ function normalizeLongDescriptionBlobRefs(
     blocks: doc.blocks.map((wrapper) => {
       const block = wrapper.block;
       if (block.$type !== "pub.leaflet.blocks.image") return wrapper;
-      const image = block.image as Record<string, unknown>;
-      const ref = image["ref"];
-      if (typeof ref === "object" && ref !== null) {
-        const link = (ref as Record<string, unknown>)["$link"];
-        if (typeof link === "string" && link.length > 0) {
+
+      const image = block.image;
+      if (typeof image === "object" && image !== null && "ref" in image) {
+        const ref = image.ref;
+        if (
+          typeof ref === "object" &&
+          ref !== null &&
+          "$link" in ref &&
+          typeof ref.$link === "string" &&
+          ref.$link.length > 0
+        ) {
           const mimeType =
-            typeof image["mimeType"] === "string"
-              ? image["mimeType"]
+            "mimeType" in image && typeof image.mimeType === "string"
+              ? image.mimeType
               : "application/octet-stream";
-          const size = typeof image["size"] === "number" ? image["size"] : 0;
+          const size =
+            "size" in image && typeof image.size === "number"
+              ? image.size
+              : 0;
+
           return {
             ...wrapper,
             block: {
               ...block,
               image: {
                 $type: "blob",
-                ref: link,
+                ref: ref.$link,
                 mimeType,
                 size,
               },
@@ -104,6 +114,7 @@ function normalizeLongDescriptionBlobRefs(
           };
         }
       }
+
       return wrapper;
     }),
   };
