@@ -6,7 +6,7 @@ import type { ValidatedRow } from "@/lib/upload/types";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import { TreeUploadCompleteModal } from "./TreeUploadCompleteModal";
 import { persistPendingUpload } from "./upload-session";
-import type { UploadDatasetSelection } from "./upload-dataset-selection";
+import type { UploadDatasetSelection } from "@/lib/upload/upload-dataset-selection";
 
 type ModalController = ReturnType<
   (typeof import("@/components/ui/modal/context"))["useModal"]

@@ -36,7 +36,7 @@ import TreeDataGuide from "./TreeDataGuide";
 import type {
   ExistingUploadDatasetSelection,
   UploadDatasetSelection,
-} from "./upload-dataset-selection";
+} from "@/lib/upload/upload-dataset-selection";
 
 type FileDropStepProps = {
   did: string;

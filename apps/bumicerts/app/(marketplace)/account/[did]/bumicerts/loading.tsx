@@ -1,4 +1,4 @@
-import { BumicertCardSkeleton } from "@/app/(marketplace)/explore/_components/BumicertCard";
+import { BumicertCardSkeleton } from "@/components/bumicert/BumicertCard";
 
 /**
  * loading.tsx — Content-slot skeleton for the organization bumicerts tab.

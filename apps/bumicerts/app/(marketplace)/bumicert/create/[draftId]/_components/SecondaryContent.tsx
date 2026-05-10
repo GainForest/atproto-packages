@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDownIcon, EyeIcon, LightbulbIcon } from "lucide-react";
 import useNewBumicertStore from "../store";
 import BumicertPreviewCard from "./Steps/Step4/BumicertPreviewCard";
-import { BumicertCardVisual } from "@/app/(marketplace)/explore/_components/BumicertCard";
+import { BumicertCardVisual } from "@/components/bumicert/BumicertCard";
 import { useFormStore } from "../form-store";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

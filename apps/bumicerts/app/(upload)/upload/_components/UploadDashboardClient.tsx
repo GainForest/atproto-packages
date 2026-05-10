@@ -14,8 +14,8 @@ import { HeaderContent } from "@/app/(marketplace)/_components/Header/HeaderCont
 import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
 import { countries } from "@/lib/countries";
-import { OrgHero } from "@/app/(marketplace)/account/[did]/_components/OrgHero";
-import { OrgAbout } from "@/app/(marketplace)/account/[did]/_components/OrgAbout";
+import { OrgHero } from "@/components/account/OrgHero";
+import { OrgAbout } from "@/components/account/OrgAbout";
 import { EditableHero } from "./EditableHero";
 import { EditableAbout } from "./EditableAbout";
 import { ManageEditHeaderContent } from "./ManageEditHeaderContent";

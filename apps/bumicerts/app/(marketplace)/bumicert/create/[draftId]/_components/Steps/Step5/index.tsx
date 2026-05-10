@@ -43,7 +43,7 @@ import { useModal } from "@/components/ui/modal/context";
 import useNewBumicertStore from "../../../store";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import { FundingConfigModal } from "@/components/global/modals/funding/config";
-import { BumicertCardVisual } from "@/app/(marketplace)/explore/_components/BumicertCard";
+import { BumicertCardVisual } from "@/components/bumicert/BumicertCard";
 import { useCurrentAccountIdentity } from "@/hooks/use-current-account-identity";
 import {
   BUMICERT_COVER_IMAGE_MAX_SIZE_BYTES,

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { OrgHero } from "./_components/OrgHero";
+import { OrgHero } from "@/components/account/OrgHero";
 import { OrgTabBar } from "./_components/OrgTabBar";
 import ErrorPage from "@/components/error-page";
 import Container from "@/components/ui/container";

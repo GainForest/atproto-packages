@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ErrorPage from "@/components/error-page";
-import { DonationHistory } from "../../../user/[did]/_components/DonationHistory";
+import { DonationHistory } from "@/components/account/DonationHistory";
 import {
   buildAccountDonationsMetadata,
   getAccountRouteData,

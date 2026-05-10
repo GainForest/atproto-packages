@@ -38,7 +38,7 @@ import {
   toAppendExistingDatasetRows,
 } from "@/lib/upload/append-existing-dataset";
 import { uploadTreeDatasetsQueryKey } from "@/lib/upload/tree-upload-datasets";
-import { type UploadDatasetSelection } from "./upload-dataset-selection";
+import { type UploadDatasetSelection } from "@/lib/upload/upload-dataset-selection";
 import { useUploadStepEffects } from "./useUploadStepEffects";
 import {
   clearPendingUpload,

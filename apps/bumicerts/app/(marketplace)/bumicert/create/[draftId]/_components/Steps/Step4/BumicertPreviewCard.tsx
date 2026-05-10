@@ -3,7 +3,7 @@ import { useModal } from "@/components/ui/modal/context";
 import { Loader2Icon, UploadIcon } from "lucide-react";
 import { useFormStore } from "../../../form-store";
 import { UploadLogoModal, UploadLogoModalId } from "./UploadLogoModal";
-import { BumicertCardVisual } from "@/app/(marketplace)/explore/_components/BumicertCard";
+import { BumicertCardVisual } from "@/components/bumicert/BumicertCard";
 import { useCurrentAccountIdentity } from "@/hooks/use-current-account-identity";
 
 const BumicertPreviewCard = () => {

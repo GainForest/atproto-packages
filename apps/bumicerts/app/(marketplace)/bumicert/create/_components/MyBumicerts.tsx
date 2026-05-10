@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   BumicertCardSkeleton,
   BumicertCardVisual,
-} from "@/app/(marketplace)/explore/_components/BumicertCard";
+} from "@/components/bumicert/BumicertCard";
 import {
   activitiesToBumicertDataArray,
   type GraphQLHcActivityItem,

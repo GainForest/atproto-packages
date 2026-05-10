@@ -3,7 +3,7 @@ import {
   NO_UPLOAD_DATASET_SELECTION,
   isUploadDatasetSelection,
   type UploadDatasetSelection,
-} from "./upload-dataset-selection";
+} from "@/lib/upload/upload-dataset-selection";
 
 export const STORAGE_KEY = "upload-trees-pending";
 const SESSION_TTL_MS = 10 * 60 * 1000;

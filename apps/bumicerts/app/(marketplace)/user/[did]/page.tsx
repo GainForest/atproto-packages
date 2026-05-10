@@ -5,7 +5,7 @@ import Link from "next/link";
 import { blo } from "blo";
 import { requirePublicUrl } from "@/lib/url";
 import Container from "@/components/ui/container";
-import { DonationHistory } from "./_components/DonationHistory";
+import { DonationHistory } from "@/components/account/DonationHistory";
 import { links } from "@/lib/links";
 
 // ── Data fetching ─────────────────────────────────────────────────────────────

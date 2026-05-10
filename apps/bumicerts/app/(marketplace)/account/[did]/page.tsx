@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { OrgAbout } from "./_components/OrgAbout";
+import { OrgAbout } from "@/components/account/OrgAbout";
 import ErrorPage from "@/components/error-page";
 import { links } from "@/lib/links";
 import {

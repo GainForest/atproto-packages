@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDownIcon, SparklesIcon } from "lucide-react";
 import { useState } from "react";
-import { BumicertCardVisual } from "@/app/(marketplace)/explore/_components/BumicertCard";
+import { BumicertCardVisual } from "@/components/bumicert/BumicertCard";
 
 const FAQ_ITEMS = [
   {

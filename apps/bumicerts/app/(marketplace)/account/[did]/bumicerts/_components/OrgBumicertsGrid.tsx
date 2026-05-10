@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   BumicertCardVisual,
   cardVariants,
-} from "@/app/(marketplace)/explore/_components/BumicertCard";
+} from "@/components/bumicert/BumicertCard";
 import type { BumicertData } from "@/lib/types";
 import { links } from "@/lib/links";
 
