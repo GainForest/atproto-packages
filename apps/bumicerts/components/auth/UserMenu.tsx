@@ -7,6 +7,11 @@ import { ChevronDownIcon, LogOutIcon, UserIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { AuthenticatedAccountState } from "@/lib/account";
+import {
+  resolveValidatedUserMenuAccount,
+  shouldShowUserMenuSkeleton,
+  UNAUTHENTICATED_ACCOUNT_SUMMARY,
+} from "@/lib/account/client-auth";
 import { links } from "@/lib/links";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { useAtprotoStore } from "@/components/stores/atproto";
@@ -147,12 +152,7 @@ function AuthenticatedMenu({
   const handleLogout = async () => {
     setOpen(false);
     await logout();
-    accountUtils.account.current.setData(undefined, {
-      kind: "unauthenticated",
-      did: null,
-      profile: null,
-      organization: null,
-    });
+    accountUtils.account.current.setData(undefined, UNAUTHENTICATED_ACCOUNT_SUMMARY);
     setAuth(null);
     router.refresh();
   };
@@ -244,22 +244,11 @@ function AuthenticatedMenu({
 
 export function UserMenu() {
   const auth = useAtprotoStore((state) => state.auth);
-  const { account, query } = useAccount();
+  const { account } = useAccount();
 
-  const fallbackAccount: AuthenticatedAccountState | undefined =
-    auth.status === "AUTHENTICATED"
-      ? {
-          kind: "unknown",
-          did: auth.user.did,
-          profile: null,
-          organization: null,
-        }
-      : undefined;
+  const resolvedAccount = resolveValidatedUserMenuAccount({ auth, account });
 
-  const resolvedAccount =
-    account && account.kind !== "unauthenticated" ? account : fallbackAccount;
-
-  if (query.isLoading && !resolvedAccount) {
+  if (shouldShowUserMenuSkeleton(auth)) {
     return <AuthSkeleton />;
   }
 
