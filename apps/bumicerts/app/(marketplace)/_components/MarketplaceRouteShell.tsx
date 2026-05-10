@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { HeaderProvider } from "./Header/context";
 import { TopNavbar } from "./Navbar/TopNavbar";
-import { WagmiProvider } from "@/components/providers/WagmiProvider";
 import { MarketplaceAppShell } from "./MarketplaceAppShell";
 
 export function MarketplaceRouteShell({
@@ -23,10 +22,8 @@ export function MarketplaceRouteShell({
   }
 
   return (
-    <WagmiProvider>
-      <HeaderProvider>
-        <MarketplaceAppShell>{children}</MarketplaceAppShell>
-      </HeaderProvider>
-    </WagmiProvider>
+    <HeaderProvider>
+      <MarketplaceAppShell>{children}</MarketplaceAppShell>
+    </HeaderProvider>
   );
 }

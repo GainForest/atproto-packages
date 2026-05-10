@@ -1,5 +1,20 @@
 import type { AuthenticatedAccountState } from "@/lib/account";
-import type { ManageMode } from "../_hooks/useUploadMode";
+
+export const MANAGE_MODE_VALUES = ["edit", "onboard-user", "onboard-org"] as const;
+export type ManageMode = (typeof MANAGE_MODE_VALUES)[number];
+
+export function parseManageMode(
+  value: string | string[] | undefined,
+): ManageMode | null {
+  switch (value) {
+    case "edit":
+    case "onboard-user":
+    case "onboard-org":
+      return value;
+    default:
+      return null;
+  }
+}
 
 export function resolveDashboardMode(options: {
   currentKind: AuthenticatedAccountState["kind"];
@@ -21,4 +36,26 @@ export function resolveDashboardMode(options: {
   }
 
   return options.mode;
+}
+
+export function shouldClearDashboardMode(options: {
+  currentKind: AuthenticatedAccountState["kind"];
+  rawMode: string | string[] | undefined;
+}): boolean {
+  if (options.rawMode === undefined) {
+    return false;
+  }
+
+  const parsedMode = parseManageMode(options.rawMode);
+
+  if (parsedMode === null) {
+    return true;
+  }
+
+  return (
+    resolveDashboardMode({
+      currentKind: options.currentKind,
+      mode: parsedMode,
+    }) === null
+  );
 }

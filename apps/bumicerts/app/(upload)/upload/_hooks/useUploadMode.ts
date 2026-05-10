@@ -1,11 +1,12 @@
 "use client";
 
 import { parseAsStringLiteral, useQueryState } from "nuqs";
+import {
+  MANAGE_MODE_VALUES,
+  type ManageMode,
+} from "../_components/uploadDashboardMode";
 
-const MODE_VALUES = ["edit", "onboard-user", "onboard-org"] as const;
-export type ManageMode = (typeof MODE_VALUES)[number];
-
-const modeParser = parseAsStringLiteral(MODE_VALUES);
+const modeParser = parseAsStringLiteral(MANAGE_MODE_VALUES);
 
 /**
  * Reads and writes the `?mode=` query param for the /upload page.
