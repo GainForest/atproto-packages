@@ -1,15 +1,15 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import {
-  buildOrganizationDataFromUserAccount,
-  buildOrganizationDataFromOrganizationAccount,
-} from "@/lib/account/server";
-import { getIndexerCaller } from "@/lib/trpc/indexer/server";
 import { OrgHero } from "./_components/OrgHero";
 import { OrgTabBar } from "./_components/OrgTabBar";
 import ErrorPage from "@/components/error-page";
 import Container from "@/components/ui/container";
 import { AccountOnboardingRequired } from "../_components/AccountOnboardingRequired";
+import {
+  getAccountRouteData,
+  readAccountRouteParams,
+} from "./server/account-route";
+import type { AccountRouteData } from "./server/account-route";
 
 export default async function AccountLayout({
   children,
@@ -18,15 +18,15 @@ export default async function AccountLayout({
   children: React.ReactNode;
   params: Promise<{ did: string }>;
 }) {
-  const { did: encodedDid } = await params;
-  const did = decodeURIComponent(encodedDid);
-
-  const session = await auth.session.getSession();
-  let account;
+  const { did } = await readAccountRouteParams(params);
+  let session: Awaited<ReturnType<typeof auth.session.getSession>>;
+  let routeData: AccountRouteData;
 
   try {
-    const indexer = await getIndexerCaller();
-    account = await indexer.account.byDid({ did });
+    [session, routeData] = await Promise.all([
+      auth.session.getSession(),
+      getAccountRouteData(did),
+    ]);
   } catch (error) {
     console.error("[AccountLayout] Failed to read account", did, error);
     return (
@@ -42,7 +42,7 @@ export default async function AccountLayout({
 
   const isOwner = session.isLoggedIn && session.did === did;
 
-  if (account.kind === "unknown") {
+  if (routeData.kind === "unknown") {
     if (!isOwner) {
       notFound();
     }
@@ -54,28 +54,11 @@ export default async function AccountLayout({
     );
   }
 
-  if (account.kind === "user") {
-    const userProfile = buildOrganizationDataFromUserAccount(account, {
-      displayNameFallback: did,
-    });
-
-    return (
-      <main className="w-full">
-        <Container className="pt-4 pb-8">
-          <OrgHero organization={userProfile} showEditButton={isOwner} />
-          <OrgTabBar did={did} accountKind="user" />
-          {children}
-        </Container>
-      </main>
-    );
-  }
-  const organization = buildOrganizationDataFromOrganizationAccount(account);
-
   return (
     <main className="w-full">
       <Container className="pt-4 pb-8">
-        <OrgHero organization={organization} showEditButton={isOwner} />
-        <OrgTabBar did={organization.did} accountKind="organization" />
+        <OrgHero organization={routeData.organization} showEditButton={isOwner} />
+        <OrgTabBar did={routeData.organization.did} accountKind={routeData.kind} />
         {children}
       </Container>
     </main>

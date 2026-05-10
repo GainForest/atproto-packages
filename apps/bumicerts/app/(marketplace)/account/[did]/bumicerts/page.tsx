@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import {
-  buildOrganizationDataFromOrganizationAccount,
-  buildOrganizationDataFromUserAccount,
-} from "@/lib/account/server";
 import { OrgBumicertsGrid } from "./_components/OrgBumicertsGrid";
 import ErrorPage from "@/components/error-page";
 import Container from "@/components/ui/container";
-import { getIndexerCaller } from "@/lib/trpc/indexer/server";
-import { requirePublicUrl } from "@/lib/url";
 import { activitiesToBumicertDataArray } from "@/lib/adapters";
 import type { BumicertData } from "@/lib/types";
 import * as activitiesModule from "@/graphql/indexer/queries/activities";
+import {
+  buildAccountBumicertsMetadata,
+  getAccountRouteData,
+  readAccountRouteParams,
+} from "../server/account-route";
+import type { AccountRouteData } from "../server/account-route";
 
 function withCreatorDisplayFallbacks(
   bumicerts: BumicertData[],
@@ -40,40 +40,12 @@ export async function generateMetadata({
 }: {
   params: Promise<{ did: string }>;
 }): Promise<Metadata> {
-  const { did: encodedDid } = await params;
-  const did = decodeURIComponent(encodedDid);
-
-  let account;
-
   try {
-    const indexer = await getIndexerCaller();
-    account = await indexer.account.byDid({ did });
+    const { did } = await readAccountRouteParams(params);
+    return buildAccountBumicertsMetadata(await getAccountRouteData(did));
   } catch {
     return { title: "Bumicerts — Bumicerts" };
   }
-
-  if (account.kind === "unknown") {
-    return { title: "Bumicerts — Bumicerts" };
-  }
-
-  const displayName =
-    account.kind === "organization"
-      ? (() => {
-          const organization =
-            buildOrganizationDataFromOrganizationAccount(account);
-          return organization.displayName.trim().length > 0
-            ? organization.displayName
-            : (account.profile.displayName ?? "Account");
-        })()
-      : (account.profile.displayName ?? did);
-
-  return {
-    title: `${displayName} Bumicerts — Bumicerts`,
-    description: `Browse all Bumicerts created by ${displayName}.`,
-    alternates: {
-      canonical: `${requirePublicUrl()}/account/${encodedDid}/bumicerts`,
-    },
-  };
 }
 
 export default async function AccountBumicertsPage({
@@ -81,14 +53,11 @@ export default async function AccountBumicertsPage({
 }: {
   params: Promise<{ did: string }>;
 }) {
-  const { did: encodedDid } = await params;
-  const did = decodeURIComponent(encodedDid);
-
-  let account;
+  const { did } = await readAccountRouteParams(params);
+  let routeData: AccountRouteData;
 
   try {
-    const indexer = await getIndexerCaller();
-    account = await indexer.account.byDid({ did });
+    routeData = await getAccountRouteData(did);
   } catch (error) {
     console.error("[AccountBumicertsPage] Failed to read account", did, error);
     return (
@@ -102,7 +71,7 @@ export default async function AccountBumicertsPage({
     );
   }
 
-  if (account.kind === "unknown") {
+  if (routeData.kind === "unknown") {
     notFound();
   }
 
@@ -112,11 +81,7 @@ export default async function AccountBumicertsPage({
     const activities = await activitiesModule.fetch({ did });
     bumicerts = activitiesToBumicertDataArray(activities);
   } catch (error) {
-    console.error(
-      "[AccountBumicertsPage] Error fetching activities",
-      did,
-      error,
-    );
+    console.error("[AccountBumicertsPage] Error fetching activities", did, error);
     return (
       <Container className="pt-4">
         <ErrorPage
@@ -128,28 +93,11 @@ export default async function AccountBumicertsPage({
     );
   }
 
-  if (account.kind === "user") {
-    const userProfile = buildOrganizationDataFromUserAccount(account, {
-      displayNameFallback: did,
-    });
-
-    return (
-      <OrgBumicertsGrid
-        bumicerts={withCreatorDisplayFallbacks(bumicerts, {
-          organizationName: userProfile.displayName,
-          logoUrl: userProfile.logoUrl,
-        })}
-      />
-    );
-  }
-
-  const organization = buildOrganizationDataFromOrganizationAccount(account);
-
   return (
     <OrgBumicertsGrid
       bumicerts={withCreatorDisplayFallbacks(bumicerts, {
-        organizationName: organization.displayName,
-        logoUrl: organization.logoUrl,
+        organizationName: routeData.organization.displayName,
+        logoUrl: routeData.organization.logoUrl,
       })}
     />
   );

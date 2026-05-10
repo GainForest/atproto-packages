@@ -1,40 +1,25 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getIndexerCaller } from "@/lib/trpc/indexer/server";
-import { requirePublicUrl } from "@/lib/url";
 import ErrorPage from "@/components/error-page";
 import { DonationHistory } from "../../../user/[did]/_components/DonationHistory";
+import {
+  buildAccountDonationsMetadata,
+  getAccountRouteData,
+  readAccountRouteParams,
+} from "../server/account-route";
+import type { AccountRouteData } from "../server/account-route";
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ did: string }>;
 }): Promise<Metadata> {
-  const { did: encodedDid } = await params;
-  const did = decodeURIComponent(encodedDid);
-
-  let account;
-
   try {
-    const indexer = await getIndexerCaller();
-    account = await indexer.account.byDid({ did });
+    const { did } = await readAccountRouteParams(params);
+    return buildAccountDonationsMetadata(await getAccountRouteData(did));
   } catch {
     return { title: "Donation History — Bumicerts" };
   }
-
-  if (account.kind !== "user") {
-    return { title: "Donation History — Bumicerts" };
-  }
-
-  const displayName = account.profile.displayName ?? did;
-
-  return {
-    title: `${displayName} Donation History — Bumicerts`,
-    description: `Browse the public donation history for ${displayName}.`,
-    alternates: {
-      canonical: `${requirePublicUrl()}/account/${encodedDid}/donations`,
-    },
-  };
 }
 
 export default async function AccountDonationsPage({
@@ -42,14 +27,11 @@ export default async function AccountDonationsPage({
 }: {
   params: Promise<{ did: string }>;
 }) {
-  const { did: encodedDid } = await params;
-  const did = decodeURIComponent(encodedDid);
-
-  let account;
+  const { did } = await readAccountRouteParams(params);
+  let routeData: AccountRouteData;
 
   try {
-    const indexer = await getIndexerCaller();
-    account = await indexer.account.byDid({ did });
+    routeData = await getAccountRouteData(did);
   } catch (error) {
     console.error("[AccountDonationsPage] Failed to read account", did, error);
     return (
@@ -61,7 +43,7 @@ export default async function AccountDonationsPage({
     );
   }
 
-  if (account.kind !== "user") {
+  if (routeData.kind !== "user") {
     notFound();
   }
 
