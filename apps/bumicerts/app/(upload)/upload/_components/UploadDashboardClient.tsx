@@ -54,9 +54,9 @@ type ReconciliationChecks = {
 };
 
 type PendingReconciliation = {
-  id: number;
+  optimisticAccount: AuthenticatedAccountState;
+  optimisticPageData: UploadAccountPageData;
   checks: ReconciliationChecks;
-  revalidationRequestedAt: number | null;
 };
 
 interface ManageDashboardClientProps {
@@ -72,6 +72,30 @@ function buildWebsiteUri(
   return (
     value.startsWith("http") ? value : `https://${value}`
   ) as `${string}:${string}`;
+}
+
+type ManageMode = ReturnType<typeof useManageMode>[0];
+
+function resolveDashboardMode(options: {
+  currentKind: AuthenticatedAccountState["kind"];
+  mode: ManageMode;
+}): ManageMode {
+  if (options.currentKind === "unknown" && options.mode === "edit") {
+    return null;
+  }
+
+  if (options.currentKind === "user" && options.mode === "onboard-user") {
+    return null;
+  }
+
+  if (
+    options.currentKind === "organization" &&
+    (options.mode === "onboard-user" || options.mode === "onboard-org")
+  ) {
+    return null;
+  }
+
+  return options.mode;
 }
 
 function resolveEditValue<T>(
@@ -362,6 +386,19 @@ function hasReconciliationWork(checks: ReconciliationChecks): boolean {
   );
 }
 
+function isPendingReconciliationActive(options: {
+  authoritativeAccount: AuthenticatedAccountState;
+  pendingReconciliation: PendingReconciliation | null;
+}): boolean {
+  return (
+    options.pendingReconciliation !== null &&
+    !hasQueryCaughtUp(
+      options.authoritativeAccount,
+      options.pendingReconciliation.checks,
+    )
+  );
+}
+
 function mergeRefetchedPageData(options: {
   currentPageData: UploadAccountPageData;
   nextAccount: AuthenticatedAccountState;
@@ -434,11 +471,6 @@ export function ManageDashboardClient({
 }: ManageDashboardClientProps) {
   const indexerUtils = indexerTrpc.useUtils();
   const [mode, setMode] = useManageMode();
-  const isEditing = mode === "edit";
-  const isOnboardingMode = mode === "onboard-user" || mode === "onboard-org";
-  const isOrganizationOnboardingMode = mode === "onboard-org";
-  const [displayAccount, setDisplayAccount] = useState(initialAccount);
-  const [pageData, setPageData] = useState(initialData);
   const [pendingReconciliation, setPendingReconciliation] =
     useState<PendingReconciliation | null>(null);
   const currentAccountQuery = indexerTrpc.account.byDid.useQuery(
@@ -466,106 +498,42 @@ export function ManageDashboardClient({
   const updateProfileAndOrganization =
     trpc.certified.actor.profileAndOrganizationSave.useMutation();
 
-  const currentAccount = displayAccount;
-  const currentKind = currentAccount.kind;
+  const authoritativeAccount = currentAccountQuery.data ?? initialAccount;
+  const resolvedMode = resolveDashboardMode({
+    currentKind: authoritativeAccount.kind,
+    mode,
+  });
+  const isEditing = resolvedMode === "edit";
+  const isOrganizationOnboardingMode = resolvedMode === "onboard-org";
   const hasBufferedChanges = hasChanges();
+  const reconciliationActive = isPendingReconciliationActive({
+    authoritativeAccount,
+    pendingReconciliation,
+  });
+  const optimisticSnapshot = reconciliationActive
+    ? pendingReconciliation
+    : null;
+  const currentAccount = optimisticSnapshot
+    ? optimisticSnapshot.optimisticAccount
+    : authoritativeAccount;
+  const currentKind = currentAccount.kind;
+  const pageData = optimisticSnapshot
+    ? optimisticSnapshot.optimisticPageData
+    : mergeRefetchedPageData({
+        currentPageData:
+          pendingReconciliation?.optimisticPageData ?? initialData,
+        nextAccount: authoritativeAccount,
+      });
 
   const currentOrganization = pageData.organization;
   const canEditOrganizationFields = currentKind === "organization";
-  const pendingReconciliationId = pendingReconciliation?.id ?? null;
 
   useEffect(() => {
-    if (currentKind === "unknown" && mode === "edit") {
-      setMode(null);
+    if (!reconciliationActive || isEditing || hasBufferedChanges) {
       return;
     }
 
-    if (currentKind === "user" && mode === "onboard-user") {
-      setMode(null);
-      return;
-    }
-
-    if (currentKind === "organization" && isOnboardingMode) {
-      setMode(null);
-    }
-  }, [currentKind, isOnboardingMode, mode, setMode]);
-
-  useEffect(() => {
-    if (pendingReconciliation || isEditing || hasBufferedChanges) {
-      return;
-    }
-
-    const nextAccount = currentAccountQuery.data ?? initialAccount;
-    setDisplayAccount(nextAccount);
-    setPageData((currentPageData) =>
-      mergeRefetchedPageData({
-        currentPageData,
-        nextAccount,
-      }),
-    );
-  }, [
-    currentAccountQuery.data,
-    hasBufferedChanges,
-    initialAccount,
-    isEditing,
-    pendingReconciliation,
-  ]);
-
-  useEffect(() => {
-    if (
-      !pendingReconciliation ||
-      pendingReconciliation.revalidationRequestedAt === null
-    ) {
-      return;
-    }
-
-    const nextAccount = currentAccountQuery.data;
-    if (!nextAccount) {
-      return;
-    }
-
-    if (
-      currentAccountQuery.dataUpdatedAt <
-      pendingReconciliation.revalidationRequestedAt
-    ) {
-      return;
-    }
-
-    if (!hasQueryCaughtUp(nextAccount, pendingReconciliation.checks)) {
-      return;
-    }
-
-    setDisplayAccount(nextAccount);
-    setPageData((currentPageData) =>
-      mergeRefetchedPageData({
-        currentPageData,
-        nextAccount,
-        checks: pendingReconciliation.checks,
-      }),
-    );
-    setPendingReconciliation(null);
-  }, [
-    currentAccountQuery.data,
-    currentAccountQuery.dataUpdatedAt,
-    pendingReconciliation,
-  ]);
-
-  useEffect(() => {
-    if (pendingReconciliationId === null) {
-      return;
-    }
-
-    const pendingId = pendingReconciliationId;
     const invalidateTimer = window.setInterval(() => {
-      const requestedAt = Date.now();
-      setPendingReconciliation((currentPending) =>
-        currentPending?.id === pendingId
-          ? {
-              ...currentPending,
-              revalidationRequestedAt: requestedAt,
-            }
-          : currentPending,
-      );
       void indexerUtils.account.current.invalidate();
       void indexerUtils.account.byDid.invalidate({ did });
     }, RECONCILIATION_INVALIDATE_DELAY_MS);
@@ -573,7 +541,13 @@ export function ManageDashboardClient({
     return () => {
       window.clearInterval(invalidateTimer);
     };
-  }, [did, indexerUtils, pendingReconciliationId]);
+  }, [
+    did,
+    hasBufferedChanges,
+    indexerUtils,
+    isEditing,
+    reconciliationActive,
+  ]);
 
   const startReconciliation = useCallback(
     (options: {
@@ -581,18 +555,15 @@ export function ManageDashboardClient({
       nextPageData: UploadAccountPageData;
       checks: ReconciliationChecks;
     }) => {
-      setDisplayAccount(options.nextAccount);
-      setPageData(options.nextPageData);
-
       if (!hasReconciliationWork(options.checks)) {
         setPendingReconciliation(null);
         return;
       }
 
       setPendingReconciliation({
-        id: Date.now(),
+        optimisticAccount: options.nextAccount,
+        optimisticPageData: options.nextPageData,
         checks: options.checks,
-        revalidationRequestedAt: null,
       });
     },
     [],
