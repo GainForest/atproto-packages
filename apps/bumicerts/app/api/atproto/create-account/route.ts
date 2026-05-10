@@ -1,21 +1,41 @@
 import { NextRequest } from "next/server";
 import { headers } from "next/headers";
 import postgres from "postgres";
+import { z } from "zod";
 import { signupPDSDomains } from "@/lib/config/pds";
-import { env } from "process";
+import { serverEnv } from "@/lib/env/server";
 import { checkRateLimit, recordRateLimitAttempt } from "@/lib/rate-limit";
 
 // Force dynamic so Next.js never tries to statically collect this route
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
-  if (!env.POSTGRES_URL_NON_POOLING_ATPROTO_AUTH_MAPPING) {
-    return new Response(
-      JSON.stringify({ error: "Server misconfiguration" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+const createAccountRequestSchema = z.object({
+  email: z.string().trim().email(),
+  password: z.string().trim().min(1),
+  handle: z.string().trim().min(1),
+  inviteCode: z.string().trim().min(1),
+});
+
+const createAccountResponseSchema = z.object({
+  handle: z.string().min(1),
+  did: z.string().min(1),
+  accessJwt: z.string().min(1),
+  refreshJwt: z.string().min(1),
+});
+
+async function readJsonResponse(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
   }
-  const sql = postgres(env.POSTGRES_URL_NON_POOLING_ATPROTO_AUTH_MAPPING, {
+}
+
+export async function POST(req: NextRequest) {
+  const sql = postgres(serverEnv.POSTGRES_URL_NON_POOLING_ATPROTO_AUTH_MAPPING, {
     ssl: "require",
   });
   const clientIp =
@@ -42,27 +62,21 @@ export async function POST(req: NextRequest) {
   await recordRateLimitAttempt(`ip:${clientIp}`, "create-account");
 
   try {
-    const body = (await req.json()) as {
-      email: string;
-      password: string;
-      handle: string;
-      inviteCode: string;
-    };
-    let { email, password, handle, inviteCode } = body;
-    email = (email ?? "").trim().toLowerCase();
-    password = (password ?? "").trim();
-    handle = (handle ?? "").trim();
-    inviteCode = (inviteCode ?? "").trim();
+    const json = await req.json().catch(() => null);
+    const parsedBody = createAccountRequestSchema.safeParse(json);
 
-    if (!email || !password || !handle || !inviteCode) {
+    if (!parsedBody.success) {
       return new Response(
         JSON.stringify({
           error: "BadRequest",
-          message: "Missing required fields",
+          message: "Invalid request body",
+          issues: parsedBody.error.flatten(),
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
+
+    const { email, password, handle, inviteCode } = parsedBody.data;
 
     const inviteCodeInfo =
       await sql`SELECT * FROM invites WHERE invite_token = ${inviteCode}`;
@@ -91,26 +105,30 @@ export async function POST(req: NextRequest) {
     );
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await readJsonResponse(response);
       console.error("Account creation failed:", error);
       return new Response(JSON.stringify(error), { status: response.status });
     }
 
-    const data = (await response.json()) as {
-      handle: string;
-      did: string;
-      accessJwt: string;
-      refreshJwt: string;
-    };
-    return new Response(JSON.stringify(data), { status: 200 });
+    const data = await readJsonResponse(response);
+    const parsedResponse = createAccountResponseSchema.safeParse(data);
+
+    if (!parsedResponse.success) {
+      console.error("Account creation returned invalid JSON:", parsedResponse.error.flatten());
+      return new Response(
+        JSON.stringify({ error: "UpstreamError", message: "Account service returned an invalid response" }),
+        { status: 502, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(JSON.stringify(parsedResponse.data), { status: 200 });
   } catch (err: unknown) {
     console.error("Unexpected error:", err);
+    const message = err instanceof Error ? err.message : "Unexpected error occurred";
     return new Response(
       JSON.stringify({
         error: "Internal Server Error",
-        message:
-          (err as Record<string, string>).message ||
-          "Unexpected error occurred",
+        message,
       }),
       { status: 500 }
     );

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSignTypedData, useAccount } from "wagmi";
+import { z } from "zod";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { CHAIN_ID } from "@/lib/facilitator/usdc";
 
@@ -35,6 +36,15 @@ type UseWalletAttestationResult = {
   /** Reset to idle */
   reset: () => void;
 };
+
+const walletAttestationSuccessSchema = z.object({
+  uri: z.string().min(1),
+  rkey: z.string().min(1),
+});
+
+const walletAttestationErrorSchema = z.object({
+  error: z.string().min(1),
+});
 
 /**
  * Hook that handles the complete EIP-712 sign + ATProto write flow
@@ -115,12 +125,19 @@ export function useWalletAttestation(): UseWalletAttestationResult {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error || "Failed to link wallet");
+        const errorJson = await res.json().catch(() => null);
+        const parsedError = walletAttestationErrorSchema.safeParse(errorJson);
+        throw new Error(parsedError.success ? parsedError.data.error : "Failed to link wallet");
       }
 
-      const data = (await res.json()) as { uri: string; rkey: string };
-      setAttestationUri(data.uri);
+      const successJson = await res.json().catch(() => null);
+      const parsedSuccess = walletAttestationSuccessSchema.safeParse(successJson);
+
+      if (!parsedSuccess.success) {
+        throw new Error("Identity-link route returned an invalid response");
+      }
+
+      setAttestationUri(parsedSuccess.data.uri);
       setStatus("success");
     } catch (err) {
       setStatus("error");

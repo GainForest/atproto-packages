@@ -24,8 +24,10 @@
 
 import { NextRequest } from "next/server";
 import type { AtUriString } from "@atproto/lex";
+import { z } from "zod";
 import { serverEnv } from "@/lib/env/server";
 import { clientEnv } from "@/lib/env/client";
+import { formatUsdcAmount, parseUsdcAmount, usdcAmountStringSchema } from "@/lib/facilitator/amount";
 import { parsePaymentSignature } from "@/lib/facilitator/eip3009";
 import { executeTransferWithAuthorization, executeSimpleTransfer } from "@/lib/facilitator/index";
 import { fetchCidByAtUri } from "@/graphql/indexer/queries/activities";
@@ -42,19 +44,21 @@ export const dynamic = "force-dynamic";
 // Types
 // ---------------------------------------------------------------------------
 
-type BatchItem = {
-  activityUri: string;
-  orgDid: string;
-  amount: string;
-};
+const batchItemSchema = z.object({
+  activityUri: z.string().trim().min(1),
+  orgDid: z.string().trim().min(1),
+  amount: usdcAmountStringSchema,
+});
 
-type BatchRequestBody = {
-  items: BatchItem[];
-  totalAmount: string;
-  currency?: string;
-  donorDid?: string;
-  anonymous?: boolean;
-};
+const batchRequestSchema = z.object({
+  items: z.array(batchItemSchema).min(1, "At least one item is required."),
+  totalAmount: usdcAmountStringSchema,
+  currency: z.literal("USDC").optional(),
+  donorDid: z.string().trim().min(1).optional(),
+  anonymous: z.boolean(),
+});
+
+type BatchItem = z.infer<typeof batchItemSchema>;
 
 type BatchItemResult = {
   activityUri: string;
@@ -164,37 +168,20 @@ export async function POST(req: NextRequest) {
   }
 
   // Parse request body
-  let body: BatchRequestBody;
-  try {
-    body = await req.json();
-  } catch {
+  const rawBody = await req.json().catch(() => null);
+  const parsedBody = batchRequestSchema.safeParse(rawBody);
+
+  if (!parsedBody.success) {
     return Response.json(
-      { error: "Invalid request body" },
+      {
+        error: "Invalid request body",
+        issues: parsedBody.error.flatten(),
+      },
       { status: 400 }
     );
   }
 
-  // Validate body structure
-  if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
-    return Response.json(
-      { error: "items array is required and must not be empty" },
-      { status: 400 }
-    );
-  }
-
-  if (!body.totalAmount) {
-    return Response.json(
-      { error: "totalAmount is required" },
-      { status: 400 }
-    );
-  }
-
-  if (typeof body.anonymous !== "boolean") {
-    return Response.json(
-      { error: "Please choose whether to donate anonymously." },
-      { status: 400 }
-    );
-  }
+  const body = parsedBody.data;
 
   const donorChoseAnonymous = body.anonymous;
   let donorDid: DidIdentifier | undefined;
@@ -245,11 +232,25 @@ export async function POST(req: NextRequest) {
   }
 
   // Verify total amount matches
-  const authAmount = Number(authorization.value) / 1e6;
-  const expectedTotal = parseFloat(body.totalAmount);
-  if (Math.abs(authAmount - expectedTotal) > 0.01) {
+  const authAmount = BigInt(authorization.value);
+  const expectedTotal = parseUsdcAmount(body.totalAmount);
+  if (authAmount !== expectedTotal) {
     return Response.json(
-      { error: `Authorization amount (${authAmount}) does not match total (${expectedTotal})` },
+      {
+        error: `Authorization amount (${formatUsdcAmount(authAmount)}) does not match total (${body.totalAmount})`,
+      },
+      { status: 422 }
+    );
+  }
+
+  const summedItemAmount = body.items.reduce(
+    (total, item) => total + parseUsdcAmount(item.amount),
+    BigInt(0),
+  );
+
+  if (summedItemAmount !== expectedTotal) {
+    return Response.json(
+      { error: "Item amounts must sum to totalAmount" },
       { status: 422 }
     );
   }

@@ -45,6 +45,10 @@ async function getAuthenticatedUserDid(): Promise<string | null> {
   }
 }
 
+async function readRequestJson(req: NextRequest): Promise<unknown | null> {
+  return req.json().catch(() => null);
+}
+
 export async function GET(req: NextRequest) {
   // Check user's authentication
   const userDid = await getAuthenticatedUserDid();
@@ -60,7 +64,8 @@ export async function GET(req: NextRequest) {
   const draftIdsParam = searchParams.get("draftIds");
   if (draftIdsParam) {
     try {
-      queryParams.draftIds = JSON.parse(draftIdsParam);
+      const parsedDraftIds: unknown = JSON.parse(draftIdsParam);
+      queryParams.draftIds = parsedDraftIds;
     } catch {
       // Invalid JSON, ignore
     }
@@ -165,10 +170,22 @@ export async function POST(req: NextRequest) {
   }
 
   // Validate request body
-  const requestBody = await req.json();
+  const requestBody = await readRequestJson(req);
+  if (requestBody === null) {
+    return apiError(
+      400,
+      "INVALID_JSON",
+      "Invalid draft data. Please check your inputs.",
+      "Request body must be valid JSON."
+    );
+  }
 
   // Check if it's an update (has id) or create (no id)
-  const isUpdate = requestBody.id !== undefined;
+  const isUpdate =
+    typeof requestBody === "object" &&
+    requestBody !== null &&
+    "id" in requestBody &&
+    requestBody.id !== undefined;
 
   try {
     if (isUpdate) {
@@ -280,7 +297,15 @@ export async function DELETE(req: NextRequest) {
   }
 
   // Validate request body
-  const requestBody = await req.json();
+  const requestBody = await readRequestJson(req);
+  if (requestBody === null) {
+    return apiError(
+      400,
+      "INVALID_JSON",
+      "Invalid request. Please provide valid draft IDs.",
+      "Request body must be valid JSON."
+    );
+  }
   const requestBodyValidation =
     deleteDraftBumicertRequestSchema.safeParse(requestBody);
   if (!requestBodyValidation.success) {

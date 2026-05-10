@@ -25,6 +25,16 @@ type ErrorResponse = {
   details?: string;
 };
 
+function isAllowedMimeType(
+  value: string,
+): value is (typeof ALLOWED_MIME_TYPES)[number] {
+  return ALLOWED_MIME_TYPES.some((mimeType) => mimeType === value);
+}
+
+function isFile(value: FormDataEntryValue | null): value is File {
+  return value instanceof File;
+}
+
 /**
  * POST /api/upload/cover-image
  * Upload a cover image to AWS S3
@@ -43,10 +53,10 @@ export async function POST(
   try {
     // Parse form data
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
+    const fileEntry = formData.get("file");
 
     // Validate file exists
-    if (!file) {
+    if (!isFile(fileEntry)) {
       return NextResponse.json(
         {
           error: "No file provided. Please include a file in the 'file' field.",
@@ -55,17 +65,15 @@ export async function POST(
       );
     }
 
+    const file = fileEntry;
+
     // Validate file is not empty
     if (file.size === 0) {
       return NextResponse.json({ error: "File is empty" }, { status: 400 });
     }
 
     // Validate MIME type
-    if (
-      !ALLOWED_MIME_TYPES.includes(
-        file.type as (typeof ALLOWED_MIME_TYPES)[number]
-      )
-    ) {
+    if (!isAllowedMimeType(file.type)) {
       return NextResponse.json(
         {
           error: "Invalid file type",

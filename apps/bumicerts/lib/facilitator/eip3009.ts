@@ -8,6 +8,7 @@
  */
 
 import { hexToNumber, slice } from "viem";
+import { z } from "zod";
 import { CHAIN_ID, EIP3009_DOMAIN_NAME, EIP3009_DOMAIN_VERSION, EIP3009_TYPES, USDC_CONTRACT } from "./usdc";
 
 // ---------------------------------------------------------------------------
@@ -32,6 +33,37 @@ export type PaymentSignaturePayload = {
     authorization: Eip3009Authorization;
   };
 };
+
+const hexAddressSchema = z.custom<`0x${string}`>(
+  (value): value is `0x${string}` =>
+    typeof value === "string" && /^0x[a-fA-F0-9]{40}$/.test(value),
+  "Expected an EVM address.",
+);
+
+const hexStringSchema = z.custom<`0x${string}`>(
+  (value): value is `0x${string}` =>
+    typeof value === "string" && /^0x[a-fA-F0-9]+$/.test(value),
+  "Expected a hex string.",
+);
+
+const eip3009AuthorizationSchema: z.ZodType<Eip3009Authorization> = z.object({
+  from: hexAddressSchema,
+  to: hexAddressSchema,
+  value: z.string().regex(/^\d+$/, "Authorization value must be a decimal string."),
+  validAfter: z.string().regex(/^\d+$/, "validAfter must be a unix timestamp string."),
+  validBefore: z.string().regex(/^\d+$/, "validBefore must be a unix timestamp string."),
+  nonce: hexStringSchema,
+});
+
+const paymentSignaturePayloadSchema: z.ZodType<PaymentSignaturePayload> = z.object({
+  x402Version: z.number().int(),
+  scheme: z.string().min(1),
+  networkId: z.string().min(1),
+  payload: z.object({
+    signature: hexStringSchema,
+    authorization: eip3009AuthorizationSchema,
+  }),
+});
 
 // ---------------------------------------------------------------------------
 // EIP-3009 typed-data domain (same as what the frontend signs)
@@ -67,8 +99,21 @@ export function buildEip3009TypedData(authorization: Eip3009Authorization) {
 // ---------------------------------------------------------------------------
 
 export function parsePaymentSignature(header: string): PaymentSignaturePayload {
-  const json = Buffer.from(header, "base64").toString("utf-8");
-  return JSON.parse(json) as PaymentSignaturePayload;
+  let parsedJson: unknown;
+
+  try {
+    const json = Buffer.from(header, "base64").toString("utf-8");
+    parsedJson = JSON.parse(json);
+  } catch {
+    throw new Error("PAYMENT-SIGNATURE is not valid base64 JSON.");
+  }
+
+  const parsed = paymentSignaturePayloadSchema.safeParse(parsedJson);
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Invalid PAYMENT-SIGNATURE payload.");
+  }
+
+  return parsed.data;
 }
 
 // ---------------------------------------------------------------------------

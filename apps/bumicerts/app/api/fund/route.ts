@@ -16,8 +16,10 @@
 
 import { NextRequest } from "next/server";
 import type { AtUriString } from "@atproto/lex";
+import { z } from "zod";
 import { serverEnv } from "@/lib/env/server";
 import { clientEnv } from "@/lib/env/client";
+import { formatUsdcAmount, usdcAmountStringSchema } from "@/lib/facilitator/amount";
 import { parsePaymentSignature } from "@/lib/facilitator/eip3009";
 import { executeTransferWithAuthorization } from "@/lib/facilitator/index";
 import { fetchCidByAtUri } from "@/graphql/indexer/queries/activities";
@@ -42,6 +44,21 @@ type ReceiptSender =
   | { $type: "app.certified.defs#did"; did: DidIdentifier };
 
 type ReceiptText = { $type: "org.hypercerts.funding.receipt#text"; value: string };
+
+const discoveryRequestSchema = z
+  .object({
+    orgDid: z.string().trim().min(1).optional(),
+  })
+  .passthrough();
+
+const settlementRequestSchema = z.object({
+  activityUri: z.string().trim().min(1).optional(),
+  orgDid: z.string().trim().min(1),
+  amount: usdcAmountStringSchema.optional(),
+  currency: z.literal("USDC").optional(),
+  donorDid: z.string().trim().min(1).optional(),
+  anonymous: z.boolean(),
+});
 
 function isHexAddress(value: string): value is HexAddress {
   return /^0x[a-fA-F0-9]{40}$/.test(value);
@@ -121,11 +138,11 @@ export async function POST(req: NextRequest) {
 
   // --- Mode A: Discovery ---
   if (!paymentSig) {
-    let body: { activityUri?: string; orgDid?: string; amount?: string } = {};
-    try { body = await req.json(); } catch { /* ignore */ }
+    const rawBody = await req.json().catch(() => null);
+    const parsedDiscovery = discoveryRequestSchema.safeParse(rawBody);
 
-    const recipientWallet = body.orgDid
-      ? await resolveRecipientWallet(body.orgDid)
+    const recipientWallet = parsedDiscovery.success && parsedDiscovery.data.orgDid
+      ? await resolveRecipientWallet(parsedDiscovery.data.orgDid)
       : null;
 
     return Response.json(
@@ -146,22 +163,20 @@ export async function POST(req: NextRequest) {
   }
 
   // --- Mode B: Settlement ---
-  let body: {
-    activityUri?: string;
-    orgDid?: string;
-    amount?: string;
-    currency?: string;
-    donorDid?: string;
-    anonymous?: boolean;
-  } = {};
-  try { body = await req.json(); } catch { /* ignore */ }
+  const rawBody = await req.json().catch(() => null);
+  const parsedBody = settlementRequestSchema.safeParse(rawBody);
 
-  if (typeof body.anonymous !== "boolean") {
+  if (!parsedBody.success) {
     return Response.json(
-      { error: "Please choose whether to donate anonymously." },
+      {
+        error: "Invalid request body",
+        issues: parsedBody.error.flatten(),
+      },
       { status: 400 }
     );
   }
+
+  const body = parsedBody.data;
 
   const donorChoseAnonymous = body.anonymous;
   let donorDid: DidIdentifier | undefined;
@@ -194,9 +209,7 @@ export async function POST(req: NextRequest) {
   const { payload: { authorization, signature } } = payload;
 
   // 2. Resolve recipient wallet
-  const recipientWallet = body.orgDid
-    ? await resolveRecipientWallet(body.orgDid)
-    : null;
+  const recipientWallet = await resolveRecipientWallet(body.orgDid);
 
   if (!recipientWallet) {
     return Response.json(
@@ -238,7 +251,7 @@ export async function POST(req: NextRequest) {
   // UnauthorizedError/SessionExpiredError that the Next.js action wrapper
   // expects). This avoids the AgentLayer type mismatch.
   const agentLayer = getFacilitatorLayer();
-  const amount = body.amount ?? String(Number(authorization.value) / 1e6);
+  const amount = body.amount ?? formatUsdcAmount(BigInt(authorization.value));
   const now = new Date().toISOString();
 
   const donorRecordedAs = donorChoseAnonymous ? "wallet" : "did";
