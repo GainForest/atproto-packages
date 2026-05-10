@@ -4,13 +4,14 @@ import { useState } from "react";
 import FileDropStep from "./FileDropStep";
 import ColumnMappingStep from "./ColumnMappingStep";
 import PreviewStep from "./PreviewStep";
-import UploadStep, { readPendingUpload } from "./UploadStep";
+import UploadStep from "./UploadStep";
 import type { ColumnMapping, ValidatedRow } from "@/lib/upload/types";
 import type { KoboMediaZipIndex } from "@/lib/upload/kobo-media-zip";
 import {
   NO_UPLOAD_DATASET_SELECTION,
   type UploadDatasetSelection,
 } from "./upload-dataset-selection";
+import { readPendingUpload } from "./upload-session";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

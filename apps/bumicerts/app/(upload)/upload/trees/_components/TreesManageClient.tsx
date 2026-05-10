@@ -19,7 +19,6 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { parseAsString, useQueryState } from "nuqs";
 import { ATTACH_EXISTING_DWC_DATASET_MAX_OCCURRENCES } from "@gainforest/atproto-mutations-next";
 import type { UpdateAcMultimediaInput } from "@gainforest/atproto-mutations-next";
 import { Button } from "@/components/ui/button";
@@ -69,6 +68,14 @@ import { ManageConfirmModal } from "./ManageConfirmModal";
 import { TreesManageSkeleton } from "./TreesManageSkeleton";
 import { TreeListPagination } from "./TreeListPagination";
 import {
+  mergeOptimisticMeasurements,
+  mergeOptimisticMultimedia,
+  mergeOptimisticOccurrences,
+  reconcileOptimisticMeasurementRecords,
+  reconcileOptimisticMultimediaRecords,
+  reconcileOptimisticOccurrenceRecords,
+} from "./tree-manager-optimistic";
+import {
   buildTreeManagerItems,
   capCanopyCoverPercentInput,
   CANOPY_COVER_PERCENT_MAX,
@@ -87,6 +94,14 @@ import {
   type TreeOccurrenceDraft,
 } from "./tree-manager-utils";
 import AddToDatasetModal from "./AddToDatasetModal";
+import {
+  getBoundedPage,
+  getTotalPages,
+  getTreePageFromQuery,
+  toNullableQueryValue,
+  TREE_ITEMS_PER_PAGE,
+  useTreesManageUrlState,
+} from "./useTreesManageUrlState";
 
 type TreesManageClientProps = {
   did: string;
@@ -134,33 +149,6 @@ const EMPTY_MEASUREMENT_DRAFT: TreeMeasurementDraft = {
 };
 
 const ATTACH_INVALIDATION_DELAY_MS = 1_000;
-const TREE_ITEMS_PER_PAGE = 10;
-
-function getTreePageFromQuery(value: string | null): number {
-  if (!value) {
-    return 1;
-  }
-
-  if (!/^\d+$/.test(value)) {
-    return 1;
-  }
-
-  const parsed = Number(value);
-
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-}
-
-function getTotalPages(totalItems: number, pageSize: number): number {
-  return Math.max(1, Math.ceil(totalItems / pageSize));
-}
-
-function getBoundedPage(page: number, totalPages: number): number {
-  return Math.min(Math.max(page, 1), totalPages);
-}
-
-function toNullableQueryValue(value: string): string | null {
-  return value.length > 0 ? value : null;
-}
 
 function normalizeDraftValue(value: string): string {
   return value.trim();
@@ -252,76 +240,6 @@ function revokeBlobUrl(url: string | null | undefined) {
   if (typeof url === "string" && url.startsWith("blob:")) {
     URL.revokeObjectURL(url);
   }
-}
-
-function sameJsonValue(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
-}
-
-function sameOccurrenceRecord(
-  left: NonNullable<OccurrenceItem["record"]>,
-  right: NonNullable<OccurrenceItem["record"]>,
-): boolean {
-  return (
-    left.scientificName === right.scientificName &&
-    left.vernacularName === right.vernacularName &&
-    left.eventDate === right.eventDate &&
-    left.recordedBy === right.recordedBy &&
-    left.locality === right.locality &&
-    left.country === right.country &&
-    left.decimalLatitude === right.decimalLatitude &&
-    left.decimalLongitude === right.decimalLongitude &&
-    left.occurrenceRemarks === right.occurrenceRemarks &&
-    left.habitat === right.habitat &&
-    left.establishmentMeans === right.establishmentMeans &&
-    left.datasetRef === right.datasetRef
-  );
-}
-
-function sameMeasurementItem(
-  left: MeasurementItem,
-  right: MeasurementItem,
-): boolean {
-  return (
-    left.metadata.rkey === right.metadata.rkey &&
-    left.record.occurrenceRef === right.record.occurrenceRef &&
-    left.record.schemaVersion === right.record.schemaVersion &&
-    left.record.measurementMethod === right.record.measurementMethod &&
-    left.record.measurementRemarks === right.record.measurementRemarks &&
-    sameJsonValue(left.record.result, right.record.result)
-  );
-}
-
-function sameMeasurementSet(
-  left: MeasurementItem[],
-  right: MeasurementItem[],
-): boolean {
-  if (left.length !== right.length) {
-    return false;
-  }
-
-  return left.every((item, index) => sameMeasurementItem(item, right[index]!));
-}
-
-function sameMultimediaRecord(
-  left: MultimediaItem["record"],
-  right: MultimediaItem["record"],
-): boolean {
-  return (
-    left.occurrenceRef === right.occurrenceRef &&
-    left.siteRef === right.siteRef &&
-    left.subjectPart === right.subjectPart &&
-    left.subjectPartUri === right.subjectPartUri &&
-    left.subjectOrientation === right.subjectOrientation &&
-    sameJsonValue(left.file, right.file) &&
-    left.format === right.format &&
-    left.accessUri === right.accessUri &&
-    left.variantLiteral === right.variantLiteral &&
-    left.caption === right.caption &&
-    left.creator === right.creator &&
-    left.createDate === right.createDate &&
-    left.createdAt === right.createdAt
-  );
 }
 
 function createOptimisticMeasurementItem(
@@ -484,28 +402,20 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
   const isDesktop = useMediaQuery("(min-width: 64rem)");
   const { pushModal, show } = useModal();
   const indexerUtils = indexerTrpc.useUtils();
-
-  const [searchQuery, setSearchQuery] = useQueryState(
-    "q",
-    parseAsString.withDefault(""),
-  );
-  const [treePageQuery, setTreePageQuery] = useQueryState(
-    "tree-page",
-    parseAsString,
-  );
-  const [datasetSearchQuery, setDatasetSearchQuery] = useQueryState(
-    "dataset-q",
-    parseAsString.withDefault(""),
-  );
-  const [selectedTreeRkey, setSelectedTreeRkey] = useQueryState(
-    "tree",
-    parseAsString.withDefault(""),
-  );
-  const [managerView, setManagerView] = useQueryState("view", parseAsString);
-  const [datasetFilter, setDatasetFilter] = useQueryState(
-    "dataset",
-    parseAsString,
-  );
+  const {
+    searchQuery,
+    setSearchQuery,
+    treePageQuery,
+    setTreePageQuery,
+    datasetSearchQuery,
+    setDatasetSearchQuery,
+    selectedTreeRkey,
+    setSelectedTreeRkey,
+    managerView,
+    setManagerView,
+    datasetFilter,
+    setDatasetFilter,
+  } = useTreesManageUrlState();
 
   const occurrencesQuery = indexerTrpc.dwc.occurrences.useQuery({ did });
   const measurementsQuery = indexerTrpc.dwc.measurements.useQuery({ did });
@@ -603,119 +513,44 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     measurementsQuery.error ??
     multimediaQuery.error;
 
-  const mergedOccurrences = useMemo(() => {
-    return (occurrencesQuery.data ?? []).flatMap((item) => {
-      const metadata = item.metadata;
-      const record = item.record;
-      const rkey = metadata?.rkey;
+  const mergedOccurrences = useMemo(
+    () =>
+      mergeOptimisticOccurrences({
+        occurrences: occurrencesQuery.data ?? [],
+        optimisticOccurrenceRecords,
+        optimisticDeletedOccurrenceRkeys,
+      }),
+    [
+      occurrencesQuery.data,
+      optimisticDeletedOccurrenceRkeys,
+      optimisticOccurrenceRecords,
+    ],
+  );
 
-      if (
-        !metadata ||
-        !record ||
-        !rkey ||
-        optimisticDeletedOccurrenceRkeys[rkey]
-      ) {
-        return [];
-      }
+  const mergedMeasurements = useMemo(
+    () =>
+      mergeOptimisticMeasurements({
+        measurements: measurementsQuery.data ?? [],
+        optimisticMeasurementRecords,
+      }),
+    [measurementsQuery.data, optimisticMeasurementRecords],
+  );
 
-      const optimisticRecord = optimisticOccurrenceRecords[rkey];
-      return [
-        {
-          ...item,
-          record:
-            optimisticRecord && !sameOccurrenceRecord(record, optimisticRecord)
-              ? optimisticRecord
-              : record,
-        },
-      ];
-    });
-  }, [
-    occurrencesQuery.data,
-    optimisticDeletedOccurrenceRkeys,
-    optimisticOccurrenceRecords,
-  ]);
-
-  const mergedMeasurements = useMemo(() => {
-    const overriddenOccurrenceUris = new Set(
-      Object.keys(optimisticMeasurementRecords),
-    );
-
-    const baseMeasurements = measurementsQuery.data ?? [];
-    const measurementsByOccurrence = new Map<string, MeasurementItem[]>();
-
-    for (const item of baseMeasurements) {
-      const occurrenceRef = item.record.occurrenceRef;
-      if (!occurrenceRef) {
-        continue;
-      }
-
-      const existing = measurementsByOccurrence.get(occurrenceRef) ?? [];
-      existing.push(item);
-      measurementsByOccurrence.set(occurrenceRef, existing);
-    }
-
-    const mergedForOverrides = Object.entries(
-      optimisticMeasurementRecords,
-    ).flatMap(([occurrenceUri, optimisticItems]) => {
-      const serverItems = measurementsByOccurrence.get(occurrenceUri) ?? [];
-
-      return sameMeasurementSet(serverItems, optimisticItems)
-        ? serverItems
-        : optimisticItems;
-    });
-
-    const untouchedMeasurements = baseMeasurements.filter((item) => {
-      const occurrenceRef = item.record.occurrenceRef;
-      return !occurrenceRef || !overriddenOccurrenceUris.has(occurrenceRef);
-    });
-
-    return [...mergedForOverrides, ...untouchedMeasurements];
-  }, [measurementsQuery.data, optimisticMeasurementRecords]);
-
-  const mergedMultimedia = useMemo(() => {
-    const basePhotos = (multimediaQuery.data ?? []).filter((item) => {
-      const rkey = item.metadata?.rkey;
-      return !rkey || optimisticDeletedPhotoRkeys[rkey] !== true;
-    });
-
-    const basePhotoRkeys = new Set(
-      basePhotos
-        .map((item) => item.metadata?.rkey)
-        .filter((value): value is string => typeof value === "string"),
-    );
-
-    const optimisticPhotos = Object.values(optimisticAddedPhotos)
-      .flat()
-      .filter((item) => {
-        const rkey = item.metadata?.rkey;
-        return (
-          typeof rkey === "string" &&
-          optimisticDeletedPhotoRkeys[rkey] !== true &&
-          !basePhotoRkeys.has(rkey)
-        );
-      });
-
-    return [...optimisticPhotos, ...basePhotos].map((item) => {
-      const rkey = item.metadata?.rkey;
-      const optimisticRecord = rkey
-        ? optimisticMultimediaRecords[rkey]
-        : undefined;
-
-      if (!optimisticRecord || sameMultimediaRecord(item.record, optimisticRecord)) {
-        return item;
-      }
-
-      return {
-        ...item,
-        record: optimisticRecord,
-      };
-    });
-  }, [
-    multimediaQuery.data,
-    optimisticAddedPhotos,
-    optimisticDeletedPhotoRkeys,
-    optimisticMultimediaRecords,
-  ]);
+  const mergedMultimedia = useMemo(
+    () =>
+      mergeOptimisticMultimedia({
+        multimedia: multimediaQuery.data ?? [],
+        optimisticAddedPhotos,
+        optimisticDeletedPhotoRkeys,
+        optimisticMultimediaRecords,
+      }),
+    [
+      multimediaQuery.data,
+      optimisticAddedPhotos,
+      optimisticDeletedPhotoRkeys,
+      optimisticMultimediaRecords,
+    ],
+  );
 
   const treeItems = useMemo(
     () =>
@@ -1140,90 +975,26 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
   useEffect(() => {
     const resetHandle = window.setTimeout(() => {
-      setOptimisticOccurrenceRecords((current) => {
-        let changed = false;
-        const serverByRkey = new Map(
-          (occurrencesQuery.data ?? []).flatMap((item) => {
-            const rkey = item.metadata?.rkey;
-            const record = item.record;
-            return rkey && record ? [[rkey, record] as const] : [];
-          }),
-        );
+      setOptimisticOccurrenceRecords((current) =>
+        reconcileOptimisticOccurrenceRecords({
+          optimisticOccurrenceRecords: current,
+          serverOccurrences: occurrencesQuery.data ?? [],
+        }),
+      );
 
-        const remainingEntries = Object.entries(current).filter(
-          ([rkey, optimisticRecord]) => {
-            const serverRecord = serverByRkey.get(rkey);
-            const keep =
-              !serverRecord ||
-              !sameOccurrenceRecord(serverRecord, optimisticRecord);
-            if (!keep) {
-              changed = true;
-            }
-            return keep;
-          },
-        );
+      setOptimisticMeasurementRecords((current) =>
+        reconcileOptimisticMeasurementRecords({
+          optimisticMeasurementRecords: current,
+          serverMeasurements: measurementsQuery.data ?? [],
+        }),
+      );
 
-        return changed
-          ? (Object.fromEntries(remainingEntries) as typeof current)
-          : current;
-      });
-
-      setOptimisticMeasurementRecords((current) => {
-        let changed = false;
-        const serverByOccurrence = new Map<string, MeasurementItem[]>();
-
-        for (const item of measurementsQuery.data ?? []) {
-          const occurrenceRef = item.record.occurrenceRef;
-          if (!occurrenceRef) {
-            continue;
-          }
-
-          const existing = serverByOccurrence.get(occurrenceRef) ?? [];
-          existing.push(item);
-          serverByOccurrence.set(occurrenceRef, existing);
-        }
-
-        const remainingEntries = Object.entries(current).filter(
-          ([occurrenceUri, optimisticItems]) => {
-            const serverItems = serverByOccurrence.get(occurrenceUri) ?? [];
-            const keep = !sameMeasurementSet(serverItems, optimisticItems);
-            if (!keep) {
-              changed = true;
-            }
-            return keep;
-          },
-        );
-
-        return changed
-          ? (Object.fromEntries(remainingEntries) as typeof current)
-          : current;
-      });
-
-      setOptimisticMultimediaRecords((current) => {
-        let changed = false;
-        const serverByRkey = new Map(
-          (multimediaQuery.data ?? []).flatMap((item) => {
-            const rkey = item.metadata?.rkey;
-            return rkey ? [[rkey, item.record] as const] : [];
-          }),
-        );
-
-        const remainingEntries = Object.entries(current).filter(
-          ([rkey, optimisticRecord]) => {
-            const serverRecord = serverByRkey.get(rkey);
-            const keep =
-              !serverRecord || !sameMultimediaRecord(serverRecord, optimisticRecord);
-            if (!keep) {
-              changed = true;
-            }
-            return keep;
-          },
-        );
-
-        return changed
-          ? (Object.fromEntries(remainingEntries) as typeof current)
-          : current;
-      });
+      setOptimisticMultimediaRecords((current) =>
+        reconcileOptimisticMultimediaRecords({
+          optimisticMultimediaRecords: current,
+          serverMultimedia: multimediaQuery.data ?? [],
+        }),
+      );
     }, 0);
 
     return () => window.clearTimeout(resetHandle);

@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
   XCircle,
@@ -38,12 +38,13 @@ import {
   toAppendExistingDatasetRows,
 } from "@/lib/upload/append-existing-dataset";
 import { uploadTreeDatasetsQueryKey } from "@/lib/upload/tree-upload-datasets";
+import { type UploadDatasetSelection } from "./upload-dataset-selection";
+import { useUploadStepEffects } from "./useUploadStepEffects";
 import {
-  NO_UPLOAD_DATASET_SELECTION,
-  isUploadDatasetSelection,
-  type UploadDatasetSelection,
-} from "./upload-dataset-selection";
-import { TreeUploadCompleteModal } from "./TreeUploadCompleteModal";
+  clearPendingUpload,
+  readPendingUpload,
+  type PendingUploadData,
+} from "./upload-session";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -93,18 +94,12 @@ type PhotoUploadQueueEntry = {
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const STORAGE_KEY = "upload-trees-pending";
-const SESSION_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const REFRESH_WARNING_MESSAGE =
   "The upload finished, but some views may take a moment to refresh.";
 const EXISTING_DATASET_UNAVAILABLE_MESSAGE =
   "The selected dataset disappeared during upload. Remaining rows were not added.";
 const UNCONFIRMED_EXISTING_DATASET_CHUNK_MESSAGE =
   "This chunk could not be confirmed. Some trees may already be saved; review Tree Manager before retrying.";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
 
 function getInitialPhotoFetchStatus(): PhotoFetchStatus {
   return {
@@ -294,22 +289,6 @@ export default function UploadStep({
     );
     show();
   };
-
-  // ── sessionStorage: save pending state before OAuth redirect ──────────────
-  useEffect(() => {
-    if (validRows.length > 0 && !uploadStarted) {
-      sessionStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          ownerDid: did,
-          validRows,
-          establishmentMeans,
-          datasetSelection,
-          timestamp: Date.now(),
-        }),
-      );
-    }
-  }, [datasetSelection, did, establishmentMeans, uploadStarted, validRows]);
 
   const setRefreshWarning = useCallback(() => {
     setDatasetUpdateWarning((prev) => prev ?? REFRESH_WARNING_MESSAGE);
@@ -787,13 +766,6 @@ export default function UploadStep({
     validRows,
   ]);
 
-  // Auto-start upload on mount (layout already enforces auth)
-  useEffect(() => {
-    if (!uploadStarted) {
-      void runUpload();
-    }
-  }, [runUpload, uploadStarted]);
-
   // ── Phase 2: Upload photos from URLs or Kobo ZIP (background) ─────────────
   const runPhotoFetch = useCallback(async () => {
     if (photoFetchRef.current) return;
@@ -966,27 +938,6 @@ export default function UploadStep({
     setRefreshWarning,
   ]);
 
-  // Auto-start photo upload after Phase 1 completes
-  useEffect(() => {
-    if (
-      uploadDone &&
-      hasPhotoAttachments &&
-      progress.successes + progress.partials > 0 &&
-      !photoFetchStarted &&
-      !uploadFatalError
-    ) {
-      void runPhotoFetch();
-    }
-  }, [
-    hasPhotoAttachments,
-    photoFetchStarted,
-    progress.partials,
-    progress.successes,
-    runPhotoFetch,
-    uploadDone,
-    uploadFatalError,
-  ]);
-
   // ── Derived values ────────────────────────────────────────────────────────
   const { current, total, successes, partials, failures, currentRow } = progress;
   const completedRows = successes + partials + failures;
@@ -1044,84 +995,34 @@ export default function UploadStep({
     ? "View Dataset in Tree Manager"
     : "View Trees in Tree Manager";
 
-  useEffect(() => {
-    if (!isUploadInProgress) {
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setClockMs(Date.now());
-    }, 1_000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [isUploadInProgress]);
-
-  useEffect(() => {
-    if (
-      !allPhasesComplete ||
-      uploadFatalError ||
-      !hasUploadedTrees ||
-      completionModalShownRef.current
-    ) {
-      return;
-    }
-
-    completionModalShownRef.current = true;
-
-    pushModal(
-      {
-        id: MODAL_IDS.UPLOAD_TREES_COMPLETE,
-        content: (
-          <TreeUploadCompleteModal
-            totalCount={total}
-            savedCount={persistedCount}
-            partialCount={partials}
-            failedCount={failures}
-            photoFailureCount={photoFetchProgress.failures}
-            treeManagerHref={treeManagerHref}
-            treeManagerLabel={treeManagerLabel}
-            onUploadMore={onComplete}
-          />
-        ),
-        dialogWidth: "max-w-md",
-      },
-      true,
-    );
-    void show();
-  }, [
-    allPhasesComplete,
-    failures,
-    hasUploadedTrees,
-    onComplete,
-    partials,
+  useUploadStepEffects({
+    did,
+    validRows,
+    establishmentMeans,
+    datasetSelection,
+    uploadStarted,
+    runUpload,
+    uploadDone,
+    hasPhotoAttachments,
     persistedCount,
-    photoFetchProgress.failures,
-    pushModal,
-    show,
+    photoFetchStarted,
+    uploadFatalError,
+    runPhotoFetch,
+    isUploadInProgress,
+    setClockMs,
+    allPhasesComplete,
+    hasUploadedTrees,
+    completionModalShownRef,
     total,
+    partials,
+    failures,
+    photoFailureCount: photoFetchProgress.failures,
     treeManagerHref,
     treeManagerLabel,
-    uploadFatalError,
-  ]);
-
-  useEffect(() => {
-    if (!isUploadInProgress) {
-      return;
-    }
-
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [isUploadInProgress]);
+    onComplete,
+    pushModal,
+    show,
+  });
 
   const attentionRows = rowStatuses
     .map((status, i) => ({ status, row: validRows[i], index: i }))
@@ -1469,78 +1370,4 @@ export default function UploadStep({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// sessionStorage helpers (exported for use by the wizard on mount)
-// ─────────────────────────────────────────────────────────────────────────────
-
-type PendingUploadData = {
-  ownerDid: string;
-  validRows: ValidatedRow[];
-  establishmentMeans: string | null;
-  datasetSelection: UploadDatasetSelection;
-  timestamp: number;
-};
-
-type PendingUploadCandidate = {
-  ownerDid: string;
-  validRows: ValidatedRow[];
-  establishmentMeans?: unknown;
-  datasetSelection?: unknown;
-  timestamp: number;
-};
-
-function isPendingUploadCandidate(
-  value: unknown,
-): value is PendingUploadCandidate {
-  return (
-    isRecord(value) &&
-    typeof value.ownerDid === "string" &&
-    Array.isArray(value.validRows) &&
-    typeof value.timestamp === "number"
-  );
-}
-
-/**
- * Reads pending upload data from sessionStorage.
- * Returns the data if it exists and is less than 10 minutes old, otherwise null.
- */
-export function readPendingUpload(ownerDid: string): PendingUploadData | null {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
-    if (!isPendingUploadCandidate(parsed)) {
-      clearPendingUpload();
-      return null;
-    }
-    if (Date.now() - parsed.timestamp > SESSION_TTL_MS) {
-      clearPendingUpload();
-      return null;
-    }
-    if (parsed.ownerDid !== ownerDid) {
-      return null;
-    }
-    return {
-      ownerDid: parsed.ownerDid,
-      validRows: parsed.validRows,
-      establishmentMeans:
-        typeof parsed.establishmentMeans === "string" ||
-        parsed.establishmentMeans === null
-          ? parsed.establishmentMeans
-          : null,
-      datasetSelection: isUploadDatasetSelection(parsed.datasetSelection)
-        ? parsed.datasetSelection
-        : NO_UPLOAD_DATASET_SELECTION,
-      timestamp: parsed.timestamp,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Clears pending upload data from sessionStorage.
- */
-export function clearPendingUpload(): void {
-  sessionStorage.removeItem(STORAGE_KEY);
-}
+export { readPendingUpload, type PendingUploadData };
