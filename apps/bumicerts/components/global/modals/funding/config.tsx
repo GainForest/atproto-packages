@@ -5,7 +5,7 @@
  * donation settings.
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useModal } from "@/components/ui/modal/context";
 import {
   ModalContent,
@@ -119,6 +119,10 @@ const STATUS_OPTIONS = [
 
 type StatusValue = (typeof STATUS_OPTIONS)[number]["value"];
 
+function isStatusValue(value: string): value is StatusValue {
+  return STATUS_OPTIONS.some((option) => option.value === value);
+}
+
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface FundingConfigModalProps {
@@ -144,11 +148,12 @@ export function FundingConfigModal({
 
   // ── Form state ─────────────────────────────────────────────────────────────
 
+  const initialStatus = existingConfig?.status;
   const [selectedWalletUri, setSelectedWalletUri] = useState<string>(
     existingConfig?.receivingWallet?.uri ?? "",
   );
   const [status, setStatus] = useState<StatusValue>(
-    (existingConfig?.status as StatusValue) ?? "open",
+    initialStatus && isStatusValue(initialStatus) ? initialStatus : "open",
   );
   const [goalInUSD, setGoalInUSD] = useState(existingConfig?.goalInUSD ?? "");
   const [minDonationInUSD, setMinDonationInUSD] = useState(
@@ -165,19 +170,6 @@ export function FundingConfigModal({
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const upsertConfig = trpc.funding.config.upsert.useMutation();
-
-  // Auto-select first valid wallet when none is pre-selected
-  useEffect(() => {
-    if (!selectedWalletUri && evmLinks.length > 0) {
-      const trusted = evmLinks.find(
-        (l) =>
-          l.specialMetadata?.valid && isWalletTrusted(l, facilitatorAddress),
-      );
-      const first = trusted ?? evmLinks[0];
-      const uri = first?.metadata?.uri;
-      if (uri) setSelectedWalletUri(uri);
-    }
-  }, [evmLinks, selectedWalletUri, facilitatorAddress]);
 
   // ── Close ──────────────────────────────────────────────────────────────────
 
@@ -230,7 +222,7 @@ export function FundingConfigModal({
   // ── Save ───────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
-    if (!selectedWalletUri) return;
+    if (!effectiveSelectedWalletUri) return;
 
     setSaveError(null);
     setIsSaving(true);
@@ -240,7 +232,7 @@ export function FundingConfigModal({
         rkey: bumicertRkey,
         receivingWallet: {
           $type: "app.gainforest.funding.config#evmLinkRef",
-          uri: selectedWalletUri,
+          uri: effectiveSelectedWalletUri,
         },
         status,
         updatedAt: new Date().toISOString(),
@@ -265,8 +257,23 @@ export function FundingConfigModal({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  const defaultSelectedWalletUri =
+    evmLinks.find(
+      (link) =>
+        link.specialMetadata?.valid &&
+        isWalletTrusted(link, facilitatorAddress),
+    )?.metadata?.uri ??
+    evmLinks[0]?.metadata?.uri ??
+    "";
+  const hasExplicitSelection = evmLinks.some(
+    (link) => link.metadata?.uri === selectedWalletUri,
+  );
+  const effectiveSelectedWalletUri = hasExplicitSelection
+    ? selectedWalletUri
+    : defaultSelectedWalletUri;
+
   const selectedLink = evmLinks.find(
-    (l) => l.metadata?.uri === selectedWalletUri,
+    (l) => l.metadata?.uri === effectiveSelectedWalletUri,
   );
   const selectedLinkInvalid =
     selectedLink &&
@@ -315,7 +322,7 @@ export function FundingConfigModal({
           ) : (
             <div className="flex items-center gap-2">
               <StyledSelect
-                value={selectedWalletUri}
+                value={effectiveSelectedWalletUri}
                 onChange={setSelectedWalletUri}
                 options={walletOptions}
                 placeholder="Select a wallet"
@@ -350,10 +357,15 @@ export function FundingConfigModal({
           <Label>Status</Label>
           <StyledSelect
             value={status}
-            onChange={(v) => setStatus(v as StatusValue)}
-            options={
-              STATUS_OPTIONS as unknown as { value: string; label: string }[]
-            }
+            onChange={(value) => {
+              if (isStatusValue(value)) {
+                setStatus(value);
+              }
+            }}
+            options={STATUS_OPTIONS.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
           />
         </div>
 
@@ -450,7 +462,7 @@ export function FundingConfigModal({
       <ModalFooter className="flex flex-col gap-2">
         <Button
           onClick={handleSave}
-          disabled={isSaving || !selectedWalletUri}
+          disabled={isSaving || !effectiveSelectedWalletUri}
           className="w-full"
         >
           {isSaving ? "Saving…" : "Save"}

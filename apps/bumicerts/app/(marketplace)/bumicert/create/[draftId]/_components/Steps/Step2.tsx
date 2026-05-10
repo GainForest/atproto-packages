@@ -1,7 +1,12 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import FormField from "../../../../../../../components/ui/FormField";
-import { HandHeartIcon, MessageCircleIcon, SparklesIcon, Loader2Icon } from "lucide-react";
+import {
+  HandHeartIcon,
+  MessageCircleIcon,
+  SparklesIcon,
+  Loader2Icon,
+} from "lucide-react";
 import { useFormStore } from "../../form-store";
 import useNewBumicertStore from "../../store";
 import { Button } from "@/components/ui/button";
@@ -18,9 +23,6 @@ const Step2 = () => {
   const formValues = useFormStore((state) => state.formValues[1]);
   const errors = useFormStore((state) => state.formErrors[1]);
   const setFormValue = useFormStore((state) => state.setFormValue[1]);
-  const updateErrorsAndCompletion = useFormStore(
-    (state) => state.updateErrorsAndCompletion
-  );
 
   // Step 1 values — needed for the AI prompt (title)
   const step1Values = useFormStore((state) => state.formValues[0]);
@@ -32,21 +34,6 @@ const Step2 = () => {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [shortDescriptionEditorKey, setShortDescriptionEditorKey] = useState(0);
-  const [editorText, setEditorText] = useState(shortDescription);
-
-  useEffect(() => {
-    updateErrorsAndCompletion();
-  }, [shouldShowValidationErrors]);
-
-  useEffect(() => {
-    // Keep editor stable while typing (avoid remount on each keystroke),
-    // but remount when value changes from external sources (e.g. AI generate,
-    // hydration) so initialValue is refreshed.
-    if (shortDescription === editorText) return;
-
-    setEditorText(shortDescription);
-    setShortDescriptionEditorKey((prev) => prev + 1);
-  }, [shortDescription, editorText]);
 
   const handleGenerateShortDescription = async () => {
     const descriptionText = extractTextFromLinearDocument(description).trim();
@@ -65,9 +52,13 @@ const Step2 = () => {
 
       if (!res.ok) return;
 
-      const data = (await res.json()) as { shortDescription?: string; success?: boolean };
+      const data = (await res.json()) as {
+        shortDescription?: string;
+        success?: boolean;
+      };
       if (data.success && data.shortDescription) {
         setFormValue("shortDescription", data.shortDescription);
+        setShortDescriptionEditorKey((prev) => prev + 1);
       }
     } catch {
       // Silently fail — user can just type manually
@@ -121,9 +112,11 @@ const Step2 = () => {
           <div className="w-full rounded-md border border-border bg-background overflow-hidden pr-10">
             <BskyRichTextEditor
               key={shortDescriptionEditorKey}
-              initialValue={{ text: shortDescription, facets: shortDescriptionFacets }}
+              initialValue={{
+                text: shortDescription,
+                facets: shortDescriptionFacets,
+              }}
               onChange={(text, facets) => {
-                setEditorText(text);
                 setFormValue("shortDescription", text);
                 setFormValue("shortDescriptionFacets", facets ?? []);
               }}

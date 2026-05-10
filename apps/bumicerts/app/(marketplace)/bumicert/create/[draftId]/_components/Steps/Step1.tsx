@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React from "react";
 import {
   InputGroup,
   InputGroupAddon,
@@ -41,16 +41,9 @@ const Step1 = () => {
   const formValues = useFormStore((state) => state.formValues[0]);
   const errors = useFormStore((state) => state.formErrors[0]);
   const setFormValue = useFormStore((state) => state.setFormValue[0]);
-  const updateErrorsAndCompletion = useFormStore(
-    (state) => state.updateErrorsAndCompletion
-  );
 
   const { projectName, coverImage, workType, projectDateRange, isOngoing } = formValues;
   const [startDate, endDate] = projectDateRange;
-
-  useEffect(() => {
-    updateErrorsAndCompletion();
-  }, []);
 
   const handleOngoingChange = (checked: boolean) => {
     setFormValue("isOngoing", checked);

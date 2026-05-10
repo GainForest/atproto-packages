@@ -1,8 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDownIcon, LightbulbIcon } from "lucide-react";
+import React, { useEffect, useRef } from "react";
 
 import useNewBumicertStore from "../store";
 import { useFormStore } from "../form-store";
@@ -26,15 +24,12 @@ const StepBody = () => {
   // Get dirty state from form store for unsaved changes warning
   const isDirty = useFormStore((state) => state.isDirty);
   const isHydrated = useFormStore((state) => state.isHydrated);
-  const updateErrorsAndCompletion = useFormStore(
-    (state) => state.updateErrorsAndCompletion
-  );
 
   // Show browser warning when user tries to leave with unsaved changes
   // Only enable after form is hydrated (to avoid false positives during initial load)
   useUnsavedChangesWarning(isDirty, isHydrated);
 
-  // Track step views when the step changes, and run validation for the new step
+  // Track step views when the step changes.
   useEffect(() => {
     const stepName = getStepName(currentStep);
 
@@ -58,10 +53,6 @@ const StepBody = () => {
       stepName,
       draftId,
     });
-
-    // Run validation when navigating to a new step
-    updateErrorsAndCompletion();
-
     previousStepRef.current = currentStep;
   }, [currentStep, draftId]);
 
