@@ -38,6 +38,7 @@ import {
   organizationLongDescriptionsMatch,
 } from "./organizationLongDescription";
 import { normalizeLinearDocumentForRecord } from "@/lib/utils/linearDocument";
+import { resolveDashboardMode } from "./uploadDashboardMode";
 
 const RECONCILIATION_INVALIDATE_DELAY_MS = 8_000;
 
@@ -72,30 +73,6 @@ function buildWebsiteUri(
   return (
     value.startsWith("http") ? value : `https://${value}`
   ) as `${string}:${string}`;
-}
-
-type ManageMode = ReturnType<typeof useManageMode>[0];
-
-function resolveDashboardMode(options: {
-  currentKind: AuthenticatedAccountState["kind"];
-  mode: ManageMode;
-}): ManageMode {
-  if (options.currentKind === "unknown" && options.mode === "edit") {
-    return null;
-  }
-
-  if (options.currentKind === "user" && options.mode === "onboard-user") {
-    return null;
-  }
-
-  if (
-    options.currentKind === "organization" &&
-    (options.mode === "onboard-user" || options.mode === "onboard-org")
-  ) {
-    return null;
-  }
-
-  return options.mode;
 }
 
 function resolveEditValue<T>(
@@ -592,8 +569,9 @@ export function ManageDashboardClient({
           nextOrganization,
         }),
       });
+      setMode(null);
     },
-    [did, indexerUtils, startReconciliation],
+    [did, indexerUtils, setMode, startReconciliation],
   );
 
   const handleSave = useCallback(async () => {

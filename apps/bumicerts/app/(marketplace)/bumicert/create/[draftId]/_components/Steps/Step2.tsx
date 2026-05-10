@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import FormField from "../../../../../../../components/ui/FormField";
 import {
   HandHeartIcon,
@@ -15,6 +15,12 @@ import { BskyRichTextEditor } from "@/components/ui/bsky-richtext-editor";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { extractTextFromLinearDocument } from "@/lib/adapters";
 import { links } from "@/lib/links";
+import {
+  createShortDescriptionEditorSyncState,
+  getShortDescriptionEditorKey,
+  reconcileShortDescriptionEditorSyncState,
+  trackShortDescriptionEditorChange,
+} from "./shortDescriptionEditorSync";
 
 const Step2 = () => {
   const { maxStepIndexReached, currentStepIndex } = useNewBumicertStore();
@@ -33,7 +39,23 @@ const Step2 = () => {
   const ownerDid = auth.status === "AUTHENTICATED" ? auth.user.did : "";
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [shortDescriptionEditorKey, setShortDescriptionEditorKey] = useState(0);
+  const shortDescriptionValue = {
+    text: shortDescription,
+    facets: shortDescriptionFacets,
+  };
+  const shortDescriptionEditorSyncRef = useRef(
+    createShortDescriptionEditorSyncState(shortDescriptionValue),
+  );
+
+  shortDescriptionEditorSyncRef.current =
+    reconcileShortDescriptionEditorSyncState(
+      shortDescriptionEditorSyncRef.current,
+      shortDescriptionValue,
+    );
+
+  const shortDescriptionEditorKey = getShortDescriptionEditorKey(
+    shortDescriptionEditorSyncRef.current,
+  );
 
   const handleGenerateShortDescription = async () => {
     const descriptionText = extractTextFromLinearDocument(description).trim();
@@ -58,7 +80,6 @@ const Step2 = () => {
       };
       if (data.success && data.shortDescription) {
         setFormValue("shortDescription", data.shortDescription);
-        setShortDescriptionEditorKey((prev) => prev + 1);
       }
     } catch {
       // Silently fail — user can just type manually
@@ -112,11 +133,16 @@ const Step2 = () => {
           <div className="w-full rounded-md border border-border bg-background overflow-hidden pr-10">
             <BskyRichTextEditor
               key={shortDescriptionEditorKey}
-              initialValue={{
-                text: shortDescription,
-                facets: shortDescriptionFacets,
-              }}
+              initialValue={shortDescriptionValue}
               onChange={(text, facets) => {
+                shortDescriptionEditorSyncRef.current =
+                  trackShortDescriptionEditorChange(
+                    shortDescriptionEditorSyncRef.current,
+                    {
+                      text,
+                      facets: facets ?? [],
+                    },
+                  );
                 setFormValue("shortDescription", text);
                 setFormValue("shortDescriptionFacets", facets ?? []);
               }}

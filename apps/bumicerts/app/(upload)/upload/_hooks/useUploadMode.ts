@@ -3,7 +3,7 @@
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 
 const MODE_VALUES = ["edit", "onboard-user", "onboard-org"] as const;
-type ManageMode = (typeof MODE_VALUES)[number];
+export type ManageMode = (typeof MODE_VALUES)[number];
 
 const modeParser = parseAsStringLiteral(MODE_VALUES);
 
