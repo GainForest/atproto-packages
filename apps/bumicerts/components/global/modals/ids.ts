@@ -23,6 +23,9 @@ export const MODAL_IDS = {
   DONATE_CONFIRM: "donate/confirm",
   DONATE_SUCCESS: "donate/success",
 
+  // Explore
+  EXPLORE_ALL_FILTERS: "explore/all-filters",
+
   // Manage / org management
   MANAGE_IMAGE_EDITOR: "manage/image-editor",
   MANAGE_COUNTRY_SELECTOR: "manage/country-selector",

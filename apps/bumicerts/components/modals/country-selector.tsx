@@ -14,8 +14,6 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 
 const allCountries = Object.entries(countries);
 
-export const CountrySelectorModalId = "country-selector-modal";
-
 const CountrySelectorModal = ({
   initialCountryCode,
   onCountryChange,
@@ -38,8 +36,6 @@ const CountrySelectorModal = ({
     }
   };
 
-  const selectedCountryData =
-    countryCode in countries ? countries[countryCode] : null;
   const [searchText, setSearchText] = useState("");
   const filteredCountries = allCountries.filter(([, countryData]) => {
     return countryData.name.toLowerCase().includes(searchText.toLowerCase());

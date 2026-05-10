@@ -12,9 +12,8 @@ import { format, parseISO } from "date-fns";
 import { LeafletEditor } from "@/components/ui/leaflet-editor";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import CountrySelectorModal, {
-  CountrySelectorModalId,
-} from "@/components/modals/country-selector";
+import { MODAL_IDS } from "@/components/global/modals/ids";
+import CountrySelectorModal from "@/components/modals/country-selector";
 import { useModal } from "@/components/ui/modal/context";
 import {
   Popover,
@@ -63,7 +62,7 @@ export function OrganizationSetupDetailsPanel({
   const handleOpenCountrySelector = () => {
     pushModal(
       {
-        id: CountrySelectorModalId,
+        id: MODAL_IDS.MANAGE_COUNTRY_SELECTOR,
         content: (
           <CountrySelectorModal
             initialCountryCode={form.country}

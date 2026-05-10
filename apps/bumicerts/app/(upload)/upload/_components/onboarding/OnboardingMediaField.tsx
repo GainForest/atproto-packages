@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ImageIcon } from "lucide-react";
-import { ImageEditorModalId } from "@/components/modals/image-editor";
+import { MODAL_IDS } from "@/components/global/modals/ids";
 import { ImageEditorModal } from "@/components/modals/image-editor";
 import { useModal } from "@/components/ui/modal/context";
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group";
@@ -43,7 +43,7 @@ export function OnboardingMediaField({
 
     pushModal(
       {
-        id: ImageEditorModalId,
+        id: MODAL_IDS.MANAGE_IMAGE_EDITOR,
         content: (
           <ImageEditorModal
             title={`Upload ${isPrimary ? primaryLabel.toLowerCase() : "banner"}`}
