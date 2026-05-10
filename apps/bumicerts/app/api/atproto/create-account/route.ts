@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { email, password, handle, inviteCode } = parsedBody.data;
+    const normalizedEmail = email.toLowerCase();
 
     const inviteCodeInfo =
       await sql`SELECT * FROM invites WHERE invite_token = ${inviteCode}`;
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (inviteCodeInfo[0].email !== email) {
+    if (inviteCodeInfo[0].email !== normalizedEmail) {
       return new Response(
         JSON.stringify({ error: "Invite code does not match email" }),
         { status: 400 }
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, handle, inviteCode }),
+        body: JSON.stringify({ email: normalizedEmail, password, handle, inviteCode }),
       }
     );
 

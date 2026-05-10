@@ -360,7 +360,7 @@ export async function POST(req: NextRequest) {
     }
 
     const recipientWallet = wallet;
-    const amountNumber = parseFloat(item.amount);
+    const amountNumber = Number(item.amount);
 
     console.log(`[fund/batch] Processing item ${index + 1}/${resolvedItems.length} for ${item.activityUri}`);
 

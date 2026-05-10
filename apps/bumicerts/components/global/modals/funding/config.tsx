@@ -257,20 +257,27 @@ export function FundingConfigModal({
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const defaultSelectedWalletUri =
-    evmLinks.find(
-      (link) =>
-        link.specialMetadata?.valid &&
-        isWalletTrusted(link, facilitatorAddress),
-    )?.metadata?.uri ??
-    evmLinks[0]?.metadata?.uri ??
-    "";
+  const defaultSelectedWalletUri = existingConfig?.receivingWallet?.uri
+    ? ""
+    : (evmLinks.find(
+        (link) =>
+          link.specialMetadata?.valid &&
+          isWalletTrusted(link, facilitatorAddress),
+      )?.metadata?.uri ??
+      evmLinks[0]?.metadata?.uri ??
+      "");
+  const savedWalletUri = existingConfig?.receivingWallet?.uri ?? "";
+  const savedWalletMissing =
+    savedWalletUri.length > 0 &&
+    !evmLinks.some((link) => link.metadata?.uri === savedWalletUri);
   const hasExplicitSelection = evmLinks.some(
     (link) => link.metadata?.uri === selectedWalletUri,
   );
   const effectiveSelectedWalletUri = hasExplicitSelection
     ? selectedWalletUri
-    : defaultSelectedWalletUri;
+    : savedWalletMissing
+      ? ""
+      : defaultSelectedWalletUri;
 
   const selectedLink = evmLinks.find(
     (l) => l.metadata?.uri === effectiveSelectedWalletUri,
@@ -347,6 +354,15 @@ export function FundingConfigModal({
                 {!selectedLink.specialMetadata?.valid
                   ? "Signature unverified — donations may not be processable."
                   : "Not verified by Bumicerts — re-link through the platform."}
+              </p>
+            </div>
+          )}
+
+          {savedWalletMissing && !hasExplicitSelection && (
+            <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
+              <AlertTriangleIcon className="size-3.5 text-destructive mt-0.5 shrink-0" />
+              <p className="text-xs text-destructive leading-snug">
+                The previously selected wallet is no longer available. Choose a linked wallet before saving.
               </p>
             </div>
           )}
