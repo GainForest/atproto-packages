@@ -12,7 +12,6 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["bun", "node", "react", "react-dom"],
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
