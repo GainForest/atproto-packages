@@ -1,6 +1,6 @@
 # E2E Testing Blueprint (Gherkin + Cucumber.js + Playwright)
 
-This is a copy-first guide for setting up end-to-end tests in a new repo.
+This is a copy-first guide for setting up or restructuring end-to-end tests after `agents/TESTING.md` points you here.
 
 Stack:
 

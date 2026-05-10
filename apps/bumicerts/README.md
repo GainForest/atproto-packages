@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bumicerts
 
-## Getting Started
+Bumicerts is a Next.js App Router application in the monorepo.
 
-First, run the development server:
+## Core Working Rules
+
+- Use `bun` for dependency management and scripts.
+- Do not use npm or pnpm for this app.
+- Read `AGENTS.md`, then `agents/README.md`, before making Bumicerts changes.
+- Treat local Bumicerts docs as the source of truth for implementation patterns.
+
+## Common Commands
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun install
+bun run dev
+bun run lint
+bun run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Documentation Map
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `AGENTS.md` — highest-priority Bumicerts agent constitution
+- `agents/README.md` — mandatory task-to-doc router after `AGENTS.md`
+- `agents/DOC_MAINTENANCE.md` — when agent-facing docs should change and where
+- `agents/ACTIVE_PATHS.md` — canonical ownership map and legacy redirects
+- `agents/TESTING.md` — testing router and command selection
+- `agents/CODE_RULES.md` — type safety, naming, utilities, comments
+- `agents/REACT.md` — state, effects, hooks, component rules
+- `agents/NEXTJS.md` — routes, loading, errors, server/client boundaries
+- `agents/DATA.md` — validation, forms, env, queries, mutations
+- `agents/DESIGN.md` — UI consistency, accessibility, design rules
+- `agents/NEW_ROUTE.md` — new route conventions
+- `agents/MODALS.md` — modal system usage
+- `agents/UPLOAD_ROUTES.md` — `/upload/*` patterns
+- `docs/ARCHITECTURE.md` — target architecture and migration direction
+- `docs/DEPRECATIONS.md` — banned and legacy patterns
+- `docs/decisions/README.md` — durable decisions and approved exceptions
+- `docs/examples/README.md` — canonical examples to copy from
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Engineering Expectations
 
-## Learn More
+- Keep route files thin.
+- Prefer Server Components by default.
+- Use `nuqs` for query parameter state.
+- Validate external input at boundaries.
+- Reuse existing utilities and UI patterns before creating new ones.
+- Avoid duplicate helpers, types, and component patterns.
+- Prefer meaningful code over comments.
 
-To learn more about Next.js, take a look at the following resources:
+## Notes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- This README is intentionally brief.
+- Implementation-specific rules live in the docs listed above.

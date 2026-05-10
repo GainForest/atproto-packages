@@ -1,5 +1,14 @@
 # Upload Routes (`/upload/*`)
 
+## Hard Rules / Non-Negotiables
+
+- Treat `/upload` root as the special SSR-authoritative exception, then resume freshness on the client immediately after hydration.
+- Every `/upload/*` sub-route must include `page.tsx`, `loading.tsx`, and `error.tsx`.
+- For routine edits to an existing organization record, use `update`, not `upsert`.
+- Use `upsert` only for the first-time user → organization upgrade flow on root `/upload`.
+- Serialize image files with `toSerializableFile` and wrap them in the `SmallImage` shape before the tRPC boundary.
+- Edit mode is owned by `nuqs` via `useUploadMode`. Never switch it to Zustand or local component state.
+
 ## Rendering Strategy
 
 `/upload` is the one allowed exception to the old "auth-only server page" rule.

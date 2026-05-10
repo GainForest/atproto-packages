@@ -2,6 +2,8 @@
 
 End-to-end testing setup using Gherkin + Cucumber.js + Playwright.
 
+For agent-facing test routing and check selection, start with `../agents/TESTING.md`.
+
 ## Quick Start
 
 ### 1. Prerequisites
@@ -302,7 +304,7 @@ bun run test:e2e -- --tags "not @auth"
 - Delete the saved state: `rm -rf e2e/.auth/`
 - Next test run will perform fresh OAuth and save new state
 
-See `apps/bumicerts/skills/e2e.md` for more details on the testing framework.
+See `../agents/TESTING.md` for agent-facing routing and `../skills/e2e.md` for framework details.
 
 ## Troubleshooting
 
