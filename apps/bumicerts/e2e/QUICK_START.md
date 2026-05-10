@@ -58,5 +58,3 @@ bun run test:e2e --tags "@smoke"
 For agent-facing routing, see `../agents/TESTING.md`.
 
 For more details, see `TESTING_GUIDE.md`
-
-For test status/coverage, see `TEST_STATUS.md`
