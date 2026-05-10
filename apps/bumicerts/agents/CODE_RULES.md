@@ -64,11 +64,21 @@ These are the default code quality rules for Bumicerts.
   - `temp`
   - `new`
   - `final`
-  - `data`
+- `data`
 - Rename stale names during meaningful refactors instead of preserving drift forever.
+
+## Legacy Code Is Not Precedent
+
+- Legacy code is context, not approval.
+- Do not copy a nearby pattern when it conflicts with governing docs.
+- When touching a legacy area, keep the new code within the rules and reduce the non-abiding surface when that cleanup is safe and proportional.
+- If the only apparent path requires extending a legacy violation or breaking a rule, stop and ask instead of normalizing it.
+- If you encounter non-abiding code and do not fix it, call it out explicitly in the final handoff.
 
 ## Comments
 
+- Prefer names, types, and extracted helpers over explanatory comments.
+- Treat comments as a maintenance dependency. Add them sparingly.
 - Comments must be generic and stateless.
 - Prefer comments for:
   - intent
@@ -77,7 +87,8 @@ These are the default code quality rules for Bumicerts.
   - external protocol requirements
   - reasons behind a tradeoff
 - Do not comment obvious code.
-- Do not write comments that depend on a fragile folder name or temporary implementation detail.
+- Do not write comments that depend on local variable names, function names, file names, routes, or temporary implementation facts unless an external protocol requires the exact token.
+- Delete or rewrite comments whose truth can drift faster than the code.
 - When possible, replace the need for a comment with:
   - a better function name
   - an extracted helper

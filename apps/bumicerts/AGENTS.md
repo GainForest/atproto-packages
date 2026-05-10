@@ -51,6 +51,8 @@ If the task prompt conflicts with a higher-priority local rule, stop and report 
 - Local Bumicerts docs always win over skills.
 - Before editing, be able to name the docs that govern the change. If you cannot, stop and ask.
 - If a key product, architecture, naming, ownership, placement, or pattern choice is ambiguous, stop and ask instead of inventing an answer.
+- Do not treat nearby legacy or non-abiding code as permission to repeat the pattern. Governing docs outrank existing implementation.
+- If the task can be completed within the rules, do that solution and separately report any encountered non-abiding code to the user, even when it stayed out of scope.
 - Before finishing, self-review the change against the same docs you used to implement it.
 - Before finishing, run the documentation maintenance review from `agents/DOC_MAINTENANCE.md` whenever the task introduced durable guidance, durable exceptions, or repeatable patterns.
 - Before claiming completion, report:
@@ -58,12 +60,14 @@ If the task prompt conflicts with a higher-priority local rule, stop and report 
   - which existing patterns or utilities you reused
   - which checks you ran
   - whether documentation maintenance updates were required
+  - any encountered non-abiding or legacy rule-breaking code left untouched
   - any blockers, exceptions, or unrun checks
 
 ## Conflict Protocol
 
 - Do not knowingly violate a higher-priority local rule.
 - If two local docs appear to conflict, stop and report both docs before choosing.
+- If the only apparent solution requires extending a non-abiding pattern or breaking a rule, stop, explain the conflict, ask the user for a reviewed choice, and propose the matching doc or decision update before continuing.
 - If a requested change requires breaking a rule, stop and explain:
   - which rule would be violated
   - why the task conflicts with it
