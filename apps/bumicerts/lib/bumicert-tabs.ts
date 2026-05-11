@@ -1,5 +1,5 @@
 export const BUMICERT_DETAIL_TAB_IDS = [
-  "description",
+  "overview",
   "site-boundaries",
   "donations",
   "timeline",
@@ -8,7 +8,7 @@ export const BUMICERT_DETAIL_TAB_IDS = [
 export type BumicertDetailTab = (typeof BUMICERT_DETAIL_TAB_IDS)[number];
 
 export const BUMICERT_DETAIL_TAB_LABELS: Record<BumicertDetailTab, string> = {
-  "description": "Description",
+  "overview": "Overview",
   "site-boundaries": "Site Boundaries",
   "donations": "Donations",
   "timeline": "Timeline",
