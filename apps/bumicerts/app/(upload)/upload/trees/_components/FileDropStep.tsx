@@ -35,7 +35,7 @@ import {
   buildKoboMediaZipIndex,
   type KoboMediaZipIndex,
 } from "@/lib/upload/kobo-media-zip";
-import TreeDataGuide from "./TreeDataGuide";
+import TreeDataGuide, { KoboExportGuide } from "./TreeDataGuide";
 import type {
   ExistingUploadDatasetSelection,
   UploadDatasetSelection,
@@ -451,8 +451,10 @@ export default function FileDropStep({
 
   return (
     <div className="space-y-5">
-      {/* Tree data guide accordion */}
-      <TreeDataGuide />
+      <div className="space-y-2">
+        <TreeDataGuide />
+        <KoboExportGuide />
+      </div>
 
       {/* Header */}
       <div>
