@@ -8,6 +8,10 @@ import {
 const ManageOption = ({ type }: { type: ManagedEvidenceTabId }) => {
   const { manageHref } = getManagedEvidenceTabConfig(type);
 
+  if (!manageHref) {
+    return null;
+  }
+
   return (
     <div className="flex justify-end">
       <Link

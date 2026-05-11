@@ -23,7 +23,7 @@ type TabBaseConfig = {
 };
 
 type ManagedTabConfig = TabBaseConfig & {
-  manageHref: string;
+  manageHref: string | null;
   emptyLabel: string;
 };
 
@@ -51,7 +51,7 @@ const MANAGED_TAB_CONFIG: Record<ManagedEvidenceTabId, ManagedTabConfig> = {
   biodiversity: {
     label: "Biodiversity",
     icon: LeafIcon,
-    manageHref: links.manage.trees,
+    manageHref: null,
     emptyLabel: "biodiversity observations",
     attachment: {
       title: "Biodiversity Observations",
