@@ -5,9 +5,11 @@ import {
   AlertTriangle,
   CheckCircle2,
   DatabaseIcon,
+  MessageSquareText,
   RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MODAL_IDS } from "@/components/global/modals/ids";
 import { useModal } from "@/components/ui/modal/context";
 import {
   ModalContent,
@@ -16,6 +18,9 @@ import {
   ModalHeader,
   ModalTitle,
 } from "@/components/ui/modal/modal";
+import { TREE_UPLOAD_EVENTS, type TreeUploadEventPayload } from "@/lib/analytics/events";
+import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
+import { TreeUploadFeedbackModal } from "./TreeUploadFeedbackModal";
 
 type TreeUploadCompleteModalProps = {
   totalCount: number;
@@ -25,6 +30,7 @@ type TreeUploadCompleteModalProps = {
   photoFailureCount: number;
   treeManagerHref: string;
   treeManagerLabel: string;
+  analyticsPayload: TreeUploadEventPayload;
   onUploadMore: () => void;
 };
 
@@ -44,9 +50,10 @@ export function TreeUploadCompleteModal({
   photoFailureCount,
   treeManagerHref,
   treeManagerLabel,
+  analyticsPayload,
   onUploadMore,
 }: TreeUploadCompleteModalProps) {
-  const { hide, clear } = useModal();
+  const { hide, clear, pushModal } = useModal();
   const router = useRouter();
 
   const hasRowAttention = partialCount > 0 || failedCount > 0;
@@ -54,20 +61,32 @@ export function TreeUploadCompleteModal({
   const hasAttention = hasRowAttention || hasPhotoAttention;
 
   const handleStayOnSummary = async () => {
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.FEEDBACK_DISMISSED, analyticsPayload);
     await hide();
     clear();
   };
 
   const handleUploadMore = async () => {
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_MORE_CLICKED, analyticsPayload);
     await hide();
     clear();
     onUploadMore();
   };
 
   const handleViewTrees = async () => {
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.VIEW_TREES_CLICKED, analyticsPayload);
     await hide();
     clear();
     router.push(treeManagerHref);
+  };
+
+  const handleFeedback = () => {
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.FEEDBACK_FORM_OPENED, analyticsPayload);
+    pushModal({
+      id: MODAL_IDS.UPLOAD_TREES_FEEDBACK,
+      content: <TreeUploadFeedbackModal analyticsPayload={analyticsPayload} />,
+      dialogWidth: "max-w-4xl",
+    });
   };
 
   return (
@@ -75,7 +94,8 @@ export function TreeUploadCompleteModal({
       <ModalHeader>
         <ModalTitle>Tree upload complete</ModalTitle>
         <ModalDescription>
-          Your upload has finished. Choose what you want to do next.
+          Your upload has finished. Please share beta feedback so we can review
+          issues from your onboarding session and act on them.
         </ModalDescription>
       </ModalHeader>
 
@@ -124,8 +144,12 @@ export function TreeUploadCompleteModal({
         ) : null}
       </div>
 
-      <ModalFooter className="gap-2">
-        <Button onClick={handleViewTrees}>
+      <ModalFooter className="gap-2 sm:flex-wrap">
+        <Button onClick={handleFeedback}>
+          <MessageSquareText />
+          Share feedback
+        </Button>
+        <Button variant="outline" onClick={handleViewTrees}>
           <DatabaseIcon />
           {treeManagerLabel}
         </Button>

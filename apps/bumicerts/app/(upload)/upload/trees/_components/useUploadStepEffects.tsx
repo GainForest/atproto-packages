@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import type { MutableRefObject } from "react";
 import type { ValidatedRow } from "@/lib/upload/types";
 import { MODAL_IDS } from "@/components/global/modals/ids";
+import type { TreeUploadEventPayload } from "@/lib/analytics/events";
+import { trackTreeUploadFeedbackPromptShown } from "@/lib/analytics/hotjar";
 import { TreeUploadCompleteModal } from "./TreeUploadCompleteModal";
 import { persistPendingUpload } from "./upload-session";
 import type { UploadDatasetSelection } from "@/lib/upload/upload-dataset-selection";
@@ -14,6 +16,7 @@ type ModalController = ReturnType<
 
 type UseUploadStepEffectsArgs = {
   did: string;
+  uploadId: string;
   validRows: ValidatedRow[];
   establishmentMeans: string | null;
   datasetSelection: UploadDatasetSelection;
@@ -36,6 +39,7 @@ type UseUploadStepEffectsArgs = {
   photoFailureCount: number;
   treeManagerHref: string;
   treeManagerLabel: string;
+  completionAnalyticsPayload: TreeUploadEventPayload;
   onComplete: () => void;
   pushModal: ModalController["pushModal"];
   show: ModalController["show"];
@@ -43,6 +47,7 @@ type UseUploadStepEffectsArgs = {
 
 export function useUploadStepEffects({
   did,
+  uploadId,
   validRows,
   establishmentMeans,
   datasetSelection,
@@ -65,6 +70,7 @@ export function useUploadStepEffects({
   photoFailureCount,
   treeManagerHref,
   treeManagerLabel,
+  completionAnalyticsPayload,
   onComplete,
   pushModal,
   show,
@@ -76,11 +82,12 @@ export function useUploadStepEffects({
 
     persistPendingUpload({
       ownerDid: did,
+      uploadId,
       validRows,
       establishmentMeans,
       datasetSelection,
     });
-  }, [datasetSelection, did, establishmentMeans, uploadStarted, validRows]);
+  }, [datasetSelection, did, establishmentMeans, uploadId, uploadStarted, validRows]);
 
   useEffect(() => {
     if (!uploadStarted) {
@@ -132,6 +139,7 @@ export function useUploadStepEffects({
     }
 
     completionModalShownRef.current = true;
+    trackTreeUploadFeedbackPromptShown(completionAnalyticsPayload);
 
     pushModal(
       {
@@ -145,6 +153,7 @@ export function useUploadStepEffects({
             photoFailureCount={photoFailureCount}
             treeManagerHref={treeManagerHref}
             treeManagerLabel={treeManagerLabel}
+            analyticsPayload={completionAnalyticsPayload}
             onUploadMore={onComplete}
           />
         ),
@@ -156,6 +165,7 @@ export function useUploadStepEffects({
   }, [
     allPhasesComplete,
     completionModalShownRef,
+    completionAnalyticsPayload,
     failures,
     hasUploadedTrees,
     onComplete,

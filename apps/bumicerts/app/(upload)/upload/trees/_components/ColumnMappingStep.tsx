@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { TREE_UPLOAD_EVENTS } from "@/lib/analytics/events";
+import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
 import {
   Select,
   SelectContent,
@@ -24,6 +26,7 @@ import { AlertTriangle, CheckCircle2, CircleAlertIcon } from "lucide-react";
 const MULTI_MAP_TARGETS = new Set(["photoUrl"]);
 
 type ColumnMappingStepProps = {
+  uploadId: string;
   headers: string[];
   mappings: ColumnMapping[];
   sampleData?: Record<string, string>[];
@@ -84,6 +87,7 @@ function getMappedTarget(
 }
 
 export default function ColumnMappingStep({
+  uploadId,
   headers,
   mappings,
   sampleData,
@@ -161,6 +165,22 @@ export default function ColumnMappingStep({
       updated.push({ sourceColumn, targetField: newTarget });
     }
     onMappingsChange(updated);
+  };
+
+  const handleNext = () => {
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.STEP_COMPLETED, {
+      uploadId,
+      stepIndex: 2,
+      stepName: "mapping",
+      totalColumns: headers.length,
+      mappedColumns: mappings.length,
+      skippedColumns: skippedColumnCount,
+      requiredMissingCount: missingRequired.length,
+      duplicateMappingCount: duplicateSourceColumns.size,
+      expectedSkippedKoboColumnCount,
+      sourceFormat: koboDetection.isKobo ? "kobo" : "generic",
+    });
+    onNext();
   };
 
   return (
@@ -423,7 +443,7 @@ export default function ColumnMappingStep({
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button onClick={onNext} disabled={!allRequiredMapped}>
+        <Button onClick={handleNext} disabled={!allRequiredMapped}>
           Continue to Preview
         </Button>
       </div>

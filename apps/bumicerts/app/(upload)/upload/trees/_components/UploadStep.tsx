@@ -28,6 +28,8 @@ import PhotoAttachModal from "@/components/global/modals/upload/photo-attachment
 import { formatError, isErrorCode } from "@/lib/utils/trpc-errors";
 import { buildTreeDynamicProperties } from "@/lib/upload/tree-dynamic-properties";
 import { getUploadTimeEstimate } from "@/lib/upload/time-estimate";
+import { TREE_UPLOAD_EVENTS, type TreeUploadEventPayload } from "@/lib/analytics/events";
+import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
 import {
   loadKoboMediaZipArchive,
   readKoboMediaZipEntryAsSerializableFile,
@@ -40,11 +42,7 @@ import {
 import { uploadTreeDatasetsQueryKey } from "@/lib/upload/tree-upload-datasets";
 import { type UploadDatasetSelection } from "@/lib/upload/upload-dataset-selection";
 import { useUploadStepEffects } from "./useUploadStepEffects";
-import {
-  clearPendingUpload,
-  readPendingUpload,
-  type PendingUploadData,
-} from "./upload-session";
+import { clearPendingUpload } from "./upload-session";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -137,6 +135,7 @@ function getOccurrenceRkey(status: RowStatus | undefined): string | null {
 // ─────────────────────────────────────────────────────────────────────────────
 
 type UploadStepProps = {
+  uploadId: string;
   did: string;
   validRows: ValidatedRow[];
   koboMediaZipFile: File | null;
@@ -152,6 +151,7 @@ type UploadStepProps = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function UploadStep({
+  uploadId,
   did,
   validRows,
   koboMediaZipFile,
@@ -393,14 +393,31 @@ export default function UploadStep({
     setDatasetUpdateWarning(null);
     setUploadedDatasetUri(null);
 
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_STARTED, {
+      uploadId,
+      datasetMode: datasetSelection.mode,
+      totalRows: validRows.length,
+      photoTotal: photoFetchQueue.length,
+      hasKoboZip: koboMediaZipFile !== null,
+    });
+
     // Clear sessionStorage once upload begins (state is no longer "pending")
     clearPendingUpload();
 
     if (needsKoboMediaZipFile && !koboMediaZipFile) {
+      const completedAtMs = Date.now();
+      trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_FAILED, {
+        uploadId,
+        datasetMode: datasetSelection.mode,
+        totalRows: validRows.length,
+        photoTotal: photoFetchQueue.length,
+        failureReason: "missing_kobo_media_zip",
+        durationSeconds: Math.round((completedAtMs - uploadStartMs) / 1_000),
+      });
       setUploadFatalError(
         "This upload includes KoboToolbox ZIP photos, but the Media Attachments ZIP cannot be restored after a refresh or sign-in redirect. Please start over and select both the CSV export and matching Media Attachments ZIP.",
       );
-      setClockMs(Date.now());
+      setClockMs(completedAtMs);
       setUploadDone(true);
       return;
     }
@@ -421,10 +438,19 @@ export default function UploadStep({
         datasetRkey = dsResult.rkey;
         setUploadedDatasetUri(dsResult.uri);
       } catch {
+        const completedAtMs = Date.now();
+        trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_FAILED, {
+          uploadId,
+          datasetMode: datasetSelection.mode,
+          totalRows: validRows.length,
+          photoTotal: photoFetchQueue.length,
+          failureReason: "dataset_create_failed",
+          durationSeconds: Math.round((completedAtMs - uploadStartMs) / 1_000),
+        });
         setUploadFatalError(
           "Couldn't create the new dataset for this upload. Please try again or continue without a dataset.",
         );
-        setClockMs(Date.now());
+        setClockMs(completedAtMs);
         setUploadDone(true);
         return;
       }
@@ -596,7 +622,19 @@ export default function UploadStep({
         await invalidateTreeQueries();
       }
 
-      setClockMs(Date.now());
+      const completedAtMs = Date.now();
+      trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_COMPLETED, {
+        uploadId,
+        datasetMode: datasetSelection.mode,
+        totalRows: validRows.length,
+        savedRows: successes + partials,
+        partialRows: partials,
+        failedRows: failures,
+        photoTotal: photoFetchQueue.length,
+        hasKoboZip: koboMediaZipFile !== null,
+        durationSeconds: Math.round((completedAtMs - rowUploadStartMs) / 1_000),
+      });
+      setClockMs(completedAtMs);
       setUploadDone(true);
       return;
     }
@@ -746,7 +784,19 @@ export default function UploadStep({
       await invalidateTreeQueries();
     }
 
-    setClockMs(Date.now());
+    const completedAtMs = Date.now();
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_COMPLETED, {
+      uploadId,
+      datasetMode: datasetSelection.mode,
+      totalRows: validRows.length,
+      savedRows: successes + partials,
+      partialRows: partials,
+      failedRows: failures,
+      photoTotal: photoFetchQueue.length,
+      hasKoboZip: koboMediaZipFile !== null,
+      durationSeconds: Math.round((completedAtMs - rowUploadStartMs) / 1_000),
+    });
+    setClockMs(completedAtMs);
     setUploadDone(true);
   }, [
     appendExistingDataset,
@@ -762,7 +812,9 @@ export default function UploadStep({
     invalidateTreeQueries,
     koboMediaZipFile,
     needsKoboMediaZipFile,
+    photoFetchQueue.length,
     updateDataset,
+    uploadId,
     validRows,
   ]);
 
@@ -774,6 +826,14 @@ export default function UploadStep({
     setClockMs(photoFetchStartMs);
     setPhotoFetchStartedAtMs(photoFetchStartMs);
     setPhotoFetchStarted(true);
+
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.PHOTO_UPLOAD_STARTED, {
+      uploadId,
+      datasetMode: datasetSelection.mode,
+      totalRows: validRows.length,
+      photoTotal: photoFetchQueue.length,
+      hasKoboZip: koboMediaZipFile !== null,
+    });
 
     let successes = 0;
     let failures = 0;
@@ -920,7 +980,18 @@ export default function UploadStep({
       }));
     }
 
-    setClockMs(Date.now());
+    const completedAtMs = Date.now();
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.PHOTO_UPLOAD_COMPLETED, {
+      uploadId,
+      datasetMode: datasetSelection.mode,
+      totalRows: validRows.length,
+      photoTotal: photoFetchQueue.length,
+      photoSucceeded: successes,
+      photoFailed: failures,
+      hasKoboZip: koboMediaZipFile !== null,
+      durationSeconds: Math.round((completedAtMs - photoFetchStartMs) / 1_000),
+    });
+    setClockMs(completedAtMs);
     setPhotoFetchDone(true);
 
     if (successes > 0) {
@@ -930,12 +1001,15 @@ export default function UploadStep({
     }
   }, [
     createMultimedia,
+    datasetSelection.mode,
     did,
     indexerUtils,
     koboMediaZipFile,
     photoFetchQueue,
     rowStatuses,
     setRefreshWarning,
+    uploadId,
+    validRows.length,
   ]);
 
   // ── Derived values ────────────────────────────────────────────────────────
@@ -994,9 +1068,48 @@ export default function UploadStep({
   const treeManagerLabel = uploadedDatasetUri
     ? "View Dataset in Tree Manager"
     : "View Trees in Tree Manager";
+  const uploadDurationSeconds = uploadStartedAtMs
+    ? Math.max(0, Math.round((clockMs - uploadStartedAtMs) / 1_000))
+    : null;
+  const completionAnalyticsPayload = useMemo<TreeUploadEventPayload>(() => {
+    const payload: TreeUploadEventPayload = {
+      uploadId,
+      datasetMode: datasetSelection.mode,
+      totalRows: total,
+      savedRows: persistedCount,
+      partialRows: partials,
+      failedRows: failures,
+      photoTotal: photoFetchProgress.total,
+      photoSucceeded: photoFetchProgress.successes,
+      photoFailed: photoFetchProgress.failures,
+      hasKoboZip: koboMediaZipFile !== null,
+    };
+
+    if (uploadDurationSeconds !== null) {
+      return {
+        ...payload,
+        durationSeconds: uploadDurationSeconds,
+      };
+    }
+
+    return payload;
+  }, [
+    datasetSelection.mode,
+    failures,
+    koboMediaZipFile,
+    partials,
+    persistedCount,
+    photoFetchProgress.failures,
+    photoFetchProgress.successes,
+    photoFetchProgress.total,
+    total,
+    uploadDurationSeconds,
+    uploadId,
+  ]);
 
   useUploadStepEffects({
     did,
+    uploadId,
     validRows,
     establishmentMeans,
     datasetSelection,
@@ -1019,6 +1132,7 @@ export default function UploadStep({
     photoFailureCount: photoFetchProgress.failures,
     treeManagerHref,
     treeManagerLabel,
+    completionAnalyticsPayload,
     onComplete,
     pushModal,
     show,
@@ -1370,4 +1484,4 @@ export default function UploadStep({
   );
 }
 
-export { readPendingUpload, type PendingUploadData };
+export { readPendingUpload, type PendingUploadData } from "./upload-session";
