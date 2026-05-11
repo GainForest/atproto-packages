@@ -100,7 +100,9 @@ const ModalWrapper = ({
           duration: transitionDurationInMs / 1000,
         }}
         className={
-          isActive ? "" : "absolute top-0 left-0 right-0 pointer-events-none"
+          isActive
+            ? "relative min-h-0 min-w-0"
+            : "pointer-events-none absolute inset-0 overflow-hidden"
         }
         aria-hidden={!isActive}
         tabIndex={-1}
