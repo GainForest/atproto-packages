@@ -10,12 +10,16 @@
 
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { AudioRecordingItem } from "@/graphql/indexer/queries/audio";
-import type { OccurrenceItem } from "@/graphql/indexer/queries/occurrences";
-import type { CertifiedLocation } from "@/graphql/indexer/queries/locations";
+import type {
+  AudioRecordingItem,
+  CertifiedLocation,
+  DatasetItem,
+  OccurrenceItem,
+} from "@/graphql/indexer/queries";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import AudioEvidencePicker from "./AudioEvidencePicker";
-import TreeEvidencePicker from "./TreeEvidencePicker";
+import DatasetEvidencePicker from "./DatasetEvidencePicker";
+import BiodiversityEvidencePicker from "./BiodiversityEvidencePicker";
 import SiteEvidencePicker from "./SiteEvidencePicker";
 import FileEvidencePicker from "./FileEvidencePicker";
 import { ListSkeleton } from "./shared/RecordList";
@@ -74,11 +78,14 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
     indexerTrpc.audio.list.useQuery({ did: organizationDid });
   const { data: occurrenceData, isLoading: occurrenceLoading } =
     indexerTrpc.dwc.occurrences.useQuery({ did: organizationDid });
+  const { data: datasetData, isLoading: datasetLoading } =
+    indexerTrpc.datasets.list.useQuery({ did: organizationDid });
   const { data: locationData, isLoading: locationLoading } =
     indexerTrpc.locations.list.useQuery({ did: organizationDid });
 
   const audioItems: AudioRecordingItem[] = audioData ?? [];
   const occurrenceItems: OccurrenceItem[] = occurrenceData ?? [];
+  const datasetItems: DatasetItem[] = datasetData ?? [];
   const locationItems: CertifiedLocation[] = locationData ?? [];
 
   // ── Selection ──────────────────────────────────────────────────────────────
@@ -101,7 +108,7 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
                 onClick={() => setActiveTab(id)}
                 className="h-auto hover:bg-accent hover:text-primary rounded-2xl shadow-none flex flex-col items-start justify-between"
               >
-                <Icon className="size-6 opacity-40" />
+                <Icon className="opacity-40" />
                 <span className="text-xl">{label}</span>
               </Button>
             );
@@ -143,8 +150,15 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
             />
           </LoadingWrapper>
         ) : activeTab === "trees" ? (
+          <LoadingWrapper isLoading={datasetLoading || occurrenceLoading}>
+            <DatasetEvidencePicker
+              datasets={datasetItems}
+              occurrences={occurrenceItems}
+            />
+          </LoadingWrapper>
+        ) : activeTab === "biodiversity" ? (
           <LoadingWrapper isLoading={occurrenceLoading}>
-            <TreeEvidencePicker
+            <BiodiversityEvidencePicker
               data={occurrenceItems}
             />
           </LoadingWrapper>

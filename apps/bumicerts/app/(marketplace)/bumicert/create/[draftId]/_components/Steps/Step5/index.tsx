@@ -54,6 +54,11 @@ import {
 const FEEDBACK_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSfCTtRzKzfwmnpJoPFYyOeGokTlRcKkvpb-Urme84gpBrCCPA/viewform";
 
+function getBumicertIdFromUri(uri: string): string {
+  const parsed = parseAtUri(uri);
+  return `${parsed.did}-${parsed.rkey}`;
+}
+
 const ProgressItem = ({
   iconset,
   title,
@@ -511,20 +516,31 @@ const Step5 = () => {
 
               {/* Action buttons */}
               <div className="mt-4 flex flex-col gap-2 w-full items-center">
-                {/* Primary: View Bumicert */}
+                {/* Primary: continue into evidence linking */}
                 <Button className="w-full md:w-fit" asChild>
                   <Link
-                    href={links.bumicert.view(
-                      `${parseAtUri(createdBumicertResponse.uri).did}-${parseAtUri(createdBumicertResponse.uri).rkey}`,
+                    href={links.bumicert.viewTab(
+                      getBumicertIdFromUri(createdBumicertResponse.uri),
+                      "timeline",
                     )}
                   >
-                    View Bumicert <ArrowRightIcon />
+                    Link evidence now <ArrowRightIcon />
+                  </Link>
+                </Button>
+
+                <Button variant="outline" className="w-full md:w-fit" asChild>
+                  <Link
+                    href={links.bumicert.view(
+                      getBumicertIdFromUri(createdBumicertResponse.uri),
+                    )}
+                  >
+                    View Bumicert
                   </Link>
                 </Button>
 
                 {/* Secondary: Set Up Donations */}
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   className="w-full md:w-fit"
                   onClick={handleOpenFundingConfig}
                 >

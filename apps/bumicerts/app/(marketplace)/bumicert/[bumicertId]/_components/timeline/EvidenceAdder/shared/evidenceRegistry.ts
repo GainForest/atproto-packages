@@ -1,11 +1,13 @@
-import { FileIcon, MapPinIcon, MicIcon, TreesIcon } from "lucide-react";
+import { FileTextIcon, LeafIcon, MapPinIcon, MicIcon, TreesIcon } from "lucide-react";
 import { links } from "@/lib/links";
 
-export type EvidenceTabId = "audio" | "trees" | "sites" | "files";
+export type EvidenceTabId = "audio" | "trees" | "biodiversity" | "sites" | "files";
 export type ManagedEvidenceTabId = Exclude<EvidenceTabId, "files">;
 export type EvidenceAttachmentContentType =
   | "audio"
   | "occurrence"
+  | "tree-dataset"
+  | "biodiversity"
   | "location"
   | "evidence";
 
@@ -40,10 +42,20 @@ const MANAGED_TAB_CONFIG: Record<ManagedEvidenceTabId, ManagedTabConfig> = {
     label: "Trees",
     icon: TreesIcon,
     manageHref: links.manage.trees,
-    emptyLabel: "tree occurrences",
+    emptyLabel: "tree datasets",
     attachment: {
-      title: "Tree Occurrences",
-      contentType: "occurrence",
+      title: "Tree Data Set",
+      contentType: "tree-dataset",
+    },
+  },
+  biodiversity: {
+    label: "Biodiversity",
+    icon: LeafIcon,
+    manageHref: links.manage.trees,
+    emptyLabel: "biodiversity observations",
+    attachment: {
+      title: "Biodiversity Observations",
+      contentType: "biodiversity",
     },
   },
   sites: {
@@ -59,10 +71,10 @@ const MANAGED_TAB_CONFIG: Record<ManagedEvidenceTabId, ManagedTabConfig> = {
 };
 
 const FILE_TAB_CONFIG: TabBaseConfig = {
-  label: "Files",
-  icon: FileIcon,
+  label: "Documents",
+  icon: FileTextIcon,
   attachment: {
-    title: "Files",
+    title: "Documents",
     contentType: "evidence",
   },
 };
@@ -79,6 +91,10 @@ export const EVIDENCE_TABS: Array<
   {
     id: "trees",
     ...MANAGED_TAB_CONFIG.trees,
+  },
+  {
+    id: "biodiversity",
+    ...MANAGED_TAB_CONFIG.biodiversity,
   },
   {
     id: "sites",

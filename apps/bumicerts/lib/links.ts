@@ -1,4 +1,5 @@
 import { clientEnv } from "./env/client";
+import type { BumicertDetailTab } from "./bumicert-tabs";
 
 type DidDynamicLink = (did?: string) => string;
 const didCatcher = (callback: (did: string) => string): DidDynamicLink => {
@@ -12,6 +13,19 @@ const HYPERLABEL_BASE_URL = "https://hyperlabel-production.up.railway.app";
 const GREEN_GLOBE_PREVIEW_BASE_URL =
   clientEnv.NEXT_PUBLIC_GREEN_GLOBE_URL?.trim().replace(/\/$/, "") ??
   DEFAULT_GREEN_GLOBE_PREVIEW_BASE_URL;
+
+function bumicertViewPath(didOrId: string, rkey?: string): string {
+  if (rkey) {
+    return `/bumicert/${encodeURIComponent(didOrId)}-${encodeURIComponent(rkey)}`;
+  }
+
+  return `/bumicert/${didOrId}`;
+}
+
+function withBumicertTab(path: string, tab: BumicertDetailTab): string {
+  const query = new URLSearchParams({ tab });
+  return `${path}?${query.toString()}`;
+}
 
 export const links = {
   root: "/",
@@ -63,12 +77,10 @@ export const links = {
     // 1. Full id (did-rkey format) - for backward compatibility
     // 2. Separate did and rkey parameters
     view: (didOrId: string, rkey?: string) => {
-      if (rkey) {
-        // Two parameters: did and rkey
-        return `/bumicert/${encodeURIComponent(didOrId)}-${encodeURIComponent(rkey)}`;
-      }
-      // One parameter: already formatted id (did-rkey)
-      return `/bumicert/${didOrId}`;
+      return bumicertViewPath(didOrId, rkey);
+    },
+    viewTab: (didOrId: string, tab: BumicertDetailTab, rkey?: string) => {
+      return withBumicertTab(bumicertViewPath(didOrId, rkey), tab);
     },
     api: {
       generateShortDescription:

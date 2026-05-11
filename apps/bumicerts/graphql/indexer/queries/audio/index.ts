@@ -83,7 +83,65 @@ const document = graphql(`
   }
 `);
 
+const byUriDocument = graphql(`
+  query AudioRecordingByUri($uri: String!) {
+    appGainforestAcAudioByUri(uri: $uri) {
+      did
+      uri
+      rkey
+      cid
+      createdAt
+      name
+      description {
+        text
+        facets {
+          index {
+            byteStart
+            byteEnd
+          }
+          features {
+            ... on AppBskyRichtextFacetMention {
+              did
+            }
+            ... on AppBskyRichtextFacetLink {
+              uri
+            }
+            ... on AppBskyRichtextFacetTag {
+              tag
+            }
+          }
+        }
+      }
+      blob {
+        file {
+          ref
+          mimeType
+          size
+        }
+      }
+      metadata {
+        bitDepth
+        channels
+        codec
+        duration
+        fileFormat
+        fileSizeBytes
+        filterHighPassHz
+        filterLowPassHz
+        maxFrequencyHz
+        minFrequencyHz
+        recordedAt
+        sampleRate
+        signalToNoiseRatio
+      }
+    }
+  }
+`);
+
 type AudioNode = ConnectionNode<ResultOf<typeof document>["appGainforestAcAudio"]>;
+type AudioByUriNode = NonNullable<
+  ResultOf<typeof byUriDocument>["appGainforestAcAudioByUri"]
+>;
 
 export type AudioRecordingItem = {
   metadata: {
@@ -174,7 +232,7 @@ function normalizeAudioMetadata(metadata: AudioNode["metadata"]): unknown {
   return normalized;
 }
 
-async function normalizeAudio(node: AudioNode): Promise<AudioRecordingItem> {
+async function normalizeAudio(node: AudioNode | AudioByUriNode): Promise<AudioRecordingItem> {
   const resolvedBlob = await toResolvedLegacyBlob(node.blob?.file ?? null, node.did);
 
   return {
@@ -230,4 +288,18 @@ export async function fetch(params: Params): Promise<Result> {
   }
 
   return allAudio;
+}
+
+export async function fetchByUris(uris: string[]): Promise<Result> {
+  const uniqueUris = Array.from(new Set(uris.filter((uri) => uri.length > 0)));
+  const audio = await Promise.all(
+    uniqueUris.map(async (uri) => {
+      const res = await graphqlClient.request(byUriDocument, { uri });
+      return res.appGainforestAcAudioByUri
+        ? await normalizeAudio(res.appGainforestAcAudioByUri)
+        : null;
+    }),
+  );
+
+  return audio.filter((item): item is AudioRecordingItem => item !== null);
 }

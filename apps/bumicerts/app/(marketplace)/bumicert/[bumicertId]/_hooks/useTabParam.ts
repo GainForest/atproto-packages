@@ -1,22 +1,15 @@
 "use client";
 
 import { parseAsStringLiteral, useQueryState } from "nuqs";
+import {
+  BUMICERT_DETAIL_TAB_IDS,
+  BUMICERT_DETAIL_TAB_LABELS,
+  type BumicertDetailTab,
+} from "@/lib/bumicert-tabs";
 
-export const TAB_IDS = [
-  "description",
-  "site-boundaries",
-  "donations",
-  "timeline",
-] as const;
-
-export type TabId = (typeof TAB_IDS)[number];
-
-export const TAB_LABELS: Record<TabId, string> = {
-  "description": "Description",
-  "site-boundaries": "Site Boundaries",
-  "donations": "Donations",
-  "timeline": "Timeline",
-};
+export const TAB_IDS = BUMICERT_DETAIL_TAB_IDS;
+export const TAB_LABELS = BUMICERT_DETAIL_TAB_LABELS;
+export type TabId = BumicertDetailTab;
 
 const tabParser = parseAsStringLiteral(TAB_IDS).withDefault("description");
 
