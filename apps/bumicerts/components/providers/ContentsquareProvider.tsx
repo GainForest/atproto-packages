@@ -1,0 +1,231 @@
+"use client";
+
+import Script from "next/script";
+import { usePathname } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { trackPageViewed } from "@/lib/analytics/hotjar";
+import {
+  setAnalyticsConsent,
+  type AnalyticsConsent,
+} from "@/lib/analytics/consent";
+import { isTreeUploadAnalyticsPath } from "@/lib/analytics/tree-upload";
+import { useAnalyticsConsent } from "@/lib/analytics/use-analytics-consent";
+import { clientEnv } from "@/lib/env/client";
+import { links } from "@/lib/links";
+
+type ContentsquareProviderProps = {
+  children: React.ReactNode;
+  enabled: boolean;
+};
+
+function getTrackedPath(pathname: string): string {
+  if (typeof window === "undefined") {
+    return pathname;
+  }
+
+  const search = window.location.search;
+  const hash = window.location.hash;
+  const hashSuffix =
+    hash.length > 0 ? `${search.length > 0 ? "&" : "?"}__${hash.slice(1)}` : "";
+
+  return `${pathname}${search}${hashSuffix}`;
+}
+
+function pushContentsquarePrivacyCommand(command: "optin" | "optout"): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window._uxa = window._uxa ?? [];
+  window._uxa.push([command]);
+}
+
+function optInContentsquare(): void {
+  pushContentsquarePrivacyCommand("optin");
+}
+
+function optOutContentsquare(): void {
+  pushContentsquarePrivacyCommand("optout");
+}
+
+function isContentsquareLoaded(): boolean {
+  return typeof window !== "undefined" && window.CS_CONF !== undefined;
+}
+
+function ContentsquareRouteTracker({
+  consent,
+  isTreeUploadSurface,
+}: {
+  consent: AnalyticsConsent | null;
+  isTreeUploadSurface: boolean;
+}) {
+  const pathname = usePathname();
+  const lastTrackedPathRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isTreeUploadSurface) {
+      lastTrackedPathRef.current = null;
+      return;
+    }
+
+    if (consent !== "granted" || !pathname) {
+      return;
+    }
+
+    const path = getTrackedPath(pathname);
+
+    if (lastTrackedPathRef.current === null) {
+      lastTrackedPathRef.current = path;
+      if (isContentsquareLoaded()) {
+        trackPageViewed({ path });
+      }
+      return;
+    }
+
+    if (lastTrackedPathRef.current === path) {
+      return;
+    }
+
+    lastTrackedPathRef.current = path;
+    trackPageViewed({ path });
+  }, [consent, isTreeUploadSurface, pathname]);
+
+  return null;
+}
+
+function ContentsquareConsentCard({
+  onAccept,
+  onDecline,
+}: {
+  onAccept: () => void;
+  onDecline: () => void;
+}) {
+  return (
+    <div
+      className="fixed right-4 bottom-4 left-4 z-40 sm:left-auto sm:right-6 sm:bottom-6 sm:w-full sm:max-w-md"
+      role="region"
+      aria-labelledby="contentsquare-consent-title"
+      aria-describedby="contentsquare-consent-description"
+    >
+      <div className="rounded-3xl border border-border bg-background/95 p-5 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/85">
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <p
+              id="contentsquare-consent-title"
+              className="text-sm font-medium text-foreground"
+            >
+              Help us improve tree data onboarding
+            </p>
+            <p
+              id="contentsquare-consent-description"
+              className="text-xs leading-relaxed text-muted-foreground"
+            >
+              With your consent, Bumicerts uses Contentsquare during this beta
+              to record your session and collect interaction analytics,
+              especially around tree data onboarding. This helps us review where
+              testers get stuck and turn feedback into fixes. You can decline
+              and continue using the upload flow.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button variant="outline" onClick={onDecline}>
+              Decline recording
+            </Button>
+            <Button onClick={onAccept}>Accept recording</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ContentsquareProvider({
+  children,
+  enabled,
+}: ContentsquareProviderProps) {
+  const pathname = usePathname();
+  const consent = useAnalyticsConsent();
+
+  const tagId = clientEnv.NEXT_PUBLIC_CONTENTSQUARE_TAG_ID;
+  const scriptSrc = useMemo(
+    () => (tagId ? links.external.contentsquareUxaTag(tagId) : null),
+    [tagId],
+  );
+  const isTreeUploadSurface =
+    enabled && pathname ? isTreeUploadAnalyticsPath(pathname) : false;
+  const shouldShowConsentCard =
+    scriptSrc !== null && consent === null && isTreeUploadSurface;
+
+  const handleAccept = () => {
+    setAnalyticsConsent("granted");
+  };
+
+  const handleDecline = () => {
+    setAnalyticsConsent("denied");
+    optOutContentsquare();
+  };
+
+  useEffect(() => {
+    if (consent !== "granted" || scriptSrc === null) {
+      return;
+    }
+
+    if (!isTreeUploadSurface) {
+      optOutContentsquare();
+      return;
+    }
+
+    optInContentsquare();
+
+    return () => {
+      optOutContentsquare();
+    };
+  }, [consent, isTreeUploadSurface, scriptSrc]);
+
+  return (
+    <>
+      {consent === "granted" && scriptSrc && isTreeUploadSurface ? (
+        <Script id="contentsquare-main-tag" strategy="afterInteractive">
+          {`
+            (function () {
+              window._uxa = window._uxa || [];
+              function getTrackedPath() {
+                var search = window.location.search;
+                var hash = window.location.hash;
+                var hashSuffix = hash ? (search ? "&" : "?") + "__" + hash.slice(1) : "";
+                return window.location.pathname + search + hashSuffix;
+              }
+              if (typeof CS_CONF === "undefined") {
+                window._uxa.push(["setPath", getTrackedPath()]);
+                var mt = document.createElement("script");
+                mt.type = "text/javascript";
+                mt.async = true;
+                mt.src = ${JSON.stringify(scriptSrc)};
+                document.getElementsByTagName("head")[0].appendChild(mt);
+              } else {
+                window._uxa.push(["trackPageview", getTrackedPath()]);
+              }
+            })();
+          `}
+        </Script>
+      ) : null}
+
+      <Suspense fallback={null}>
+        <ContentsquareRouteTracker
+          consent={consent}
+          isTreeUploadSurface={isTreeUploadSurface}
+        />
+      </Suspense>
+
+      {children}
+
+      {shouldShowConsentCard ? (
+        <ContentsquareConsentCard
+          onAccept={handleAccept}
+          onDecline={handleDecline}
+        />
+      ) : null}
+    </>
+  );
+}

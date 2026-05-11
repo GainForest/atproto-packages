@@ -11,6 +11,7 @@ import {
   AUTH_EVENTS,
   MARKETPLACE_EVENTS,
   ERROR_EVENTS,
+  TREE_UPLOAD_EVENTS,
   type PageViewedPayload,
   type WalletConnectedPayload,
   type BumicertFlowStartedPayload,
@@ -20,58 +21,102 @@ import {
   type FlowAbandonedPayload,
   type ErrorPayload,
   type BumicertStepName,
+  type TreeUploadEventName,
+  type TreeUploadEventPayload,
 } from "./events";
 
 import * as supabaseTracking from "./supabase-tracking";
+import { hasAnalyticsConsent } from "./consent";
+import { isTreeUploadAnalyticsPath } from "./tree-upload";
+
+type ContentsquareCommand = [string, ...unknown[]];
 
 // Extend Window interface to include Hotjar
 declare global {
   interface Window {
     hj?: (command: string, ...args: unknown[]) => void;
+    _uxa?: ContentsquareCommand[];
+    CS_CONF?: unknown;
   }
 }
 
-// Check if Hotjar/Contentsquare is available
-const isHotjarReady = (): boolean => {
-  return typeof window !== "undefined" && typeof window.hj === "function";
+const hasTreeUploadRecordingAccess = (): boolean => {
+  return (
+    hasAnalyticsConsent() &&
+    typeof window !== "undefined" &&
+    isTreeUploadAnalyticsPath(window.location.pathname)
+  );
 };
 
-/**
- * Wait for Hotjar to be ready (used internally)
- */
-const waitForHotjar = (callback: () => void, maxAttempts = 50): void => {
-  let attempts = 0;
-  const interval = setInterval(() => {
-    attempts++;
-    if (isHotjarReady()) {
-      clearInterval(interval);
-      callback();
-    } else if (attempts >= maxAttempts) {
-      clearInterval(interval);
-      console.warn("[Hotjar] Timed out waiting for Hotjar to load");
-    }
-  }, 100);
+// Check if Hotjar/Contentsquare is available
+const isHotjarReady = (): boolean => {
+  return (
+    hasTreeUploadRecordingAccess() &&
+    typeof window !== "undefined" &&
+    typeof window.hj === "function"
+  );
+};
+
+const getContentsquareQueue = (): ContentsquareCommand[] | null => {
+  if (!hasTreeUploadRecordingAccess() || typeof window === "undefined") {
+    return null;
+  }
+
+  window._uxa = window._uxa ?? [];
+  return window._uxa;
+};
+
+const pushContentsquareCommand = (command: ContentsquareCommand): void => {
+  const queue = getContentsquareQueue();
+  if (!queue) {
+    return;
+  }
+
+  queue.push(command);
+};
+
+const toDynamicValue = (value: unknown): string | number | null => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.length > 0) {
+    return value;
+  }
+
+  if (typeof value === "boolean") {
+    return value ? "true" : "false";
+  }
+
+  return null;
 };
 
 /**
  * Track a custom event
  */
 export const trackEvent = (eventName: string): void => {
-  const executeTracking = () => {
-    if (!isHotjarReady()) return;
-
-    try {
-      window.hj?.("event", eventName);
-    } catch (error) {
-      console.error(`[Hotjar] Failed to track event "${eventName}":`, error);
-    }
-  };
-
-  if (isHotjarReady()) {
-    executeTracking();
-  } else {
-    waitForHotjar(executeTracking);
+  if (!hasAnalyticsConsent()) {
+    return;
   }
+
+  pushContentsquareCommand(["trackPageEvent", eventName]);
+
+  if (!isHotjarReady()) {
+    return;
+  }
+
+  try {
+    window.hj?.("event", eventName);
+  } catch (error) {
+    console.error(`[Hotjar] Failed to track event "${eventName}":`, error);
+  }
+};
+
+/**
+ * Track a Contentsquare dynamic variable for aggregate context.
+ */
+export const trackDynamicVariable = (key: string, value: string | number): void => {
+  pushContentsquareCommand(["trackDynamicVariable", { key, value }]);
 };
 
 /**
@@ -81,20 +126,25 @@ export const identifyUser = (
   userId: string | null,
   attributes: Record<string, string | number | boolean>
 ): void => {
-  const executeTracking = () => {
-    if (!isHotjarReady()) return;
+  if (!hasAnalyticsConsent()) {
+    return;
+  }
 
-    try {
-      window.hj?.("identify", userId, attributes);
-    } catch (error) {
-      console.error("[Hotjar] Failed to identify user:", error);
+  for (const [key, value] of Object.entries(attributes)) {
+    const dynamicValue = toDynamicValue(value);
+    if (dynamicValue !== null) {
+      trackDynamicVariable(`user_${key}`, dynamicValue);
     }
-  };
+  }
 
-  if (isHotjarReady()) {
-    executeTracking();
-  } else {
-    waitForHotjar(executeTracking);
+  if (!isHotjarReady()) {
+    return;
+  }
+
+  try {
+    window.hj?.("identify", userId, attributes);
+  } catch (error) {
+    console.error("[Hotjar] Failed to identify user:", error);
   }
 };
 
@@ -102,21 +152,12 @@ export const identifyUser = (
  * Update state/tag for filtering recordings
  */
 export const tagRecording = (tags: string[]): void => {
-  const executeTracking = () => {
-    if (!isHotjarReady()) return;
-
-    try {
-      window.hj?.("stateChange", tags.join("/"));
-    } catch (error) {
-      console.error("[Hotjar] Failed to tag recording:", error);
-    }
-  };
-
-  if (isHotjarReady()) {
-    executeTracking();
-  } else {
-    waitForHotjar(executeTracking);
+  if (!hasAnalyticsConsent()) {
+    return;
   }
+
+  const tagValue = tags.join("/").slice(0, 255);
+  trackDynamicVariable("recording_tag", tagValue);
 };
 
 // ============================================
@@ -125,17 +166,10 @@ export const tagRecording = (tags: string[]): void => {
 
 export const trackPageViewed = (payload: PageViewedPayload): void => {
   trackEvent(NAVIGATION_EVENTS.PAGE_VIEWED);
-  // Use stateChange to update virtual page for SPA navigation
-  const executeStateChange = () => {
-    if (isHotjarReady()) {
-      window.hj?.("stateChange", payload.path);
-    }
-  };
+  pushContentsquareCommand(["trackPageview", payload.path]);
 
   if (isHotjarReady()) {
-    executeStateChange();
-  } else {
-    waitForHotjar(executeStateChange);
+    window.hj?.("stateChange", payload.path);
   }
 };
 
@@ -168,6 +202,95 @@ export const trackBumicertCardClicked = (bumicertId: string): void => {
 export const trackBumicertDetailViewed = (bumicertId: string): void => {
   trackEvent(`${MARKETPLACE_EVENTS.BUMICERT_DETAIL_VIEWED}_${bumicertId}`);
   trackEvent(MARKETPLACE_EVENTS.BUMICERT_DETAIL_VIEWED);
+};
+
+// ============================================
+// Tree Upload Beta Events
+// ============================================
+
+const TREE_UPLOAD_DYNAMIC_KEYS: Array<keyof TreeUploadEventPayload> = [
+  "uploadId",
+  "stepIndex",
+  "stepName",
+  "datasetMode",
+  "sourceFormat",
+  "fileExtension",
+  "fileSizeBucket",
+  "mediaZipSizeBucket",
+  "totalRows",
+  "validRows",
+  "invalidRows",
+  "totalColumns",
+  "mappedColumns",
+  "skippedColumns",
+  "requiredMissingCount",
+  "duplicateMappingCount",
+  "expectedSkippedKoboColumnCount",
+  "savedRows",
+  "partialRows",
+  "failedRows",
+  "photoTotal",
+  "photoSucceeded",
+  "photoFailed",
+  "hasKoboZip",
+  "mediaZipImageCount",
+  "mediaZipSubmissionCount",
+  "durationSeconds",
+  "failureReason",
+];
+
+const trackTreeUploadDynamicVariables = (
+  payload: TreeUploadEventPayload,
+): void => {
+  for (const key of TREE_UPLOAD_DYNAMIC_KEYS) {
+    const value = payload[key];
+    const dynamicValue = toDynamicValue(value);
+    if (dynamicValue !== null) {
+      trackDynamicVariable(`tree_upload_${key}`, dynamicValue);
+    }
+  }
+};
+
+const toTreeUploadEventData = (
+  payload: TreeUploadEventPayload,
+): Record<string, string | number | boolean> => {
+  const eventData: Record<string, string | number | boolean> = {};
+
+  for (const key of TREE_UPLOAD_DYNAMIC_KEYS) {
+    const value = payload[key];
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      eventData[key] = value;
+    }
+  }
+
+  return eventData;
+};
+
+export const trackTreeUploadEvent = (
+  eventName: TreeUploadEventName,
+  payload: TreeUploadEventPayload = {},
+): boolean => {
+  if (!hasTreeUploadRecordingAccess()) {
+    return false;
+  }
+
+  trackEvent(eventName);
+  tagRecording(["tree-upload", eventName]);
+  trackTreeUploadDynamicVariables(payload);
+  pushContentsquareCommand(["trackEventTriggerRecording", eventName]);
+
+  supabaseTracking.insertEvent(eventName, toTreeUploadEventData(payload)).catch(console.error);
+  return true;
+};
+
+export const trackTreeUploadFeedbackPromptShown = (
+  payload: TreeUploadEventPayload,
+): void => {
+  trackTreeUploadEvent(TREE_UPLOAD_EVENTS.FEEDBACK_PROMPT_SHOWN, payload);
 };
 
 // ============================================

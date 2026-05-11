@@ -10,6 +10,7 @@ const SESSION_TTL_MS = 10 * 60 * 1000;
 
 export type PendingUploadData = {
   ownerDid: string;
+  uploadId?: string;
   validRows: ValidatedRow[];
   establishmentMeans: string | null;
   datasetSelection: UploadDatasetSelection;
@@ -18,6 +19,7 @@ export type PendingUploadData = {
 
 type PendingUploadCandidate = {
   ownerDid: string;
+  uploadId?: unknown;
   validRows: ValidatedRow[];
   establishmentMeans?: unknown;
   datasetSelection?: unknown;
@@ -41,11 +43,13 @@ function isPendingUploadCandidate(
 
 export function persistPendingUpload({
   ownerDid,
+  uploadId,
   validRows,
   establishmentMeans,
   datasetSelection,
 }: {
   ownerDid: string;
+  uploadId?: string;
   validRows: ValidatedRow[];
   establishmentMeans: string | null;
   datasetSelection: UploadDatasetSelection;
@@ -54,6 +58,7 @@ export function persistPendingUpload({
     STORAGE_KEY,
     JSON.stringify({
       ownerDid,
+      ...(uploadId ? { uploadId } : {}),
       validRows,
       establishmentMeans,
       datasetSelection,
@@ -86,6 +91,7 @@ export function readPendingUpload(ownerDid: string): PendingUploadData | null {
 
     return {
       ownerDid: parsed.ownerDid,
+      uploadId: typeof parsed.uploadId === "string" ? parsed.uploadId : undefined,
       validRows: parsed.validRows,
       establishmentMeans:
         typeof parsed.establishmentMeans === "string" ||

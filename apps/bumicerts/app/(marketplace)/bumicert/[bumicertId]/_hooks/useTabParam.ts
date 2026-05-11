@@ -11,11 +11,11 @@ export const TAB_IDS = BUMICERT_DETAIL_TAB_IDS;
 export const TAB_LABELS = BUMICERT_DETAIL_TAB_LABELS;
 export type TabId = BumicertDetailTab;
 
-const tabParser = parseAsStringLiteral(TAB_IDS).withDefault("description");
+const tabParser = parseAsStringLiteral(TAB_IDS).withDefault("overview");
 
 /**
  * Client hook — reads and writes the `?tab=` query param.
- * Defaults to "description" when the param is absent or invalid.
+ * Defaults to "overview" when the param is absent or invalid.
  */
 export function useTabParam() {
   return useQueryState("tab", tabParser.withOptions({ shallow: true }));
