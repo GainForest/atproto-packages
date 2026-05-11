@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Archive, FileSpreadsheet, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,9 @@ import {
   uploadTreeDatasetsQueryKey,
 } from "@/lib/upload/tree-upload-datasets";
 import { links } from "@/lib/links";
+import { TREE_UPLOAD_EVENTS } from "@/lib/analytics/events";
+import { getFileExtension, getFileSizeBucket } from "@/lib/analytics/tree-upload";
+import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
 import { cn } from "@/lib/utils";
 import type { ColumnMapping } from "@/lib/upload/types";
 import {
@@ -39,6 +42,7 @@ import type {
 } from "@/lib/upload/upload-dataset-selection";
 
 type FileDropStepProps = {
+  uploadId: string;
   did: string;
   initialEstablishmentMeans: string | null;
   initialDatasetSelection: UploadDatasetSelection;
@@ -135,6 +139,7 @@ function toExistingUploadDatasetSelection(
 }
 
 export default function FileDropStep({
+  uploadId,
   did,
   initialEstablishmentMeans,
   initialDatasetSelection,
@@ -185,6 +190,7 @@ export default function FileDropStep({
   const inputRef = useRef<HTMLInputElement>(null);
   const mediaZipInputRef = useRef<HTMLInputElement>(null);
   const mediaZipParseRequestRef = useRef(0);
+  const lastTrackedParseErrorRef = useRef<string | null>(null);
 
   const detectedFormat =
     headers.length > 0 ? detectKoboFormat(headers) : null;
@@ -205,20 +211,38 @@ export default function FileDropStep({
       setFileError(null);
 
       if (!isAcceptedFile(file)) {
+        trackTreeUploadEvent(TREE_UPLOAD_EVENTS.FILE_REJECTED, {
+          uploadId,
+          fileExtension: getFileExtension(file.name),
+          fileSizeBucket: getFileSizeBucket(file.size),
+          failureReason: "unsupported_file_type",
+        });
         setFileError("Only .csv and .tsv files are supported.");
         return;
       }
 
       if (file.size > MAX_FILE_SIZE_BYTES) {
+        trackTreeUploadEvent(TREE_UPLOAD_EVENTS.FILE_REJECTED, {
+          uploadId,
+          fileExtension: getFileExtension(file.name),
+          fileSizeBucket: getFileSizeBucket(file.size),
+          failureReason: "file_too_large",
+        });
         setFileError(`File is too large. Maximum size is 10 MB (got ${formatBytes(file.size)}).`);
         return;
       }
 
+      trackTreeUploadEvent(TREE_UPLOAD_EVENTS.FILE_ACCEPTED, {
+        uploadId,
+        fileExtension: getFileExtension(file.name),
+        fileSizeBucket: getFileSizeBucket(file.size),
+      });
+      lastTrackedParseErrorRef.current = null;
       reset();
       setSelectedFile(file);
       parseFile(file);
     },
-    [parseFile, reset]
+    [parseFile, reset, uploadId]
   );
 
   const handleMediaZipFile = useCallback(async (file: File) => {
@@ -230,11 +254,23 @@ export default function FileDropStep({
     setIsMediaZipParsing(false);
 
     if (!isAcceptedMediaZipFile(file)) {
+      trackTreeUploadEvent(TREE_UPLOAD_EVENTS.MEDIA_ZIP_REJECTED, {
+        uploadId,
+        fileExtension: getFileExtension(file.name),
+        mediaZipSizeBucket: getFileSizeBucket(file.size),
+        failureReason: "unsupported_media_zip_type",
+      });
       setMediaZipError("Only Kobo Media Attachments .zip files are supported.");
       return;
     }
 
     if (file.size > MAX_MEDIA_ZIP_SIZE_BYTES) {
+      trackTreeUploadEvent(TREE_UPLOAD_EVENTS.MEDIA_ZIP_REJECTED, {
+        uploadId,
+        fileExtension: getFileExtension(file.name),
+        mediaZipSizeBucket: getFileSizeBucket(file.size),
+        failureReason: "media_zip_too_large",
+      });
       setMediaZipError(
         `ZIP file is too large. Maximum size is 200 MB (got ${formatBytes(file.size)}).`,
       );
@@ -249,12 +285,27 @@ export default function FileDropStep({
       }
 
       if (index.entries.length === 0) {
+        trackTreeUploadEvent(TREE_UPLOAD_EVENTS.MEDIA_ZIP_REJECTED, {
+          uploadId,
+          fileExtension: getFileExtension(file.name),
+          mediaZipSizeBucket: getFileSizeBucket(file.size),
+          mediaZipImageCount: 0,
+          mediaZipSubmissionCount: index.submissionCount,
+          failureReason: "media_zip_no_supported_images",
+        });
         setMediaZipError(
           "No supported image attachments were found in this ZIP. Make sure you selected KoboToolbox's Media Attachments export.",
         );
         return;
       }
 
+      trackTreeUploadEvent(TREE_UPLOAD_EVENTS.MEDIA_ZIP_ACCEPTED, {
+        uploadId,
+        fileExtension: getFileExtension(file.name),
+        mediaZipSizeBucket: getFileSizeBucket(file.size),
+        mediaZipImageCount: index.entries.length,
+        mediaZipSubmissionCount: index.submissionCount,
+      });
       setSelectedMediaZipFile(file);
       setMediaZipIndex(index);
     } catch {
@@ -262,6 +313,12 @@ export default function FileDropStep({
         return;
       }
 
+      trackTreeUploadEvent(TREE_UPLOAD_EVENTS.MEDIA_ZIP_REJECTED, {
+        uploadId,
+        fileExtension: getFileExtension(file.name),
+        mediaZipSizeBucket: getFileSizeBucket(file.size),
+        failureReason: "media_zip_read_failed",
+      });
       setMediaZipError(
         "Couldn't read this ZIP file. Please export Media Attachments (ZIP) from KoboToolbox and try again.",
       );
@@ -270,7 +327,21 @@ export default function FileDropStep({
         setIsMediaZipParsing(false);
       }
     }
-  }, []);
+  }, [uploadId]);
+
+  useEffect(() => {
+    if (!error || lastTrackedParseErrorRef.current === error) {
+      return;
+    }
+
+    lastTrackedParseErrorRef.current = error;
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.FILE_REJECTED, {
+      uploadId,
+      fileExtension: selectedFile ? getFileExtension(selectedFile.name) : undefined,
+      fileSizeBucket: selectedFile ? getFileSizeBucket(selectedFile.size) : undefined,
+      failureReason: "parse_error",
+    });
+  }, [error, selectedFile, uploadId]);
 
   const handleRemoveMediaZip = () => {
     mediaZipParseRequestRef.current += 1;
@@ -342,6 +413,23 @@ export default function FileDropStep({
       establishmentMeans,
       datasetSelection,
     );
+
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.STEP_COMPLETED, {
+      uploadId,
+      stepIndex: 1,
+      stepName: "file",
+      datasetMode: datasetSelection.mode,
+      sourceFormat: koboResult.isKobo ? "kobo" : "generic",
+      fileExtension: getFileExtension(selectedFile.name),
+      fileSizeBucket: getFileSizeBucket(selectedFile.size),
+      totalRows: parsedData.length,
+      totalColumns: headers.length,
+      mappedColumns: mappings.length,
+      skippedColumns: headers.length - mappings.length,
+      hasKoboZip: selectedMediaZipFile !== null,
+      mediaZipImageCount: mediaZipIndex?.entries.length,
+      mediaZipSubmissionCount: mediaZipIndex?.submissionCount,
+    });
   };
 
   const hasFile = selectedFile !== null;

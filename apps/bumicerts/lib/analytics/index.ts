@@ -17,6 +17,7 @@ export * from "./events";
 // Re-export all Hotjar/Contentsquare tracking functions
 export {
   trackEvent,
+  trackDynamicVariable,
   identifyUser,
   tagRecording,
   trackPageViewed,
@@ -29,6 +30,8 @@ export {
   trackStepCompleted,
   trackBumicertPublished,
   trackFlowAbandoned,
+  trackTreeUploadEvent,
+  trackTreeUploadFeedbackPromptShown,
   trackError,
   getStepName,
   getFlowDurationSeconds,

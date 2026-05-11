@@ -37,6 +37,7 @@ export const MODAL_IDS = {
 
   // Upload flows
   UPLOAD_TREES_COMPLETE: "upload/trees/complete",
+  UPLOAD_TREES_FEEDBACK: "upload/trees/feedback",
 } as const;
 
 export type ModalId = (typeof MODAL_IDS)[keyof typeof MODAL_IDS];

@@ -31,6 +31,8 @@ export const ModalHeader = ({
             variant={"secondary"}
             size={"icon"}
             className="p-0 h-6 w-6"
+            type="button"
+            aria-label="Go back"
             onClick={() => {
               backAction();
             }}

@@ -1,3 +1,5 @@
+import { hasAnalyticsConsent } from "./consent";
+
 const SESSION_ID_KEY = "bumicert_analytics_session";
 const LAST_ACTIVITY_KEY = "bumicert_analytics_last_activity";
 const SESSION_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -25,6 +27,10 @@ const isSessionExpired = (): boolean => {
  */
 export const getOrCreateSessionId = (): string => {
   if (typeof window === "undefined") {
+    return crypto.randomUUID();
+  }
+
+  if (!hasAnalyticsConsent()) {
     return crypto.randomUUID();
   }
 
@@ -61,6 +67,10 @@ const updateLastActivity = (): void => {
  * Creates or updates a session record.
  */
 export const upsertSession = async (sessionId: string): Promise<void> => {
+  if (!hasAnalyticsConsent()) {
+    return;
+  }
+
   const { supabase } = await import("@/lib/supabase/client");
   const { error } = await supabase.from("analytics_sessions").upsert(
     {
@@ -81,6 +91,10 @@ export const upsertSession = async (sessionId: string): Promise<void> => {
  * Updates the session's last activity timestamp.
  */
 const updateSessionActivity = async (sessionId: string): Promise<void> => {
+  if (!hasAnalyticsConsent()) {
+    return;
+  }
+
   const { supabase } = await import("@/lib/supabase/client");
   const { error } = await supabase
     .from("analytics_sessions")
@@ -99,6 +113,10 @@ export const markSessionCompleted = async (
   sessionId: string,
   durationSeconds: number
 ): Promise<void> => {
+  if (!hasAnalyticsConsent()) {
+    return;
+  }
+
   const { supabase } = await import("@/lib/supabase/client");
   const { error } = await supabase
     .from("analytics_sessions")
@@ -129,6 +147,10 @@ export const insertEvent = async (
   eventType: string,
   eventData: EventData = {}
 ): Promise<void> => {
+  if (!hasAnalyticsConsent()) {
+    return;
+  }
+
   const sessionId = getOrCreateSessionId();
   updateLastActivity();
 
