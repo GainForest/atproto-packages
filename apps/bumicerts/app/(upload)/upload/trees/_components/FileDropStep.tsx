@@ -816,7 +816,7 @@ export default function FileDropStep({
                 className={cn(
                   "flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors last:border-b-0",
                   isSelected
-                    ? "bg-green-500/10"
+                    ? "bg-primary/10"
                     : "bg-background hover:bg-muted/30"
                 )}
               >
@@ -824,7 +824,7 @@ export default function FileDropStep({
                   className={cn(
                     "mt-1 flex size-4 shrink-0 rounded-full border transition-colors",
                     isSelected
-                      ? "border-green-700 bg-green-700 dark:border-green-500 dark:bg-green-500"
+                      ? "border-primary bg-primary"
                       : "border-muted-foreground/40 bg-background"
                   )}
                 />

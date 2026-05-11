@@ -1215,7 +1215,7 @@ export default function UploadStep({
       ) : null}
 
       {uploadDone && allSucceeded && (
-        <div className="flex items-center gap-2 rounded-md border border-green-500/40 bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400">
+        <div className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 p-3 text-sm text-primary">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>
             Successfully uploaded {successes} tree record
@@ -1373,7 +1373,7 @@ export default function UploadStep({
                         <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
                       ) : null}
                       {status?.state === "success" ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
                       ) : null}
                       {status?.state === "partial" ? (
                         <span title={status.error}>

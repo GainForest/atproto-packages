@@ -29,7 +29,7 @@ export function GreenGlobePreviewRenderer({
       <iframe
         title={preview.title}
         src={preview.href}
-        className="h-[260px] w-full border-0 md:h-[340px]"
+        className="h-[200px] w-full border-0 md:h-[320px]"
         loading="lazy"
         referrerPolicy="strict-origin-when-cross-origin"
         sandbox="allow-scripts allow-same-origin allow-popups allow-forms"

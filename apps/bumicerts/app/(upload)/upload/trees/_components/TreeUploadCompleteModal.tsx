@@ -100,8 +100,8 @@ export function TreeUploadCompleteModal({
       </ModalHeader>
 
       <div className="space-y-4">
-        <div className="flex flex-col items-center gap-3 rounded-3xl border border-green-500/20 bg-green-500/5 px-4 py-5 text-center">
-          <div className="flex size-14 items-center justify-center rounded-full bg-green-500/10 text-green-600 dark:text-green-400">
+        <div className="flex flex-col items-center gap-3 rounded-3xl border border-primary/20 bg-primary/5 px-4 py-5 text-center">
+          <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             <CheckCircle2 className="size-7" />
           </div>
           <div className="space-y-1">

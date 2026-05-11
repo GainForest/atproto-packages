@@ -381,7 +381,7 @@ export default function ColumnMappingStep({
                     />
                   ) : isMapped ? (
                     <CheckCircle2
-                      className="h-4 w-4 shrink-0 text-green-500"
+                      className="h-4 w-4 shrink-0 text-primary"
                       aria-label="Mapped column"
                       role="img"
                     />
@@ -421,7 +421,7 @@ export default function ColumnMappingStep({
       {/* Legend */}
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
-          <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+          <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
           Mapped
         </span>
         <span className="flex items-center gap-1">
