@@ -3,7 +3,7 @@
 import { AnimatePresence } from "framer-motion";
 import type { BumicertData } from "@/lib/types";
 import { useTabParam } from "../_hooks/useTabParam";
-import { DescriptionTab } from "./tabs/DescriptionTab";
+import { OverviewTab } from "./tabs/OverviewTab";
 import { SiteBoundariesTab } from "./tabs/SiteBoundariesTab";
 import { DonationsTab } from "./tabs/DonationsTab";
 import { TimelineTab } from "./tabs/TimelineTab";
@@ -21,7 +21,7 @@ export function TabContent({ bumicert, isOwner }: TabContentProps) {
 
   return (
     <AnimatePresence mode="wait" initial={false}>
-      {tab === "description" && <DescriptionTab key="description" bumicert={bumicert} />}
+      {tab === "overview" && <OverviewTab key="overview" bumicert={bumicert} />}
       {tab === "site-boundaries" && <SiteBoundariesTab key="site-boundaries" bumicert={bumicert} />}
       {tab === "donations" && <DonationsTab key="donations" bumicert={bumicert} />}
       {tab === "timeline" && (

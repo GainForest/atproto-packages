@@ -6,16 +6,22 @@ import { HeaderContent } from "@/app/(marketplace)/_components/Header/HeaderCont
 import { BumicertTabs } from "./BumicertMobileTabs";
 import { BumicertSidebar } from "./BumicertSidebar";
 import { TabContent } from "./TabContent";
-import { BumicertCreationMeta, BumicertMeta } from "./BumicertInfoBar";
+import {
+  BumicertCreationMeta,
+  BumicertMeta,
+  BumicertTitleMeta,
+} from "./BumicertInfoBar";
 import { PublicDonateArea } from "./donate/PublicDonateArea";
 import { FundingStatus, computeWalletFlags } from "./FundingStatus";
 import { useEvmLinks } from "@/hooks/useEvmLinks";
 import { useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
 import { Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useModal } from "@/components/ui/modal/context";
-import DeleteBumicertModal, { DeleteBumicertModalId } from "./DeleteBumicertModal";
+import DeleteBumicertModal, {
+  DeleteBumicertModalId,
+} from "./DeleteBumicertModal";
+import { BumicertPreview } from "./BumicertPreview";
 
 interface BumicertDetailProps {
   bumicert: BumicertData;
@@ -28,13 +34,19 @@ interface BumicertDetailProps {
 // ── Mobile donate slot ────────────────────────────────────────────────────────
 // Mirrors the sidebar's donate area but rendered inline in the mobile stack.
 
-function MobileDonateSlot({ bumicert, isOwner, fundingConfig }: BumicertDetailProps) {
+function MobileDonateSlot({
+  bumicert,
+  isOwner,
+  fundingConfig,
+}: BumicertDetailProps) {
   const queryClient = useQueryClient();
   const { data: evmLinks = [] } = useEvmLinks(
-    isOwner ? bumicert.organizationDid : undefined
+    isOwner ? bumicert.organizationDid : undefined,
   );
   const { valid: receivingWalletValid, trusted: receivingWalletTrusted } =
-    isOwner ? computeWalletFlags(fundingConfig, evmLinks) : { valid: false, trusted: false };
+    isOwner
+      ? computeWalletFlags(fundingConfig, evmLinks)
+      : { valid: false, trusted: false };
 
   const handleConfigSaved = () => {
     queryClient.invalidateQueries({ queryKey: ["activities"] });
@@ -58,8 +70,14 @@ function MobileDonateSlot({ bumicert, isOwner, fundingConfig }: BumicertDetailPr
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export function BumicertDetail({ bumicert, isOwner, fundingConfig }: BumicertDetailProps) {
+export function BumicertDetail({
+  bumicert,
+  isOwner,
+  fundingConfig,
+}: BumicertDetailProps) {
   const [tab] = useTabParam();
+  const hasCoverImage = Boolean(bumicert.coverImageUrl);
+  const isOverviewTab = tab === "overview";
   const showSidebar = tab !== "timeline";
   const { pushModal, show } = useModal();
 
@@ -71,7 +89,7 @@ export function BumicertDetail({ bumicert, isOwner, fundingConfig }: BumicertDet
           <DeleteBumicertModal rkey={bumicert.rkey} title={bumicert.title} />
         ),
       },
-      true
+      true,
     );
     show();
   };
@@ -80,7 +98,9 @@ export function BumicertDetail({ bumicert, isOwner, fundingConfig }: BumicertDet
     <>
       <HeaderContent sub={<BumicertTabs />} />
 
-      <div className={`grid grid-cols-1 gap-6 lg:gap-10 lg:px-2 ${showSidebar ? "lg:grid-cols-[280px_1fr]" : ""}`}>
+      <div
+        className={`grid grid-cols-1 gap-6 lg:gap-10 lg:px-2 ${showSidebar ? "lg:grid-cols-[280px_1fr]" : ""}`}
+      >
         {/* Sidebar — hidden on Timeline tab */}
         {showSidebar && (
           <div className="hidden lg:block">
@@ -96,47 +116,53 @@ export function BumicertDetail({ bumicert, isOwner, fundingConfig }: BumicertDet
         <div className="flex flex-col gap-4">
           {/* Mobile-only stack — hidden at lg+ */}
           <div className="flex flex-col gap-4 lg:hidden">
-            {/* Sticky creation meta */}
-            <div className="sticky top-14 z-10 border border-border rounded-xl shadow-md bg-background px-4 py-3">
-              <BumicertCreationMeta bumicert={bumicert} />
+            <div className="sticky top-28 z-10 border border-border rounded-3xl shadow-md bg-background/75 backdrop-blur-xl px-4 py-3">
+              {isOverviewTab ? (
+                <BumicertCreationMeta bumicert={bumicert} />
+              ) : (
+                <BumicertTitleMeta bumicert={bumicert} />
+              )}
             </div>
 
-            {/* At sm+: image left, meta right. Below sm: stack vertically. */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              {bumicert.coverImageUrl && (
-                <div className="rounded-2xl border border-border overflow-hidden relative w-full sm:w-1/2 aspect-3/4 max-h-[50vh]">
-                  <Image src={bumicert.coverImageUrl} alt={bumicert.title} fill className="object-cover" />
-                </div>
-              )}
-              <div className="sm:w-1/2 sm:flex-1 flex flex-col gap-4">
-                {/* Title — visible on mobile in the meta area */}
-                <h1
-                  className="text-xl font-semibold text-foreground leading-snug"
-                  style={{ fontFamily: "var(--font-garamond-var)" }}
-                >
-                  {bumicert.title}
-                </h1>
-                <BumicertMeta bumicert={bumicert} />
-                {/* Donate / funding status — right below meta */}
-                <MobileDonateSlot
+            {isOverviewTab ? (
+              <div
+                className={
+                  hasCoverImage
+                    ? "flex flex-col gap-2 sm:flex-row"
+                    : "flex flex-col gap-2"
+                }
+              >
+                <BumicertPreview
                   bumicert={bumicert}
-                  isOwner={isOwner}
-                  fundingConfig={fundingConfig}
+                  className={hasCoverImage ? "w-full sm:w-1/2" : "w-full"}
                 />
-                {/* Owner: delete bumicert */}
-                {isOwner && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    onClick={handleDeleteClick}
-                  >
-                    <Trash2Icon className="h-4 w-4" />
-                    Delete Bumicert
-                  </Button>
-                )}
+                <div
+                  className={
+                    hasCoverImage
+                      ? "flex flex-col gap-4 sm:w-1/2 sm:flex-1"
+                      : "flex flex-col gap-4"
+                  }
+                >
+                  <BumicertMeta bumicert={bumicert} />
+                  <MobileDonateSlot
+                    bumicert={bumicert}
+                    isOwner={isOwner}
+                    fundingConfig={fundingConfig}
+                  />
+                  {isOwner ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      onClick={handleDeleteClick}
+                    >
+                      <Trash2Icon className="h-4 w-4" />
+                      Delete Bumicert
+                    </Button>
+                  ) : null}
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
 
           {/* Tab content */}
