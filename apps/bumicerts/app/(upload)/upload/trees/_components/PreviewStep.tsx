@@ -2,6 +2,8 @@
 
 import { useMemo, useState, Fragment } from "react";
 import { Button } from "@/components/ui/button";
+import { TREE_UPLOAD_EVENTS } from "@/lib/analytics/events";
+import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
 import {
   Camera,
   ChevronDown,
@@ -14,12 +16,15 @@ import { applyMappings } from "@/lib/upload/column-mapper";
 import { parseAndValidateRows } from "@/lib/upload/schemas";
 import { TARGET_FIELDS } from "@/lib/upload/types";
 import type { ColumnMapping, ValidatedRow } from "@/lib/upload/types";
+import type { KoboMediaZipIndex } from "@/lib/upload/kobo-media-zip";
 
 const MAX_PREVIEW_ROWS = 20;
 
 type PreviewStepProps = {
+  uploadId: string;
   parsedData: Record<string, string>[];
   mappings: ColumnMapping[];
+  koboMediaZipIndex: KoboMediaZipIndex | null;
   onBack: () => void;
   onNext: (validRows: ValidatedRow[]) => void;
 };
@@ -50,8 +55,10 @@ function buildErrorSummary(
 }
 
 export default function PreviewStep({
+  uploadId,
   parsedData,
   mappings,
+  koboMediaZipIndex,
   onNext,
   onBack,
 }: PreviewStepProps) {
@@ -62,7 +69,9 @@ export default function PreviewStep({
   // mappedRows is returned here to avoid calling applyMappings a second time.
   const { validationResult, mappedHeaders, mappedRows, hasAnyPhotos } = useMemo(() => {
     const mapped = applyMappings(parsedData, mappings);
-    const result = parseAndValidateRows(mapped, parsedData, mappings);
+    const result = parseAndValidateRows(mapped, parsedData, mappings, {
+      koboMediaZipIndex,
+    });
     // Collect the unique target field names that appear in the mapped data
     // Exclude photoUrl — it's replaced by a synthetic "Photos" column
     const headerSet = new Set<string>();
@@ -83,7 +92,7 @@ export default function PreviewStep({
       mappedRows: mapped,
       hasAnyPhotos: anyPhotos,
     };
-  }, [parsedData, mappings]);
+  }, [koboMediaZipIndex, parsedData, mappings]);
 
   const { valid, errors } = validationResult;
   const totalRows = parsedData.length;
@@ -100,6 +109,11 @@ export default function PreviewStep({
     }
     return map;
   }, [valid]);
+
+  const totalPhotoCount = useMemo(
+    () => valid.reduce((sum, row) => sum + (row.photos?.length ?? 0), 0),
+    [valid],
+  );
 
   // Build a lookup: row index -> error issues
   const errorByIndex = useMemo(() => {
@@ -134,6 +148,20 @@ export default function PreviewStep({
   // Summary banner variant
   const allValid = errorCount === 0;
   const allInvalid = validCount === 0;
+
+  const handleNext = () => {
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.STEP_COMPLETED, {
+      uploadId,
+      stepIndex: 3,
+      stepName: "preview",
+      totalRows,
+      validRows: validCount,
+      invalidRows: errorCount,
+      mappedColumns: mappedHeaders.length,
+      photoTotal: totalPhotoCount,
+    });
+    onNext(valid);
+  };
 
   return (
     <div className="space-y-5">
@@ -393,7 +421,7 @@ export default function PreviewStep({
         <Button variant="outline" onClick={onBack}>
           Back to Column Mapping
         </Button>
-        <Button onClick={() => onNext(valid)} disabled={validCount === 0}>
+        <Button onClick={handleNext} disabled={validCount === 0}>
           Upload {validCount} Valid Row{validCount !== 1 ? "s" : ""}
         </Button>
       </div>

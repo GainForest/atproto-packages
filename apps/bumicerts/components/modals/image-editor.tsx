@@ -23,8 +23,6 @@ const getFileFromURL = async (url: string) => {
   return new File([blob], `image.${filetype}`, { type: blob.type });
 };
 
-export const ImageEditorModalId = "image-editor-modal";
-
 export const ImageEditorModal = ({
   title,
   description,

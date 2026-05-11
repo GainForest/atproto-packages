@@ -2,6 +2,8 @@
 
 **5-minute guide to running E2E tests without issues.**
 
+For agent-facing test routing and check selection, start with `../agents/TESTING.md`.
+
 ---
 
 ## Step 1: Start Dev Server (Terminal 1)
@@ -53,6 +55,6 @@ bun run test:e2e --tags "@smoke"
 
 ## That's It!
 
-For more details, see `TESTING_GUIDE.md`
+For agent-facing routing, see `../agents/TESTING.md`.
 
-For test status/coverage, see `TEST_STATUS.md`
+For more details, see `TESTING_GUIDE.md`

@@ -52,6 +52,11 @@ export const clientEnv = createEnv({
     // WalletConnect Cloud project ID — required for mobile wallet connections.
     // Create/find yours at https://cloud.walletconnect.com
     NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: z.string().min(1),
+
+    // Contentsquare main tracking tag ID — optional so local/preview builds can
+    // run without analytics. Configure this in environments where beta session
+    // recording is enabled.
+    NEXT_PUBLIC_CONTENTSQUARE_TAG_ID: z.string().min(1).optional(),
   },
 
   runtimeEnv: {
@@ -66,6 +71,7 @@ export const clientEnv = createEnv({
     NEXT_PUBLIC_FACILITATOR_DID: process.env.NEXT_PUBLIC_FACILITATOR_DID,
     NEXT_PUBLIC_FACILITATOR_WALLET_ADDRESS: process.env.NEXT_PUBLIC_FACILITATOR_WALLET_ADDRESS,
     NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+    NEXT_PUBLIC_CONTENTSQUARE_TAG_ID: process.env.NEXT_PUBLIC_CONTENTSQUARE_TAG_ID,
     NEXT_PUBLIC_PRODUCTION_BRANCH_NAME: process.env.NEXT_PUBLIC_PRODUCTION_BRANCH_NAME,
     NEXT_PUBLIC_STAGING_BRANCH_NAME: process.env.NEXT_PUBLIC_STAGING_BRANCH_NAME,
     NEXT_PUBLIC_PRODUCTION_URL: process.env.NEXT_PUBLIC_PRODUCTION_URL,

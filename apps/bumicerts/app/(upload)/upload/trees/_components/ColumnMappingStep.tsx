@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { TREE_UPLOAD_EVENTS } from "@/lib/analytics/events";
+import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
 import {
   Select,
   SelectContent,
@@ -14,12 +16,17 @@ import {
 import { TARGET_FIELDS } from "@/lib/upload/types";
 import type { ColumnMapping } from "@/lib/upload/types";
 import { inferSubjectPartFromColumnName } from "@/lib/upload/column-mapper";
+import {
+  detectKoboFormat,
+  isExpectedSkippedKoboColumn,
+} from "@/lib/upload/kobo-mapper";
 import { AlertTriangle, CheckCircle2, CircleAlertIcon } from "lucide-react";
 
 /** Target fields that allow multiple source columns (no duplicate warning). */
 const MULTI_MAP_TARGETS = new Set(["photoUrl"]);
 
 type ColumnMappingStepProps = {
+  uploadId: string;
   headers: string[];
   mappings: ColumnMapping[];
   sampleData?: Record<string, string>[];
@@ -80,6 +87,7 @@ function getMappedTarget(
 }
 
 export default function ColumnMappingStep({
+  uploadId,
   headers,
   mappings,
   sampleData,
@@ -87,6 +95,8 @@ export default function ColumnMappingStep({
   onNext,
   onBack,
 }: ColumnMappingStepProps) {
+  const koboDetection = useMemo(() => detectKoboFormat(headers), [headers]);
+
   // Detect duplicate target mappings: target -> list of source columns
   const targetToSources = useMemo(() => {
     const map: Record<string, string[]> = {};
@@ -114,7 +124,20 @@ export default function ColumnMappingStep({
       ),
     [headers, mappings]
   );
-  const skippedColumnCount = skippedColumns.length;
+  const skippedColumnsNeedingReview = useMemo(
+    () =>
+      skippedColumns.filter(
+        (header) =>
+          !(
+            koboDetection.isKobo &&
+            isExpectedSkippedKoboColumn(header, headers)
+          ),
+      ),
+    [headers, koboDetection.isKobo, skippedColumns],
+  );
+  const skippedColumnCount = skippedColumnsNeedingReview.length;
+  const expectedSkippedKoboColumnCount =
+    skippedColumns.length - skippedColumnsNeedingReview.length;
 
   // Detect which source columns have duplicate targets (only the second+ occurrence is a dupe)
   // Multi-map targets (e.g. photoUrl) are excluded — multiple columns are expected.
@@ -142,6 +165,22 @@ export default function ColumnMappingStep({
       updated.push({ sourceColumn, targetField: newTarget });
     }
     onMappingsChange(updated);
+  };
+
+  const handleNext = () => {
+    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.STEP_COMPLETED, {
+      uploadId,
+      stepIndex: 2,
+      stepName: "mapping",
+      totalColumns: headers.length,
+      mappedColumns: mappings.length,
+      skippedColumns: skippedColumnCount,
+      requiredMissingCount: missingRequired.length,
+      duplicateMappingCount: duplicateSourceColumns.size,
+      expectedSkippedKoboColumnCount,
+      sourceFormat: koboDetection.isKobo ? "kobo" : "generic",
+    });
+    onNext();
   };
 
   return (
@@ -173,14 +212,28 @@ export default function ColumnMappingStep({
         <div className="flex items-start gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-300">
           <CircleAlertIcon className="h-4 w-4 mt-0.5 shrink-0" />
           <div className="space-y-1">
-            <p className="font-medium">Review skipped columns before continuing.</p>
+            <p className="font-medium">Check unmapped columns before continuing.</p>
             <p className="text-yellow-700/90 dark:text-yellow-300/90">
-              {skippedColumnCount} source column
-              {skippedColumnCount !== 1 ? "s are" : " is"} marked to be
-              skipped and will not be uploaded. Rows with a yellow left border
-              are source columns currently treated as optional/skipped; required
-              target fields that still need manual input appear in the red
-              warning above when any remain.
+              {skippedColumnCount} column{skippedColumnCount !== 1 ? "s" : ""} {skippedColumnCount !== 1 ? "are" : "is"} not mapped yet.
+              They will be skipped. This is OK if they are not needed. Please
+              check before you continue.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {expectedSkippedKoboColumnCount > 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+          <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+          <div className="space-y-1">
+            <p className="font-medium text-foreground">
+              Kobo metadata handled automatically.
+            </p>
+            <p>
+              {expectedSkippedKoboColumnCount} Kobo metadata or private attachment
+              URL column{expectedSkippedKoboColumnCount !== 1 ? "s" : ""} will be
+              ignored intentionally. Filename photo columns and row UUID metadata
+              are still used behind the scenes to match images from the ZIP.
             </p>
           </div>
         </div>
@@ -204,11 +257,15 @@ export default function ColumnMappingStep({
               currentTarget !== SKIP_SENTINEL &&
               duplicateSourceColumns.has(`${header}::${currentTarget}`);
             const isMapped = currentTarget !== SKIP_SENTINEL;
+            const isSkipped = !isMapped;
+            const isExpectedKoboSkip =
+              isSkipped &&
+              koboDetection.isKobo &&
+              isExpectedSkippedKoboColumn(header, headers);
             const targetMeta = TARGET_FIELDS.find(
               (f) => f.field === currentTarget
             );
             const isRequiredField = targetMeta?.required ?? false;
-            const isSkipped = !isMapped;
 
             return (
               <div
@@ -216,8 +273,10 @@ export default function ColumnMappingStep({
                 className={`grid grid-cols-[1fr_1fr_1fr] gap-0 items-center px-4 py-3 ${
                   isDuplicate
                     ? "bg-yellow-500/5"
-                    : isSkipped
+                    : isSkipped && !isExpectedKoboSkip
                       ? "border-l-2 border-l-yellow-500/60 bg-yellow-500/5"
+                      : isExpectedKoboSkip
+                        ? "bg-muted/20"
                       : ""
                 }`}
               >
@@ -326,6 +385,12 @@ export default function ColumnMappingStep({
                       aria-label="Mapped column"
                       role="img"
                     />
+                  ) : isExpectedKoboSkip ? (
+                    <CheckCircle2
+                      className="h-4 w-4 shrink-0 text-muted-foreground/60"
+                      aria-label="Intentionally skipped Kobo metadata column"
+                      role="img"
+                    />
                   ) : (
                     <CircleAlertIcon
                       className="h-4 w-4 shrink-0 text-yellow-500"
@@ -378,7 +443,7 @@ export default function ColumnMappingStep({
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button onClick={onNext} disabled={!allRequiredMapped}>
+        <Button onClick={handleNext} disabled={!allRequiredMapped}>
           Continue to Preview
         </Button>
       </div>

@@ -16,50 +16,25 @@
 
 import { NextRequest } from "next/server";
 import type { AtUriString } from "@atproto/lex";
+import { z } from "zod";
 import { serverEnv } from "@/lib/env/server";
 import { clientEnv } from "@/lib/env/client";
+import { formatUsdcAmount, usdcAmountStringSchema } from "@/lib/facilitator/amount";
 import { parsePaymentSignature } from "@/lib/facilitator/eip3009";
 import { executeTransferWithAuthorization } from "@/lib/facilitator/index";
+import { fetchCidByAtUri } from "@/graphql/indexer/queries/activities";
+import { fetchVerifiedAddress } from "@/graphql/indexer/queries/linkEvm";
 import {
   makeCredentialAgentLayer,
   mutations,
 } from "@gainforest/atproto-mutations-core";
 import { Effect } from "effect";
-import { GraphQLClient } from "graphql-request";
 
 export const dynamic = "force-dynamic";
 
 // ---------------------------------------------------------------------------
 // Helpers — resolve recipient wallet
 // ---------------------------------------------------------------------------
-
-const ATTESTATION_QUERY = `
-  query VerifyRecipient($did: String!) {
-    gainforest {
-      link {
-        evm(limit: 1, where: { did: $did, valid: true }) {
-          data {
-            record {
-              address
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-type AttestationQueryResult = {
-  gainforest: {
-    link: {
-      evm: {
-        data: Array<{
-          record: { address: string | null };
-        }>;
-      };
-    };
-  };
-};
 
 type HexAddress = `0x${string}`;
 type DidIdentifier = `did:${string}:${string}`;
@@ -69,6 +44,21 @@ type ReceiptSender =
   | { $type: "app.certified.defs#did"; did: DidIdentifier };
 
 type ReceiptText = { $type: "org.hypercerts.funding.receipt#text"; value: string };
+
+const discoveryRequestSchema = z
+  .object({
+    orgDid: z.string().trim().min(1).optional(),
+  })
+  .passthrough();
+
+const settlementRequestSchema = z.object({
+  activityUri: z.string().trim().min(1).optional(),
+  orgDid: z.string().trim().min(1),
+  amount: usdcAmountStringSchema.optional(),
+  currency: z.literal("USDC").optional(),
+  donorDid: z.string().trim().min(1).optional(),
+  anonymous: z.boolean(),
+});
 
 function isHexAddress(value: string): value is HexAddress {
   return /^0x[a-fA-F0-9]{40}$/.test(value);
@@ -86,15 +76,7 @@ async function resolveRecipientWallet(
   orgDid: string
 ): Promise<HexAddress | null> {
   try {
-    const client = new GraphQLClient(clientEnv.NEXT_PUBLIC_INDEXER_URL, {
-      headers: { "ngrok-skip-browser-warning": "true" },
-    });
-    const data = await client.request<AttestationQueryResult>(
-      ATTESTATION_QUERY,
-      { did: orgDid }
-    );
-    const records = data?.gainforest?.link?.evm?.data ?? [];
-    const resolvedAddress = records[0]?.record.address;
+    const resolvedAddress = await fetchVerifiedAddress(orgDid);
     if (!resolvedAddress || !isHexAddress(resolvedAddress)) {
       return null;
     }
@@ -108,55 +90,18 @@ async function resolveRecipientWallet(
 // Activity CID resolver — fetches CID for an activity AT-URI from indexer
 // ---------------------------------------------------------------------------
 
-const ACTIVITY_CID_QUERY = `
-  query GetActivityCid($did: String!, $rkey: String!) {
-    hypercerts {
-      claim {
-        activity(where: { did: $did, rkey: $rkey }, limit: 1) {
-          data {
-            metadata {
-              cid
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-type ActivityCidQueryResult = {
-  hypercerts: {
-    claim: {
-      activity: {
-        data: Array<{
-          metadata: { cid: string | null };
-        }>;
-      };
-    };
-  };
-};
-
 async function getActivityCid(activityUri: string): Promise<string> {
-  // Parse AT-URI: at://did/collection/rkey
-  const match = activityUri.match(/^at:\/\/([^/]+)\/[^/]+\/([^/]+)$/);
-  if (!match) {
+  if (!isAtUriString(activityUri)) {
     throw new Error(`Invalid activity AT-URI format: ${activityUri}`);
   }
-  const [, did, rkey] = match;
 
   try {
-    const client = new GraphQLClient(clientEnv.NEXT_PUBLIC_INDEXER_URL, {
-      headers: { "ngrok-skip-browser-warning": "true" },
-    });
-    const data = await client.request<ActivityCidQueryResult>(
-      ACTIVITY_CID_QUERY,
-      { did, rkey }
-    );
-    const records = data?.hypercerts?.claim?.activity?.data ?? [];
-    if (!records.length || !records[0].metadata.cid) {
+    const cid = await fetchCidByAtUri(activityUri);
+    if (!cid) {
       throw new Error(`Activity CID not found for ${activityUri}`);
     }
-    return records[0].metadata.cid;
+
+    return cid;
   } catch (error) {
     throw new Error(
       `Failed to fetch activity CID for ${activityUri}: ${error instanceof Error ? error.message : String(error)}`
@@ -193,11 +138,11 @@ export async function POST(req: NextRequest) {
 
   // --- Mode A: Discovery ---
   if (!paymentSig) {
-    let body: { activityUri?: string; orgDid?: string; amount?: string } = {};
-    try { body = await req.json(); } catch { /* ignore */ }
+    const rawBody = await req.json().catch(() => null);
+    const parsedDiscovery = discoveryRequestSchema.safeParse(rawBody);
 
-    const recipientWallet = body.orgDid
-      ? await resolveRecipientWallet(body.orgDid)
+    const recipientWallet = parsedDiscovery.success && parsedDiscovery.data.orgDid
+      ? await resolveRecipientWallet(parsedDiscovery.data.orgDid)
       : null;
 
     return Response.json(
@@ -218,22 +163,20 @@ export async function POST(req: NextRequest) {
   }
 
   // --- Mode B: Settlement ---
-  let body: {
-    activityUri?: string;
-    orgDid?: string;
-    amount?: string;
-    currency?: string;
-    donorDid?: string;
-    anonymous?: boolean;
-  } = {};
-  try { body = await req.json(); } catch { /* ignore */ }
+  const rawBody = await req.json().catch(() => null);
+  const parsedBody = settlementRequestSchema.safeParse(rawBody);
 
-  if (typeof body.anonymous !== "boolean") {
+  if (!parsedBody.success) {
     return Response.json(
-      { error: "Please choose whether to donate anonymously." },
+      {
+        error: "Invalid request body",
+        issues: parsedBody.error.flatten(),
+      },
       { status: 400 }
     );
   }
+
+  const body = parsedBody.data;
 
   const donorChoseAnonymous = body.anonymous;
   let donorDid: DidIdentifier | undefined;
@@ -266,9 +209,7 @@ export async function POST(req: NextRequest) {
   const { payload: { authorization, signature } } = payload;
 
   // 2. Resolve recipient wallet
-  const recipientWallet = body.orgDid
-    ? await resolveRecipientWallet(body.orgDid)
-    : null;
+  const recipientWallet = await resolveRecipientWallet(body.orgDid);
 
   if (!recipientWallet) {
     return Response.json(
@@ -310,7 +251,7 @@ export async function POST(req: NextRequest) {
   // UnauthorizedError/SessionExpiredError that the Next.js action wrapper
   // expects). This avoids the AgentLayer type mismatch.
   const agentLayer = getFacilitatorLayer();
-  const amount = body.amount ?? String(Number(authorization.value) / 1e6);
+  const amount = body.amount ?? formatUsdcAmount(BigInt(authorization.value));
   const now = new Date().toISOString();
 
   const donorRecordedAs = donorChoseAnonymous ? "wallet" : "did";

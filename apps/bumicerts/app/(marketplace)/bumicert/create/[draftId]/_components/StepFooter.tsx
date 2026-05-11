@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon, ChevronRightIcon, LightbulbIcon, XIcon, SaveIcon } from "lucide-react";
-import React, { useEffect, useEffectEvent, useMemo, useState } from "react";
+import React, { useEffect, useEffectEvent, useState } from "react";
 import useNewBumicertStore from "../store";
 import { STEPS, STEPS as steps } from "../_data/steps";
 import { useFormStore } from "../form-store";
@@ -40,18 +40,14 @@ const StepFooter = () => {
 
   const overallStatusForStep5 = useStep5Store((state) => state.overallStatus);
 
-  const allowUserToMoveForward = useMemo(() => {
-    // For steps 1, 2 and 3.
-    if (currentStepIndex < 3) return true;
-    // For step 4.
-    if (currentStepIndex === 3) {
-      return (
-        step1Progress === 100 && step2Progress === 100 && step3Progress === 100
-      );
-    }
-    // For step 5.
-    return false;
-  }, [currentStepIndex]);
+  const allowUserToMoveForward =
+    currentStepIndex < 3
+      ? true
+      : currentStepIndex === 3
+        ? step1Progress === 100 &&
+          step2Progress === 100 &&
+          step3Progress === 100
+        : false;
 
   if (overallStatusForStep5 === "success") {
     return null;

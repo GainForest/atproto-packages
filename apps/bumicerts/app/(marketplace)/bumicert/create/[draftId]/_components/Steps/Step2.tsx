@@ -1,7 +1,12 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useRef, useState } from "react";
 import FormField from "../../../../../../../components/ui/FormField";
-import { HandHeartIcon, MessageCircleIcon, SparklesIcon, Loader2Icon } from "lucide-react";
+import {
+  HandHeartIcon,
+  MessageCircleIcon,
+  SparklesIcon,
+  Loader2Icon,
+} from "lucide-react";
 import { useFormStore } from "../../form-store";
 import useNewBumicertStore from "../../store";
 import { Button } from "@/components/ui/button";
@@ -10,6 +15,12 @@ import { BskyRichTextEditor } from "@/components/ui/bsky-richtext-editor";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { extractTextFromLinearDocument } from "@/lib/adapters";
 import { links } from "@/lib/links";
+import {
+  createShortDescriptionEditorSyncState,
+  getShortDescriptionEditorKey,
+  reconcileShortDescriptionEditorSyncState,
+  trackShortDescriptionEditorChange,
+} from "./shortDescriptionEditorSync";
 
 const Step2 = () => {
   const { maxStepIndexReached, currentStepIndex } = useNewBumicertStore();
@@ -18,9 +29,6 @@ const Step2 = () => {
   const formValues = useFormStore((state) => state.formValues[1]);
   const errors = useFormStore((state) => state.formErrors[1]);
   const setFormValue = useFormStore((state) => state.setFormValue[1]);
-  const updateErrorsAndCompletion = useFormStore(
-    (state) => state.updateErrorsAndCompletion
-  );
 
   // Step 1 values — needed for the AI prompt (title)
   const step1Values = useFormStore((state) => state.formValues[0]);
@@ -31,22 +39,23 @@ const Step2 = () => {
   const ownerDid = auth.status === "AUTHENTICATED" ? auth.user.did : "";
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [shortDescriptionEditorKey, setShortDescriptionEditorKey] = useState(0);
-  const [editorText, setEditorText] = useState(shortDescription);
+  const shortDescriptionValue = {
+    text: shortDescription,
+    facets: shortDescriptionFacets,
+  };
+  const shortDescriptionEditorSyncRef = useRef(
+    createShortDescriptionEditorSyncState(shortDescriptionValue),
+  );
 
-  useEffect(() => {
-    updateErrorsAndCompletion();
-  }, [shouldShowValidationErrors]);
+  shortDescriptionEditorSyncRef.current =
+    reconcileShortDescriptionEditorSyncState(
+      shortDescriptionEditorSyncRef.current,
+      shortDescriptionValue,
+    );
 
-  useEffect(() => {
-    // Keep editor stable while typing (avoid remount on each keystroke),
-    // but remount when value changes from external sources (e.g. AI generate,
-    // hydration) so initialValue is refreshed.
-    if (shortDescription === editorText) return;
-
-    setEditorText(shortDescription);
-    setShortDescriptionEditorKey((prev) => prev + 1);
-  }, [shortDescription, editorText]);
+  const shortDescriptionEditorKey = getShortDescriptionEditorKey(
+    shortDescriptionEditorSyncRef.current,
+  );
 
   const handleGenerateShortDescription = async () => {
     const descriptionText = extractTextFromLinearDocument(description).trim();
@@ -65,7 +74,10 @@ const Step2 = () => {
 
       if (!res.ok) return;
 
-      const data = (await res.json()) as { shortDescription?: string; success?: boolean };
+      const data = (await res.json()) as {
+        shortDescription?: string;
+        success?: boolean;
+      };
       if (data.success && data.shortDescription) {
         setFormValue("shortDescription", data.shortDescription);
       }
@@ -121,9 +133,16 @@ const Step2 = () => {
           <div className="w-full rounded-md border border-border bg-background overflow-hidden pr-10">
             <BskyRichTextEditor
               key={shortDescriptionEditorKey}
-              initialValue={{ text: shortDescription, facets: shortDescriptionFacets }}
+              initialValue={shortDescriptionValue}
               onChange={(text, facets) => {
-                setEditorText(text);
+                shortDescriptionEditorSyncRef.current =
+                  trackShortDescriptionEditorChange(
+                    shortDescriptionEditorSyncRef.current,
+                    {
+                      text,
+                      facets: facets ?? [],
+                    },
+                  );
                 setFormValue("shortDescription", text);
                 setFormValue("shortDescriptionFacets", facets ?? []);
               }}

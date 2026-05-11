@@ -1,4 +1,5 @@
 import { clientEnv } from "./env/client";
+import type { BumicertDetailTab } from "./bumicert-tabs";
 
 type DidDynamicLink = (did?: string) => string;
 const didCatcher = (callback: (did: string) => string): DidDynamicLink => {
@@ -7,31 +8,52 @@ const didCatcher = (callback: (did: string) => string): DidDynamicLink => {
 
 const DEFAULT_GREEN_GLOBE_PREVIEW_BASE_URL = "https://gainforest.app";
 const BUMICERT_CREATE_PATH = "/bumicert/create";
+const HYPERLABEL_BASE_URL = "https://hyperlabel-production.up.railway.app";
+const CONTENTSQUARE_UXA_BASE_URL = "https://t.contentsquare.net/uxa";
+const TREE_UPLOAD_FEEDBACK_FORM_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLScpHS_-7QTTiHIseqjzvkdbx6jzjenebkaLGXoETNrfit0ZNA/viewform";
 
 const GREEN_GLOBE_PREVIEW_BASE_URL =
   clientEnv.NEXT_PUBLIC_GREEN_GLOBE_URL?.trim().replace(/\/$/, "") ??
   DEFAULT_GREEN_GLOBE_PREVIEW_BASE_URL;
 
+function bumicertViewPath(didOrId: string, rkey?: string): string {
+  if (rkey) {
+    return `/bumicert/${encodeURIComponent(didOrId)}-${encodeURIComponent(rkey)}`;
+  }
+
+  return `/bumicert/${didOrId}`;
+}
+
+function withBumicertTab(path: string, tab: BumicertDetailTab): string {
+  const query = new URLSearchParams({ tab });
+  return `${path}?${query.toString()}`;
+}
+
 export const links = {
   root: "/",
   home: "/home",
-  onboarding: "/onboarding",
   leaderboard: "/leaderboard",
   dashboard: "/dashboard",
   checkout: "/checkout",
   myOrganization: (did?: string) =>
-    did ? `/organization/${encodeURIComponent(did)}` : "/organization",
-  allOrganizations: "/organization/all",
+    did ? `/account/${encodeURIComponent(did)}` : "/account",
+  allOrganizations: "/organizations",
 
-  /** Tab routes for an organization profile page. */
-  organization: {
-    home: (did: string) => `/organization/${encodeURIComponent(did)}`,
+  account: {
+    self: "/account",
+    byDid: (did: string) => `/account/${encodeURIComponent(did)}`,
     bumicerts: (did: string) =>
-      `/organization/${encodeURIComponent(did)}/bumicerts`,
+      `/account/${encodeURIComponent(did)}/bumicerts`,
+    donations: (did: string) =>
+      `/account/${encodeURIComponent(did)}/donations`,
   },
+
   manage: {
     home: "/upload",
     edit: "/upload?mode=edit",
+    onboardUser: "/upload?mode=onboard-user",
+    onboardOrganization: "/upload?mode=onboard-org",
     sites: "/upload/sites",
     audio: "/upload/audio",
     bumicerts: BUMICERT_CREATE_PATH,
@@ -50,7 +72,6 @@ export const links = {
       return `/upload/trees${queryString ? `?${queryString}` : ""}`;
     },
   },
-  user: didCatcher((did) => `/user/${did}`),
   explore: "/explore",
   bumicert: {
     create: BUMICERT_CREATE_PATH,
@@ -59,12 +80,10 @@ export const links = {
     // 1. Full id (did-rkey format) - for backward compatibility
     // 2. Separate did and rkey parameters
     view: (didOrId: string, rkey?: string) => {
-      if (rkey) {
-        // Two parameters: did and rkey
-        return `/bumicert/${encodeURIComponent(didOrId)}-${encodeURIComponent(rkey)}`;
-      }
-      // One parameter: already formatted id (did-rkey)
-      return `/bumicert/${didOrId}`;
+      return bumicertViewPath(didOrId, rkey);
+    },
+    viewTab: (didOrId: string, tab: BumicertDetailTab, rkey?: string) => {
+      return withBumicertTab(bumicertViewPath(didOrId, rkey), tab);
     },
     api: {
       generateShortDescription:
@@ -75,6 +94,8 @@ export const links = {
     certifiedApp: {
       profileUrl: didCatcher((did) => `https://certified.app/profile/${did}`),
     },
+    codeOfConduct:
+      "https://gainforest.notion.site/GainForest-Community-Code-of-Conduct-23094a2f76b380118bc0dfe560df4a2e",
     polygonsAppUrl: (
       options?:
         | {
@@ -138,29 +159,44 @@ export const links = {
       return queryString ? `${basePath}?${queryString}` : basePath;
     },
     docs: "https://docs.fund.gainforest.app/",
+    contentsquareUxaTag: (tagId: string) =>
+      `${CONTENTSQUARE_UXA_BASE_URL}/${encodeURIComponent(tagId)}.js`,
+    treeUploadFeedbackForm: TREE_UPLOAD_FEEDBACK_FORM_URL,
+    treeUploadFeedbackFormEmbed: `${TREE_UPLOAD_FEEDBACK_FORM_URL}?embedded=true`,
     gbifPublisher:
       "https://www.gbif.org/publisher/c02486e8-eb54-4e94-81d8-1038cc58e208",
+    hyperlabel: {
+      baseUrl: HYPERLABEL_BASE_URL,
+      recent: (options: { limit: number; offset: number; tier: string }) => {
+        const searchParams = new URLSearchParams({
+          limit: String(options.limit),
+          offset: String(options.offset),
+          tier: options.tier,
+        });
+
+        return `${HYPERLABEL_BASE_URL}/api/recent?${searchParams.toString()}`;
+      },
+    },
   },
   public: {
     icon: "/assets/media/images/app-icon.png",
   },
   assets: {
     treeDataTemplate: "/templates/tree-data-template.csv",
-    treeDataBasicTemplate: "/templates/tree-data-basic-template.csv",
-    treeDataDetailedTemplate: "/templates/tree-data-detailed-template.csv",
+    treeDataBasicTemplate: "/templates/tree-data-basic-xlsform.xlsx",
+    treeDataDetailedTemplate: "/templates/tree-data-detailed-xlsform.xlsx",
   },
   api: {
+    atproto: {
+      ensureProfileRecords: "/api/atproto/ensure-profile-records",
+    },
+    brand: {
+      fetchInfo: "/api/brand/fetch-info",
+    },
     upload: {
       trees: {
         datasets: "/api/upload/trees/datasets",
       },
-    },
-    onboarding: {
-      sendVerificationCode: "/onboarding/api/send-verification-code",
-      verifyEmailCode: "/onboarding/api/verify-email-code",
-      generateShortDescription: "/onboarding/api/generate-short-description",
-      fetchBrandInfo: "/onboarding/api/fetch-brand-info",
-      onboard: "/onboarding/api/onboard",
     },
     aws: {
       upload: {

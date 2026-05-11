@@ -1,15 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FileDropStep from "./FileDropStep";
 import ColumnMappingStep from "./ColumnMappingStep";
 import PreviewStep from "./PreviewStep";
-import UploadStep, { readPendingUpload } from "./UploadStep";
+import UploadStep from "./UploadStep";
+import { TREE_UPLOAD_EVENTS } from "@/lib/analytics/events";
+import { getTreeUploadStepName } from "@/lib/analytics/tree-upload";
+import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
+import { useAnalyticsConsent } from "@/lib/analytics/use-analytics-consent";
 import type { ColumnMapping, ValidatedRow } from "@/lib/upload/types";
+import type { KoboMediaZipIndex } from "@/lib/upload/kobo-media-zip";
 import {
   NO_UPLOAD_DATASET_SELECTION,
   type UploadDatasetSelection,
-} from "./upload-dataset-selection";
+} from "@/lib/upload/upload-dataset-selection";
+import { readPendingUpload } from "./upload-session";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -18,6 +24,8 @@ import {
 type WizardState = {
   currentStep: 1 | 2 | 3 | 4;
   file: File | null;
+  koboMediaZipFile: File | null;
+  koboMediaZipIndex: KoboMediaZipIndex | null;
   parsedData: Record<string, string>[] | null;
   headers: string[] | null;
   mappings: ColumnMapping[];
@@ -29,6 +37,8 @@ type WizardState = {
 const INITIAL_STATE: WizardState = {
   currentStep: 1,
   file: null,
+  koboMediaZipFile: null,
+  koboMediaZipIndex: null,
   parsedData: null,
   headers: null,
   mappings: [],
@@ -37,6 +47,20 @@ const INITIAL_STATE: WizardState = {
   datasetSelection: NO_UPLOAD_DATASET_SELECTION,
 };
 
+type InitializedWizard = {
+  state: WizardState;
+  uploadId: string;
+  restoredPendingUpload: boolean;
+};
+
+function createUploadId(): string {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `tree-upload-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 /**
  * Lazy initializer for wizard state.
  * On first render, checks sessionStorage for pending upload data
@@ -44,20 +68,36 @@ const INITIAL_STATE: WizardState = {
  * This runs synchronously during the initial render, not inside an effect,
  * so it avoids the cascading-render lint rule.
  */
-function initWizardState(did: string): WizardState {
+function initWizard(did: string): InitializedWizard {
   // sessionStorage is only available in the browser
-  if (typeof window === "undefined") return INITIAL_STATE;
+  if (typeof window === "undefined") {
+    return {
+      state: INITIAL_STATE,
+      uploadId: createUploadId(),
+      restoredPendingUpload: false,
+    };
+  }
+
   const pending = readPendingUpload(did);
   if (pending) {
     return {
-      ...INITIAL_STATE,
-      validRows: pending.validRows,
-      establishmentMeans: pending.establishmentMeans,
-      datasetSelection: pending.datasetSelection,
-      currentStep: 4,
+      state: {
+        ...INITIAL_STATE,
+        validRows: pending.validRows,
+        establishmentMeans: pending.establishmentMeans,
+        datasetSelection: pending.datasetSelection,
+        currentStep: 4,
+      },
+      uploadId: pending.uploadId ?? createUploadId(),
+      restoredPendingUpload: true,
     };
   }
-  return INITIAL_STATE;
+
+  return {
+    state: INITIAL_STATE,
+    uploadId: createUploadId(),
+    restoredPendingUpload: false,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,11 +189,62 @@ type TreeUploadWizardProps = {
 export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
   // Lazy initializer: checks sessionStorage on first render for pending upload
   // data (e.g. after an OAuth redirect) and restores to step 4 if found.
-  const [state, setState] = useState<WizardState>(() => initWizardState(did));
+  const [initialWizard] = useState(() => initWizard(did));
+  const [state, setState] = useState<WizardState>(initialWizard.state);
+  const [uploadId, setUploadId] = useState(initialWizard.uploadId);
+  const flowStartedUploadIdRef = useRef<string | null>(null);
+  const lastViewedStepRef = useRef<string | null>(null);
+  const restoredPendingUploadRef = useRef(initialWizard.restoredPendingUpload);
+  const analyticsConsent = useAnalyticsConsent();
+
+  useEffect(() => {
+    if (analyticsConsent !== "granted") {
+      return;
+    }
+
+    if (flowStartedUploadIdRef.current === uploadId) {
+      return;
+    }
+
+    if (restoredPendingUploadRef.current) {
+      restoredPendingUploadRef.current = false;
+      flowStartedUploadIdRef.current = uploadId;
+      return;
+    }
+
+    if (trackTreeUploadEvent(TREE_UPLOAD_EVENTS.FLOW_STARTED, { uploadId })) {
+      flowStartedUploadIdRef.current = uploadId;
+    }
+  }, [analyticsConsent, uploadId]);
+
+  useEffect(() => {
+    if (analyticsConsent !== "granted") {
+      return;
+    }
+
+    const stepName = getTreeUploadStepName(state.currentStep);
+    const stepKey = `${uploadId}:${state.currentStep}`;
+
+    if (lastViewedStepRef.current === stepKey) {
+      return;
+    }
+
+    const tracked = trackTreeUploadEvent(TREE_UPLOAD_EVENTS.STEP_VIEWED, {
+      uploadId,
+      stepIndex: state.currentStep,
+      stepName,
+    });
+
+    if (tracked) {
+      lastViewedStepRef.current = stepKey;
+    }
+  }, [analyticsConsent, state.currentStep, uploadId]);
 
   // ── Step 1 → 2: file parsed and initial mappings detected ─────────────────
   const handleFileAndMappings = (
     file: File,
+    koboMediaZipFile: File | null,
+    koboMediaZipIndex: KoboMediaZipIndex | null,
     parsedData: Record<string, string>[],
     headers: string[],
     mappings: ColumnMapping[],
@@ -163,6 +254,8 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
     setState((prev) => ({
       ...prev,
       file,
+      koboMediaZipFile,
+      koboMediaZipIndex,
       parsedData,
       headers,
       mappings,
@@ -189,6 +282,7 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
 
   // ── Step 4 → 1: wizard complete, reset ────────────────────────────────────
   const handleComplete = () => {
+    setUploadId(createUploadId());
     setState(INITIAL_STATE);
   };
 
@@ -214,6 +308,8 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
     headers,
     mappings,
     validRows,
+    koboMediaZipFile,
+    koboMediaZipIndex,
     establishmentMeans,
     datasetSelection,
   } = state;
@@ -232,6 +328,7 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
       {/* Step 1: File drop */}
       {currentStep === 1 && (
         <FileDropStep
+          uploadId={uploadId}
           did={did}
           initialEstablishmentMeans={establishmentMeans}
           initialDatasetSelection={datasetSelection}
@@ -242,6 +339,7 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
       {/* Step 2: Column mapping */}
       {currentStep === 2 && headers !== null && parsedData !== null && (
         <ColumnMappingStep
+          uploadId={uploadId}
           headers={headers}
           mappings={mappings}
           sampleData={parsedData.slice(0, 5)}
@@ -254,8 +352,10 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
       {/* Step 3: Preview & validate */}
       {currentStep === 3 && parsedData !== null && (
         <PreviewStep
+          uploadId={uploadId}
           parsedData={parsedData}
           mappings={mappings}
+          koboMediaZipIndex={koboMediaZipIndex}
           onBack={handleBackToStep2}
           onNext={handleValidRows}
         />
@@ -264,8 +364,10 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
       {/* Step 4: Upload to PDS */}
       {currentStep === 4 && (
         <UploadStep
+          uploadId={uploadId}
           did={did}
           validRows={validRows}
+          koboMediaZipFile={koboMediaZipFile}
           establishmentMeans={establishmentMeans}
           datasetSelection={datasetSelection}
           backLabel={parsedData !== null ? "Back to Preview" : "Start Over"}

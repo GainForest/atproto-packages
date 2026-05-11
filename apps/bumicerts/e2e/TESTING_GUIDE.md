@@ -2,6 +2,8 @@
 
 Complete guide for running E2E tests individually or as a suite.
 
+For agent-facing test routing and check selection, start with `../agents/TESTING.md`.
+
 ---
 
 ## Prerequisites

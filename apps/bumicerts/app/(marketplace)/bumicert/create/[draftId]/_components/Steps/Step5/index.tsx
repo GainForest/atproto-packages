@@ -43,8 +43,8 @@ import { useModal } from "@/components/ui/modal/context";
 import useNewBumicertStore from "../../../store";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import { FundingConfigModal } from "@/components/global/modals/funding/config";
-import { indexerTrpc } from "@/lib/trpc/indexer/client";
-import { BumicertCardVisual } from "@/app/(marketplace)/explore/_components/BumicertCard";
+import { BumicertCardVisual } from "@/components/bumicert/BumicertCard";
+import { useCurrentAccountIdentity } from "@/hooks/use-current-account-identity";
 import {
   BUMICERT_COVER_IMAGE_MAX_SIZE_BYTES,
   BUMICERT_COVER_IMAGE_MAX_SIZE_MB,
@@ -53,6 +53,11 @@ import {
 
 const FEEDBACK_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSfCTtRzKzfwmnpJoPFYyOeGokTlRcKkvpb-Urme84gpBrCCPA/viewform";
+
+function getBumicertIdFromUri(uri: string): string {
+  const parsed = parseAtUri(uri);
+  return `${parsed.did}-${parsed.rkey}`;
+}
 
 const ProgressItem = ({
   iconset,
@@ -187,13 +192,10 @@ const Step5 = () => {
     setIsBumicertCreationMutationInFlight,
   ] = useState(false);
   const [hasClickedPublish, setHasClickedPublish] = useState(false);
-  const { data: orgData } = indexerTrpc.organization.byDid.useQuery(
-    { did: auth.user?.did ?? "" },
-    { enabled: !!auth.user?.did },
-  );
-
-  const organizationName = orgData?.org?.record?.displayName ?? "";
-  const organizationLogoUrl = orgData?.org?.record?.logo?.uri ?? null;
+  const {
+    displayName: organizationName,
+    logoUrl: organizationLogoUrl,
+  } = useCurrentAccountIdentity();
 
   const { pushModal, show } = useModal();
 
@@ -514,20 +516,31 @@ const Step5 = () => {
 
               {/* Action buttons */}
               <div className="mt-4 flex flex-col gap-2 w-full items-center">
-                {/* Primary: View Bumicert */}
+                {/* Primary: continue into evidence linking */}
                 <Button className="w-full md:w-fit" asChild>
                   <Link
-                    href={links.bumicert.view(
-                      `${parseAtUri(createdBumicertResponse.uri).did}-${parseAtUri(createdBumicertResponse.uri).rkey}`,
+                    href={links.bumicert.viewTab(
+                      getBumicertIdFromUri(createdBumicertResponse.uri),
+                      "timeline",
                     )}
                   >
-                    View Bumicert <ArrowRightIcon />
+                    Link evidence now <ArrowRightIcon />
+                  </Link>
+                </Button>
+
+                <Button variant="outline" className="w-full md:w-fit" asChild>
+                  <Link
+                    href={links.bumicert.view(
+                      getBumicertIdFromUri(createdBumicertResponse.uri),
+                    )}
+                  >
+                    View Bumicert
                   </Link>
                 </Button>
 
                 {/* Secondary: Set Up Donations */}
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   className="w-full md:w-fit"
                   onClick={handleOpenFundingConfig}
                 >

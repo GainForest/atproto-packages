@@ -39,11 +39,6 @@ export const serverEnv = createEnv({
     ATPROTO_JWK_PRIVATE: z.string().min(1),
     COOKIE_SECRET: z.string().min(32),
 
-    // PDS admin credentials
-    PDS_ADMIN_IDENTIFIER: z.string().min(1),
-    PDS_ADMIN_PASSWORD: z.string().min(1),
-    INVITE_CODES_PASSWORD: z.string().min(1),
-
     // Supabase (service role — server only)
     SUPABASE_URL: z.string().url(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
@@ -61,9 +56,6 @@ export const serverEnv = createEnv({
     // External AI / Brand APIs (optional)
     GEMINI_API_KEY: z.string().min(1).optional(),
     BRANDFETCH_API_KEY: z.string().min(1).optional(),
-
-    // Database
-    POSTGRES_URL_NON_POOLING_ATPROTO_AUTH_MAPPING: z.string().url(),
 
     // Rate-limiting
     RATE_LIMIT_HMAC_KEY: z.string().min(32),
@@ -96,9 +88,6 @@ export const serverEnv = createEnv({
     STAGING_URL: process.env.STAGING_URL,
     ATPROTO_JWK_PRIVATE: process.env.ATPROTO_JWK_PRIVATE,
     COOKIE_SECRET: process.env.COOKIE_SECRET,
-    PDS_ADMIN_IDENTIFIER: process.env.PDS_ADMIN_IDENTIFIER,
-    PDS_ADMIN_PASSWORD: process.env.PDS_ADMIN_PASSWORD,
-    INVITE_CODES_PASSWORD: process.env.INVITE_CODES_PASSWORD,
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     SUPABASE_KEY: process.env.SUPABASE_KEY,
@@ -109,8 +98,6 @@ export const serverEnv = createEnv({
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     BRANDFETCH_API_KEY: process.env.BRANDFETCH_API_KEY,
-    POSTGRES_URL_NON_POOLING_ATPROTO_AUTH_MAPPING:
-      process.env.POSTGRES_URL_NON_POOLING_ATPROTO_AUTH_MAPPING,
     RATE_LIMIT_HMAC_KEY: process.env.RATE_LIMIT_HMAC_KEY,
     RATE_LIMIT_FAIL_OPEN: process.env.RATE_LIMIT_FAIL_OPEN,
     DEBUG: process.env.DEBUG,

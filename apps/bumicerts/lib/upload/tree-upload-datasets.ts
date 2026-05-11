@@ -1,5 +1,5 @@
 import { links } from "@/lib/links";
-import type { ExistingUploadDatasetSelection } from "@/app/(upload)/upload/trees/_components/upload-dataset-selection";
+import type { ExistingUploadDatasetSelection } from "@/lib/upload/upload-dataset-selection";
 
 export type UploadTreeDatasetItem = ExistingUploadDatasetSelection & {
   createdAt: string | null;

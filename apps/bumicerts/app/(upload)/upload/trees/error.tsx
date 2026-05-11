@@ -1,8 +1,8 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import ErrorPage from "@/components/error-page";
 import Container from "@/components/ui/container";
+import { useTreesMode } from "./_hooks/useTreesMode";
 
 export default function TreesError({
   error,
@@ -11,8 +11,8 @@ export default function TreesError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const searchParams = useSearchParams();
-  const isUploadMode = searchParams.get("mode") === "upload";
+  const [mode] = useTreesMode();
+  const isUploadMode = mode === "upload";
 
   return (
     <Container className="pt-4">

@@ -3,6 +3,8 @@
 import { useEffect, useRef } from "react";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { checkSessionAndGetProfile } from "@/components/actions/oauth";
+import { UNAUTHENTICATED_ACCOUNT_SUMMARY } from "@/lib/account/client-auth";
+import { indexerTrpc } from "@/lib/trpc/indexer/client";
 
 /**
  * Provider component that initializes ATProto session state.
@@ -25,11 +27,17 @@ import { checkSessionAndGetProfile } from "@/components/actions/oauth";
 export function AtprotoProvider({ children }: { children: React.ReactNode }) {
   const initialized = useRef(false);
   const setAuth = useAtprotoStore((state) => state.setAuth);
+  const accountUtils = indexerTrpc.useUtils();
 
   useEffect(() => {
     // Prevent double initialization in React Strict Mode
     if (initialized.current) return;
     initialized.current = true;
+
+    const syncUnauthenticatedAccountCache = async () => {
+      await accountUtils.account.current.cancel();
+      accountUtils.account.current.setData(undefined, UNAUTHENTICATED_ACCOUNT_SUMMARY);
+    };
 
     const initSession = async () => {
       try {
@@ -55,16 +63,18 @@ export function AtprotoProvider({ children }: { children: React.ReactNode }) {
             avatar: profile?.avatar,
           });
         } else {
+          await syncUnauthenticatedAccountCache();
           setAuth(null);
         }
       } catch (error) {
         console.error("Error checking session:", error);
+        await syncUnauthenticatedAccountCache();
         setAuth(null);
       }
     };
 
     initSession();
-  }, [setAuth]);
+  }, [accountUtils, setAuth]);
 
   return <>{children}</>;
 }

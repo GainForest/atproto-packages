@@ -31,6 +31,8 @@ export const ModalHeader = ({
             variant={"secondary"}
             size={"icon"}
             className="p-0 h-6 w-6"
+            type="button"
+            aria-label="Go back"
             onClick={() => {
               backAction();
             }}
@@ -83,15 +85,7 @@ export const ModalContent = ({
   const mode = useContext(ModalModeContext);
   if (mode === "drawer") {
     return (
-      <>
-        {dismissible && (
-          <div className="bg-muted mx-auto hidden h-2 w-[100px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
-        )}
-        <div
-          data-modal-dismissible={dismissible ? "true" : "false"}
-          {...props}
-        />
-      </>
+      <div data-modal-dismissible={dismissible ? "true" : "false"} {...props} />
     );
   }
   return (

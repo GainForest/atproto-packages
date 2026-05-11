@@ -4,10 +4,10 @@ import { isCertifiedLocationRecordUri, parseAtUri } from "../viewers/shared/refe
 import type { ResolvedAttachmentReference } from "../viewers/shared/referenceResolution/referenceViewModel";
 
 type ParsedAttachmentBlobItem = Extract<ParsedAttachmentContentItem, { kind: "blob" }>;
-export type FeedTileKind = "site" | "tree" | "audio" | "image" | "video" | "pdf" | "file" | "link" | "record";
+export type FeedTileKind = "site" | "tree" | "dataset" | "biodiversity" | "audio" | "image" | "video" | "pdf" | "file" | "link" | "record";
 
 export type TimelinePreviewPayload = {
-  kind: "site" | "image" | "video" | "audio" | "pdf" | "link" | "text";
+  kind: "site" | "green-globe" | "image" | "video" | "audio" | "pdf" | "link" | "text";
   href: string;
   title: string;
   body?: string;
@@ -36,6 +36,17 @@ function getFileNameFromHref(href: string): string {
   }
 }
 
+function getPathExtensionFromHref(href: string): string | null {
+  try {
+    const parsed = new URL(href);
+    const fileName = parsed.pathname.split("/").filter(Boolean).at(-1);
+    const extension = fileName?.split(".").at(-1)?.toLowerCase();
+    return extension && extension !== fileName ? extension : null;
+  } catch {
+    return null;
+  }
+}
+
 function getPreviewFromHref(href: string, mimeType: string | null): TimelinePreviewPayload {
   const normalizedMime = mimeType?.toLowerCase() ?? "";
   if (normalizedMime.startsWith("image/")) {
@@ -50,6 +61,23 @@ function getPreviewFromHref(href: string, mimeType: string | null): TimelinePrev
   if (normalizedMime.includes("pdf")) {
     return { kind: "pdf", href, title: "PDF" };
   }
+
+  if (!normalizedMime) {
+    const extension = getPathExtensionFromHref(href);
+    if (extension && ["jpg", "jpeg", "png", "gif", "webp", "avif", "svg"].includes(extension)) {
+      return { kind: "image", href, title: "Image" };
+    }
+    if (extension && ["mp4", "webm", "mov", "m4v"].includes(extension)) {
+      return { kind: "video", href, title: "Video" };
+    }
+    if (extension && ["mp3", "wav", "m4a", "ogg", "flac"].includes(extension)) {
+      return { kind: "audio", href, title: "Audio" };
+    }
+    if (extension === "pdf") {
+      return { kind: "pdf", href, title: "PDF" };
+    }
+  }
+
   return { kind: "link", href, title: getFileNameFromHref(href) };
 }
 function tileKindFromPreview(preview: TimelinePreviewPayload): FeedTileKind {
@@ -58,6 +86,9 @@ function tileKindFromPreview(preview: TimelinePreviewPayload): FeedTileKind {
   }
   if (preview.kind === "text") {
     return "record";
+  }
+  if (preview.kind === "green-globe") {
+    return "dataset";
   }
   return preview.kind;
 }
@@ -71,6 +102,9 @@ function fallbackReferenceTitle(uri: string): { title: string; kind: FeedTileKin
   }
   if (parsed.collection === "app.gainforest.dwc.occurrence") {
     return { title: "Linked tree record", kind: "tree" };
+  }
+  if (parsed.collection === "app.gainforest.dwc.dataset") {
+    return { title: "Linked dataset", kind: "dataset" };
   }
   if (parsed.collection === "app.gainforest.ac.audio") {
     return { title: "Linked audio", kind: "audio" };
@@ -90,6 +124,15 @@ function previewForReference(
           })
         : null);
     return href ? { kind: "site", href, title: reference.title } : null;
+  }
+
+  if (reference?.kind === "dataset" && reference.greenGlobeHref) {
+    return {
+      kind: "green-globe",
+      href: reference.greenGlobeHref,
+      title: reference.title,
+      body: reference.description,
+    };
   }
 
   if (reference?.kind === "audio" && reference.actionHref) {
@@ -166,11 +209,13 @@ export function buildTimelineFeedTiles(args: {
           kind:
             reference?.kind === "location"
               ? "site"
-              : reference?.kind === "occurrence"
-                ? "tree"
-                : reference?.kind === "audio"
-                  ? "audio"
-                  : fallback.kind,
+              : reference?.kind === "dataset"
+                ? "dataset"
+                : reference?.kind === "occurrence"
+                  ? "tree"
+                  : reference?.kind === "audio"
+                    ? "audio"
+                    : fallback.kind,
           title: cleanText(reference?.title) ?? fallback.title,
           caption:
             cleanText(reference?.title) ??
@@ -189,11 +234,4 @@ export function buildTimelineFeedTiles(args: {
 
     return [];
   });
-}
-
-export function getFeedNoun(contentTypeLabel: string, count: number): string {
-  if (count === 1) {
-    return contentTypeLabel;
-  }
-  return contentTypeLabel.endsWith("s") ? contentTypeLabel : `${contentTypeLabel}s`;
 }

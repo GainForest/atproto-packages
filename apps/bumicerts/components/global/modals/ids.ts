@@ -3,6 +3,9 @@ export const MODAL_IDS = {
   // Auth
   AUTH: "auth",
 
+  // Account setup
+  ACCOUNT_SETUP_CHOICE: "account/setup-choice",
+
   // Cart
   CART: "cart",
 
@@ -20,6 +23,9 @@ export const MODAL_IDS = {
   DONATE_CONFIRM: "donate/confirm",
   DONATE_SUCCESS: "donate/success",
 
+  // Explore
+  EXPLORE_ALL_FILTERS: "explore/all-filters",
+
   // Manage / org management
   MANAGE_IMAGE_EDITOR: "manage/image-editor",
   MANAGE_COUNTRY_SELECTOR: "manage/country-selector",
@@ -31,6 +37,7 @@ export const MODAL_IDS = {
 
   // Upload flows
   UPLOAD_TREES_COMPLETE: "upload/trees/complete",
+  UPLOAD_TREES_FEEDBACK: "upload/trees/feedback",
 } as const;
 
 export type ModalId = (typeof MODAL_IDS)[keyof typeof MODAL_IDS];

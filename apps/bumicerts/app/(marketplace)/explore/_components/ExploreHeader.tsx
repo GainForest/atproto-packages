@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { links } from "@/lib/links";
 import { countries } from "@/lib/countries";
 import { realms, countryToRealm } from "@/lib/bioregions";
+import { MODAL_IDS } from "@/components/global/modals/ids";
 import { useHeaderContext } from "../../_components/Header/context";
 import { HeaderContent } from "../../_components/Header/HeaderContent";
 import type { BumicertData } from "@/lib/types";
@@ -317,7 +318,7 @@ export function ExploreHeaderSlots({
   const openFiltersModal = async () => {
     modal.pushModal(
       {
-        id: "all-filters",
+        id: MODAL_IDS.EXPLORE_ALL_FILTERS,
         content: (
           <AllFiltersModalContent
             initialFilters={filters}

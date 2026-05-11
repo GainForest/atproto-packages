@@ -24,16 +24,19 @@
 
 import { NextRequest } from "next/server";
 import type { AtUriString } from "@atproto/lex";
+import { z } from "zod";
 import { serverEnv } from "@/lib/env/server";
 import { clientEnv } from "@/lib/env/client";
+import { formatUsdcAmount, parseUsdcAmount, usdcAmountStringSchema } from "@/lib/facilitator/amount";
 import { parsePaymentSignature } from "@/lib/facilitator/eip3009";
 import { executeTransferWithAuthorization, executeSimpleTransfer } from "@/lib/facilitator/index";
+import { fetchCidByAtUri } from "@/graphql/indexer/queries/activities";
+import { fetchVerifiedAddress } from "@/graphql/indexer/queries/linkEvm";
 import {
   makeCredentialAgentLayer,
   mutations,
 } from "@gainforest/atproto-mutations-core";
 import { Effect } from "effect";
-import { GraphQLClient } from "graphql-request";
 
 export const dynamic = "force-dynamic";
 
@@ -41,19 +44,21 @@ export const dynamic = "force-dynamic";
 // Types
 // ---------------------------------------------------------------------------
 
-type BatchItem = {
-  activityUri: string;
-  orgDid: string;
-  amount: string;
-};
+const batchItemSchema = z.object({
+  activityUri: z.string().trim().min(1),
+  orgDid: z.string().trim().min(1),
+  amount: usdcAmountStringSchema,
+});
 
-type BatchRequestBody = {
-  items: BatchItem[];
-  totalAmount: string;
-  currency?: string;
-  donorDid?: string;
-  anonymous?: boolean;
-};
+const batchRequestSchema = z.object({
+  items: z.array(batchItemSchema).min(1, "At least one item is required."),
+  totalAmount: usdcAmountStringSchema,
+  currency: z.literal("USDC").optional(),
+  donorDid: z.string().trim().min(1).optional(),
+  anonymous: z.boolean(),
+});
+
+type BatchItem = z.infer<typeof batchItemSchema>;
 
 type BatchItemResult = {
   activityUri: string;
@@ -69,34 +74,6 @@ type BatchItemResult = {
 // ---------------------------------------------------------------------------
 // Helpers — resolve recipient wallet
 // ---------------------------------------------------------------------------
-
-const ATTESTATION_QUERY = `
-  query VerifyRecipient($did: String!) {
-    gainforest {
-      link {
-        evm(limit: 1, where: { did: $did, valid: true }) {
-          data {
-            record {
-              address
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-type AttestationQueryResult = {
-  gainforest: {
-    link: {
-      evm: {
-        data: Array<{
-          record: { address: string | null };
-        }>;
-      };
-    };
-  };
-};
 
 type HexAddress = `0x${string}`;
 type DidIdentifier = `did:${string}:${string}`;
@@ -123,15 +100,7 @@ async function resolveRecipientWallet(
   orgDid: string
 ): Promise<HexAddress | null> {
   try {
-    const client = new GraphQLClient(clientEnv.NEXT_PUBLIC_INDEXER_URL, {
-      headers: { "ngrok-skip-browser-warning": "true" },
-    });
-    const data = await client.request<AttestationQueryResult>(
-      ATTESTATION_QUERY,
-      { did: orgDid }
-    );
-    const records = data?.gainforest?.link?.evm?.data ?? [];
-    const resolvedAddress = records[0]?.record.address;
+    const resolvedAddress = await fetchVerifiedAddress(orgDid);
     if (!resolvedAddress || !isHexAddress(resolvedAddress)) {
       return null;
     }
@@ -145,55 +114,18 @@ async function resolveRecipientWallet(
 // Activity CID resolver — fetches CID for an activity AT-URI from indexer
 // ---------------------------------------------------------------------------
 
-const ACTIVITY_CID_QUERY = `
-  query GetActivityCid($did: String!, $rkey: String!) {
-    hypercerts {
-      claim {
-        activity(where: { did: $did, rkey: $rkey }, limit: 1) {
-          data {
-            metadata {
-              cid
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-type ActivityCidQueryResult = {
-  hypercerts: {
-    claim: {
-      activity: {
-        data: Array<{
-          metadata: { cid: string | null };
-        }>;
-      };
-    };
-  };
-};
-
 async function getActivityCid(activityUri: string): Promise<string> {
-  // Parse AT-URI: at://did/collection/rkey
-  const match = activityUri.match(/^at:\/\/([^/]+)\/[^/]+\/([^/]+)$/);
-  if (!match) {
+  if (!isAtUriString(activityUri)) {
     throw new Error(`Invalid activity AT-URI format: ${activityUri}`);
   }
-  const [, did, rkey] = match;
 
   try {
-    const client = new GraphQLClient(clientEnv.NEXT_PUBLIC_INDEXER_URL, {
-      headers: { "ngrok-skip-browser-warning": "true" },
-    });
-    const data = await client.request<ActivityCidQueryResult>(
-      ACTIVITY_CID_QUERY,
-      { did, rkey }
-    );
-    const records = data?.hypercerts?.claim?.activity?.data ?? [];
-    if (!records.length || !records[0].metadata.cid) {
+    const cid = await fetchCidByAtUri(activityUri);
+    if (!cid) {
       throw new Error(`Activity CID not found for ${activityUri}`);
     }
-    return records[0].metadata.cid;
+
+    return cid;
   } catch (error) {
     throw new Error(
       `Failed to fetch activity CID for ${activityUri}: ${error instanceof Error ? error.message : String(error)}`
@@ -236,37 +168,20 @@ export async function POST(req: NextRequest) {
   }
 
   // Parse request body
-  let body: BatchRequestBody;
-  try {
-    body = await req.json();
-  } catch {
+  const rawBody = await req.json().catch(() => null);
+  const parsedBody = batchRequestSchema.safeParse(rawBody);
+
+  if (!parsedBody.success) {
     return Response.json(
-      { error: "Invalid request body" },
+      {
+        error: "Invalid request body",
+        issues: parsedBody.error.flatten(),
+      },
       { status: 400 }
     );
   }
 
-  // Validate body structure
-  if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
-    return Response.json(
-      { error: "items array is required and must not be empty" },
-      { status: 400 }
-    );
-  }
-
-  if (!body.totalAmount) {
-    return Response.json(
-      { error: "totalAmount is required" },
-      { status: 400 }
-    );
-  }
-
-  if (typeof body.anonymous !== "boolean") {
-    return Response.json(
-      { error: "Please choose whether to donate anonymously." },
-      { status: 400 }
-    );
-  }
+  const body = parsedBody.data;
 
   const donorChoseAnonymous = body.anonymous;
   let donorDid: DidIdentifier | undefined;
@@ -317,11 +232,25 @@ export async function POST(req: NextRequest) {
   }
 
   // Verify total amount matches
-  const authAmount = Number(authorization.value) / 1e6;
-  const expectedTotal = parseFloat(body.totalAmount);
-  if (Math.abs(authAmount - expectedTotal) > 0.01) {
+  const authAmount = BigInt(authorization.value);
+  const expectedTotal = parseUsdcAmount(body.totalAmount);
+  if (authAmount !== expectedTotal) {
     return Response.json(
-      { error: `Authorization amount (${authAmount}) does not match total (${expectedTotal})` },
+      {
+        error: `Authorization amount (${formatUsdcAmount(authAmount)}) does not match total (${body.totalAmount})`,
+      },
+      { status: 422 }
+    );
+  }
+
+  const summedItemAmount = body.items.reduce(
+    (total, item) => total + parseUsdcAmount(item.amount),
+    BigInt(0),
+  );
+
+  if (summedItemAmount !== expectedTotal) {
+    return Response.json(
+      { error: "Item amounts must sum to totalAmount" },
       { status: 422 }
     );
   }
@@ -431,7 +360,7 @@ export async function POST(req: NextRequest) {
     }
 
     const recipientWallet = wallet;
-    const amountNumber = parseFloat(item.amount);
+    const amountNumber = Number(item.amount);
 
     console.log(`[fund/batch] Processing item ${index + 1}/${resolvedItems.length} for ${item.activityUri}`);
 

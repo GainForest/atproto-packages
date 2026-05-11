@@ -27,19 +27,20 @@ type FieldDoc = {
 const TEMPLATE_DOWNLOADS = [
   {
     href: links.assets.treeDataBasicTemplate,
-    download: "tree-data-basic-template.csv",
-    label: "Download basic CSV",
+    download: "tree-data-basic-xlsform.xlsx",
+    label: "Download basic XLSForm",
   },
   {
     href: links.assets.treeDataDetailedTemplate,
-    download: "tree-data-detailed-template.csv",
-    label: "Download detailed CSV",
+    download: "tree-data-detailed-xlsform.xlsx",
+    label: "Download detailed XLSForm",
   },
 ] as const;
 
 /**
- * Fields shown in the documentation table. Names match the CSV template
- * column headers (e.g. `height`, not the internal `totalHeight`).
+ * Fields shown in the documentation table. Names match the XLSForm question
+ * names and exported CSV/TSV column headers (e.g. `height`, not the internal
+ * `totalHeight`).
  */
 const FIELD_DOCS: FieldDoc[] = [
   {
@@ -118,31 +119,27 @@ const FIELD_DOCS: FieldDoc[] = [
   },
   {
     field: "photo_tree",
-    description: "URL to a photo of the whole tree (Google Drive, etc.)",
-    format: "URL",
-    helperText: "Must be publicly accessible — no sign-in required",
-    helperTone: "destructive",
+    description: "Photo of the whole tree. Kobo filename columns are matched from the Media Attachments ZIP.",
+    format: "Filename or URL",
+    helperText: "For KoboToolbox, upload the matching Media Attachments ZIP with your CSV export",
   },
   {
     field: "photo_leaf",
-    description: "URL to a photo of the leaf. Subject part auto-detected.",
-    format: "URL",
-    helperText: "Must be publicly accessible — no sign-in required",
-    helperTone: "destructive",
+    description: "Photo of the leaf. Subject part auto-detected.",
+    format: "Filename or URL",
+    helperText: "Kobo private URLs are not needed when the Media Attachments ZIP is provided",
   },
   {
     field: "photo_bark",
-    description: "URL to a photo of the bark. Subject part auto-detected.",
-    format: "URL",
-    helperText: "Must be publicly accessible — no sign-in required",
-    helperTone: "destructive",
+    description: "Photo of the bark. Subject part auto-detected.",
+    format: "Filename or URL",
+    helperText: "Kobo private URLs are not needed when the Media Attachments ZIP is provided",
   },
   {
     field: "photo_url",
-    description: "Generic photo URL column. Multiple URLs may be separated with commas or semicolons.",
-    format: "URL(s)",
+    description: "Generic photo URL or Kobo filename column. Multiple values may be separated with commas or semicolons.",
+    format: "Filename(s) or URL(s)",
     helperText: "Subject part is inferred from the column name; generic photos default to whole tree",
-    helperTone: "destructive",
   },
 ];
 
@@ -155,7 +152,7 @@ export default function TreeDataGuide() {
     <Accordion type="single" collapsible className="rounded-lg border">
       <AccordionItem value="guide" className="border-b-0">
         <AccordionTrigger className="px-4 hover:no-underline">
-          New to tree data? See accepted fields and download templates
+          New to tree data? See accepted fields and download XLSForms
         </AccordionTrigger>
 
         <AccordionContent className="px-4">
@@ -165,9 +162,11 @@ export default function TreeDataGuide() {
             <span className="font-semibold text-foreground">
               GBIF Darwin Core standards
             </span>
-            . Use the fields below to plan your data collection form or clean
-            your data before uploading. You may add extra fields for your own
-            use&nbsp;&mdash; just remove them before uploading.
+            . Use the XLSForm templates below to create a field data collection
+            project. The question names match the fields this uploader expects,
+            so CSV/TSV exports can be uploaded here with minimal mapping. You
+            may add extra fields for your own use&nbsp;&mdash; leave them unmapped
+            before uploading.
           </p>
 
           {/* Download templates */}
@@ -232,6 +231,49 @@ export default function TreeDataGuide() {
           <p className="text-xs text-muted-foreground mt-2">
             <span className="text-destructive font-medium">*</span> Required
             field
+          </p>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+}
+
+export function KoboExportGuide() {
+  return (
+    <Accordion type="single" collapsible className="rounded-lg border">
+      <AccordionItem value="kobo-export" className="border-b-0">
+        <AccordionTrigger className="px-4 hover:no-underline">
+          Using KoboToolbox? Here&apos;s what to export
+        </AccordionTrigger>
+
+        <AccordionContent className="space-y-4 border-t px-4 pt-4">
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            You&apos;ll need to export two files from Kobo before uploading here.
+          </p>
+
+          <ol className="space-y-3">
+            <li className="flex gap-3">
+              <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                1
+              </span>
+              <p className="text-sm leading-relaxed text-foreground">
+                In Kobo, go to your project → Data → Downloads. Select CSV format
+                and download.
+              </p>
+            </li>
+            <li className="flex gap-3">
+              <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                2
+              </span>
+              <p className="text-sm leading-relaxed text-foreground">
+                On the same page, also download Media Attachments (ZIP) — this
+                contains all your photos.
+              </p>
+            </li>
+          </ol>
+
+          <p className="border-t pt-3 text-xs leading-relaxed text-muted-foreground">
+            Upload the CSV below. If you have photos, upload the ZIP too.
           </p>
         </AccordionContent>
       </AccordionItem>

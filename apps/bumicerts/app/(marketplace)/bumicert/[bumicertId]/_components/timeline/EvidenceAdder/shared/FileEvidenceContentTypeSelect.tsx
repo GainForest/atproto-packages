@@ -15,11 +15,11 @@ export type { KnownEvidenceContentType } from "../../shared/evidenceContentTypeR
 const FILE_CONTENT_TYPE_OPTIONS = getFilePickerEvidenceContentTypeOptions();
 
 export function getDefaultFileContentType(): KnownEvidenceContentType {
-  const evidenceOption = FILE_CONTENT_TYPE_OPTIONS.find(
-    (option) => option.value === "evidence",
+  const documentOption = FILE_CONTENT_TYPE_OPTIONS.find(
+    (option) => option.value === "document",
   );
 
-  return evidenceOption?.value ?? FILE_CONTENT_TYPE_OPTIONS[0]?.value ?? "evidence";
+  return documentOption?.value ?? FILE_CONTENT_TYPE_OPTIONS[0]?.value ?? "evidence";
 }
 
 export function toKnownFileContentType(value: string): KnownEvidenceContentType {

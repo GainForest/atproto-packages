@@ -1,13 +1,13 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { TreeUploadSkeleton } from "./_components/TreeUploadSkeleton";
 import { TreesManageSkeleton } from "./_components/TreesManageSkeleton";
+import { useTreesMode } from "./_hooks/useTreesMode";
 
 export default function TreesLoading() {
-  const searchParams = useSearchParams();
+  const [mode] = useTreesMode();
 
-  return searchParams.get("mode") === "upload" ? (
+  return mode === "upload" ? (
     <TreeUploadSkeleton />
   ) : (
     <TreesManageSkeleton />

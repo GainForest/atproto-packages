@@ -3,7 +3,7 @@
  *
  * Two separate concerns:
  *
- * 1. SIGN-UP domains  — PDSes we control; we can mint invite codes for these.
+ * 1. SIGN-UP domains  — PDSes we control for app-managed account defaults.
  *    - Production:        gainforest.id
  *    - Non-prod (dev/staging/preview): gainforest.id, climateai.org
  *
@@ -21,19 +21,17 @@ import { clientEnv as env } from "@/lib/env/client";
 
 const isProduction = env.NEXT_PUBLIC_VERCEL_ENV === "production";
 
-// ─── Sign-up (invite-code PDSes we own) ──────────────────────────────────────
+// ─── Sign-up (app-managed default PDSes) ─────────────────────────────────────
 
 const PRODUCTION_SIGNUP_DOMAINS = ["gainforest.id"] as const;
 const DEV_SIGNUP_DOMAINS = ["climateai.org"] as const;
 
-export const signupPDSDomains = isProduction
+const signupPdsDomains = isProduction
   ? PRODUCTION_SIGNUP_DOMAINS
   : DEV_SIGNUP_DOMAINS;
 
-export type SignupPDSDomain = (typeof signupPDSDomains)[number];
-
 /** The PDS we create new accounts on by default (always gainforest.id). */
-export const defaultSignupPdsDomain: string = signupPDSDomains[0];
+export const defaultSignupPdsDomain: string = signupPdsDomains[0];
 
 // ─── Sign-in (dropdown options shown in the login modal) ─────────────────────
 
@@ -55,25 +53,6 @@ export const loginPDSDomains = isProduction
   : DEV_LOGIN_DOMAINS;
 
 export type LoginPDSDomain = (typeof loginPDSDomains)[number];
-
-// ─── Deprecated shims (kept so existing imports don't break immediately) ──────
-
-/**
- * @deprecated Use `signupPDSDomains` for sign-up, or `loginPDSDomains` for
- * the sign-in dropdown. Will be removed once all callsites are migrated.
- */
-export const allowedPDSDomains = signupPDSDomains;
-
-/** @deprecated Use `SignupPDSDomain` instead. */
-export type AllowedPDSDomain = SignupPDSDomain;
-
-/** @deprecated Use `defaultSignupPdsDomain` instead. */
-export const defaultPdsDomain: string = defaultSignupPdsDomain;
-
-// ─── Utility ──────────────────────────────────────────────────────────────────
-
-/** Returns true when running in a non-production environment. */
-export const isDevEnvironment = !isProduction;
 
 /**
  * Validates a custom PDS domain string entered by the user.

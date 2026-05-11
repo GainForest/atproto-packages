@@ -1,5 +1,14 @@
 # New Route Guidelines
 
+## Hard Rules / Non-Negotiables
+
+- Classify the route before building it.
+- If the page has static chrome plus one main data block, use the Shell pattern.
+- If the page is entirely driven by one fetch, use a full-page `loading.tsx` skeleton.
+- Skeletons contain no readable text. Use only mirrored `<Skeleton>` blocks.
+- If data fetch fails in `page.tsx`, return `<ErrorPage />`. Do not throw a generic render-time error.
+- Do not fetch the same data twice across the Shell and the main content.
+
 ## The SSR / SEO / First-Paint Problem
 
 Two goals are in tension:

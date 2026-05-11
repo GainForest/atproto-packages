@@ -25,15 +25,17 @@ export function ListEmpty({ tabId }: { tabId: ManagedEvidenceTabId }) {
       <p className="text-xs text-muted-foreground">
         No {tab.emptyLabel} uploaded yet.
       </p>
-      <Link
-        href={tab.manageHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
-      >
-        Upload {tab.emptyLabel}
-        <ExternalLinkIcon className="h-3 w-3" />
-      </Link>
+      {tab.manageHref ? (
+        <Link
+          href={tab.manageHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+        >
+          Upload {tab.emptyLabel}
+          <ExternalLinkIcon className="h-3 w-3" />
+        </Link>
+      ) : null}
     </div>
   );
 }

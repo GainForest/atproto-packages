@@ -27,14 +27,30 @@ function ShareButton() {
     >
       <AnimatePresence mode="wait" initial={false}>
         {copied ? (
-          <motion.span key="check" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }} transition={{ duration: 0.15 }} className="flex items-center gap-1.5">
+          <motion.span
+            key="check"
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.7 }}
+            transition={{ duration: 0.15 }}
+            className="flex items-center gap-1.5"
+          >
             <CheckIcon className="h-3.5 w-3.5 text-primary shrink-0" />
             <span className="text-xs font-medium text-primary">Copied!</span>
           </motion.span>
         ) : (
-          <motion.span key="share" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }} transition={{ duration: 0.15 }} className="flex items-center gap-1.5">
+          <motion.span
+            key="share"
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.7 }}
+            transition={{ duration: 0.15 }}
+            className="flex items-center gap-1.5"
+          >
             <Share2Icon className="h-3.5 w-3.5 text-foreground/60 shrink-0" />
-            <span className="text-xs font-medium text-foreground/60">Share</span>
+            <span className="text-xs font-medium text-foreground/60">
+              Share
+            </span>
           </motion.span>
         )}
       </AnimatePresence>
@@ -42,38 +58,56 @@ function ShareButton() {
   );
 }
 
+function BumicertMetaAvatar({ bumicert }: { bumicert: BumicertData }) {
+  return (
+    <Link href={links.account.byDid(bumicert.organizationDid)} className="shrink-0">
+      <div className="h-9 w-9 overflow-hidden rounded-full border border-border bg-muted">
+        {bumicert.logoUrl ? (
+          <Image
+            src={bumicert.logoUrl}
+            alt={bumicert.organizationName}
+            width={36}
+            height={36}
+            className="object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <BuildingIcon className="h-4 w-4 text-muted-foreground" />
+          </div>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function getCreatedAgo(createdAt: BumicertData["createdAt"]) {
+  return createdAt
+    ? formatDistanceToNow(new Date(createdAt), { addSuffix: true })
+    : null;
+}
+
 /** Avatar + org name + time ago + share button */
 export function BumicertCreationMeta({ bumicert }: { bumicert: BumicertData }) {
-  const createdAgo = bumicert.createdAt
-    ? formatDistanceToNow(new Date(bumicert.createdAt), { addSuffix: true })
-    : null;
+  const createdAgo = getCreatedAgo(bumicert.createdAt);
 
   return (
     <div className="flex items-center gap-3">
-      {/* Avatar */}
-      <Link href={links.organization.home(bumicert.organizationDid)} className="shrink-0">
-        <div className="h-9 w-9 rounded-full overflow-hidden bg-muted border border-border">
-          {bumicert.logoUrl ? (
-            <Image src={bumicert.logoUrl} alt={bumicert.organizationName} width={36} height={36} className="object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <BuildingIcon className="h-4 w-4 text-muted-foreground" />
-            </div>
-          )}
-        </div>
-      </Link>
+      <BumicertMetaAvatar bumicert={bumicert} />
 
-      {/* Name + time */}
-      <Link href={links.organization.home(bumicert.organizationDid)} className="flex flex-col min-w-0 group">
-        <span className="text-sm font-medium text-foreground leading-tight group-hover:text-primary transition-colors truncate">
+      <Link
+        href={links.account.byDid(bumicert.organizationDid)}
+        className="group flex min-w-0 flex-col"
+      >
+        <span className="truncate text-sm font-medium leading-tight text-foreground transition-colors group-hover:text-primary">
           {bumicert.organizationName}
         </span>
-        {createdAgo && (
-          <span className="text-xs text-muted-foreground leading-tight">{createdAgo}</span>
-        )}
+        {createdAgo ? (
+          <span className="text-xs leading-tight text-muted-foreground">
+            {createdAgo}
+          </span>
+        ) : null}
       </Link>
 
-      {/* Share — pushed to end */}
       <div className="ml-auto">
         <ShareButton />
       </div>
@@ -81,13 +115,42 @@ export function BumicertCreationMeta({ bumicert }: { bumicert: BumicertData }) {
   );
 }
 
-/** Objective chips only — title lives in the main content (DescriptionTab) above the description */
+/** Avatar + bumicert title + time ago + share button */
+export function BumicertTitleMeta({ bumicert }: { bumicert: BumicertData }) {
+  const createdAgo = getCreatedAgo(bumicert.createdAt);
+
+  return (
+    <div className="flex items-center gap-3">
+      <BumicertMetaAvatar bumicert={bumicert} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-sm font-medium leading-tight text-foreground">
+          {bumicert.title}
+        </span>
+        {createdAgo ? (
+          <span className="text-xs leading-tight text-muted-foreground">
+            {createdAgo}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="ml-auto">
+        <ShareButton />
+      </div>
+    </div>
+  );
+}
+
+/** Objective chips only */
 export function BumicertMeta({ bumicert }: { bumicert: BumicertData }) {
   if (bumicert.objectives.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.5">
       {bumicert.objectives.map((obj) => (
-        <span key={obj} className="text-[10px] uppercase tracking-[0.08em] text-foreground/60 bg-muted/60 border border-border/50 rounded-full px-2.5 py-0.5 font-medium">
+        <span
+          key={obj}
+          className="text-sm text-foreground/60 bg-foreground/5 rounded-full px-2.5 py-0.5 font-medium"
+        >
           {obj}
         </span>
       ))}

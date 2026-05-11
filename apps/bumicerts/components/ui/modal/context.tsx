@@ -97,11 +97,10 @@ const ModalStack = ({
         open={isOpen}
         onOpenChange={onOpenChange}
         dismissible={dismissible}
+        repositionInputs={false}
       >
-        <DrawerPlaceholder className="overflow-hidden">
-          <AnimateChangeInHeight className="relative">
-            {children}
-          </AnimateChangeInHeight>
+        <DrawerPlaceholder dismissible={dismissible}>
+          {children}
         </DrawerPlaceholder>
       </Drawer>
     );

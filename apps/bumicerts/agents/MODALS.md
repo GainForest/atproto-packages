@@ -1,5 +1,14 @@
 # Modal Guidelines
 
+## Hard Rules / Non-Negotiables
+
+- Never use a plain Radix `<Dialog>` or shadcn `<Sheet>` directly for app modals.
+- Always use the shared modal stack system in `components/ui/modal/`.
+- When opening from outside an existing modal flow, default to `pushModal(..., true)` and then call `show()`.
+- When navigating inside an existing modal flow, push the next modal without calling `show()` again.
+- Register every modal ID in `components/global/modals/ids.ts`. Never hardcode modal IDs inline.
+- If you are unsure whether a modal should be global or route-local, ask before placing it.
+
 ## Overview
 
 The app uses a custom stack-based modal system — **not** a plain Radix dialog or
@@ -29,7 +38,7 @@ function SomeTrigger() {
   const { pushModal, show } = useModal();
 
   const handleOpen = () => {
-    pushModal({ id: MODAL_IDS.MY_MODAL, content: <MyModal /> });
+    pushModal({ id: MODAL_IDS.MY_MODAL, content: <MyModal /> }, true);
     show();
   };
 
@@ -37,9 +46,9 @@ function SomeTrigger() {
 }
 ```
 
-**Both `pushModal` and `show` are required.** `pushModal` puts the modal on the stack;
-`show` makes the container visible. Calling only one will either show nothing or show
-an empty container.
+**From outside an existing modal flow, both `pushModal(..., true)` and `show()` are required.**
+`pushModal` puts the modal on the stack; `show()` makes the container visible. Calling
+only one will either show nothing or show an empty container.
 
 ### `replaceAll` — clearing the stack first
 
