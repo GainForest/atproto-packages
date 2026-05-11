@@ -209,6 +209,7 @@ export const trackBumicertDetailViewed = (bumicertId: string): void => {
 // ============================================
 
 const TREE_UPLOAD_DYNAMIC_KEYS: Array<keyof TreeUploadEventPayload> = [
+  "uploadId",
   "stepIndex",
   "stepName",
   "datasetMode",
