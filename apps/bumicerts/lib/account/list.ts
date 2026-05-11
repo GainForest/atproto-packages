@@ -29,6 +29,10 @@ import {
   AccountIndexerReadError,
   AccountRecordValidationError,
 } from "./errors";
+import {
+  listOrganizationDidsByLabelTier,
+  type OrganizationLabelTier,
+} from "./organization-labeler";
 import { buildOrganizationDataFromOrganizationAccount } from "./organization-data";
 
 const ORGANIZATION_ACTIVITY_COUNT_PAGE_SIZE = 500;
@@ -846,19 +850,34 @@ export async function readOrganizationAccountsByDids(
   );
 }
 
-export async function listOrganizationData(options?: {
-  limit?: number;
-}): Promise<OrganizationData[]> {
-  const limit = options?.limit ?? 1000;
+async function listOrganizationDidsFromIndexer(limit: number): Promise<string[]> {
   const response = await requestOrganizationListing(limit);
 
-  const dids = Array.from(
+  return Array.from(
     new Set(
       getConnectionNodes(response.appCertifiedActorOrganization)
         .map((node) => node.did)
         .filter((did): did is string => Boolean(did)),
     ),
   );
+}
+
+export async function listOrganizationData(options?: {
+  limit?: number;
+  labelTier?: OrganizationLabelTier;
+}): Promise<OrganizationData[]> {
+  const limit = Math.floor(options?.limit ?? 1000);
+
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return [];
+  }
+
+  const dids = options?.labelTier
+    ? await listOrganizationDidsByLabelTier({
+        tier: options.labelTier,
+        limit,
+      })
+    : await listOrganizationDidsFromIndexer(limit);
 
   if (dids.length === 0) {
     return [];

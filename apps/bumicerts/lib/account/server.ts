@@ -2,6 +2,7 @@ import "server-only";
 
 export {
   AccountIndexerReadError,
+  AccountLabelerReadError,
   AccountRecordValidationError,
 } from "./errors";
 

@@ -11,6 +11,19 @@ export class AccountIndexerReadError extends Error {
   }
 }
 
+export class AccountLabelerReadError extends Error {
+  readonly operation: string;
+
+  constructor(options: { operation: string; message: string; cause?: unknown }) {
+    super(options.message);
+    this.name = "AccountLabelerReadError";
+    this.operation = options.operation;
+    if (options.cause !== undefined) {
+      this.cause = options.cause;
+    }
+  }
+}
+
 export class AccountRecordValidationError extends Error {
   readonly did: string;
   readonly collection: string;
