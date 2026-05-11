@@ -162,13 +162,11 @@ export default function TreeDataGuide() {
             <span className="font-semibold text-foreground">
               GBIF Darwin Core standards
             </span>
-            . Use the XLSForm templates below to create a KoboToolBox project
-            for field data collection. The question names match the fields this
-            uploader expects, so Kobo CSV/TSV exports can be uploaded here with
-            minimal mapping. If your Kobo form includes photos, export and upload
-            Kobo&apos;s Media Attachments ZIP too; the uploader matches filenames in
-            the CSV to images in the ZIP. You may add extra fields for your own
-            use&nbsp;&mdash; leave them unmapped before uploading.
+            . Use the XLSForm templates below to create a field data collection
+            project. The question names match the fields this uploader expects,
+            so CSV/TSV exports can be uploaded here with minimal mapping. You
+            may add extra fields for your own use&nbsp;&mdash; leave them unmapped
+            before uploading.
           </p>
 
           {/* Download templates */}
@@ -233,6 +231,49 @@ export default function TreeDataGuide() {
           <p className="text-xs text-muted-foreground mt-2">
             <span className="text-destructive font-medium">*</span> Required
             field
+          </p>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+}
+
+export function KoboExportGuide() {
+  return (
+    <Accordion type="single" collapsible className="rounded-lg border">
+      <AccordionItem value="kobo-export" className="border-b-0">
+        <AccordionTrigger className="px-4 hover:no-underline">
+          Using KoboToolbox? Here&apos;s what to export
+        </AccordionTrigger>
+
+        <AccordionContent className="space-y-4 border-t px-4 pt-4">
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            You&apos;ll need to export two files from Kobo before uploading here.
+          </p>
+
+          <ol className="space-y-3">
+            <li className="flex gap-3">
+              <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                1
+              </span>
+              <p className="text-sm leading-relaxed text-foreground">
+                In Kobo, go to your project → Data → Downloads. Select CSV format
+                and download.
+              </p>
+            </li>
+            <li className="flex gap-3">
+              <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                2
+              </span>
+              <p className="text-sm leading-relaxed text-foreground">
+                On the same page, also download Media Attachments (ZIP) — this
+                contains all your photos.
+              </p>
+            </li>
+          </ol>
+
+          <p className="border-t pt-3 text-xs leading-relaxed text-muted-foreground">
+            Upload the CSV below. If you have photos, upload the ZIP too.
           </p>
         </AccordionContent>
       </AccordionItem>
