@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import FileInput from "@/components/ui/FileInput";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ListLayout } from "./shared/RecordList";
 import OptionalNote from "./shared/OptionalNote";
 import Mutator, { type AttachmentData } from "./shared/Mutator";
@@ -42,10 +44,15 @@ const FileEvidencePicker = () => {
   const activityUri = useEvidenceAdderStore((state) => state.activityUri);
   const activityCid = useEvidenceAdderStore((state) => state.activityCid);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedLinks, setSelectedLinks] = useState<string[]>([]);
+  const [linkInput, setLinkInput] = useState("");
+  const [linkError, setLinkError] = useState<string | null>(null);
   const [filePickerValue, setFilePickerValue] = useState<File | null>(null);
   const [filePickerKey, setFilePickerKey] = useState(0);
   const [selectedContentType, setSelectedContentType] =
     useState<KnownEvidenceContentType>(getDefaultFileContentType);
+  const externalLinkInputId = useId();
+  const externalLinkHelpId = `${externalLinkInputId}-help`;
 
   const appendFile = (file: File) => {
     setSelectedFiles((prev) => {
@@ -68,6 +75,35 @@ const FileEvidencePicker = () => {
     );
   };
 
+  const appendLink = () => {
+    const trimmed = linkInput.trim();
+    setLinkError(null);
+
+    if (!trimmed) {
+      return;
+    }
+
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        setLinkError("Use an http or https URL.");
+        return;
+      }
+
+      const normalized = parsed.toString();
+      setSelectedLinks((prev) =>
+        prev.includes(normalized) ? prev : [...prev, normalized],
+      );
+      setLinkInput("");
+    } catch {
+      setLinkError("Enter a valid URL.");
+    }
+  };
+
+  const removeLink = (linkToRemove: string) => {
+    setSelectedLinks((prev) => prev.filter((link) => link !== linkToRemove));
+  };
+
   const computedMutationData: AttachmentData = {
     title: getFileContentTypeLabel(selectedContentType),
     contentType: selectedContentType,
@@ -76,7 +112,7 @@ const FileEvidencePicker = () => {
       uri: activityUri,
       cid: activityCid,
     },
-    contents: selectedFiles,
+    contents: [...selectedFiles, ...selectedLinks],
   };
 
   return (
@@ -110,7 +146,49 @@ const FileEvidencePicker = () => {
           className={`min-h-[120px] ${isSubmitting ? "pointer-events-none opacity-70" : ""}`}
         />
 
-        {selectedFiles.length > 0 ? (
+        <div className="flex flex-col gap-1.5 rounded-xl border border-border/60 bg-background p-3">
+          <label htmlFor={externalLinkInputId} className="text-sm font-medium">
+            External link
+          </label>
+          <div className="flex gap-2">
+            <Input
+              id={externalLinkInputId}
+              value={linkInput}
+              placeholder="https://example.org/report"
+              disabled={isSubmitting}
+              aria-invalid={linkError ? true : undefined}
+              aria-describedby={externalLinkHelpId}
+              onChange={(event) => setLinkInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  if (!isSubmitting) {
+                    appendLink();
+                  }
+                }
+              }}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={appendLink}
+              disabled={isSubmitting || linkInput.trim().length === 0}
+            >
+              Add
+            </Button>
+          </div>
+          {linkError ? (
+            <p id={externalLinkHelpId} className="text-xs text-destructive">
+              {linkError}
+            </p>
+          ) : (
+            <p id={externalLinkHelpId} className="text-xs text-muted-foreground">
+              Link reports, websites, dashboards, or external evidence platforms.
+            </p>
+          )}
+        </div>
+
+        {selectedFiles.length > 0 || selectedLinks.length > 0 ? (
           <ListLayout>
             {selectedFiles.map((file) => {
               const key = toFileKey(file);
@@ -139,10 +217,33 @@ const FileEvidencePicker = () => {
                 </div>
               );
             })}
+            {selectedLinks.map((link) => (
+              <div
+                key={link}
+                className="w-full bg-background flex items-center gap-2.5 px-3 py-2 rounded-xl border"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
+                    External link
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {link}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                  onClick={() => removeLink(link)}
+                  disabled={isSubmitting}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
           </ListLayout>
         ) : (
           <div className="rounded-xl bg-muted/60 px-3 py-2 text-xs text-muted-foreground text-center">
-            No files selected yet.
+            No files or links selected yet.
           </div>
         )}
       </div>
@@ -153,6 +254,8 @@ const FileEvidencePicker = () => {
         onSuccess={() => {
           resetDescription();
           setSelectedFiles([]);
+          setSelectedLinks([]);
+          setLinkInput("");
         }}
       />
     </>

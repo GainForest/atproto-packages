@@ -11,13 +11,14 @@ import {
   type ResultOf,
 } from "@/graphql/indexer";
 import type { ConnectionNode } from "../_connection";
-import { pluckConnectionNodes } from "../_migration-helpers";
+import { connectionPageInfo, pluckConnectionNodes } from "../_migration-helpers";
 
 const document = graphql(`
-  query DatasetsByDid($did: String!) {
+  query DatasetsByDid($did: String!, $first: Int, $after: String) {
     appGainforestDwcDataset(
       where: { did: { eq: $did } }
-      first: 200
+      first: $first
+      after: $after
       sortDirection: DESC
       sortBy: createdAt
     ) {
@@ -34,6 +35,27 @@ const document = graphql(`
           establishmentMeans
         }
       }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+      totalCount
+    }
+  }
+`);
+
+const byUriDocument = graphql(`
+  query DatasetByUri($uri: String!) {
+    appGainforestDwcDatasetByUri(uri: $uri) {
+      did
+      uri
+      rkey
+      cid
+      createdAt
+      name
+      description
+      recordCount
+      establishmentMeans
     }
   }
 `);
@@ -58,11 +80,17 @@ export type DatasetItem = {
 type DatasetNode = ConnectionNode<
   ResultOf<typeof document>["appGainforestDwcDataset"]
 >;
+type DatasetByUriNode = NonNullable<
+  ResultOf<typeof byUriDocument>["appGainforestDwcDatasetByUri"]
+>;
 
 export type Params = { did: string };
 export type Result = DatasetItem[];
 
-function normalizeDataset(node: DatasetNode): DatasetItem {
+const PAGE_SIZE = 200;
+const MAX_PAGES = 50;
+
+function normalizeDataset(node: DatasetNode | DatasetByUriNode): DatasetItem {
   return {
     metadata: {
       did: node.did,
@@ -82,9 +110,48 @@ function normalizeDataset(node: DatasetNode): DatasetItem {
 }
 
 export async function fetch(params: Params): Promise<Result> {
-  const res = await graphqlClient.request(document, {
-    did: params.did,
-  });
+  const allDatasets: DatasetItem[] = [];
+  let cursor: string | undefined;
 
-  return pluckConnectionNodes(res.appGainforestDwcDataset).map(normalizeDataset);
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const res = await graphqlClient.request(document, {
+      did: params.did,
+      first: PAGE_SIZE,
+      after: cursor,
+    });
+
+    const datasets = res.appGainforestDwcDataset;
+    allDatasets.push(...pluckConnectionNodes(datasets).map(normalizeDataset));
+
+    const pageInfo = connectionPageInfo(datasets);
+    if (pageInfo?.hasNextPage && pageInfo.endCursor) {
+      if (page === MAX_PAGES - 1) {
+        console.warn(
+          `Datasets query hit pagination safety cap for ${params.did}; results may be truncated.`,
+        );
+        break;
+      }
+
+      cursor = pageInfo.endCursor;
+      continue;
+    }
+
+    break;
+  }
+
+  return allDatasets;
+}
+
+export async function fetchByUris(uris: string[]): Promise<Result> {
+  const uniqueUris = Array.from(new Set(uris.filter((uri) => uri.length > 0)));
+  const datasets = await Promise.all(
+    uniqueUris.map(async (uri) => {
+      const res = await graphqlClient.request(byUriDocument, { uri });
+      return res.appGainforestDwcDatasetByUri
+        ? normalizeDataset(res.appGainforestDwcDatasetByUri)
+        : null;
+    }),
+  );
+
+  return datasets.filter((item): item is DatasetItem => item !== null);
 }

@@ -1,10 +1,12 @@
 import {
   AudioLinesIcon,
+  DatabaseIcon,
   ExternalLinkIcon,
   FileIcon,
   FileImageIcon,
   FileTextIcon,
   FileVideoIcon,
+  LeafIcon,
   MapPinIcon,
   SproutIcon,
 } from "lucide-react";
@@ -21,6 +23,8 @@ type TileRegistryEntry = {
 const TIMELINE_TILE_REGISTRY: Record<FeedTileKind, TileRegistryEntry> = {
   site: { icon: MapPinIcon, label: "Linked site" },
   tree: { icon: SproutIcon, label: "Linked tree record" },
+  dataset: { icon: DatabaseIcon, label: "Linked dataset" },
+  biodiversity: { icon: LeafIcon, label: "Biodiversity observations" },
   audio: { icon: AudioLinesIcon, label: "Linked audio" },
   image: { icon: FileImageIcon, label: "Image" },
   video: { icon: FileVideoIcon, label: "Video" },

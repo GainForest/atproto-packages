@@ -3,6 +3,7 @@ import { AlertTriangleIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface TimelineDeleteConfirmProps {
+  id: string;
   title: string;
   onConfirm: () => void;
   onCancel: () => void;
@@ -11,6 +12,7 @@ interface TimelineDeleteConfirmProps {
 }
 
 export function TimelineDeleteConfirm({
+  id,
   title,
   onConfirm,
   onCancel,
@@ -20,6 +22,8 @@ export function TimelineDeleteConfirm({
   return (
     <AnimatePresence>
       <motion.div
+        id={id}
+        role="status"
         initial={{ opacity: 0, height: 0 }}
         animate={{ opacity: 1, height: "auto" }}
         exit={{ opacity: 0, height: 0 }}

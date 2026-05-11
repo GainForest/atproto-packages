@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { TimelinePreviewPayload } from "../../shared/timelineFeedViewModel";
 import { ExternalLinkPreviewRenderer } from "../renderers/previews/ExternalLinkPreviewRenderer";
+import { GreenGlobePreviewRenderer } from "../renderers/previews/GreenGlobePreviewRenderer";
 import { MediaPreviewRenderer } from "../renderers/previews/MediaPreviewRenderer";
 import { SitePreviewRenderer } from "../renderers/previews/SitePreviewRenderer";
 import { TextPreviewRenderer } from "../renderers/previews/TextPreviewRenderer";
@@ -11,6 +12,7 @@ interface PreviewRendererProps {
 
 const PREVIEW_RENDERER_REGISTRY = {
   site: SitePreviewRenderer,
+  "green-globe": GreenGlobePreviewRenderer,
   image: MediaPreviewRenderer,
   video: MediaPreviewRenderer,
   audio: MediaPreviewRenderer,
