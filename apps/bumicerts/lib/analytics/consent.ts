@@ -1,5 +1,3 @@
-import { links } from "@/lib/links";
-
 export const ANALYTICS_CONSENT_STORAGE_KEY =
   "bumicerts_contentsquare_consent";
 
@@ -26,10 +24,7 @@ export function hasAnalyticsConsent(): boolean {
     return false;
   }
 
-  return (
-    getAnalyticsConsent() === "granted" &&
-    window.location.pathname.startsWith(links.manage.trees)
-  );
+  return getAnalyticsConsent() === "granted";
 }
 
 export function setAnalyticsConsent(value: AnalyticsConsent): void {

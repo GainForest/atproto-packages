@@ -27,6 +27,7 @@ import {
 
 import * as supabaseTracking from "./supabase-tracking";
 import { hasAnalyticsConsent } from "./consent";
+import { isTreeUploadAnalyticsPath } from "./tree-upload";
 
 type ContentsquareCommand = [string, ...unknown[]];
 
@@ -39,17 +40,25 @@ declare global {
   }
 }
 
+const hasTreeUploadRecordingAccess = (): boolean => {
+  return (
+    hasAnalyticsConsent() &&
+    typeof window !== "undefined" &&
+    isTreeUploadAnalyticsPath(window.location.pathname)
+  );
+};
+
 // Check if Hotjar/Contentsquare is available
 const isHotjarReady = (): boolean => {
   return (
-    hasAnalyticsConsent() &&
+    hasTreeUploadRecordingAccess() &&
     typeof window !== "undefined" &&
     typeof window.hj === "function"
   );
 };
 
 const getContentsquareQueue = (): ContentsquareCommand[] | null => {
-  if (!hasAnalyticsConsent() || typeof window === "undefined") {
+  if (!hasTreeUploadRecordingAccess() || typeof window === "undefined") {
     return null;
   }
 
@@ -264,7 +273,7 @@ export const trackTreeUploadEvent = (
   eventName: TreeUploadEventName,
   payload: TreeUploadEventPayload = {},
 ): void => {
-  if (!hasAnalyticsConsent()) {
+  if (!hasTreeUploadRecordingAccess()) {
     return;
   }
 

@@ -11,8 +11,8 @@ import {
   setAnalyticsConsent,
   type AnalyticsConsent,
 } from "@/lib/analytics/consent";
+import { isTreeUploadAnalyticsPath } from "@/lib/analytics/tree-upload";
 import { clientEnv } from "@/lib/env/client";
-import { links } from "@/lib/links";
 
 type ContentsquareProviderProps = {
   children: React.ReactNode;
@@ -27,13 +27,25 @@ function getTrackedPath(pathname: string): string {
   return `${pathname}${hash}`;
 }
 
-function optOutContentsquare(): void {
+function pushContentsquarePrivacyCommand(command: "optin" | "optout"): void {
   if (typeof window === "undefined") {
     return;
   }
 
   window._uxa = window._uxa ?? [];
-  window._uxa.push(["optout"]);
+  window._uxa.push([command]);
+}
+
+function optInContentsquare(): void {
+  pushContentsquarePrivacyCommand("optin");
+}
+
+function optOutContentsquare(): void {
+  pushContentsquarePrivacyCommand("optout");
+}
+
+function isContentsquareLoaded(): boolean {
+  return typeof window !== "undefined" && window.CS_CONF !== undefined;
 }
 
 function ContentsquareRouteTracker({
@@ -53,10 +65,11 @@ function ContentsquareRouteTracker({
 
     const path = getTrackedPath(pathname);
 
-    // The Contentsquare main tag sends the initial pageview when it loads.
-    // Only send artificial pageviews for subsequent App Router transitions.
     if (lastTrackedPathRef.current === null) {
       lastTrackedPathRef.current = path;
+      if (isContentsquareLoaded()) {
+        trackPageViewed({ path });
+      }
       return;
     }
 
@@ -128,7 +141,9 @@ export function ContentsquareProvider({ children }: ContentsquareProviderProps) 
     () => (tagId ? `https://t.contentsquare.net/uxa/${tagId}.js` : null),
     [tagId],
   );
-  const isTreeUploadSurface = pathname?.startsWith(links.manage.trees) ?? false;
+  const isTreeUploadSurface = pathname
+    ? isTreeUploadAnalyticsPath(pathname)
+    : false;
   const shouldShowConsentCard =
     scriptSrc !== null && consent === null && isTreeUploadSurface;
 
@@ -164,6 +179,23 @@ export function ContentsquareProvider({ children }: ContentsquareProviderProps) 
     setConsent("denied");
     optOutContentsquare();
   };
+
+  useEffect(() => {
+    if (consent !== "granted" || scriptSrc === null) {
+      return;
+    }
+
+    if (!isTreeUploadSurface) {
+      optOutContentsquare();
+      return;
+    }
+
+    optInContentsquare();
+
+    return () => {
+      optOutContentsquare();
+    };
+  }, [consent, isTreeUploadSurface, scriptSrc]);
 
   return (
     <>

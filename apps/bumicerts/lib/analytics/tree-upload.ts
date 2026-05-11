@@ -1,4 +1,5 @@
 import { TREE_UPLOAD_STEP_NAMES, type TreeUploadStepName } from "./events";
+import { links } from "@/lib/links";
 
 const KILOBYTE = 1024;
 const MEGABYTE = 1024 * KILOBYTE;
@@ -31,4 +32,11 @@ export function getFileExtension(fileName: string): string {
 
 export function getTreeUploadStepName(stepIndex: number): TreeUploadStepName {
   return TREE_UPLOAD_STEP_NAMES[stepIndex - 1] ?? "file";
+}
+
+export function isTreeUploadAnalyticsPath(pathname: string): boolean {
+  return (
+    pathname === links.manage.trees ||
+    pathname.startsWith(`${links.manage.trees}/`)
+  );
 }

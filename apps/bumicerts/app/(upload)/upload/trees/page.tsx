@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { ContentsquareProvider } from "@/components/providers/ContentsquareProvider";
 import { TreesPageClient } from "./_components/TreesPageClient";
 
 /**
@@ -10,5 +11,9 @@ import { TreesPageClient } from "./_components/TreesPageClient";
 export default async function TreesPage() {
   const session = await auth.session.getSession();
   if (!session.isLoggedIn) return null;
-  return <TreesPageClient did={session.did} />;
+  return (
+    <ContentsquareProvider>
+      <TreesPageClient did={session.did} />
+    </ContentsquareProvider>
+  );
 }
