@@ -16,6 +16,10 @@ import {
   buildResolvedReference,
   type ResolvedAttachmentReference,
 } from "./referenceViewModel";
+import {
+  chunkDatasetRefLookupGroups,
+  chunkReferenceLookupInputs,
+} from "./referenceBatches";
 
 export function useResolvedAttachmentReferences(content: unknown): {
   references: ResolvedAttachmentReference[];
@@ -87,16 +91,20 @@ export function useResolvedAttachmentReferences(content: unknown): {
   );
 
   const audioUriBatches = useMemo(
-    () => (audioUris.length > 0 ? [audioUris] : []),
+    () => chunkReferenceLookupInputs(audioUris),
     [audioUris],
   );
   const occurrenceUriBatches = useMemo(
-    () => (occurrenceUris.length > 0 ? [occurrenceUris] : []),
+    () => chunkReferenceLookupInputs(occurrenceUris),
     [occurrenceUris],
   );
   const datasetUriBatches = useMemo(
-    () => (datasetUris.length > 0 ? [datasetUris] : []),
+    () => chunkReferenceLookupInputs(datasetUris),
     [datasetUris],
+  );
+  const datasetRefBatches = useMemo(
+    () => chunkDatasetRefLookupGroups(datasetRefGroups),
+    [datasetRefGroups],
   );
 
   const audioQueries = indexerTrpc.useQueries((t) =>
@@ -109,7 +117,7 @@ export function useResolvedAttachmentReferences(content: unknown): {
     datasetUriBatches.map((uris) => t.datasets.byUris({ uris })),
   );
   const datasetOccurrenceQueries = indexerTrpc.useQueries((t) =>
-    datasetRefGroups.map((group) =>
+    datasetRefBatches.map((group) =>
       t.dwc.occurrencesByDatasetRefs({
         did: group.did,
         datasetRefs: group.datasetRefs,
