@@ -84,6 +84,21 @@ export type TreeUploadDatasetMode = "none" | "new" | "existing";
 
 export type TreeUploadSourceFormat = "kobo" | "generic";
 
+export const TREE_UPLOAD_FAILURE_REASONS = [
+  "unsupported_file_type",
+  "file_too_large",
+  "parse_error",
+  "unsupported_media_zip_type",
+  "media_zip_too_large",
+  "media_zip_no_supported_images",
+  "media_zip_read_failed",
+  "missing_kobo_media_zip",
+  "dataset_create_failed",
+] as const;
+
+export type TreeUploadFailureReason =
+  (typeof TREE_UPLOAD_FAILURE_REASONS)[number];
+
 export type TreeUploadEventPayload = {
   uploadId?: string;
   stepIndex?: number;
@@ -112,7 +127,7 @@ export type TreeUploadEventPayload = {
   mediaZipImageCount?: number;
   mediaZipSubmissionCount?: number;
   durationSeconds?: number;
-  failureReason?: string;
+  failureReason?: TreeUploadFailureReason;
 };
 
 // Event payload types

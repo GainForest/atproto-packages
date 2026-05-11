@@ -13,6 +13,7 @@ import {
 } from "@/lib/analytics/consent";
 import { isTreeUploadAnalyticsPath } from "@/lib/analytics/tree-upload";
 import { clientEnv } from "@/lib/env/client";
+import { links } from "@/lib/links";
 
 type ContentsquareProviderProps = {
   children: React.ReactNode;
@@ -138,7 +139,7 @@ export function ContentsquareProvider({ children }: ContentsquareProviderProps) 
 
   const tagId = clientEnv.NEXT_PUBLIC_CONTENTSQUARE_TAG_ID;
   const scriptSrc = useMemo(
-    () => (tagId ? `https://t.contentsquare.net/uxa/${tagId}.js` : null),
+    () => (tagId ? links.external.contentsquareUxaTag(tagId) : null),
     [tagId],
   );
   const isTreeUploadSurface = pathname

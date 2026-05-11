@@ -8,6 +8,7 @@ const didCatcher = (callback: (did: string) => string): DidDynamicLink => {
 const DEFAULT_GREEN_GLOBE_PREVIEW_BASE_URL = "https://gainforest.app";
 const BUMICERT_CREATE_PATH = "/bumicert/create";
 const HYPERLABEL_BASE_URL = "https://hyperlabel-production.up.railway.app";
+const CONTENTSQUARE_UXA_BASE_URL = "https://t.contentsquare.net/uxa";
 const TREE_UPLOAD_FEEDBACK_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLScpHS_-7QTTiHIseqjzvkdbx6jzjenebkaLGXoETNrfit0ZNA/viewform";
 
@@ -146,6 +147,8 @@ export const links = {
       return queryString ? `${basePath}?${queryString}` : basePath;
     },
     docs: "https://docs.fund.gainforest.app/",
+    contentsquareUxaTag: (tagId: string) =>
+      `${CONTENTSQUARE_UXA_BASE_URL}/${encodeURIComponent(tagId)}.js`,
     treeUploadFeedbackForm: TREE_UPLOAD_FEEDBACK_FORM_URL,
     treeUploadFeedbackFormEmbed: `${TREE_UPLOAD_FEEDBACK_FORM_URL}?embedded=true`,
     gbifPublisher:
