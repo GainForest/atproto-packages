@@ -55,6 +55,35 @@ describe("dataset evidence stats", () => {
     ).toBe("Apr 2024 – Jun 2024");
   });
 
+  test("formats date-only January evidence values in UTC", () => {
+    expect(formatEvidenceDateRangeFromValues(["2024-01-01"])).toBe("Jan 2024");
+  });
+
+  test("passes UTC timezone when formatting evidence ranges", () => {
+    const original = Date.prototype.toLocaleDateString;
+    const optionsSeen: Intl.DateTimeFormatOptions[] = [];
+
+    Date.prototype.toLocaleDateString = function toLocaleDateString(
+      this: Date,
+      locales?: Intl.LocalesArgument,
+      options?: Intl.DateTimeFormatOptions,
+    ): string {
+      if (options) {
+        optionsSeen.push(options);
+      }
+
+      return original.call(this, locales, options);
+    };
+
+    try {
+      formatEvidenceDateRangeFromValues(["2024-01-01", "2024-02-01"]);
+    } finally {
+      Date.prototype.toLocaleDateString = original;
+    }
+
+    expect(optionsSeen.every((options) => options.timeZone === "UTC")).toBe(true);
+  });
+
   test("counts records and unique species", () => {
     const stats = buildDatasetEvidenceStats([
       occurrence({ scientificName: "Acacia", eventDate: "2024-04-15T12:00:00Z" }),

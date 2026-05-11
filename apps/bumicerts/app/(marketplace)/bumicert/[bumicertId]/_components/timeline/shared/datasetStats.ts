@@ -61,6 +61,7 @@ function parseEvidenceDateRange(value: string | null | undefined): ParsedDateRan
 function formatMonthYear(date: Date): string {
   return date.toLocaleDateString("en-US", {
     month: "short",
+    timeZone: "UTC",
     year: "numeric",
   });
 }
