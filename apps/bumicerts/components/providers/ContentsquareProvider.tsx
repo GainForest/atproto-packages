@@ -17,15 +17,20 @@ import { links } from "@/lib/links";
 
 type ContentsquareProviderProps = {
   children: React.ReactNode;
+  enabled: boolean;
 };
 
 function getTrackedPath(pathname: string): string {
-  const hash =
-    typeof window === "undefined"
-      ? ""
-      : window.location.hash.replace("#", "?__");
+  if (typeof window === "undefined") {
+    return pathname;
+  }
 
-  return `${pathname}${hash}`;
+  const search = window.location.search;
+  const hash = window.location.hash;
+  const hashSuffix =
+    hash.length > 0 ? `${search.length > 0 ? "&" : "?"}__${hash.slice(1)}` : "";
+
+  return `${pathname}${search}${hashSuffix}`;
 }
 
 function pushContentsquarePrivacyCommand(command: "optin" | "optout"): void {
@@ -60,7 +65,12 @@ function ContentsquareRouteTracker({
   const lastTrackedPathRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (consent !== "granted" || !pathname || !isTreeUploadSurface) {
+    if (!isTreeUploadSurface) {
+      lastTrackedPathRef.current = null;
+      return;
+    }
+
+    if (consent !== "granted" || !pathname) {
       return;
     }
 
@@ -131,7 +141,10 @@ function ContentsquareConsentCard({
   );
 }
 
-export function ContentsquareProvider({ children }: ContentsquareProviderProps) {
+export function ContentsquareProvider({
+  children,
+  enabled,
+}: ContentsquareProviderProps) {
   const pathname = usePathname();
   const [consent, setConsent] = useState<AnalyticsConsent | null>(() =>
     getAnalyticsConsent(),
@@ -142,9 +155,8 @@ export function ContentsquareProvider({ children }: ContentsquareProviderProps) 
     () => (tagId ? links.external.contentsquareUxaTag(tagId) : null),
     [tagId],
   );
-  const isTreeUploadSurface = pathname
-    ? isTreeUploadAnalyticsPath(pathname)
-    : false;
+  const isTreeUploadSurface =
+    enabled && pathname ? isTreeUploadAnalyticsPath(pathname) : false;
   const shouldShowConsentCard =
     scriptSrc !== null && consent === null && isTreeUploadSurface;
 
@@ -205,15 +217,21 @@ export function ContentsquareProvider({ children }: ContentsquareProviderProps) 
           {`
             (function () {
               window._uxa = window._uxa || [];
+              function getTrackedPath() {
+                var search = window.location.search;
+                var hash = window.location.hash;
+                var hashSuffix = hash ? (search ? "&" : "?") + "__" + hash.slice(1) : "";
+                return window.location.pathname + search + hashSuffix;
+              }
               if (typeof CS_CONF === "undefined") {
-                window._uxa.push(["setPath", window.location.pathname + window.location.hash.replace("#", "?__")]);
+                window._uxa.push(["setPath", getTrackedPath()]);
                 var mt = document.createElement("script");
                 mt.type = "text/javascript";
                 mt.async = true;
                 mt.src = ${JSON.stringify(scriptSrc)};
                 document.getElementsByTagName("head")[0].appendChild(mt);
               } else {
-                window._uxa.push(["trackPageview", window.location.pathname + window.location.hash.replace("#", "?__")]);
+                window._uxa.push(["trackPageview", getTrackedPath()]);
               }
             })();
           `}
