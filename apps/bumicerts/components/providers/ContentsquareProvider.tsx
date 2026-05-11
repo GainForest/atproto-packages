@@ -2,16 +2,15 @@
 
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { trackPageViewed } from "@/lib/analytics/hotjar";
 import {
-  ANALYTICS_CONSENT_CHANGED_EVENT,
-  getAnalyticsConsent,
   setAnalyticsConsent,
   type AnalyticsConsent,
 } from "@/lib/analytics/consent";
 import { isTreeUploadAnalyticsPath } from "@/lib/analytics/tree-upload";
+import { useAnalyticsConsent } from "@/lib/analytics/use-analytics-consent";
 import { clientEnv } from "@/lib/env/client";
 import { links } from "@/lib/links";
 
@@ -146,9 +145,7 @@ export function ContentsquareProvider({
   enabled,
 }: ContentsquareProviderProps) {
   const pathname = usePathname();
-  const [consent, setConsent] = useState<AnalyticsConsent | null>(() =>
-    getAnalyticsConsent(),
-  );
+  const consent = useAnalyticsConsent();
 
   const tagId = clientEnv.NEXT_PUBLIC_CONTENTSQUARE_TAG_ID;
   const scriptSrc = useMemo(
@@ -160,36 +157,12 @@ export function ContentsquareProvider({
   const shouldShowConsentCard =
     scriptSrc !== null && consent === null && isTreeUploadSurface;
 
-  useEffect(() => {
-    const handleConsentChange = (event: Event) => {
-      if (
-        event instanceof CustomEvent &&
-        (event.detail === "granted" || event.detail === "denied")
-      ) {
-        setConsent(event.detail);
-        return;
-      }
-
-      setConsent(getAnalyticsConsent());
-    };
-
-    window.addEventListener(ANALYTICS_CONSENT_CHANGED_EVENT, handleConsentChange);
-    return () => {
-      window.removeEventListener(
-        ANALYTICS_CONSENT_CHANGED_EVENT,
-        handleConsentChange,
-      );
-    };
-  }, []);
-
   const handleAccept = () => {
     setAnalyticsConsent("granted");
-    setConsent("granted");
   };
 
   const handleDecline = () => {
     setAnalyticsConsent("denied");
-    setConsent("denied");
     optOutContentsquare();
   };
 

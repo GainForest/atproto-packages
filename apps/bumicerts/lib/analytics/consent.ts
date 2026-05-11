@@ -6,6 +6,8 @@ export const ANALYTICS_CONSENT_CHANGED_EVENT =
 
 export type AnalyticsConsent = "granted" | "denied";
 
+let inMemoryAnalyticsConsent: AnalyticsConsent | null = null;
+
 export function getAnalyticsConsent(): AnalyticsConsent | null {
   if (typeof window === "undefined") {
     return null;
@@ -13,9 +15,14 @@ export function getAnalyticsConsent(): AnalyticsConsent | null {
 
   try {
     const value = window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
-    return value === "granted" || value === "denied" ? value : null;
+    if (value === "granted" || value === "denied") {
+      inMemoryAnalyticsConsent = value;
+      return value;
+    }
+
+    return inMemoryAnalyticsConsent;
   } catch {
-    return null;
+    return inMemoryAnalyticsConsent;
   }
 }
 
@@ -31,6 +38,8 @@ export function setAnalyticsConsent(value: AnalyticsConsent): void {
   if (typeof window === "undefined") {
     return;
   }
+
+  inMemoryAnalyticsConsent = value;
 
   if (value === "denied") {
     try {

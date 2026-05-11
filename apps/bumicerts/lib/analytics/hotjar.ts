@@ -273,9 +273,9 @@ const toTreeUploadEventData = (
 export const trackTreeUploadEvent = (
   eventName: TreeUploadEventName,
   payload: TreeUploadEventPayload = {},
-): void => {
+): boolean => {
   if (!hasTreeUploadRecordingAccess()) {
-    return;
+    return false;
   }
 
   trackEvent(eventName);
@@ -284,6 +284,7 @@ export const trackTreeUploadEvent = (
   pushContentsquareCommand(["trackEventTriggerRecording", eventName]);
 
   supabaseTracking.insertEvent(eventName, toTreeUploadEventData(payload)).catch(console.error);
+  return true;
 };
 
 export const trackTreeUploadFeedbackPromptShown = (

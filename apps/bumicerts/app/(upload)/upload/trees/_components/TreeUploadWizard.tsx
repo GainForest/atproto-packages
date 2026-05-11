@@ -8,6 +8,7 @@ import UploadStep from "./UploadStep";
 import { TREE_UPLOAD_EVENTS } from "@/lib/analytics/events";
 import { getTreeUploadStepName } from "@/lib/analytics/tree-upload";
 import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
+import { useAnalyticsConsent } from "@/lib/analytics/use-analytics-consent";
 import type { ColumnMapping, ValidatedRow } from "@/lib/upload/types";
 import type { KoboMediaZipIndex } from "@/lib/upload/kobo-media-zip";
 import {
@@ -194,8 +195,13 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
   const flowStartedUploadIdRef = useRef<string | null>(null);
   const lastViewedStepRef = useRef<string | null>(null);
   const restoredPendingUploadRef = useRef(initialWizard.restoredPendingUpload);
+  const analyticsConsent = useAnalyticsConsent();
 
   useEffect(() => {
+    if (analyticsConsent !== "granted") {
+      return;
+    }
+
     if (flowStartedUploadIdRef.current === uploadId) {
       return;
     }
@@ -206,11 +212,16 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
       return;
     }
 
-    flowStartedUploadIdRef.current = uploadId;
-    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.FLOW_STARTED, { uploadId });
-  }, [uploadId]);
+    if (trackTreeUploadEvent(TREE_UPLOAD_EVENTS.FLOW_STARTED, { uploadId })) {
+      flowStartedUploadIdRef.current = uploadId;
+    }
+  }, [analyticsConsent, uploadId]);
 
   useEffect(() => {
+    if (analyticsConsent !== "granted") {
+      return;
+    }
+
     const stepName = getTreeUploadStepName(state.currentStep);
     const stepKey = `${uploadId}:${state.currentStep}`;
 
@@ -218,13 +229,16 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
       return;
     }
 
-    lastViewedStepRef.current = stepKey;
-    trackTreeUploadEvent(TREE_UPLOAD_EVENTS.STEP_VIEWED, {
+    const tracked = trackTreeUploadEvent(TREE_UPLOAD_EVENTS.STEP_VIEWED, {
       uploadId,
       stepIndex: state.currentStep,
       stepName,
     });
-  }, [state.currentStep, uploadId]);
+
+    if (tracked) {
+      lastViewedStepRef.current = stepKey;
+    }
+  }, [analyticsConsent, state.currentStep, uploadId]);
 
   // ── Step 1 → 2: file parsed and initial mappings detected ─────────────────
   const handleFileAndMappings = (
