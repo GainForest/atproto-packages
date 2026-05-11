@@ -73,6 +73,20 @@ Use this doc for routes, pages, layouts, loading states, server/client boundarie
 - App-level modals must use the shared modal stack system from `MODALS.md`.
 - For `/upload/*`, read `UPLOAD_ROUTES.md` before making changes.
 
+## Supporting Skill
+
+After reading this file, if the task materially benefits from additional Next.js framework guidance, load the root skill at:
+
+- `../.agents/skills/next-best-practices/SKILL.md`
+
+Use the skill name:
+
+- `next-best-practices`
+
+Apply it for App Router conventions, server/client boundaries, data-fetching patterns, metadata, route handlers, loading behavior, and framework-specific refactors where it directly improves the result.
+
+Local Bumicerts Next.js rules still outrank the skill.
+
 ## Review Checklist
 
 Before finishing, check:

@@ -68,7 +68,10 @@ Rows stack. For example, a new `/upload/*` route with client interactivity may r
 | Need | Read |
 |---|---|
 | E2E framework scaffolding or restructuring after local testing docs | `../skills/e2e.md` |
-| Shared skill guidance after local docs | relevant files in `.agents/skills/` |
+| React implementation, refactor, or performance guidance after local docs when materially relevant | `../.agents/skills/vercel-react-best-practices/SKILL.md` |
+| Next.js framework guidance after local docs when materially relevant | `../.agents/skills/next-best-practices/SKILL.md` |
+| Frontend visual/design execution after local docs when materially relevant | `../.agents/skills/frontend-design/SKILL.md` |
+| Shared skill guidance after local docs | relevant files in `../.agents/skills/` |
 
 ## Rule of Thumb
 
@@ -82,4 +85,8 @@ Rows stack. For example, a new `/upload/*` route with client interactivity may r
 - Matching files in `docs/` can be mandatory local rules or contracts when directly applicable.
 - `ARCHITECTURE.md` guides migration direction, not shortcut the local workflow.
 - If a matching example exists in `docs/examples/`, copy it before inventing a new shape.
+- Use the exact skill path in `../.agents/skills/` when a local doc tells you to load a root skill.
+- For React work, prefer `vercel-react-best-practices` after local docs when it materially improves the task.
+- For Next.js work, prefer `next-best-practices` after local docs when it materially improves the task.
+- For UI/design work, prefer `frontend-design` after local docs when it materially improves the task.
 - Skills support implementation only when directly useful after local docs.

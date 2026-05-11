@@ -70,8 +70,10 @@ Do not introduce:
 ## Design References
 
 - Use existing shared primitives, nearby approved route UI, and matching files in `../docs/examples/` as the current source of visual direction.
-- If a relevant root skill exists for frontend quality, use it after local docs.
-- Local Bumicerts design rules always win over generic design skills.
+- If the task materially benefits from additional frontend design guidance, load the root skill at `../.agents/skills/frontend-design/SKILL.md`.
+- Use the skill name `frontend-design`.
+- Apply it for page design, component polish, layout refinement, interaction feel, and visual composition where it directly improves the task.
+- Local Bumicerts design rules always win over the skill.
 
 ## Review Checklist
 
