@@ -20,12 +20,6 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import Link from "next/link";
-import { links } from "@/lib/links";
-
-interface LoginModalProps {
-  onClose: () => void;
-}
 
 // ─── Pill Toggle ──────────────────────────────────────────────────────────────
 
@@ -74,12 +68,10 @@ function PdsDomainDropdown({
   value,
   customValue,
   onChange,
-  onCustomChange,
 }: {
   value: string;
   customValue: string;
   onChange: (domain: string) => void;
-  onCustomChange: (v: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const isCustom = value === CUSTOM_SENTINEL;
@@ -296,7 +288,6 @@ function HandleForm() {
             value={selectedDomain}
             customValue={customDomain}
             onChange={setSelectedDomain}
-            onCustomChange={setCustomDomain}
           />
         </div>
 
@@ -396,7 +387,7 @@ function HandleForm() {
 
 // ─── Login Modal ──────────────────────────────────────────────────────────────
 
-export function LoginModal({ onClose }: LoginModalProps) {
+export function LoginModal() {
   const [activeTab, setActiveTab] = useState<"handle" | "email">("email");
   const hasEpds = !!env.NEXT_PUBLIC_EPDS_URL;
 

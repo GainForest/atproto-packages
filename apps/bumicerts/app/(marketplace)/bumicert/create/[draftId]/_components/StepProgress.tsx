@@ -1,7 +1,7 @@
 "use client";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import React, { useMemo } from "react";
+import React from "react";
 import useNewBumicertStore from "../store";
 import { STEPS as steps } from "../_data/steps";
 import { useFormStore } from "../form-store";
@@ -28,23 +28,18 @@ const StepHeader = () => {
 
   const stepProgressesByIndex = [...completionPercentages, step4Progress, 0];
 
-  const stepEnability = useMemo(() => {
-    if (step5OverallStatus === "pending")
-      return [false, false, false, false, false];
-    const step1Enabled = true;
-    const step2Enabled = true;
-    const step3Enabled = true;
-    const step4Enabled = true;
-    const [p1, p2, p3] = completionPercentages;
-    const step5Enabled = p1 === 100 && p2 === 100 && p3 === 100;
-    return [
-      step1Enabled,
-      step2Enabled,
-      step3Enabled,
-      step4Enabled,
-      step5Enabled,
-    ];
-  }, [currentStepIndex, completionPercentages, step5OverallStatus]);
+  const stepEnability =
+    step5OverallStatus === "pending"
+      ? [false, false, false, false, false]
+      : [
+          true,
+          true,
+          true,
+          true,
+          step1Progress === 100 &&
+            step2Progress === 100 &&
+            step3Progress === 100,
+        ];
 
   return (
     <div className="flex flex-col w-full">

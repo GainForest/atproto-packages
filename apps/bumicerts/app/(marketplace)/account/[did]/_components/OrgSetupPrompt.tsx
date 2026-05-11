@@ -5,15 +5,11 @@ import { Building2Icon, ArrowRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
 
-interface OrgSetupPromptProps {
-  did: string;
-}
-
 /**
  * Displayed when a user navigates to /manage but hasn't set up their
  * organization yet. Prompts them to complete org setup first.
  */
-export function OrgSetupPrompt({ did }: OrgSetupPromptProps) {
+export function OrgSetupPrompt() {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="inline-flex items-center justify-center rounded-full bg-primary/10 p-4 mb-4">

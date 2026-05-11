@@ -21,7 +21,7 @@
  * let that component handle updates — this is the recommended pattern.
  */
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
 import { useHeaderSlots } from "./context";
 
 interface HeaderContentProps {
@@ -53,14 +53,15 @@ export function HeaderContent({ left, right, sub }: HeaderContentProps) {
     }
   }, [left, right, sub, setLeftContent, setRightContent, setSubHeaderContent]);
 
+  const clearClaimedSlots = useEffectEvent(() => {
+    if (claimedRef.current.left) setLeftContent(null);
+    if (claimedRef.current.right) setRightContent(null);
+    if (claimedRef.current.sub) setSubHeaderContent(null);
+  });
+
   // Cleanup on unmount only
   useEffect(() => {
-    return () => {
-      if (claimedRef.current.left) setLeftContent(null);
-      if (claimedRef.current.right) setRightContent(null);
-      if (claimedRef.current.sub) setSubHeaderContent(null);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => clearClaimedSlots();
   }, []);
 
   return null;
