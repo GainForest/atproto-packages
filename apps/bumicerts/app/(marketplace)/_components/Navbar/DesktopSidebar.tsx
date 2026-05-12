@@ -23,8 +23,7 @@ import {
   LeafIcon,
 } from "lucide-react";
 import { AnimatePresence, motion, LayoutGroup } from "framer-motion";
-import { useState, useEffect } from "react";
-import useLocalStorage from "use-local-storage";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAtprotoStore } from "@/components/stores/atproto";
@@ -56,11 +55,36 @@ function isLeafActive(
 // ── Welcome Card ──────────────────────────────────────────────────────────────
 
 const WELCOME_DISMISSED_KEY = "bumicerts:marketplace-welcome-dismissed";
+const WELCOME_DISMISSED_EVENT = "bumicerts:marketplace-welcome-dismissed";
+
+function getWelcomeDismissedSnapshot(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.localStorage.getItem(WELCOME_DISMISSED_KEY) === "true";
+}
+
+function subscribeToWelcomeDismissedStore(onStoreChange: () => void): () => void {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(WELCOME_DISMISSED_EVENT, onStoreChange);
+
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(WELCOME_DISMISSED_EVENT, onStoreChange);
+  };
+}
+
+function dismissWelcomeCard(): void {
+  window.localStorage.setItem(WELCOME_DISMISSED_KEY, "true");
+  window.dispatchEvent(new Event(WELCOME_DISMISSED_EVENT));
+}
 
 function MarketplaceWelcomeCard() {
-  const [dismissed, setDismissed] = useLocalStorage(
-    WELCOME_DISMISSED_KEY,
-    false,
+  const dismissed = useSyncExternalStore(
+    subscribeToWelcomeDismissedStore,
+    getWelcomeDismissedSnapshot,
+    () => false,
   );
 
   if (dismissed) return null;
@@ -77,7 +101,7 @@ function MarketplaceWelcomeCard() {
         {/* Dismiss button */}
         <button
           type="button"
-          onClick={() => setDismissed(true)}
+          onClick={dismissWelcomeCard}
           aria-label="Dismiss"
           className="absolute top-1.5 right-1.5 p-0.5 rounded-md text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/60 transition-colors"
         >
