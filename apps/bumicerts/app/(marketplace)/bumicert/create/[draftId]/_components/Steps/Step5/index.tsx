@@ -50,6 +50,7 @@ import {
   BUMICERT_COVER_IMAGE_MAX_SIZE_MB,
   BUMICERT_COVER_IMAGE_SUPPORTED_TYPES,
 } from "../../../constants";
+import { buildWorkscopeCel } from "@/lib/workscope";
 
 const FEEDBACK_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSfCTtRzKzfwmnpJoPFYyOeGokTlRcKkvpb-Urme84gpBrCCPA/viewform";
@@ -344,10 +345,7 @@ const Step5 = () => {
         title: step1FormValues.projectName,
         shortDescription: step2FormValues.shortDescription,
         description: descriptionForMutation,
-        workScope: {
-          $type: "org.hypercerts.claim.activity#workScopeString" as const,
-          scope: step1FormValues.workType.join(", "),
-        },
+        workScope: buildWorkscopeCel(step1FormValues.workType),
         startDate:
           step1FormValues.projectDateRange[0].toISOString() as `${string}-${string}-${string}T${string}:${string}:${string}Z`,
         // endDate is null when the work is ongoing — omit it from the mutation

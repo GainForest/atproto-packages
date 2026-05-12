@@ -22,6 +22,11 @@ Do not introduce new code that depends on:
 - boolean prop explosions
 - stale `new`, `old`, `final`, or `temp` component forks
 - scattered one-off visual patterns that bypass shared UI conventions without reason
+- new bumicert creation submissions that serialize selected work scope tags as `org.hypercerts.claim.activity#workScopeString` or comma-separated strings instead of using the shared CEL builder in `lib/workscope.ts`
+
+## Required Compatibility
+
+- Display and read paths for activity records must support both `org.hypercerts.workscope.cel` and `org.hypercerts.claim.activity#workScopeString`. CEL is the preferred write format for selected work scope tags, but the string variant remains a valid readable record shape.
 
 ## Legacy but Tolerated Until Touched
 

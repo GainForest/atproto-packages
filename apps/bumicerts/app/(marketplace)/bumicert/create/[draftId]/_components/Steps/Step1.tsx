@@ -31,6 +31,7 @@ import {
   BUMICERT_COVER_IMAGE_MAX_SIZE_MB,
   BUMICERT_COVER_IMAGE_SUPPORTED_TYPES,
 } from "../../constants";
+import { WORKSCOPE_OPTIONS } from "@/lib/workscope";
 
 const Step1 = () => {
   const { viewport, openState } = useNavbarContext();
@@ -191,15 +192,7 @@ const Step1 = () => {
                 selectMultiple={true}
                 value={workType}
                 onChange={(value) => setFormValue("workType", value)}
-                options={[
-                  { value: "Ecological Restoration", label: "Ecological Restoration" },
-                  { value: "Agroforestry", label: "Agroforestry" },
-                  { value: "Climate Adaptation", label: "Climate Adaptation" },
-                  { value: "Biodiversity Monitoring", label: "Biodiversity Monitoring" },
-                  { value: "Environmental Education", label: "Environmental Education" },
-                  { value: "Indigenous & Local Knowledge", label: "Indigenous & Local Knowledge" },
-                  { value: "Environmental Justice", label: "Environmental Justice" },
-                ]}
+                options={WORKSCOPE_OPTIONS}
               />
             </FormField>
           </div>

@@ -17,6 +17,7 @@
 import type { BumicertData, BumicertContributor } from "./types";
 import type { LeafletLinearDocument } from "@gainforest/leaflet-react";
 import type { Facet, FacetFeature } from "@gainforest/leaflet-react/richtext";
+import { extractWorkScopeObjectives } from "./workscope";
 
 // ── GraphQL Response Types ───────────────────────────────────────────────────
 // These match the post-redesign GraphQL schema from the indexer.
@@ -106,26 +107,6 @@ type ActivityAdapterInput = Pick<
 >;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Extract work scope objectives from the workScope JSON field.
- * Supports both { scope: string } and tags array formats.
- */
-function extractWorkScopeObjectives(workScope: unknown): string[] {
-  if (!workScope) return [];
-  // WorkScopeString format: { scope: string }
-  if (
-    typeof workScope === "object" &&
-    "scope" in workScope &&
-    typeof workScope.scope === "string"
-  ) {
-    return workScope.scope
-      .split(",")
-      .map((s: string) => s.trim())
-      .filter(Boolean);
-  }
-  return [];
-}
 
 /**
  * Type guard: checks if a value is a valid FacetFeature.

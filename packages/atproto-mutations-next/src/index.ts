@@ -60,6 +60,7 @@ export type {
   ClaimActivityMutationResult,
   ClaimActivityRecord,
   WorkScopeString,
+  WorkscopeCel,
   StrongRef,
   RichtextFacet,
 } from "@gainforest/atproto-mutations-core";
