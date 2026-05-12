@@ -166,7 +166,7 @@ function OrganizationsHero({ animate }: { animate: boolean }) {
       initial={animate ? { opacity: 0, y: 16 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-      className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-card shadow-sm"
+      className="relative min-h-[330px] overflow-hidden bg-card"
     >
       <div className="absolute inset-0">
         <Image
@@ -187,10 +187,10 @@ function OrganizationsHero({ animate }: { animate: boolean }) {
         />
       </div>
 
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_36%,color-mix(in_oklab,var(--primary)_18%,transparent)_0%,transparent_28%),linear-gradient(90deg,var(--background)_0%,color-mix(in_oklab,var(--background)_78%,transparent)_28%,transparent_62%),linear-gradient(180deg,color-mix(in_oklab,var(--background)_58%,transparent)_0%,transparent_42%,var(--background)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_36%,color-mix(in_oklab,var(--primary)_16%,transparent)_0%,transparent_28%),linear-gradient(90deg,color-mix(in_oklab,var(--background)_58%,transparent)_0%,color-mix(in_oklab,var(--background)_42%,transparent)_26%,transparent_58%),linear-gradient(180deg,color-mix(in_oklab,var(--background)_46%,transparent)_0%,transparent_42%,var(--background)_100%)]" />
       <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background via-background/70 to-transparent" />
 
-      <div className="relative z-10 flex min-h-[300px] flex-col justify-center px-7 py-12 sm:min-h-[340px] sm:px-12 lg:px-16">
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-8 pb-14 pt-[86px] sm:px-10 lg:px-9">
         <div className="flex items-center gap-2 mb-5">
           <UsersIcon className="h-4 w-4 text-primary" />
           <span className="text-xs uppercase tracking-[0.18em] text-primary font-semibold">
@@ -199,7 +199,7 @@ function OrganizationsHero({ animate }: { animate: boolean }) {
         </div>
         <h1
           aria-label="Nature Stewards"
-          className="max-w-3xl text-4xl font-light tracking-[-0.035em] leading-[0.98] text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
+          className="max-w-3xl text-4xl font-light tracking-[-0.035em] leading-[0.98] text-foreground sm:text-5xl md:text-[56px] lg:text-[58px]"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
           <span aria-hidden="true">
@@ -295,12 +295,12 @@ export function AllOrgsShell({
   }, [organizations, query, sort, countryFilter, bioregionFilter]);
 
   return (
-    <section className="pt-6 pb-20 md:pb-28 px-6">
-      <div className="max-w-6xl mx-auto">
-        <OrganizationsHero animate={animate} />
+    <section className="-mt-14 pb-20 md:pb-28">
+      <OrganizationsHero animate={animate} />
 
+      <div className="max-w-6xl mx-auto px-6">
         {/* Search + sort row */}
-        <div className="relative z-20 -mt-8 space-y-3 mb-0 px-0 sm:-mt-10 sm:px-6 lg:px-8">
+        <div className="relative z-20 -mt-14 space-y-3 mb-0 px-3">
           <div className="flex items-center gap-3">
             <div className="relative flex-1 min-w-0">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
@@ -393,7 +393,7 @@ export function AllOrgsShell({
         </div>
 
         {/* Gradient separator */}
-        <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent my-8" />
+        <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent my-6" />
 
         {/*
           Main content slot.
