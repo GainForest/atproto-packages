@@ -1,7 +1,6 @@
 import { Hero } from "./_components/Home/Hero";
 import { FeaturesSection } from "./_components/Home/FeaturesSection";
 import { UserOptionCards } from "./_components/Home/UserOptionCards";
-import { TestimonialsSection } from "./_components/Home/TestimonialsSection";
 import { WhatIsBumicert } from "./_components/Home/WhatIsBumicert";
 import { HomeFooter } from "./_components/Home/HomeFooter";
 
@@ -17,7 +16,6 @@ export default function HomePage() {
       <Hero />
       <FeaturesSection />
       <UserOptionCards />
-      {/*<TestimonialsSection />*/}
       <WhatIsBumicert />
       <HomeFooter />
     </div>

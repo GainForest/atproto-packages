@@ -51,7 +51,7 @@ function AccordionItem({
         type="button"
         aria-expanded={isOpen}
         onClick={onToggle}
-        className="group flex w-full cursor-pointer items-center justify-between gap-4 py-4 text-left"
+        className="group flex w-full cursor-pointer items-center justify-between gap-4 py-2 text-left"
       >
         <div className="flex items-center gap-4">
           <span className="font-garamond text-xl font-light text-primary/45">
@@ -75,7 +75,7 @@ function AccordionItem({
             transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             className="overflow-hidden"
           >
-            <p className="max-w-md pb-5 pl-10 text-sm leading-relaxed text-muted-foreground">
+            <p className="max-w-md pb-2.5 pl-10 text-xs leading-snug text-muted-foreground">
               {item.answer}
             </p>
           </motion.div>
@@ -89,23 +89,23 @@ export function WhatIsBumicert() {
   const [openItem, setOpenItem] = useState<string>("1");
 
   return (
-    <section className="px-6 py-20 md:py-28">
+    <section className="px-6 pb-6 pt-4 sm:px-12 md:px-6 md:pb-10 md:pt-6">
       <div className="mx-auto max-w-6xl">
-        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <div className="grid grid-cols-1 items-center gap-8 sm:grid-cols-2 lg:gap-12">
           <motion.div
             initial={{ opacity: 0, x: -18 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
           >
-            <div className="mb-5 flex items-center gap-2 text-primary">
+            <div className="mb-4 flex items-center gap-2 text-primary">
               <LeafIcon className="size-4" />
               <span className="text-[10px] font-bold uppercase tracking-[0.15em]">
                 The Certificate
               </span>
             </div>
 
-            <h2 className="mb-8 font-garamond text-3xl font-light leading-[1.04] tracking-[-0.015em] text-foreground md:text-4xl">
+            <h2 className="mb-4 font-garamond text-3xl font-light leading-[1.04] tracking-[-0.015em] text-foreground md:text-4xl">
               What exactly is
               <br />
               <span className="font-instrument italic text-foreground">
@@ -133,12 +133,12 @@ export function WhatIsBumicert() {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.65, delay: 0.08, ease: [0.25, 0.1, 0.25, 1] }}
-            className="flex justify-center lg:justify-end"
+            className="flex justify-center sm:justify-end"
           >
             <div className="relative w-full max-w-lg">
               <div className="absolute inset-0 scale-90 rounded-3xl bg-primary/10 blur-3xl" />
               <BumicertCardVisual
-                className="relative shadow-xl shadow-foreground/10"
+                className="relative shadow-xl shadow-foreground/10 [&_h3]:text-lg [&_h3]:leading-tight [&_p]:text-xs [&_p]:leading-relaxed"
                 logoUrl="/assets/media/images/gainforest-logo.svg"
                 coverImage="/assets/media/images/landing/certificate-river.png"
                 title="Reforestation of Mount Halimun"

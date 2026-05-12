@@ -33,14 +33,14 @@ const OPTION_CARDS = [
 
 export function UserOptionCards() {
   return (
-    <section className="px-6 py-16 md:py-24">
+    <section className="px-6 pb-6 pt-0 sm:px-12 md:px-6 md:pb-10 md:pt-2">
       <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-12 text-center md:mb-16"
+          className="mb-6 text-center md:mb-8"
         >
           <div className="mb-4 flex items-center justify-center gap-3 text-primary/60">
             <span className="h-px w-8 bg-border" />
@@ -50,13 +50,13 @@ export function UserOptionCards() {
           <h2 className="font-garamond text-3xl font-light tracking-[-0.01em] text-foreground md:text-4xl">
             Choose Your Path
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-base leading-relaxed text-muted-foreground">
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
             Whether you&apos;re here to fund impact or showcase your work, there&apos;s a
             place for you.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {OPTION_CARDS.map((card, index) => (
             <motion.div
               key={card.href}
@@ -70,12 +70,12 @@ export function UserOptionCards() {
               }}
             >
               <Link href={card.href} className="group block">
-                <div className="relative h-[320px] overflow-hidden rounded-2xl border border-border bg-card shadow-lg shadow-foreground/5 transition-all duration-500 hover:border-primary/20 hover:shadow-xl md:h-[360px]">
+                <div className="relative h-[320px] overflow-hidden rounded-2xl border border-border bg-card shadow-lg shadow-foreground/5 transition-all duration-500 hover:border-primary/20 hover:shadow-xl sm:h-[360px]">
                   <Image
                     src={card.image}
                     alt={card.alt}
                     fill
-                    sizes="(min-width: 1024px) 560px, calc(100vw - 3rem)"
+                    sizes="(min-width: 640px) 50vw, calc(100vw - 3rem)"
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-card via-card/88 to-card/0" />

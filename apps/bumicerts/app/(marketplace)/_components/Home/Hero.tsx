@@ -37,7 +37,7 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.75, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          <h1 className="font-garamond text-4xl font-light leading-[1.1] tracking-[-0.02em] text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
+          <h1 className="font-garamond text-[42px] font-light leading-[1.08] tracking-[-0.02em] text-foreground sm:text-[44px] md:text-6xl lg:text-7xl">
             Verified Impact{" "}
             <span className="mx-1 inline-flex items-center align-middle">
               <motion.span
@@ -73,7 +73,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.38, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mt-6 max-w-2xl text-base leading-relaxed text-foreground/80 sm:text-lg md:mt-8 md:text-xl"
+          className="mt-6 max-w-[430px] text-sm leading-relaxed text-foreground/80 md:mt-8 md:text-lg"
         >
           Fund regenerative projects directly. Every Bumicert is a verified
           record of real environmental work — backed by photos, locations, and
@@ -105,7 +105,7 @@ export function Hero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 1 }}
-        className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2"
+        className="absolute bottom-16 left-1/2 z-10 -translate-x-1/2"
       >
         <motion.div
           animate={{ y: [0, 5, 0] }}

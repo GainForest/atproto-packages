@@ -27,14 +27,14 @@ const FEATURES = [
 
 export function FeaturesSection() {
   return (
-    <section className="px-6 py-20 md:py-28">
+    <section className="px-6 pb-0 pt-3 sm:px-12 md:px-6 md:pb-6 md:pt-6">
       <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-16 flex items-center gap-2"
+          className="mb-5 flex items-center gap-2"
         >
           <LeafIcon className="size-4 text-primary" />
           <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
@@ -42,7 +42,7 @@ export function FeaturesSection() {
           </span>
         </motion.div>
 
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-3 md:gap-8">
+        <div className="grid grid-cols-1 gap-12 sm:grid-cols-3 sm:gap-8">
           {FEATURES.map((feature, index) => (
             <motion.div
               key={feature.number}
@@ -55,21 +55,21 @@ export function FeaturesSection() {
                 ease: [0.25, 0.1, 0.25, 1],
               }}
               className={cn(
-                "md:px-6",
-                index === 0 && "md:pl-0",
-                index > 0 && "md:border-l md:border-border/80",
-                index === FEATURES.length - 1 && "md:pr-0",
+                "sm:px-5",
+                index === 0 && "sm:pl-0",
+                index > 0 && "sm:border-l sm:border-border/80",
+                index === FEATURES.length - 1 && "sm:pr-0",
               )}
             >
-              <span className="block font-garamond text-5xl font-light leading-none tracking-tight text-primary/45">
+              <span className="block font-garamond text-4xl font-light leading-none tracking-tight text-primary/45">
                 {feature.number}.
               </span>
 
-              <h3 className="mt-4 font-instrument text-[15px] leading-snug text-foreground">
+              <h3 className="mt-3 font-instrument text-[15px] leading-snug text-foreground">
                 {feature.title}
               </h3>
 
-              <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                 {feature.description}
               </p>
             </motion.div>

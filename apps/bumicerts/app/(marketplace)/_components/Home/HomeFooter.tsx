@@ -13,8 +13,8 @@ const FOOTER_LINKS = [
 
 export function HomeFooter() {
   return (
-    <footer className="mx-auto max-w-5xl border-t border-border px-6 py-16">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+    <footer className="mx-auto max-w-5xl border-t border-border px-6 py-1 sm:px-12 md:px-6">
+      <div className="flex flex-col items-start justify-between gap-8 sm:flex-row sm:items-center">
         {/* Brand */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2.5">
@@ -54,7 +54,7 @@ export function HomeFooter() {
         </nav>
       </div>
 
-      <div className="mt-8 border-t border-border pt-4 text-xs text-muted-foreground/50">
+      <div className="mt-1 border-t border-border pt-2 text-xs text-muted-foreground/50">
         © {new Date().getFullYear()} Bumicerts. Open source, community-powered.
       </div>
     </footer>
