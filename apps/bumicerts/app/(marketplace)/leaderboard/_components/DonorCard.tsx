@@ -1,45 +1,85 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { HeartIcon, WalletIcon } from "lucide-react";
+import { ChevronRightIcon, CrownIcon, LeafIcon, SparklesIcon, UserRoundCheckIcon, WalletIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { LeaderboardEntry } from "@/lib/utils/leaderboard";
 import { UserChip } from "@/components/ui/user-chip";
-
-// ── Rank badge ────────────────────────────────────────────────────────────────
+import { links } from "@/lib/links";
+import { cn } from "@/lib/utils";
 
 function RankBadge({ rank }: { rank: number }) {
-  // Medal for top 3
   if (rank <= 3) {
     const medals = ["", "🥇", "🥈", "🥉"];
     return (
-      <span className="text-2xl" role="img" aria-label={`Rank ${rank}`}>
+      <span
+        className="flex size-10 items-center justify-center rounded-full bg-gradient-to-b from-primary/10 to-background text-2xl shadow-sm ring-1 ring-border"
+        role="img"
+        aria-label={`Rank ${rank}`}
+      >
         {medals[rank]}
       </span>
     );
   }
 
-  // Decorative number for others
   return (
-    <span
-      className="text-lg font-light text-muted-foreground/60 tabular-nums"
-      style={{ fontFamily: "var(--font-garamond-var)" }}
-    >
+    <span className="flex size-10 items-center justify-center rounded-full border border-border bg-card text-base font-medium tabular-nums text-muted-foreground shadow-sm">
       {rank}
     </span>
   );
 }
 
-// ── Wallet address helper ─────────────────────────────────────────────────────
-
 function formatWalletAddress(address: string): string {
-  const truncated = address.length > 12
-    ? `${address.slice(0, 6)}…${address.slice(-4)}`
-    : address;
+  const truncated =
+    address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address;
   return `Anonymous (${truncated})`;
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+function donationSummary(entry: LeaderboardEntry, relativeTime: string | null): string {
+  const count = `${entry.donationCount} donation${entry.donationCount === 1 ? "" : "s"}`;
+  return relativeTime ? `${count} · Last donation ${relativeTime}` : count;
+}
+
+function DonorBadges({ rank }: { rank: number }) {
+  if (rank === 1) {
+    return (
+      <div className="hidden flex-wrap items-center gap-2 lg:flex">
+        <span className="inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+          <CrownIcon className="size-3.5" />
+          Top Donor
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+          <LeafIcon className="size-3.5" />
+          Nature Champion
+        </span>
+      </div>
+    );
+  }
+
+  if (rank === 2) {
+    return (
+      <div className="hidden flex-wrap items-center gap-2 lg:flex">
+        <span className="inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+          <SparklesIcon className="size-3.5" />
+          Consistent Giver
+        </span>
+      </div>
+    );
+  }
+
+  if (rank === 3) {
+    return (
+      <div className="hidden flex-wrap items-center gap-2 lg:flex">
+        <span className="inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+          <SparklesIcon className="size-3.5" />
+          Rising Supporter
+        </span>
+      </div>
+    );
+  }
+
+  return <div className="hidden lg:block" />;
+}
 
 interface DonorCardProps {
   entry: LeaderboardEntry;
@@ -58,56 +98,79 @@ export function DonorCard({ entry, index }: DonorCardProps) {
     : null;
 
   const isWallet = entry.donorType === "wallet";
+  const actionHref = isWallet
+    ? links.external.basescanAddress(entry.donorId)
+    : links.account.byDid(entry.donorId);
+  const actionLabel = isWallet
+    ? `Open ${formatWalletAddress(entry.donorId)} on BaseScan`
+    : "Open donor account in a new tab";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.3, delay: index * 0.03, ease: [0.25, 0.1, 0.25, 1] }}
-      className="flex items-center gap-4 p-4 rounded-xl border border-border bg-background hover:border-primary/20 hover:shadow-lg transition-all duration-300"
+      transition={{
+        duration: 0.3,
+        delay: Math.min(index, 12) * 0.025,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
+      className="group grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-3xl border border-border/80 bg-card/85 p-4 shadow-sm shadow-primary/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/10 sm:gap-5 sm:p-5 lg:grid-cols-[auto_auto_minmax(0,1.15fr)_minmax(10rem,0.8fr)_auto_auto]"
     >
-      {/* Rank */}
-      <div className="w-8 h-8 flex items-center justify-center shrink-0">
+      <div className="flex items-center justify-center">
         <RankBadge rank={entry.rank} />
       </div>
 
-      {/* Avatar/icon */}
-      <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-        {isWallet ? (
-          <WalletIcon className="h-4 w-4 text-primary/70" />
-        ) : (
-          <HeartIcon className="h-4 w-4 text-primary" />
+      <div
+        className={cn(
+          "flex size-12 items-center justify-center rounded-full border bg-muted/50 text-muted-foreground ring-1 ring-border/50",
+          !isWallet && "bg-primary/10 text-primary ring-primary/10",
         )}
+      >
+        {isWallet ? <WalletIcon className="size-5" /> : <UserRoundCheckIcon className="size-5" />}
       </div>
 
-      {/* Donor info */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0">
         {isWallet ? (
-          <span className="text-sm font-medium text-foreground truncate">
+          <span className="block truncate text-sm font-semibold text-foreground sm:text-base" title={entry.donorId}>
             {formatWalletAddress(entry.donorId)}
           </span>
         ) : (
-          <UserChip 
+          <UserChip
             did={entry.donorId}
+            avatarSize={24}
             showCopyButton="hover"
-            linkMode="user-page"
-            className="border !border-transparent hover:!border-border"
+            linkMode="none"
+            className="max-w-full border !border-transparent hover:!border-border"
+            textClassName="text-sm sm:text-base font-semibold text-foreground"
           />
         )}
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {entry.donationCount} donation{entry.donationCount !== 1 ? "s" : ""}
-          {relativeTime && <span className="text-muted-foreground/60"> · last {relativeTime}</span>}
+        <p className="mt-1 truncate text-xs text-muted-foreground sm:text-sm">
+          {donationSummary(entry, relativeTime)}
         </p>
       </div>
 
-      {/* Amount */}
-      <div className="text-right shrink-0">
-        <div className="text-base font-bold text-foreground">
-          ${entry.totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      <DonorBadges rank={entry.rank} />
+
+      <div className="text-right">
+        <div className="text-base font-bold tabular-nums text-primary sm:text-lg">
+          ${entry.totalAmount.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
         </div>
-        <div className="text-xs text-muted-foreground">USD</div>
+        <div className="text-xs font-medium text-muted-foreground">USD</div>
       </div>
+
+      <a
+        href={actionHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={actionLabel}
+        className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <ChevronRightIcon className="size-5" aria-hidden="true" />
+      </a>
     </motion.div>
   );
 }

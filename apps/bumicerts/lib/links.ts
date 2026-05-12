@@ -126,6 +126,8 @@ export const links = {
       return baseUrl;
     },
     basescan: (txHash: string) => `https://basescan.org/tx/${txHash}`,
+    basescanAddress: (address: string) =>
+      `https://basescan.org/address/${encodeURIComponent(address)}`,
     github: "https://github.com/GainForest/bumicerts-monorepo",
     twitter: "https://www.x.com/GainForestNow",
     gainforest: "https://www.gainforest.earth",
