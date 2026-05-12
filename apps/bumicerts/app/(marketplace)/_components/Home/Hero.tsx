@@ -9,7 +9,7 @@ import { links } from "@/lib/links";
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-[100dvh] flex-col overflow-hidden">
+    <section className="dark relative flex min-h-[100dvh] flex-col overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
           initial={{ scale: 1.04, opacity: 0 }}
@@ -17,18 +17,24 @@ export function Hero() {
           transition={{ duration: 1.4, ease: [0.25, 0.1, 0.25, 1] }}
           className="absolute inset-0"
         >
-          <Image
-            src="/assets/media/images/landing/hero-rainforest.png"
-            alt="Misty rainforest valley"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/55 via-background/10 to-background/0 mix-blend-soft-light" />
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            poster="/assets/media/images/landing/hero-rainforest.png"
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+          >
+            <source
+              src="/assets/media/videos/landing/rainforest_hero.mp4"
+              type="video/mp4"
+            />
+          </video>
         </motion.div>
 
-        <div className="absolute inset-x-0 bottom-0 h-[28%] bg-gradient-to-t from-background via-background/80 to-background/0" />
+        <div className="absolute inset-x-0 bottom-0 h-[12%] bg-gradient-to-t from-white via-white/80 to-white/0" />
       </div>
 
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-32 pt-20 text-center">
