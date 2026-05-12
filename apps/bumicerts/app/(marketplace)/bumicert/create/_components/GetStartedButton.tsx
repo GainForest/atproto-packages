@@ -1,8 +1,7 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
-import { ArrowRightIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
@@ -14,12 +13,12 @@ const GetStartedButton = () => {
   };
 
   return (
-    <Link href={links.bumicert.createWithDraftId("0")} onClick={handleClick}>
-      <Button>
-        Get Started
-        <ArrowRightIcon />
-      </Button>
-    </Link>
+    <Button asChild>
+      <Link href={links.bumicert.createWithDraftId("0")} onClick={handleClick}>
+        <PlusIcon />
+        Create a Bumicert
+      </Link>
+    </Button>
   );
 };
 
