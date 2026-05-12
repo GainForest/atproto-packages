@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { OrgBumicertsGrid } from "./_components/OrgBumicertsGrid";
+import {
+  AccountContentColumns,
+  AccountSidebar,
+} from "../_components/AccountSidebar";
 import ErrorPage from "@/components/error-page";
 import Container from "@/components/ui/container";
 import { activitiesToBumicertDataArray } from "@/lib/adapters";
@@ -11,6 +15,7 @@ import {
   getAccountRouteData,
   readAccountRouteParams,
 } from "../server/account-route";
+import { buildAccountSidebarData } from "../server/account-sidebar";
 import type { AccountRouteData } from "../server/account-route";
 
 function withCreatorDisplayFallbacks(
@@ -93,12 +98,18 @@ export default async function AccountBumicertsPage({
     );
   }
 
+  const sidebarData = await buildAccountSidebarData(routeData, {
+    bumicertCount: bumicerts.length,
+  });
+
   return (
-    <OrgBumicertsGrid
-      bumicerts={withCreatorDisplayFallbacks(bumicerts, {
-        organizationName: routeData.organization.displayName,
-        logoUrl: routeData.organization.logoUrl,
-      })}
-    />
+    <AccountContentColumns sidebar={<AccountSidebar data={sidebarData} />}>
+      <OrgBumicertsGrid
+        bumicerts={withCreatorDisplayFallbacks(bumicerts, {
+          organizationName: routeData.organization.displayName,
+          logoUrl: routeData.organization.logoUrl,
+        })}
+      />
+    </AccountContentColumns>
   );
 }

@@ -3,10 +3,16 @@ import { notFound } from "next/navigation";
 import ErrorPage from "@/components/error-page";
 import { DonationHistory } from "@/components/account/DonationHistory";
 import {
+  AccountContentColumns,
+  AccountSidebar,
+} from "../_components/AccountSidebar";
+import * as activitiesModule from "@/graphql/indexer/queries/activities";
+import {
   buildAccountDonationsMetadata,
   getAccountRouteData,
   readAccountRouteParams,
 } from "../server/account-route";
+import { buildAccountSidebarData } from "../server/account-sidebar";
 import type { AccountRouteData } from "../server/account-route";
 
 export async function generateMetadata({
@@ -47,9 +53,23 @@ export default async function AccountDonationsPage({
     notFound();
   }
 
+  let bumicertCount: number | null = null;
+
+  try {
+    bumicertCount = (await activitiesModule.fetch({ did })).length;
+  } catch (error) {
+    console.warn("[AccountDonationsPage] Failed to read account Bumicerts", did, error);
+  }
+
+  const sidebarData = await buildAccountSidebarData(routeData, {
+    bumicertCount,
+  });
+
   return (
-    <section className="py-6">
-      <DonationHistory userDid={did} />
-    </section>
+    <AccountContentColumns sidebar={<AccountSidebar data={sidebarData} />}>
+      <section className="py-6">
+        <DonationHistory userDid={did} />
+      </section>
+    </AccountContentColumns>
   );
 }
