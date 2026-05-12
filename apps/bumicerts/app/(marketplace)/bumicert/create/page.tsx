@@ -9,7 +9,7 @@ import { links } from "@/lib/links";
 
 function CreateHeroCard() {
   return (
-    <section className="relative rounded-[1.6rem] border border-border/80 bg-card shadow-sm">
+    <section className="relative overflow-visible rounded-[1.6rem] border border-border/80 bg-card shadow-sm">
       <div className="relative min-h-[17.5rem] overflow-hidden rounded-[1.55rem]">
         <Image
           src="/assets/media/images/create-bumicert/hero-light.png"
@@ -31,23 +31,6 @@ function CreateHeroCard() {
         <div className="absolute -top-8 right-[7%] h-28 w-52 rounded-full bg-background/50 blur-2xl dark:bg-primary/10" />
         <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-foreground/20 via-foreground/5 to-transparent dark:from-black/55" />
 
-        <Image
-          src="/assets/media/images/create-bumicert/plant-light.png"
-          alt=""
-          width={1002}
-          height={1146}
-          priority
-          className="pointer-events-none absolute bottom-0 right-[4%] z-20 hidden h-[28rem] w-auto max-w-[58%] object-contain object-bottom dark:hidden md:block"
-        />
-        <Image
-          src="/assets/media/images/create-bumicert/plant-dark.png"
-          alt=""
-          width={964}
-          height={1129}
-          priority
-          className="pointer-events-none absolute bottom-0 right-[4%] z-20 hidden h-[28rem] w-auto max-w-[58%] object-contain object-bottom dark:md:block"
-        />
-
         <div className="relative z-10 flex min-h-[17.5rem] max-w-[29rem] flex-col justify-center px-6 py-8 sm:px-8 lg:px-9">
           <div className="mb-7 flex size-12 items-center justify-center rounded-2xl border border-border/70 bg-background/90 text-primary shadow-sm backdrop-blur-sm">
             <LeafIcon className="size-6" />
@@ -66,6 +49,22 @@ function CreateHeroCard() {
           </div>
         </div>
       </div>
+      <Image
+        src="/assets/media/images/create-bumicert/plant-light.png"
+        alt=""
+        width={1002}
+        height={1146}
+        priority
+        className="pointer-events-none absolute bottom-0 right-[4%] z-20 hidden h-[28rem] w-auto max-w-[58%] object-contain dark:hidden md:block"
+      />
+      <Image
+        src="/assets/media/images/create-bumicert/plant-dark.png"
+        alt=""
+        width={964}
+        height={1129}
+        priority
+        className="pointer-events-none absolute bottom-0 right-[4%] z-20 hidden h-[28rem] w-auto max-w-[58%] object-contain dark:md:block"
+      />
     </section>
   );
 }
