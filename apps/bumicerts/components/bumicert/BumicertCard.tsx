@@ -30,7 +30,7 @@ export const cardVariants = {
 const orgLabelTextVariants = {
   initial: {
     opacity: 0,
-    width: 0,
+    maxWidth: 0,
     marginLeft: "-0.25rem",
     marginRight: "0rem",
     pointerEvents: "none",
@@ -39,7 +39,7 @@ const orgLabelTextVariants = {
   },
   cardHover: {
     opacity: 1,
-    width: "auto",
+    maxWidth: 200,
     marginLeft: "0rem",
     marginRight: "0.5rem",
     pointerEvents: "auto",
@@ -142,14 +142,14 @@ export function BumicertCardVisual({
               className="object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center text-[8px] font-bold text-muted-foreground">
+            <div className="absolute inset-0 bg-muted flex items-center justify-center text-[8px] font-bold text-muted-foreground">
               {organizationName.charAt(0)}
             </div>
           )}
         </div>
         <motion.span
           variants={orgLabelTextVariants}
-          className="text-xs font-medium text-foreground text-shadow-md"
+          className="text-xs font-medium text-foreground text-shadow-md whitespace-nowrap overflow-hidden"
         >
           {organizationName.length > 22
             ? organizationName.slice(0, 20) + "..."
