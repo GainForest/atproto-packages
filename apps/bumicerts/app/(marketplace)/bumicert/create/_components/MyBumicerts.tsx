@@ -53,7 +53,7 @@ const MyBumicerts = () => {
           </div>
         </motion.div>
       ) : isPending || bumicerts === undefined ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 3 }).map((_, index) => (
             <BumicertCardSkeleton key={index} />
           ))}
@@ -91,7 +91,7 @@ const MyBumicerts = () => {
               </Button>
             </motion.div>
           ) : (
-            <div key="grid" className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div key="grid" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {bumicerts.map((bumicert) => (
                 <motion.div
                   key={bumicert.id}

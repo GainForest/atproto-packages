@@ -170,7 +170,7 @@ const DraftBumicerts = () => {
   }
 
   return (
-    <div className="grid w-full grid-cols-1 gap-3 pt-6 md:grid-cols-2">
+    <div className="grid w-full grid-cols-1 gap-3 pt-6 sm:grid-cols-2 xl:grid-cols-4">
       {draftsWithProgress.map((draft) => (
         <div
           key={draft.id}
