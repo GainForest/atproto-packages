@@ -1,14 +1,13 @@
-import { FileTextIcon, LeafIcon, MapPinIcon, MicIcon, TreesIcon } from "lucide-react";
+import { FileTextIcon, LeafIcon, MicIcon, TreesIcon } from "lucide-react";
 import { links } from "@/lib/links";
 
-export type EvidenceTabId = "audio" | "trees" | "biodiversity" | "sites" | "files";
+export type EvidenceTabId = "audio" | "trees" | "biodiversity" | "files";
 export type ManagedEvidenceTabId = Exclude<EvidenceTabId, "files">;
 export type EvidenceAttachmentContentType =
   | "audio"
   | "occurrence"
   | "tree-dataset"
   | "biodiversity"
-  | "location"
   | "evidence";
 
 type AttachmentDefaults = {
@@ -58,16 +57,6 @@ const MANAGED_TAB_CONFIG: Record<ManagedEvidenceTabId, ManagedTabConfig> = {
       contentType: "biodiversity",
     },
   },
-  sites: {
-    label: "Sites",
-    icon: MapPinIcon,
-    manageHref: links.manage.sites,
-    emptyLabel: "sites",
-    attachment: {
-      title: "Sites",
-      contentType: "location",
-    },
-  },
 };
 
 const FILE_TAB_CONFIG: TabBaseConfig = {
@@ -95,10 +84,6 @@ export const EVIDENCE_TABS: Array<
   {
     id: "biodiversity",
     ...MANAGED_TAB_CONFIG.biodiversity,
-  },
-  {
-    id: "sites",
-    ...MANAGED_TAB_CONFIG.sites,
   },
   {
     id: "files",

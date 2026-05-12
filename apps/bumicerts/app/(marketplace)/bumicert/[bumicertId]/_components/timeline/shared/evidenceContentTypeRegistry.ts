@@ -14,7 +14,6 @@ export const EVIDENCE_CONTENT_TYPE_REGISTRY = [
   { value: "tree-dataset", label: "Tree dataset", filePickerEligible: false },
   { value: "biodiversity", label: "Biodiversity", filePickerEligible: false },
   { value: "occurrence", label: "Tree", filePickerEligible: false },
-  { value: "location", label: "Site", filePickerEligible: false },
 ] as const;
 
 export type KnownEvidenceContentType =

@@ -46,6 +46,10 @@ export function getTimelineEvidenceKind(
     return "site";
   }
 
+  if (contentHasCollection(content, "app.certified.location")) {
+    return "site";
+  }
+
   if (contentHasCollection(content, "app.gainforest.dwc.dataset")) {
     return "tree";
   }
