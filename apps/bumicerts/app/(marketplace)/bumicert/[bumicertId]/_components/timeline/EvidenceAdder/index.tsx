@@ -99,7 +99,7 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
         <span className="text-sm text-muted-foreground">
           Select the type of evidence to add.
         </span>
-        <div className="grid grid-cols-2 gap-2 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 mt-4">
           {EVIDENCE_TABS.map(({ id, label, icon: Icon }) => {
             return (
               <Button
