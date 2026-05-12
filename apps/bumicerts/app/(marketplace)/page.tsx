@@ -1,6 +1,7 @@
 import { Hero } from "./_components/Home/Hero";
 import { FeaturesSection } from "./_components/Home/FeaturesSection";
 import { UserOptionCards } from "./_components/Home/UserOptionCards";
+import { TestimonialsSection } from "./_components/Home/TestimonialsSection";
 import { WhatIsBumicert } from "./_components/Home/WhatIsBumicert";
 import { HomeFooter } from "./_components/Home/HomeFooter";
 
@@ -12,20 +13,12 @@ export const metadata = {
 
 export default function HomePage() {
   return (
-    <div className="w-full">
-      {/* Full-screen hero with atmospheric image */}
+    <div className="w-full bg-background">
       <Hero />
-      
-      {/* "About Us" style numbered features */}
       <FeaturesSection />
-      
-      {/* Choose your path - Supporter vs Organization */}
       <UserOptionCards />
-      
-      {/* What is a Bumicert? - with BumicertArt preview */}
+      {/*<TestimonialsSection />*/}
       <WhatIsBumicert />
-      
-      {/* Footer */}
       <HomeFooter />
     </div>
   );

@@ -13,7 +13,7 @@ const FOOTER_LINKS = [
 
 export function HomeFooter() {
   return (
-    <footer className="max-w-5xl mx-auto px-6 py-16 border-t border-border">
+    <footer className="mx-auto max-w-5xl border-t border-border px-6 py-16">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
         {/* Brand */}
         <div className="flex flex-col gap-2">
@@ -25,14 +25,11 @@ export function HomeFooter() {
               height={28}
               className="drop-shadow-md"
             />
-            <span className="font-serif text-xl font-bold tracking-tight">
+            <span className="font-garamond text-xl font-bold tracking-tight">
               Bumicerts
             </span>
           </div>
-          <p
-            className="text-muted-foreground text-sm"
-            style={{ fontFamily: "var(--font-instrument-serif-var)", fontStyle: "italic" }}
-          >
+          <p className="font-instrument text-sm italic text-muted-foreground">
             Connecting communities with funders.
           </p>
           <p className="text-xs text-muted-foreground/60 mt-1">
@@ -57,7 +54,7 @@ export function HomeFooter() {
         </nav>
       </div>
 
-      <div className="mt-8 pt-4 border-t border-border text-xs text-muted-foreground/50">
+      <div className="mt-8 border-t border-border pt-4 text-xs text-muted-foreground/50">
         © {new Date().getFullYear()} Bumicerts. Open source, community-powered.
       </div>
     </footer>
