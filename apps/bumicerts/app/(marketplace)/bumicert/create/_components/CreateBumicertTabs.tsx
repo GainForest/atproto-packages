@@ -44,7 +44,6 @@ export function CreateBumicertTabs() {
               role="tab"
               aria-selected={isActive}
               aria-controls={tabPanelIds[tab.value]}
-              tabIndex={isActive ? 0 : -1}
               onClick={() => setActiveTab(tab.value)}
               className={cn(
                 "relative -mb-px px-4 pb-4 pt-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2",
