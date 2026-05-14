@@ -58,6 +58,13 @@ function isOptionalString(value: unknown): value is string | undefined {
   return typeof value === "string" || typeof value === "undefined";
 }
 
+function isOptionalNonEmptyString(value: unknown): value is string | undefined {
+  return (
+    typeof value === "undefined" ||
+    (typeof value === "string" && value.trim().length > 0)
+  );
+}
+
 function isAppendExistingDwcDatasetOccurrenceInput(
   value: unknown,
 ): value is AppendExistingDwcDatasetRowInput["occurrence"] {
@@ -85,7 +92,7 @@ function isAppendExistingDwcDatasetOccurrenceInput(
     isOptionalString(value.geodeticDatum) &&
     isOptionalString(value.license) &&
     isOptionalString(value.projectRef) &&
-    isOptionalString(value.siteRef)
+    isOptionalNonEmptyString(value.siteRef)
   );
 }
 
@@ -322,7 +329,9 @@ async function createOccurrenceRecord(options: {
     ...(occurrenceInput.projectRef
       ? { projectRef: occurrenceInput.projectRef }
       : {}),
-    ...(occurrenceInput.siteRef ? { siteRef: occurrenceInput.siteRef } : {}),
+    ...(occurrenceInput.siteRef !== undefined
+      ? { siteRef: occurrenceInput.siteRef }
+      : {}),
     datasetRef: occurrenceInput.datasetRef,
     dynamicProperties: occurrenceInput.dynamicProperties,
     createdAt,

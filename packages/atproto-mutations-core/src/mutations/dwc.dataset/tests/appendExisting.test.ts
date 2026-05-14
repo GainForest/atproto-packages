@@ -1,12 +1,15 @@
 import { describe, expect, it } from "bun:test";
 import type { Agent } from "@atproto/api";
+import type { AtUriString } from "@atproto/lex";
 import { Effect, Layer } from "effect";
 import { AtprotoAgent } from "../../../services/AtprotoAgent";
 import { appendExistingDwcDataset } from "../appendExisting";
+import { DwcDatasetValidationError } from "../utils/errors";
 
 const DID = "did:plc:testdatasetappend";
 const DATASET_RKEY = "legacy-dataset";
 const DATASET_URI = `at://${DID}/app.gainforest.dwc.dataset/${DATASET_RKEY}`;
+const SITE_REF = `at://${DID}/app.certified.location/site-1` as AtUriString;
 
 type FakeAgentState = {
   datasetCid: string;
@@ -164,5 +167,64 @@ describe("appendExistingDwcDataset", () => {
     expect(state.putRecordCount).toBe(1);
     expect(state.occurrenceRecords).toHaveLength(2);
     expect(state.datasetRecord["recordCount"]).toBe(2);
+  });
+
+  it("preserves a provided siteRef on created occurrences", async () => {
+    const { agent, state } = makeFakeAgent();
+    const layer = Layer.succeed(AtprotoAgent, agent);
+
+    const result = await Effect.runPromise(
+      appendExistingDwcDataset({
+        datasetRkey: DATASET_RKEY,
+        rows: [
+          {
+            occurrence: {
+              scientificName: "Shorea leprosula",
+              eventDate: "2026-02-01",
+              basisOfRecord: "HumanObservation",
+              decimalLatitude: "4.1234",
+              decimalLongitude: "117.5678",
+              siteRef: SITE_REF,
+            },
+            floraMeasurement: null,
+          },
+        ],
+      }).pipe(Effect.provide(layer)),
+    );
+
+    expect(result.results[0]?.state).toBe("success");
+    expect(state.occurrenceRecords).toHaveLength(1);
+    expect(state.occurrenceRecords[0]?.["siteRef"]).toBe(SITE_REF);
+  });
+
+  it("rejects an explicitly blank siteRef instead of creating an unlinked occurrence", async () => {
+    const { agent, state } = makeFakeAgent();
+    const layer = Layer.succeed(AtprotoAgent, agent);
+
+    const result = await Effect.runPromise(
+      appendExistingDwcDataset({
+        datasetRkey: DATASET_RKEY,
+        rows: [
+          {
+            occurrence: {
+              scientificName: "Shorea leprosula",
+              eventDate: "2026-02-01",
+              basisOfRecord: "HumanObservation",
+              decimalLatitude: "4.1234",
+              decimalLongitude: "117.5678",
+              siteRef: "" as never,
+            },
+            floraMeasurement: null,
+          },
+        ],
+      }).pipe(Effect.either, Effect.provide(layer)),
+    );
+
+    expect(result._tag).toBe("Left");
+    if (result._tag === "Left") {
+      expect(result.left).toBeInstanceOf(DwcDatasetValidationError);
+    }
+    expect(state.occurrenceRecords).toHaveLength(0);
+    expect(state.putRecordCount).toBe(0);
   });
 });
