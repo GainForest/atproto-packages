@@ -2,13 +2,17 @@
 
 import { useEffect } from "react";
 import type { MutableRefObject } from "react";
-import type { ValidatedRow } from "@/lib/upload/types";
+import type {
+  TreeUploadRowAttentionSummary,
+  ValidatedRow,
+} from "@/lib/upload/types";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import type { TreeUploadEventPayload } from "@/lib/analytics/events";
 import { trackTreeUploadFeedbackPromptShown } from "@/lib/analytics/hotjar";
 import { TreeUploadCompleteModal } from "./TreeUploadCompleteModal";
 import { persistPendingUpload } from "./upload-session";
 import type { UploadDatasetSelection } from "@/lib/upload/upload-dataset-selection";
+import type { UploadSiteSelection } from "@/lib/upload/site-selection";
 
 type ModalController = ReturnType<
   (typeof import("@/components/ui/modal/context"))["useModal"]
@@ -18,8 +22,10 @@ type UseUploadStepEffectsArgs = {
   did: string;
   uploadId: string;
   validRows: ValidatedRow[];
+  previewSkippedRows: TreeUploadRowAttentionSummary[];
   establishmentMeans: string | null;
   datasetSelection: UploadDatasetSelection;
+  siteSelection: UploadSiteSelection | null;
   uploadStarted: boolean;
   runUpload: () => Promise<void>;
   uploadDone: boolean;
@@ -36,6 +42,7 @@ type UseUploadStepEffectsArgs = {
   total: number;
   partials: number;
   failures: number;
+  rowAttentionSummaries: TreeUploadRowAttentionSummary[];
   photoFailureCount: number;
   treeManagerHref: string;
   treeManagerLabel: string;
@@ -49,8 +56,10 @@ export function useUploadStepEffects({
   did,
   uploadId,
   validRows,
+  previewSkippedRows,
   establishmentMeans,
   datasetSelection,
+  siteSelection,
   uploadStarted,
   runUpload,
   uploadDone,
@@ -67,6 +76,7 @@ export function useUploadStepEffects({
   total,
   partials,
   failures,
+  rowAttentionSummaries,
   photoFailureCount,
   treeManagerHref,
   treeManagerLabel,
@@ -76,7 +86,7 @@ export function useUploadStepEffects({
   show,
 }: UseUploadStepEffectsArgs) {
   useEffect(() => {
-    if (validRows.length === 0 || uploadStarted) {
+    if (validRows.length === 0 || uploadStarted || !siteSelection) {
       return;
     }
 
@@ -84,10 +94,21 @@ export function useUploadStepEffects({
       ownerDid: did,
       uploadId,
       validRows,
+      previewSkippedRows,
       establishmentMeans,
       datasetSelection,
+      siteSelection,
     });
-  }, [datasetSelection, did, establishmentMeans, uploadId, uploadStarted, validRows]);
+  }, [
+    datasetSelection,
+    did,
+    establishmentMeans,
+    previewSkippedRows,
+    siteSelection,
+    uploadId,
+    uploadStarted,
+    validRows,
+  ]);
 
   useEffect(() => {
     if (!uploadStarted) {
@@ -150,6 +171,7 @@ export function useUploadStepEffects({
             savedCount={persistedCount}
             partialCount={partials}
             failedCount={failures}
+            rowAttentionSummaries={rowAttentionSummaries}
             photoFailureCount={photoFailureCount}
             treeManagerHref={treeManagerHref}
             treeManagerLabel={treeManagerLabel}
@@ -157,7 +179,7 @@ export function useUploadStepEffects({
             onUploadMore={onComplete}
           />
         ),
-        dialogWidth: "max-w-md",
+        dialogWidth: "max-w-lg",
       },
       true,
     );
@@ -173,6 +195,7 @@ export function useUploadStepEffects({
     persistedCount,
     pushModal,
     photoFailureCount,
+    rowAttentionSummaries,
     show,
     total,
     treeManagerHref,

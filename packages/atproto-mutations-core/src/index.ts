@@ -86,10 +86,15 @@ export {
   extractPolygonFeatures,
   extractLineStringFeatures,
   extractPointFeatures,
+  classifyPointAgainstGeoJsonBoundary,
   toFeatureCollection,
   HECTARES_PER_SQUARE_METER,
 } from "./geojson/computations";
-export type { Coordinates, PolygonMetrics } from "./geojson/computations";
+export type {
+  Coordinates,
+  PointBoundaryClassification,
+  PolygonMetrics,
+} from "./geojson/computations";
 export { GeoJsonValidationError, GeoJsonProcessingError } from "./geojson/errors";
 
 // ---------------------------------------------------------------------------
@@ -102,6 +107,7 @@ export {
   CertifiedLocationNotFoundError,
   CertifiedLocationPdsError,
   CertifiedLocationIsDefaultError,
+  CertifiedLocationLinkedTreesConflictError,
 } from "./mutations/certified.location/utils/errors";
 
 // actor.profile

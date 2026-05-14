@@ -34,7 +34,28 @@ export type PolygonMetrics = {
   message: string;
 };
 
+export type PointBoundaryClassification =
+  | {
+      kind: "inside";
+      distanceMeters: 0;
+    }
+  | {
+      kind: "near-boundary";
+      distanceMeters: number;
+    }
+  | {
+      kind: "outside";
+      distanceMeters: number;
+    }
+  | {
+      kind: "invalid-boundary";
+      reason: string;
+    };
+
 export const HECTARES_PER_SQUARE_METER = 0.0001;
+
+const EARTH_RADIUS_METERS = 6_371_008.8;
+const BOUNDARY_EPSILON_METERS = 0.01;
 
 const isFeatureCollection = (v: GeoJsonObject): v is FeatureCollection =>
   v.type === "FeatureCollection";
@@ -272,6 +293,290 @@ export const computePolygonMetrics = (geoJson: GeoJsonObject): PolygonMetrics =>
     bbox,
     message: centroid ? "Success" : "Centroid calculation failed",
   };
+};
+
+const degreesToRadians = (value: number): number => (value * Math.PI) / 180;
+
+const normalizePosition = (position: Position): [number, number] | null => {
+  const lon = position[0];
+  const lat = position[1];
+
+  if (
+    typeof lon !== "number" ||
+    typeof lat !== "number" ||
+    !Number.isFinite(lon) ||
+    !Number.isFinite(lat) ||
+    lon < -180 ||
+    lon > 180 ||
+    lat < -90 ||
+    lat > 90
+  ) {
+    return null;
+  }
+
+  return [lon, lat];
+};
+
+const positionsMatch = (a: [number, number], b: [number, number]): boolean =>
+  a[0] === b[0] && a[1] === b[1];
+
+const getInvalidRingReason = (ring: Position[]): string | null => {
+  if (ring.length < 4) {
+    return "Polygon linear rings must contain at least four positions.";
+  }
+
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+  const firstPosition = first ? normalizePosition(first) : null;
+  const lastPosition = last ? normalizePosition(last) : null;
+
+  if (!firstPosition || !lastPosition) {
+    return "Polygon linear rings contain invalid positions.";
+  }
+
+  if (!positionsMatch(firstPosition, lastPosition)) {
+    return "Polygon linear rings must be closed.";
+  }
+
+  for (const position of ring) {
+    if (!normalizePosition(position)) {
+      return "Polygon linear rings contain invalid positions.";
+    }
+  }
+
+  return null;
+};
+
+const getInvalidPolygonRingsReason = (rings: Position[][]): string | null => {
+  if (rings.length === 0) {
+    return "Polygon geometry must contain at least one linear ring.";
+  }
+
+  for (const ring of rings) {
+    const reason = getInvalidRingReason(ring);
+    if (reason) {
+      return reason;
+    }
+  }
+
+  return null;
+};
+
+const toLocalMeters = (
+  position: [number, number],
+  origin: Coordinates,
+): { x: number; y: number } => {
+  const [lon, lat] = position;
+  const originLatRad = degreesToRadians(origin.lat);
+
+  return {
+    x:
+      EARTH_RADIUS_METERS *
+      degreesToRadians(lon - origin.lon) *
+      Math.cos(originLatRad),
+    y: EARTH_RADIUS_METERS * degreesToRadians(lat - origin.lat),
+  };
+};
+
+const distancePointToSegmentMeters = (
+  point: Coordinates,
+  start: [number, number],
+  end: [number, number],
+): number => {
+  const p = { x: 0, y: 0 };
+  const a = toLocalMeters(start, point);
+  const b = toLocalMeters(end, point);
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lengthSquared = dx * dx + dy * dy;
+
+  if (lengthSquared === 0) {
+    return Math.hypot(p.x - a.x, p.y - a.y);
+  }
+
+  const t = Math.max(
+    0,
+    Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared),
+  );
+  const projected = {
+    x: a.x + t * dx,
+    y: a.y + t * dy,
+  };
+
+  return Math.hypot(p.x - projected.x, p.y - projected.y);
+};
+
+const distancePointToRingMeters = (
+  point: Coordinates,
+  ring: Position[],
+): number | null => {
+  let minDistance: number | null = null;
+
+  for (let index = 0; index < ring.length - 1; index += 1) {
+    const start = ring[index];
+    const end = ring[index + 1];
+    if (!start || !end) {
+      continue;
+    }
+
+    const normalizedStart = normalizePosition(start);
+    const normalizedEnd = normalizePosition(end);
+    if (!normalizedStart || !normalizedEnd) {
+      continue;
+    }
+
+    const distance = distancePointToSegmentMeters(
+      point,
+      normalizedStart,
+      normalizedEnd,
+    );
+    minDistance = minDistance === null ? distance : Math.min(minDistance, distance);
+  }
+
+  return minDistance;
+};
+
+const isPointInRing = (point: Coordinates, ring: Position[]): boolean => {
+  let inside = false;
+
+  for (let index = 0, previousIndex = ring.length - 1; index < ring.length; previousIndex = index, index += 1) {
+    const current = ring[index];
+    const previous = ring[previousIndex];
+    if (!current || !previous) {
+      continue;
+    }
+
+    const currentPosition = normalizePosition(current);
+    const previousPosition = normalizePosition(previous);
+    if (!currentPosition || !previousPosition) {
+      continue;
+    }
+
+    const [currentLon, currentLat] = currentPosition;
+    const [previousLon, previousLat] = previousPosition;
+    const crossesLatitude = currentLat > point.lat !== previousLat > point.lat;
+
+    if (!crossesLatitude) {
+      continue;
+    }
+
+    const intersectionLon =
+      ((previousLon - currentLon) * (point.lat - currentLat)) /
+        (previousLat - currentLat) +
+      currentLon;
+
+    if (point.lon < intersectionLon) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
+};
+
+const getPolygonDistanceAndContainment = (
+  point: Coordinates,
+  rings: Position[][],
+): { inside: boolean; distanceMeters: number | null } => {
+  const outerRing = rings[0];
+  if (!outerRing) {
+    return { inside: false, distanceMeters: null };
+  }
+
+  let minDistance: number | null = null;
+  for (const ring of rings) {
+    const ringDistance = distancePointToRingMeters(point, ring);
+    if (ringDistance === null) {
+      continue;
+    }
+
+    minDistance =
+      minDistance === null ? ringDistance : Math.min(minDistance, ringDistance);
+  }
+
+  if (minDistance !== null && minDistance <= BOUNDARY_EPSILON_METERS) {
+    return { inside: true, distanceMeters: 0 };
+  }
+
+  const insideOuterRing = isPointInRing(point, outerRing);
+  const insideHole = rings.slice(1).some((ring) => isPointInRing(point, ring));
+
+  return {
+    inside: insideOuterRing && !insideHole,
+    distanceMeters: minDistance,
+  };
+};
+
+export const classifyPointAgainstGeoJsonBoundary = (options: {
+  geoJson: GeoJsonObject;
+  point: Coordinates;
+  nearBoundaryMeters: number;
+}): PointBoundaryClassification => {
+  if (
+    !Number.isFinite(options.point.lat) ||
+    !Number.isFinite(options.point.lon) ||
+    options.point.lat < -90 ||
+    options.point.lat > 90 ||
+    options.point.lon < -180 ||
+    options.point.lon > 180
+  ) {
+    return {
+      kind: "invalid-boundary",
+      reason: "Point coordinates are invalid.",
+    };
+  }
+
+  const polygonFeatures = extractPolygonFeatures(options.geoJson);
+
+  if (polygonFeatures.length === 0) {
+    return {
+      kind: "invalid-boundary",
+      reason: "GeoJSON does not contain polygon geometry.",
+    };
+  }
+
+  let minDistance: number | null = null;
+  for (const feature of polygonFeatures) {
+    const geometry = feature.geometry;
+    const polygons =
+      geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+
+    for (const rings of polygons) {
+      const invalidRingsReason = getInvalidPolygonRingsReason(rings);
+      if (invalidRingsReason) {
+        return {
+          kind: "invalid-boundary",
+          reason: invalidRingsReason,
+        };
+      }
+
+      const result = getPolygonDistanceAndContainment(options.point, rings);
+      if (result.inside) {
+        return { kind: "inside", distanceMeters: 0 };
+      }
+
+      if (result.distanceMeters === null) {
+        continue;
+      }
+
+      minDistance =
+        minDistance === null
+          ? result.distanceMeters
+          : Math.min(minDistance, result.distanceMeters);
+    }
+  }
+
+  if (minDistance === null) {
+    return {
+      kind: "invalid-boundary",
+      reason: "GeoJSON polygon boundary could not be measured.",
+    };
+  }
+
+  if (minDistance <= options.nearBoundaryMeters) {
+    return { kind: "near-boundary", distanceMeters: minDistance };
+  }
+
+  return { kind: "outside", distanceMeters: minDistance };
 };
 
 export const toFeatureCollection = (geoJson: GeoJsonObject): FeatureCollection => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, Fragment } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { TREE_UPLOAD_EVENTS } from "@/lib/analytics/events";
 import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
@@ -15,8 +16,18 @@ import {
 import { applyMappings } from "@/lib/upload/column-mapper";
 import { parseAndValidateRows } from "@/lib/upload/schemas";
 import { TARGET_FIELDS } from "@/lib/upload/types";
-import type { ColumnMapping, ValidatedRow } from "@/lib/upload/types";
+import type {
+  ColumnMapping,
+  TreeUploadRowAttentionSummary,
+  ValidatedRow,
+} from "@/lib/upload/types";
+import { buildPreviewRowAttentionSummaries } from "@/lib/upload/row-attention";
 import type { KoboMediaZipIndex } from "@/lib/upload/kobo-media-zip";
+import type { UploadSiteSelection } from "@/lib/upload/site-selection";
+import {
+  fetchUploadSiteBoundary,
+  uploadSiteBoundaryQueryKey,
+} from "@/lib/upload/site-boundary";
 
 const MAX_PREVIEW_ROWS = 20;
 
@@ -25,12 +36,20 @@ type PreviewStepProps = {
   parsedData: Record<string, string>[];
   mappings: ColumnMapping[];
   koboMediaZipIndex: KoboMediaZipIndex | null;
+  siteSelection: UploadSiteSelection | null;
   onBack: () => void;
-  onNext: (validRows: ValidatedRow[]) => void;
+  onNext: (
+    validRows: ValidatedRow[],
+    skippedRows: TreeUploadRowAttentionSummary[],
+  ) => void;
 };
 
 /** Get the human-readable label for a target field */
 function getFieldLabel(field: string): string {
+  if (field === "siteBoundary") {
+    return "Site Boundary";
+  }
+
   return TARGET_FIELDS.find((f) => f.field === field)?.label ?? field;
 }
 
@@ -59,11 +78,26 @@ export default function PreviewStep({
   parsedData,
   mappings,
   koboMediaZipIndex,
+  siteSelection,
   onNext,
   onBack,
 }: PreviewStepProps) {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [errorSectionOpen, setErrorSectionOpen] = useState(false);
+  const siteBoundaryQuery = useQuery({
+    queryKey: uploadSiteBoundaryQueryKey(siteSelection?.uri),
+    queryFn: () => {
+      if (!siteSelection) {
+        throw new Error("Select a site before previewing tree data.");
+      }
+
+      return fetchUploadSiteBoundary(siteSelection);
+    },
+    enabled: siteSelection !== null,
+    staleTime: 5 * 60 * 1000,
+  });
+  const siteBoundary = siteBoundaryQuery.data ?? null;
+  const boundaryValidationReady = siteSelection !== null && siteBoundary !== null;
 
   // Apply mappings then validate — computed once on mount.
   // mappedRows is returned here to avoid calling applyMappings a second time.
@@ -71,6 +105,10 @@ export default function PreviewStep({
     const mapped = applyMappings(parsedData, mappings);
     const result = parseAndValidateRows(mapped, parsedData, mappings, {
       koboMediaZipIndex,
+      siteBoundary:
+        siteSelection && siteBoundary
+          ? { geoJson: siteBoundary, siteRef: siteSelection.uri }
+          : null,
     });
     // Collect the unique target field names that appear in the mapped data
     // Exclude photoUrl — it's replaced by a synthetic "Photos" column
@@ -92,7 +130,7 @@ export default function PreviewStep({
       mappedRows: mapped,
       hasAnyPhotos: anyPhotos,
     };
-  }, [koboMediaZipIndex, parsedData, mappings]);
+  }, [koboMediaZipIndex, parsedData, mappings, siteBoundary, siteSelection]);
 
   const { valid, errors } = validationResult;
   const totalRows = parsedData.length;
@@ -125,6 +163,10 @@ export default function PreviewStep({
   }, [errors]);
 
   const errorSummary = useMemo(() => buildErrorSummary(errors), [errors]);
+  const previewSkippedRows = useMemo(
+    () => buildPreviewRowAttentionSummaries(errors, mappedRows),
+    [errors, mappedRows],
+  );
 
   // Pair each preview row with its actual index in mappedRows (before slicing)
   // so that errorByIndex (keyed by original row index) is looked up correctly.
@@ -148,8 +190,13 @@ export default function PreviewStep({
   // Summary banner variant
   const allValid = errorCount === 0;
   const allInvalid = validCount === 0;
+  const canContinue = boundaryValidationReady && validCount > 0;
 
   const handleNext = () => {
+    if (!canContinue) {
+      return;
+    }
+
     trackTreeUploadEvent(TREE_UPLOAD_EVENTS.STEP_COMPLETED, {
       uploadId,
       stepIndex: 3,
@@ -160,7 +207,7 @@ export default function PreviewStep({
       mappedColumns: mappedHeaders.length,
       photoTotal: totalPhotoCount,
     });
-    onNext(valid);
+    onNext(valid, previewSkippedRows);
   };
 
   return (
@@ -169,18 +216,36 @@ export default function PreviewStep({
       <div>
         <h2 className="text-lg font-semibold">Preview &amp; Validate</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Review your data before uploading. Errors must be fixed by going back
-          and adjusting column mappings.
+          Review your data before uploading. Rows with errors will be skipped;
+          go back to adjust mappings if you want to include them.
         </p>
       </div>
 
       {/* Summary banner */}
-      {allValid ? (
+      {siteSelection === null ? (
+        <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          <XCircle className="h-4 w-4 shrink-0" />
+          <span>Select a site before previewing tree data.</span>
+        </div>
+      ) : siteBoundaryQuery.isLoading ? (
+        <div className="flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-600 dark:text-yellow-400">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>Checking rows against {siteSelection.name}&apos;s boundary…</span>
+        </div>
+      ) : siteBoundaryQuery.error ? (
+        <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          <XCircle className="h-4 w-4 shrink-0" />
+          <span>
+            Couldn&apos;t load the selected site boundary. Go back and choose a
+            site with a valid GeoJSON boundary.
+          </span>
+        </div>
+      ) : allValid ? (
         <div className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 p-3 text-sm text-primary">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>
             All {totalRows} row{totalRows !== 1 ? "s" : ""} are valid and ready
-            to upload.
+            to upload to {siteSelection.name}.
           </span>
         </div>
       ) : allInvalid ? (
@@ -421,7 +486,7 @@ export default function PreviewStep({
         <Button variant="outline" onClick={onBack}>
           Back to Column Mapping
         </Button>
-        <Button onClick={handleNext} disabled={validCount === 0}>
+        <Button onClick={handleNext} disabled={!canContinue}>
           Upload {validCount} Valid Row{validCount !== 1 ? "s" : ""}
         </Button>
       </div>

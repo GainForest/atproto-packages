@@ -85,6 +85,7 @@ function isAppendExistingDwcDatasetOccurrenceInput(
     isOptionalString(value.geodeticDatum) &&
     isOptionalString(value.license) &&
     isOptionalString(value.projectRef) &&
+    isOptionalString(value.siteRef) &&
     isOptionalString(value.establishmentMeans)
   );
 }
@@ -322,6 +323,7 @@ async function createOccurrenceRecord(options: {
     ...(occurrenceInput.projectRef
       ? { projectRef: occurrenceInput.projectRef }
       : {}),
+    ...(occurrenceInput.siteRef ? { siteRef: occurrenceInput.siteRef } : {}),
     ...(occurrenceInput.establishmentMeans
       ? { establishmentMeans: occurrenceInput.establishmentMeans }
       : {}),

@@ -1,9 +1,13 @@
 import { describe, it, expect } from "bun:test";
-import { Effect } from "effect";
+import type { Agent } from "@atproto/api";
+import { CID } from "@atproto/lex-data";
+import { Effect, Layer } from "effect";
 import { makeCredentialAgentLayer } from "../../../layers/credential";
+import { AtprotoAgent } from "../../../services/AtprotoAgent";
 import { createCertifiedLocation } from "../create";
 import { updateCertifiedLocation } from "../update";
 import {
+  CertifiedLocationLinkedTreesConflictError,
   CertifiedLocationNotFoundError,
 } from "../utils/errors";
 import { GeoJsonValidationError } from "../../../geojson/errors";
@@ -58,6 +62,113 @@ const POLYGON_GEOJSON = JSON.stringify({
   ],
 });
 
+const FAKE_DID = "did:plc:testlocationupdate";
+const FAKE_SITE_RKEY = "site-1";
+const FAKE_SITE_URI = `at://${FAKE_DID}/app.certified.location/${FAKE_SITE_RKEY}`;
+const OTHER_FAKE_SITE_URI = `at://${FAKE_DID}/app.certified.location/site-2`;
+const FAKE_BLOB_CID = CID.parse("bafkreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku");
+
+type FakeOccurrenceRecord = {
+  uri: string;
+  cid: string;
+  value: Record<string, unknown>;
+};
+
+type FakeBoundaryAgentOptions = {
+  records?: FakeOccurrenceRecord[];
+  allowWrites?: boolean;
+};
+
+function makeFakeExistingLocationRecord() {
+  return {
+    $type: "app.certified.location",
+    lpVersion: "1.0.0",
+    srs: "https://epsg.io/4326",
+    locationType: "coordinate-decimal",
+    location: {
+      $type: "app.certified.location#string",
+      string: "0,0",
+    },
+    name: "Existing site",
+    createdAt: "2026-01-01T00:00:00.000Z",
+  };
+}
+
+function makeFakeOccurrenceRecord(
+  rkey: string,
+  overrides?: Record<string, unknown>,
+): FakeOccurrenceRecord {
+  return {
+    uri: `at://${FAKE_DID}/app.gainforest.dwc.occurrence/${rkey}`,
+    cid: `${rkey}-cid`,
+    value: {
+      $type: "app.gainforest.dwc.occurrence",
+      scientificName: "Linked tree",
+      eventDate: "2026-01-01",
+      decimalLatitude: "0",
+      decimalLongitude: "0",
+      siteRef: FAKE_SITE_URI,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      ...overrides,
+    },
+  };
+}
+
+function makeFakeBoundaryAgent(options?: FakeBoundaryAgentOptions): Agent {
+  const records = options?.records ?? [
+    makeFakeOccurrenceRecord("tree-1", { scientificName: "Excluded tree" }),
+  ];
+  const fakeAgent = {
+    assertDid: FAKE_DID,
+    com: {
+      atproto: {
+        repo: {
+          getRecord: async () => ({
+            data: {
+              value: makeFakeExistingLocationRecord(),
+            },
+          }),
+          listRecords: async () => ({
+            data: {
+              records,
+              cursor: undefined,
+            },
+          }),
+          putRecord: async () => {
+            if (!options?.allowWrites) {
+              throw new Error("putRecord should not run when linked trees are outside the boundary");
+            }
+
+            return {
+              data: {
+                uri: FAKE_SITE_URI,
+                cid: "updated-site-cid",
+              },
+            };
+          },
+        },
+      },
+    },
+    uploadBlob: async () => {
+      if (!options?.allowWrites) {
+        throw new Error("uploadBlob should not run when linked trees are outside the boundary");
+      }
+
+      return {
+        data: {
+          blob: {
+            ref: FAKE_BLOB_CID,
+            mimeType: "application/geo+json",
+            size: 123,
+          },
+        },
+      };
+    },
+  };
+
+  return fakeAgent as unknown as Agent;
+}
+
 function makeGeoJsonFile(overrides?: { content?: string; type?: string; size?: number }): SerializableFile {
   const content = overrides?.content ?? POLYGON_GEOJSON;
   return {
@@ -97,11 +208,7 @@ describe("updateCertifiedLocation", () => {
   });
 
   it("fails with GeoJsonValidationError when new shapefile has wrong MIME (offline)", async () => {
-    const layer = makeCredentialAgentLayer({
-      service: service || "https://bsky.social",
-      identifier: identifier || "placeholder",
-      password: password || "placeholder",
-    });
+    const layer = Layer.succeed(AtprotoAgent, makeFakeBoundaryAgent());
 
     const result = await Effect.runPromise(
       updateCertifiedLocation({
@@ -116,6 +223,151 @@ describe("updateCertifiedLocation", () => {
       // GeoJsonValidationError is raised before any PDS fetch
       expect(result.left).toBeInstanceOf(GeoJsonValidationError);
       console.log(`[ok] Got expected GeoJsonValidationError: ${(result.left as GeoJsonValidationError).message}`);
+    }
+  });
+
+  it("blocks shapefile updates that would exclude linked trees (offline)", async () => {
+    const layer = Layer.succeed(AtprotoAgent, makeFakeBoundaryAgent());
+
+    const result = await Effect.runPromise(
+      updateCertifiedLocation({
+        rkey: FAKE_SITE_RKEY,
+        data: { name: "Boundary update" },
+        newShapefile: makeGeoJsonFile(),
+      }).pipe(Effect.either, Effect.provide(layer)),
+    );
+
+    expect(result._tag).toBe("Left");
+    if (result._tag === "Left") {
+      expect(result.left).toBeInstanceOf(CertifiedLocationLinkedTreesConflictError);
+      expect(result.left.message).toContain("linked tree");
+    }
+  });
+
+  it("blocks shapefile updates when linked tree coordinates are missing or malformed (offline)", async () => {
+    const scenarios = [
+      {
+        name: "blank latitude",
+        record: makeFakeOccurrenceRecord("blank-latitude", {
+          decimalLatitude: "",
+          decimalLongitude: "40.735610",
+        }),
+      },
+      {
+        name: "whitespace latitude",
+        record: makeFakeOccurrenceRecord("whitespace-latitude", {
+          decimalLatitude: "   ",
+          decimalLongitude: "40.735610",
+        }),
+      },
+      {
+        name: "partial numeric latitude",
+        record: makeFakeOccurrenceRecord("partial-latitude", {
+          decimalLatitude: "40.735610abc",
+          decimalLongitude: "-73.930242",
+        }),
+      },
+      {
+        name: "non-finite latitude",
+        record: makeFakeOccurrenceRecord("infinite-latitude", {
+          decimalLatitude: "Infinity",
+          decimalLongitude: "-73.930242",
+        }),
+      },
+      {
+        name: "out-of-range longitude",
+        record: makeFakeOccurrenceRecord("bad-longitude", {
+          decimalLatitude: "40.735610",
+          decimalLongitude: "181",
+        }),
+      },
+    ];
+
+    for (const scenario of scenarios) {
+      const layer = Layer.succeed(
+        AtprotoAgent,
+        makeFakeBoundaryAgent({ records: [scenario.record] }),
+      );
+
+      const result = await Effect.runPromise(
+        updateCertifiedLocation({
+          rkey: FAKE_SITE_RKEY,
+          data: { name: `Boundary update ${scenario.name}` },
+          newShapefile: makeGeoJsonFile(),
+        }).pipe(Effect.either, Effect.provide(layer)),
+      );
+
+      expect(result._tag).toBe("Left");
+      if (result._tag === "Left") {
+        expect(result.left).toBeInstanceOf(CertifiedLocationLinkedTreesConflictError);
+        expect(result.left.message).toContain("could not be checked");
+      }
+    }
+  });
+
+  it("blocks shapefile updates that would move linked trees near the boundary (offline)", async () => {
+    const layer = Layer.succeed(
+      AtprotoAgent,
+      makeFakeBoundaryAgent({
+        records: [
+          makeFakeOccurrenceRecord("near-boundary", {
+            scientificName: "Near tree",
+            decimalLatitude: "40.735610",
+            decimalLongitude: "-73.92520",
+          }),
+        ],
+      }),
+    );
+
+    const result = await Effect.runPromise(
+      updateCertifiedLocation({
+        rkey: FAKE_SITE_RKEY,
+        data: { name: "Boundary update" },
+        newShapefile: makeGeoJsonFile(),
+      }).pipe(Effect.either, Effect.provide(layer)),
+    );
+
+    expect(result._tag).toBe("Left");
+    if (result._tag === "Left") {
+      expect(result.left).toBeInstanceOf(CertifiedLocationLinkedTreesConflictError);
+      expect(result.left.message).toContain("near boundary");
+    }
+  });
+
+  it("ignores legacy and differently linked trees while allowing inside linked trees (offline)", async () => {
+    const layer = Layer.succeed(
+      AtprotoAgent,
+      makeFakeBoundaryAgent({
+        allowWrites: true,
+        records: [
+          makeFakeOccurrenceRecord("inside", {
+            scientificName: "Inside tree",
+            decimalLatitude: "40.735610",
+            decimalLongitude: "-73.930242",
+          }),
+          makeFakeOccurrenceRecord("legacy", {
+            scientificName: "Legacy tree",
+            siteRef: undefined,
+          }),
+          makeFakeOccurrenceRecord("different-site", {
+            scientificName: "Different site tree",
+            siteRef: OTHER_FAKE_SITE_URI,
+          }),
+        ],
+      }),
+    );
+
+    const result = await Effect.runPromise(
+      updateCertifiedLocation({
+        rkey: FAKE_SITE_RKEY,
+        data: { name: "Boundary update" },
+        newShapefile: makeGeoJsonFile(),
+      }).pipe(Effect.either, Effect.provide(layer)),
+    );
+
+    expect(result._tag).toBe("Right");
+    if (result._tag === "Right") {
+      expect(result.right.rkey).toBe(FAKE_SITE_RKEY);
     }
   });
 

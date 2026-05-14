@@ -221,7 +221,7 @@ The only types that may be written by hand in `utils/types.ts` are shapes that g
 
 ## Exporting from src/index.ts
 
-`src/index.ts` is the only public surface. It re-exports everything consumers need — operation functions, error classes, and types. Nothing is imported directly from deep paths by consumers.
+`src/index.ts` is the default public surface and should re-export everything normal consumers need. Package subpath exports are allowed only for intentionally narrow, documented surfaces that avoid forcing consumers to load the full mutation namespace. Keep subpath entries re-export-only, list them in `package.json` and `tsup.config.ts`, and do not let consumers import from unexported deep paths. Current approved subpath: `./geojson` via `src/geojson/index.ts`.
 
 Add new entity exports in a grouped block:
 

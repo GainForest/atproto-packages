@@ -14,31 +14,42 @@ export type DwcOccurrenceMutationResult = RecordMutationResult<DwcOccurrenceReco
 // Create
 // ---------------------------------------------------------------------------
 
-export type CreateDwcOccurrenceInput = {
-  scientificName: string;
-  eventDate: string;
-  decimalLatitude: string;
-  decimalLongitude: string;
-  basisOfRecord?: string;
-  vernacularName?: string;
-  recordedBy?: string;
-  locality?: string;
-  country?: string;
-  countryCode?: string;
-  occurrenceRemarks?: string;
-  habitat?: string;
-  samplingProtocol?: string;
-  kingdom?: string;
-  occurrenceID?: string;
-  occurrenceStatus?: string;
-  geodeticDatum?: string;
-  license?: string;
-  projectRef?: string;
-  establishmentMeans?: string;
-  datasetRef?: string;
-  dynamicProperties?: string;
-  rkey?: string;
+type RequiredCreateDwcOccurrenceFields = {
+  scientificName: DwcOccurrenceRecord["scientificName"];
+  eventDate: DwcOccurrenceRecord["eventDate"];
+  decimalLatitude: NonNullable<DwcOccurrenceRecord["decimalLatitude"]>;
+  decimalLongitude: NonNullable<DwcOccurrenceRecord["decimalLongitude"]>;
 };
+
+type OptionalCreateDwcOccurrenceFields = Partial<
+  Pick<
+    DwcOccurrenceRecord,
+    | "basisOfRecord"
+    | "vernacularName"
+    | "recordedBy"
+    | "locality"
+    | "country"
+    | "countryCode"
+    | "occurrenceRemarks"
+    | "habitat"
+    | "samplingProtocol"
+    | "kingdom"
+    | "occurrenceID"
+    | "occurrenceStatus"
+    | "geodeticDatum"
+    | "license"
+    | "projectRef"
+    | "siteRef"
+    | "datasetRef"
+    | "dynamicProperties"
+  >
+>;
+
+export type CreateDwcOccurrenceInput = RequiredCreateDwcOccurrenceFields &
+  OptionalCreateDwcOccurrenceFields & {
+    establishmentMeans?: string;
+    rkey?: string;
+  };
 
 // ---------------------------------------------------------------------------
 // Update / Delete

@@ -1,4 +1,17 @@
 import type { OccurrenceInput } from "./types";
+import type { CreateDwcOccurrenceInput } from "@gainforest/atproto-mutations-next";
+import { isAtUriString } from "@atproto/lex";
+
+function toAtUriString(
+  value: string,
+  fieldName: string,
+): NonNullable<CreateDwcOccurrenceInput["siteRef"]> {
+  if (!isAtUriString(value)) {
+    throw new Error(`${fieldName} must be a valid AT-URI.`);
+  }
+
+  return value;
+}
 
 /**
  * Adapter: converts an OccurrenceInput (app-layer, lat/lon as number) into
@@ -9,26 +22,10 @@ import type { OccurrenceInput } from "./types";
  * domain model and the mutations-core API. Any future caller that needs to
  * pass an OccurrenceInput to createDwcOccurrence should go through here.
  */
-export function occurrenceInputToCreateInput(occurrence: OccurrenceInput): {
-  scientificName: string;
-  eventDate: string;
-  decimalLatitude: string;
-  decimalLongitude: string;
-  basisOfRecord?: string;
-  vernacularName?: string;
-  recordedBy?: string;
-  locality?: string;
-  country?: string;
-  countryCode?: string;
-  occurrenceRemarks?: string;
-  habitat?: string;
-  samplingProtocol?: string;
-  kingdom?: string;
-  establishmentMeans?: string;
-  datasetRef?: string;
-  dynamicProperties?: string;
-} {
-  const input: ReturnType<typeof occurrenceInputToCreateInput> = {
+export function occurrenceInputToCreateInput(
+  occurrence: OccurrenceInput,
+): CreateDwcOccurrenceInput {
+  const input: CreateDwcOccurrenceInput = {
     scientificName: occurrence.scientificName,
     eventDate: occurrence.eventDate,
     // Explicit conversion: OccurrenceInput stores lat/lon as number for
@@ -54,10 +51,12 @@ export function occurrenceInputToCreateInput(occurrence: OccurrenceInput): {
   if (occurrence.samplingProtocol !== undefined)
     input.samplingProtocol = occurrence.samplingProtocol;
   if (occurrence.kingdom !== undefined) input.kingdom = occurrence.kingdom;
+  if (occurrence.siteRef !== undefined)
+    input.siteRef = toAtUriString(occurrence.siteRef, "siteRef");
   if (occurrence.establishmentMeans !== undefined)
     input.establishmentMeans = occurrence.establishmentMeans;
   if (occurrence.datasetRef !== undefined)
-    input.datasetRef = occurrence.datasetRef;
+    input.datasetRef = toAtUriString(occurrence.datasetRef, "datasetRef");
   if (occurrence.dynamicProperties !== undefined)
     input.dynamicProperties = occurrence.dynamicProperties;
 
