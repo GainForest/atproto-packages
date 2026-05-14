@@ -28,6 +28,7 @@ export function occurrenceInputToCreateInput(
   const input: CreateDwcOccurrenceInput = {
     scientificName: occurrence.scientificName,
     eventDate: occurrence.eventDate,
+    basisOfRecord: occurrence.basisOfRecord ?? "HumanObservation",
     // Explicit conversion: OccurrenceInput stores lat/lon as number for
     // numeric validation; CreateDwcOccurrenceInput stores them as string
     // because ATProto lexicon defines them as string fields.
@@ -53,8 +54,6 @@ export function occurrenceInputToCreateInput(
   if (occurrence.kingdom !== undefined) input.kingdom = occurrence.kingdom;
   if (occurrence.siteRef !== undefined)
     input.siteRef = toAtUriString(occurrence.siteRef, "siteRef");
-  if (occurrence.establishmentMeans !== undefined)
-    input.establishmentMeans = occurrence.establishmentMeans;
   if (occurrence.datasetRef !== undefined)
     input.datasetRef = toAtUriString(occurrence.datasetRef, "datasetRef");
   if (occurrence.dynamicProperties !== undefined)

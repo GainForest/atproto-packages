@@ -148,6 +148,7 @@ describe("appendExistingDwcDataset", () => {
             occurrence: {
               scientificName: "Shorea leprosula",
               eventDate: "2026-02-01",
+              basisOfRecord: "HumanObservation",
               decimalLatitude: "4.1234",
               decimalLongitude: "117.5678",
             },

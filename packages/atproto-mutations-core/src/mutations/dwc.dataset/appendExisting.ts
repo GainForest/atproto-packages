@@ -70,7 +70,7 @@ function isAppendExistingDwcDatasetOccurrenceInput(
     typeof value.eventDate === "string" &&
     typeof value.decimalLatitude === "string" &&
     typeof value.decimalLongitude === "string" &&
-    isOptionalString(value.basisOfRecord) &&
+    typeof value.basisOfRecord === "string" &&
     isOptionalString(value.vernacularName) &&
     isOptionalString(value.recordedBy) &&
     isOptionalString(value.locality) &&
@@ -85,8 +85,7 @@ function isAppendExistingDwcDatasetOccurrenceInput(
     isOptionalString(value.geodeticDatum) &&
     isOptionalString(value.license) &&
     isOptionalString(value.projectRef) &&
-    isOptionalString(value.siteRef) &&
-    isOptionalString(value.establishmentMeans)
+    isOptionalString(value.siteRef)
   );
 }
 
@@ -324,9 +323,6 @@ async function createOccurrenceRecord(options: {
       ? { projectRef: occurrenceInput.projectRef }
       : {}),
     ...(occurrenceInput.siteRef ? { siteRef: occurrenceInput.siteRef } : {}),
-    ...(occurrenceInput.establishmentMeans
-      ? { establishmentMeans: occurrenceInput.establishmentMeans }
-      : {}),
     datasetRef: occurrenceInput.datasetRef,
     dynamicProperties: occurrenceInput.dynamicProperties,
     createdAt,
@@ -774,9 +770,6 @@ export const appendExistingDwcDataset = (
           const speciesName = row.occurrence.scientificName || `Row ${rowIndex + 1}`;
           const occurrenceInput = {
             ...row.occurrence,
-            ...(validatedInput.establishmentMeans
-              ? { establishmentMeans: validatedInput.establishmentMeans }
-              : {}),
             datasetRef: datasetRecord.uri,
             dynamicProperties: buildTreeDynamicProperties(datasetRecord.uri),
           };
