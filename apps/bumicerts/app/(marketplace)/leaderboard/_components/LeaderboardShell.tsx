@@ -141,7 +141,7 @@ function SortControl({
     <div className="flex items-center justify-between gap-3 rounded-full bg-muted/55 py-1.5 pr-1.5 pl-4 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur">
       <span
         id="leaderboard-sort-label"
-        className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground"
+        className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-xs font-medium text-muted-foreground"
       >
         <ArrowDownWideNarrowIcon className="size-4" />
         Sort by
@@ -179,7 +179,7 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-3xl bg-card/75 p-6 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-card/90 hover:shadow-lg hover:shadow-primary/10">
+    <div className="group relative overflow-hidden rounded-3xl bg-foreground/5 p-6 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-foreground/[0.07]">
       <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
       <div className="flex items-center gap-5">
         <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/10 transition-transform duration-300 group-hover:scale-105">
