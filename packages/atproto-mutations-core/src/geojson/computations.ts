@@ -91,7 +91,11 @@ const isLineStringClosed = (ls: LineString): boolean => {
 
 const lineStringToPolygon = (ls: LineString): Polygon | null => {
   if (!isLineStringClosed(ls)) return null;
-  return { type: "Polygon", coordinates: [ls.coordinates] };
+  const first = ls.coordinates[0];
+  if (!first) return null;
+  const ring = ls.coordinates.map((position) => [...position]);
+  ring[ring.length - 1] = [...first];
+  return { type: "Polygon", coordinates: [ring] };
 };
 
 const toFeature = (geometry: Geometry): Feature<Geometry> => ({
@@ -168,6 +172,49 @@ export const extractPointFeatures = (
   return [];
 };
 
+const convertClosedLineStringFeaturesToPolygonFeatures = (
+  lineStringFeatures: Feature<LineString | MultiLineString>[],
+): Feature<Polygon>[] => {
+  const convertedPolygons: Feature<Polygon>[] = [];
+
+  for (const lineStringFeature of lineStringFeatures) {
+    if (lineStringFeature.geometry.type === "LineString") {
+      const polygon = lineStringToPolygon(lineStringFeature.geometry);
+      if (polygon) {
+        convertedPolygons.push({
+          type: "Feature",
+          geometry: polygon,
+          properties: lineStringFeature.properties,
+        });
+      }
+      continue;
+    }
+
+    for (const coordinates of lineStringFeature.geometry.coordinates) {
+      const lineString: LineString = { type: "LineString", coordinates };
+      const polygon = lineStringToPolygon(lineString);
+      if (polygon) {
+        convertedPolygons.push({
+          type: "Feature",
+          geometry: polygon,
+          properties: lineStringFeature.properties,
+        });
+      }
+    }
+  }
+
+  return convertedPolygons;
+};
+
+const extractBoundaryPolygonFeatures = (
+  input: GeoJsonObject,
+): Feature<Polygon | MultiPolygon>[] => [
+  ...extractPolygonFeatures(input),
+  ...convertClosedLineStringFeaturesToPolygonFeatures(
+    extractLineStringFeatures(input),
+  ),
+];
+
 const computeCentroidPosition = (
   features: Feature<Geometry>[]
 ): Position | null => {
@@ -194,22 +241,10 @@ export const computePolygonMetrics = (geoJson: GeoJsonObject): PolygonMetrics =>
   const lineStringFeatures = extractLineStringFeatures(geoJson);
   const pointFeatures = extractPointFeatures(geoJson);
 
-  // Convert closed LineStrings to Polygons
-  const convertedPolygons: Feature<Polygon>[] = [];
-  for (const lsf of lineStringFeatures) {
-    if (lsf.geometry.type === "LineString") {
-      const poly = lineStringToPolygon(lsf.geometry);
-      if (poly) convertedPolygons.push({ type: "Feature", geometry: poly, properties: lsf.properties });
-    } else if (lsf.geometry.type === "MultiLineString") {
-      for (const coords of lsf.geometry.coordinates) {
-        const ls: LineString = { type: "LineString", coordinates: coords };
-        const poly = lineStringToPolygon(ls);
-        if (poly) convertedPolygons.push({ type: "Feature", geometry: poly, properties: lsf.properties });
-      }
-    }
-  }
-
-  const allPolygonFeatures = [...polygonFeatures, ...convertedPolygons];
+  const allPolygonFeatures = [
+    ...polygonFeatures,
+    ...convertClosedLineStringFeaturesToPolygonFeatures(lineStringFeatures),
+  ];
 
   // Points only
   if (pointFeatures.length > 0 && allPolygonFeatures.length === 0 && lineStringFeatures.length === 0) {
@@ -525,7 +560,7 @@ export const classifyPointAgainstGeoJsonBoundary = (options: {
     };
   }
 
-  const polygonFeatures = extractPolygonFeatures(options.geoJson);
+  const polygonFeatures = extractBoundaryPolygonFeatures(options.geoJson);
 
   if (polygonFeatures.length === 0) {
     return {

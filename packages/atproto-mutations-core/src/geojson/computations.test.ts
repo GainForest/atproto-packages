@@ -60,6 +60,31 @@ describe("classifyPointAgainstGeoJsonBoundary", () => {
     expect(result.kind).toBe("outside");
   });
 
+  test("accepts closed LineString boundaries as polygons", () => {
+    const closedLineStringBoundary = {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          [0, 0],
+          [0.001, 0],
+          [0.001, 0.001],
+          [0, 0.001],
+          [0, 0],
+        ],
+      },
+    } as const;
+
+    const result = classifyPointAgainstGeoJsonBoundary({
+      geoJson: closedLineStringBoundary,
+      point: { lat: 0.0005, lon: 0.0005 },
+      nearBoundaryMeters: 15,
+    });
+
+    expect(result.kind).toBe("inside");
+  });
+
   test("treats points inside any MultiPolygon polygon as inside", () => {
     const multiPolygon: MultiPolygon = {
       type: "MultiPolygon",
