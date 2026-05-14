@@ -302,11 +302,11 @@ export function LeaderboardShell({
   children,
 }: LeaderboardShellProps) {
   return (
-    <section className="relative -mt-14 overflow-hidden px-4 pb-20 pt-0 md:px-8 md:pb-28">
+    <section className="relative -mt-14 overflow-hidden px-6 pb-20 pt-0 md:pb-28">
       <div className="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-primary/[0.08] via-transparent to-transparent dark:from-primary/[0.12]" />
       <HeroLandscapeArt />
 
-      <div className="relative mx-auto max-w-7xl">
+      <div className="relative mx-auto max-w-6xl px-2 sm:px-4 lg:px-3">
         <motion.header
           initial={animate ? { opacity: 0, y: 16 } : false}
           animate={{ opacity: 1, y: 0 }}

@@ -107,13 +107,13 @@ export function ExploreShell({
 
   return (
     <section className="-mt-14 pb-20 md:pb-28">
-      <div className="relative isolate overflow-hidden px-6 pb-24 pt-[86px] md:pb-32">
+      <div className="relative isolate overflow-hidden px-8 pb-24 pt-[86px] sm:px-10 md:pb-32 lg:px-9">
         <HeroBackdrop />
         <motion.div
           initial={animate ? { opacity: 0, y: 16 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-          className="relative z-10 mx-auto max-w-[96rem]"
+          className="relative z-10 mx-auto max-w-6xl"
         >
           <div className="flex items-center gap-2.5 mb-5">
             <LeafIcon className="h-4 w-4 text-primary" />
@@ -144,7 +144,7 @@ export function ExploreShell({
         </motion.div>
       </div>
 
-      <div className="relative z-10 mx-auto -mt-16 max-w-[96rem] px-6">
+      <div className="relative z-10 mx-auto -mt-16 max-w-6xl px-6">
         <ExploreHeaderSlots
           query={query}
           setQuery={setQuery}
