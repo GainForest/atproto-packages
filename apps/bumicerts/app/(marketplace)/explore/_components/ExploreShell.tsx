@@ -107,13 +107,13 @@ export function ExploreShell({
 
   return (
     <section className="-mt-14 pb-20 md:pb-28">
-      <div className="relative isolate min-h-[330px] overflow-hidden px-8 pb-14 pt-[86px] sm:px-10 lg:px-9">
+      <div className="relative isolate min-h-[330px] overflow-hidden">
         <HeroBackdrop />
         <motion.div
           initial={animate ? { opacity: 0, y: 16 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-          className="relative z-10 mx-auto max-w-6xl"
+          className="relative z-10 mx-auto flex max-w-6xl flex-col px-8 pb-14 pt-[86px] sm:px-10 lg:px-9"
         >
           <div className="flex items-center gap-2.5 mb-5">
             <LeafIcon className="h-4 w-4 text-primary" />
