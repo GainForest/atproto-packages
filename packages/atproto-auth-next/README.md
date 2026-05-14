@@ -331,6 +331,10 @@ epdsHandleMode: "picker-with-random" | "picker" | "random"
 This value is emitted as `epds_handle_mode` in `/client-metadata.json`.
 Per ePDS behavior, an `epds_handle_mode` query param on the authorization URL takes precedence over client metadata.
 
+### ePDS skip consent after signup (optional)
+
+Set `epdsSkipConsentOnSignup: true` to emit `epds_skip_consent_on_signup: true` in `/client-metadata.json`.
+
 ---
 
 ## Middleware (optional)
