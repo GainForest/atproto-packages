@@ -35,6 +35,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types & Data
@@ -367,31 +368,31 @@ export function ExploreHeaderSlots({
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search projects"
               placeholder="Search projects by name, keyword, or location..."
-              className="h-14 w-full rounded-2xl border border-border bg-card/90 pl-12 pr-4 text-sm shadow-sm backdrop-blur-md transition-all placeholder:text-muted-foreground/75 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="h-14 w-full rounded-2xl border border-border bg-foreground/[0.03] pl-12 pr-4 text-sm shadow-sm backdrop-blur-md transition-all placeholder:text-muted-foreground/75 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
           <div className="relative shrink-0">
-            <button
+            <Button
               onClick={() =>
                 setOpenDropdown((prev) => (prev === "sort" ? null : "sort"))
               }
               type="button"
               aria-label="Sort projects"
               aria-expanded={openDropdown === "sort"}
-              className="flex h-14 items-center gap-3 rounded-2xl border border-border bg-card/90 px-4 text-sm text-foreground shadow-sm backdrop-blur-md transition-colors hover:border-primary/30"
+              variant="secondary"
             >
-              <ArrowUpDownIcon className="h-4 w-4" />
+              <ArrowUpDownIcon />
               <span className="hidden sm:inline">
                 {SORT_OPTIONS.find((o) => o.value === sort)?.label}
               </span>
               <ChevronDownIcon
                 className={cn(
-                  "h-4 w-4 transition-transform",
+                  "transition-transform",
                   openDropdown === "sort" && "rotate-180",
                 )}
               />
-            </button>
+            </Button>
 
             <AnimatePresence>
               {openDropdown === "sort" && (

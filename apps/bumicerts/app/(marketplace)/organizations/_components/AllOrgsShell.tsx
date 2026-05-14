@@ -12,6 +12,7 @@ import {
 import type { OrganizationData } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { OrganizationCard } from "./OrganizationCard";
 import { countries } from "@/lib/countries";
 import { realms, countryToRealm } from "@/lib/bioregions";
@@ -300,7 +301,7 @@ export function AllOrgsShell({
 
       <div className="max-w-6xl mx-auto px-6">
         {/* Search + sort row */}
-        <div className="relative z-20 -mt-14 space-y-3 mb-0 px-3">
+        <div className="relative z-20 -mt-6 space-y-3 mb-0 px-3">
           <div className="flex items-center gap-3">
             <div className="relative flex-1 min-w-0">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
@@ -309,28 +310,29 @@ export function AllOrgsShell({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search organizations..."
-                className="w-full h-12 pl-11 pr-4 text-sm rounded-2xl border border-border/80 bg-background/90 shadow-sm shadow-foreground/5 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all dark:bg-card/90"
+                className="w-full h-12 pl-11 pr-4 text-sm rounded-2xl border border-border/80 bg-foreground/[0.03] shadow-sm shadow-foreground/5 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               />
             </div>
 
             <div className="relative shrink-0">
-              <button
+              <Button
                 onClick={() =>
                   setOpenDropdown((p) => (p === "sort" ? null : "sort"))
                 }
-                className="flex items-center gap-2 h-12 px-4 text-sm text-muted-foreground hover:text-foreground border border-border/80 rounded-2xl bg-background/90 shadow-sm shadow-foreground/5 backdrop-blur-md transition-colors dark:bg-card/90"
+                type="button"
+                variant="secondary"
               >
-                <ArrowUpDownIcon className="h-4 w-4" />
+                <ArrowUpDownIcon />
                 <span className="hidden sm:inline">
                   {SORT_OPTIONS.find((o) => o.value === sort)?.label}
                 </span>
                 <ChevronDownIcon
                   className={cn(
-                    "h-4 w-4 transition-transform",
+                    "transition-transform",
                     openDropdown === "sort" && "rotate-180",
                   )}
                 />
-              </button>
+              </Button>
               <AnimatePresence>
                 {openDropdown === "sort" && (
                   <motion.div
