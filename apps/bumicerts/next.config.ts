@@ -40,6 +40,8 @@ const nextConfig: NextConfig = {
   ],
 
   images: {
+    loader: "custom",
+    loaderFile: "./lib/cloudflare-image-loader.ts",
     unoptimized: serverEnv.NODE_ENV === "development",
     remotePatterns: [
       {

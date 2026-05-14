@@ -24,11 +24,11 @@ export const clientEnv = createEnv({
     // ATProto / PDS
     NEXT_PUBLIC_EPDS_URL: z.string().url().optional(),
 
-    // Public image/blob proxy prefix. The original URL is appended encoded.
+    // Public image proxy prefix. The original image URL is appended encoded.
     NEXT_PUBLIC_IMAGE_PROXY_URL: z
       .string()
       .url()
-      .default("https://blob-proxy-worker.satyam1308mishra.workers.dev/blob?url="),
+      .default("https://blob-proxy-worker.satyam1308mishra.workers.dev/image?url="),
 
     // Base URL override (ngrok, custom domains, etc.)
     NEXT_PUBLIC_BASE_URL: z.string().url().optional(),
