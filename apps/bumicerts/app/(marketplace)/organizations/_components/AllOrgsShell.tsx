@@ -326,7 +326,7 @@ export function AllOrgsShell({
                   setOpenDropdown((p) => (p === "sort" ? null : "sort"))
                 }
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="lg"
               >
                 <ArrowUpDownIcon />

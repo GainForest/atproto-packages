@@ -386,7 +386,7 @@ export function ExploreHeaderSlots({
               type="button"
               aria-label="Sort projects"
               aria-expanded={openDropdown === "sort"}
-              variant="secondary"
+              variant="outline"
               size="lg"
             >
               <ArrowUpDownIcon />
