@@ -13,7 +13,7 @@ const HERO_IMAGE_CLASS = "object-cover object-center";
 
 function HeroBackdrop() {
   return (
-    <div className="absolute inset-0 -z-10 overflow-hidden" aria-hidden>
+    <div className="absolute inset-0 overflow-hidden" aria-hidden>
       <Image
         src="/images/explore/explore-hero-light.png"
         alt=""
@@ -106,8 +106,8 @@ export function ExploreShell({
   }, [bumicerts, query, sort, filters]);
 
   return (
-    <section className="pb-20 md:pb-28">
-      <div className="relative isolate px-6 pt-9 pb-24 md:pt-12 md:pb-32">
+    <section className="-mt-14 pb-20 md:pb-28">
+      <div className="relative isolate overflow-hidden px-6 pb-24 pt-[86px] md:pb-32">
         <HeroBackdrop />
         <motion.div
           initial={animate ? { opacity: 0, y: 16 } : false}

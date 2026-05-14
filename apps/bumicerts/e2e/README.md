@@ -191,18 +191,18 @@ await page.click('button[type="submit"]')
 
 Authenticated tests automate the **full OAuth login flow**. This requires:
 
-1. **Test account** on `climateai.org` or another PDS
+1. **Test account** with a complete ATProto handle
 2. **Environment variables** in `e2e/.env`:
 
 ```bash
-# Your test account handle (e.g., testuser.climateai.org)
-E2E_TEST_HANDLE=testuser.climateai.org
+# Your test account handle (e.g., alice.example.com)
+E2E_TEST_HANDLE=alice.example.com
 
 # Your test account password
 E2E_TEST_PASSWORD=<your_password>
 
-# PDS domain (optional, defaults to climateai.org)
-E2E_TEST_PDS_DOMAIN=climateai.org
+# Auth provider host (optional; set only when needed for redirect detection)
+E2E_TEST_PDS_DOMAIN=example.com
 ```
 
 ### How It Works
@@ -222,7 +222,7 @@ The E2E suite uses **auth state reuse** to make authenticated tests fast:
 #### OAuth Flow Details (when needed):
 The full OAuth automation includes:
 1. Opens the login modal on your app
-2. Enters the test handle and selects the PDS domain
+2. Enters the complete test handle
 3. Clicks authorize to start OAuth
 4. Waits for redirect to the PDS authorization page
 5. Enters the password on the PDS page
@@ -279,7 +279,7 @@ bun run test:e2e -- --tags "not @auth"
 
 **"E2E_TEST_HANDLE is not set" error:**
 - Fill in the test credentials in `e2e/.env`
-- Format: `username.pdsdomain.com` (e.g., `testuser.climateai.org`)
+- Format: complete ATProto handle (e.g., `alice.example.com`)
 
 **"E2E_TEST_PASSWORD is not set" error:**
 - Add your test account password to `e2e/.env`

@@ -9,7 +9,7 @@ import { links } from "@/lib/links";
 const OPTION_CARDS = [
   {
     href: links.explore,
-    image: "/assets/media/images/landing/supporter-river.png",
+    image: "/assets/media/images/landing/supporter-river.jpg",
     alt: "River winding through rainforest",
     label: "For Funders",
     title: "I want to support",
@@ -20,7 +20,7 @@ const OPTION_CARDS = [
   },
   {
     href: links.bumicert.create,
-    image: "/assets/media/images/landing/steward-waterfall.png",
+    image: "/assets/media/images/landing/steward-waterfall.jpg",
     alt: "Waterfall in a tropical forest",
     label: "For Organizations",
     title: "I am a nature",
@@ -47,10 +47,10 @@ export function UserOptionCards() {
             <LeafIcon className="size-4" />
             <span className="h-px w-8 bg-border" />
           </div>
-          <h2 className="font-garamond text-3xl font-light tracking-[-0.01em] text-foreground md:text-4xl">
+          <h2 className="font-garamond text-4xl font-light tracking-[-0.01em] text-foreground md:text-5xl">
             Choose Your Path
           </h2>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+          <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-muted-foreground">
             Whether you&apos;re here to fund impact or showcase your work, there&apos;s a
             place for you.
           </p>
@@ -80,22 +80,22 @@ export function UserOptionCards() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-card via-card/88 to-card/0" />
                   <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
-                    <span className="inline-flex rounded-full bg-background/80 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-primary shadow-sm backdrop-blur">
+                    <span className="inline-flex rounded-full bg-background/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-primary shadow-sm backdrop-blur">
                       {card.label}
                     </span>
-                    <h3 className="mt-4 font-garamond text-3xl font-light leading-[1.05] tracking-[-0.015em] text-foreground">
+                    <h3 className="mt-4 font-garamond text-4xl font-light leading-[1.05] tracking-[-0.015em] text-foreground">
                       {card.title}
                       <br />
                       <span className="font-instrument italic text-primary">
                         {card.emphasis}
                       </span>
                     </h3>
-                    <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
+                    <p className="mt-4 max-w-sm text-base leading-relaxed text-muted-foreground">
                       {card.description}
                     </p>
 
                     <motion.div
-                      className="mt-5 flex items-center gap-2 text-[13px] font-semibold text-foreground transition-colors group-hover:text-primary"
+                      className="mt-5 flex items-center gap-2 text-sm font-semibold text-foreground transition-colors group-hover:text-primary"
                       whileHover={{ x: 4 }}
                       transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     >

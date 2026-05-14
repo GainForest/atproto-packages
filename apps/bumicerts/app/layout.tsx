@@ -22,8 +22,8 @@ const geistMono = Geist_Mono({
 const cormorantGaramond = Cormorant_Garamond({
   variable: "--font-garamond-var",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  style: ["normal", "italic"],
+  weight: ["300", "400", "500", "700"],
+  style: ["normal"],
 });
 
 const instrumentSerif = Instrument_Serif({

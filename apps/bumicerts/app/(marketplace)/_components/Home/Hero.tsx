@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { ArrowDownIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
 
 export function Hero() {
@@ -18,7 +17,7 @@ export function Hero() {
           className="absolute inset-0"
         >
           <Image
-            src="/assets/media/images/landing/hero-rainforest.png"
+            src="/assets/media/images/landing/hero-rainforest.jpg"
             alt="Misty rainforest valley"
             fill
             priority
@@ -32,42 +31,24 @@ export function Hero() {
       </div>
 
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-32 pt-20 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.75, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-        >
-          <h1 className="font-garamond text-[42px] font-light leading-[1.08] tracking-[-0.02em] text-foreground sm:text-[44px] md:text-6xl lg:text-7xl">
-            Verified Impact{" "}
-            <span className="mx-1 inline-flex items-center align-middle">
-              <motion.span
-                initial={{ scale: 0, rotate: -120 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{
-                  duration: 0.55,
-                  delay: 0.65,
-                  type: "spring",
-                  stiffness: 180,
-                  damping: 16,
-                }}
-                className="inline-block"
-              >
-                <Image
-                  src="/assets/media/images/app-icon.png"
-                  alt="Bumicerts"
-                  width={42}
-                  height={42}
-                  className="size-10 drop-shadow-lg sm:size-12 md:size-14"
-                />
-              </motion.span>
-            </span>{" "}
-            Starts
-            <br />
-            <span className="font-instrument italic text-primary">
-              With Real Communities
-            </span>
-          </h1>
-        </motion.div>
+        <h1 className="font-garamond text-[42px] font-light leading-[1.08] tracking-[-0.02em] text-foreground sm:text-[44px] md:text-6xl lg:text-7xl">
+          Verified Impact{" "}
+          <span className="mx-1 inline-flex items-center align-middle">
+            <Image
+              src="/assets/media/images/app-icon.png"
+              alt="Bumicerts"
+              width={42}
+              height={42}
+              priority
+              className="size-10 drop-shadow-lg sm:size-12 md:size-14"
+            />
+          </span>{" "}
+          Starts
+          <br />
+          <span className="font-instrument italic text-primary">
+            With Real Communities
+          </span>
+        </h1>
 
         <motion.p
           initial={{ opacity: 0, y: 16 }}
@@ -86,18 +67,19 @@ export function Hero() {
           transition={{ duration: 0.55, delay: 0.56, ease: [0.25, 0.1, 0.25, 1] }}
           className="mt-8"
         >
-          <Button asChild className="h-12 px-6 shadow-lg shadow-primary/20">
-            <Link href={links.explore}>
-              Explore Projects
-              <motion.span
-                className="inline-block"
-                animate={{ x: [0, 3, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-              >
-                →
-              </motion.span>
-            </Link>
-          </Button>
+          <Link
+            href={links.explore}
+            className="inline-flex h-12 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+          >
+            Explore Projects
+            <motion.span
+              className="inline-block"
+              animate={{ x: [0, 3, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            >
+              →
+            </motion.span>
+          </Link>
         </motion.div>
       </div>
 

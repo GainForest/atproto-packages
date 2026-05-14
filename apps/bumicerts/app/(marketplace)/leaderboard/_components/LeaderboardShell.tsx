@@ -206,26 +206,26 @@ function StatCard({
 
 function HeroLandscapeArt() {
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 hidden h-[22rem] overflow-hidden md:block">
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-[22rem] overflow-hidden">
       <Image
         src="/assets/media/images/leaderboard/hero-landscape-light.png"
         alt=""
-        width={1672}
-        height={470}
+        fill
         priority
+        sizes="(min-width: 1280px) 1152px, calc(100vw - 48px)"
         aria-hidden="true"
-        className="absolute right-0 top-0 h-full w-[72%] object-cover object-right-top opacity-90 dark:hidden"
+        className="object-cover object-center opacity-90 dark:hidden"
       />
       <Image
         src="/assets/media/images/leaderboard/hero-landscape-dark.png"
         alt=""
-        width={1672}
-        height={470}
+        fill
         priority
+        sizes="(min-width: 1280px) 1152px, calc(100vw - 48px)"
         aria-hidden="true"
-        className="absolute right-0 top-0 hidden h-full w-[72%] object-cover object-right-top opacity-80 dark:block"
+        className="hidden object-cover object-center opacity-80 dark:block"
       />
-      <div className="absolute inset-y-0 left-[20%] w-[34%] bg-gradient-to-r from-background via-background/90 to-transparent" />
+      <div className="absolute inset-y-0 left-0 w-[54%] bg-gradient-to-r from-background via-background/90 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-background via-background/80 to-transparent" />
     </div>
   );
@@ -302,7 +302,7 @@ export function LeaderboardShell({
   children,
 }: LeaderboardShellProps) {
   return (
-    <section className="relative overflow-hidden px-4 pb-20 pt-8 md:px-8 md:pb-28">
+    <section className="relative -mt-14 overflow-hidden px-4 pb-20 pt-8 md:px-8 md:pb-28">
       <div className="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-primary/[0.08] via-transparent to-transparent dark:from-primary/[0.12]" />
       <HeroLandscapeArt />
 

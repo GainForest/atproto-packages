@@ -37,7 +37,7 @@ export function FeaturesSection() {
           className="mb-5 flex items-center gap-2"
         >
           <LeafIcon className="size-4 text-primary" />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
             About Us
           </span>
         </motion.div>
@@ -61,15 +61,15 @@ export function FeaturesSection() {
                 index === FEATURES.length - 1 && "sm:pr-0",
               )}
             >
-              <span className="block font-garamond text-4xl font-light leading-none tracking-tight text-primary/45">
+              <span className="block font-garamond text-5xl font-light leading-none tracking-tight text-primary/45">
                 {feature.number}.
               </span>
 
-              <h3 className="mt-3 font-instrument text-[15px] leading-snug text-foreground">
+              <h3 className="mt-4 font-instrument text-lg leading-tight text-foreground">
                 {feature.title}
               </h3>
 
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 {feature.description}
               </p>
             </motion.div>

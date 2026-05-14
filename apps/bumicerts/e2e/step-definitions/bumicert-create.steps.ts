@@ -301,7 +301,7 @@ When(
     const input = page
       .locator('input[placeholder*="Contributor name"]')
       .first();
-    await input.fill(this.env.testHandle ?? "satyam-test-004.climateai.org");
+    await input.fill(this.env.testHandle ?? "alice.example.com");
     await input.press("Enter");
 
     // Wait for contributor to be added
