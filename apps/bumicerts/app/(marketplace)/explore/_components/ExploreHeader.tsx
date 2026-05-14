@@ -36,6 +36,11 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types & Data
@@ -360,17 +365,18 @@ export function ExploreHeaderSlots({
       >
         {/* Row 1: Search + Sort */}
         <div className="flex items-center gap-3">
-          <div className="relative flex-1 min-w-0">
-            <SearchIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/65" />
-            <input
+          <InputGroup className="h-10 flex-1 rounded-full bg-background/50 backdrop-blur">
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+            <InputGroupInput
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search projects"
               placeholder="Search projects by name, keyword, or location..."
-              className="h-14 w-full rounded-2xl border border-border bg-foreground/[0.03] pl-12 pr-4 text-sm shadow-sm backdrop-blur-md transition-all placeholder:text-muted-foreground/75 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
-          </div>
+          </InputGroup>
 
           <div className="relative shrink-0">
             <Button
@@ -381,6 +387,7 @@ export function ExploreHeaderSlots({
               aria-label="Sort projects"
               aria-expanded={openDropdown === "sort"}
               variant="secondary"
+              size="lg"
             >
               <ArrowUpDownIcon />
               <span className="hidden sm:inline">

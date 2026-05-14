@@ -13,6 +13,11 @@ import type { OrganizationData } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { OrganizationCard } from "./OrganizationCard";
 import { countries } from "@/lib/countries";
 import { realms, countryToRealm } from "@/lib/bioregions";
@@ -303,16 +308,17 @@ export function AllOrgsShell({
         {/* Search + sort row */}
         <div className="relative z-20 -mt-6 space-y-3 mb-0 px-3">
           <div className="flex items-center gap-3">
-            <div className="relative flex-1 min-w-0">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-              <input
+            <InputGroup className="h-10 flex-1 rounded-full bg-background/50 backdrop-blur">
+              <InputGroupAddon>
+                <SearchIcon />
+              </InputGroupAddon>
+              <InputGroupInput
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search organizations..."
-                className="w-full h-12 pl-11 pr-4 text-sm rounded-2xl border border-border/80 bg-foreground/[0.03] shadow-sm shadow-foreground/5 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               />
-            </div>
+            </InputGroup>
 
             <div className="relative shrink-0">
               <Button
@@ -321,6 +327,7 @@ export function AllOrgsShell({
                 }
                 type="button"
                 variant="secondary"
+                size="lg"
               >
                 <ArrowUpDownIcon />
                 <span className="hidden sm:inline">
