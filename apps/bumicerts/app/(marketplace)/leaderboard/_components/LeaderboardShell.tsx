@@ -302,7 +302,7 @@ export function LeaderboardShell({
   children,
 }: LeaderboardShellProps) {
   return (
-    <section className="relative -mt-14 overflow-hidden px-4 pb-20 pt-8 md:px-8 md:pb-28">
+    <section className="relative -mt-14 overflow-hidden px-4 pb-20 pt-0 md:px-8 md:pb-28">
       <div className="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-primary/[0.08] via-transparent to-transparent dark:from-primary/[0.12]" />
       <HeroLandscapeArt />
 
@@ -311,19 +311,19 @@ export function LeaderboardShell({
           initial={animate ? { opacity: 0, y: 16 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-10 max-w-3xl pt-8 md:pt-14"
+          className="mb-10 max-w-4xl pt-[86px]"
         >
-          <div className="mb-5 flex items-center gap-2">
-            <TrophyIcon className="size-5 text-primary" />
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="mb-5 flex items-center gap-2.5">
+            <TrophyIcon className="h-4 w-4 text-primary" />
+            <span className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
               Leaderboard
             </span>
           </div>
-          <h1 className="text-5xl font-light leading-[0.95] tracking-[-0.04em] text-foreground md:text-7xl lg:text-8xl font-garamond">
+          <h1 className="max-w-4xl text-4xl font-light leading-[0.98] tracking-[-0.035em] text-foreground sm:text-5xl md:text-6xl lg:text-7xl font-garamond">
             Impact{" "}
-            <span className="font-instrument italic text-primary">Champions</span>
+            <span className="font-instrument italic text-foreground/85">Champions</span>
           </h1>
-          <p className="mt-7 max-w-xl text-base leading-7 text-muted-foreground md:text-lg">
+          <p className="mt-7 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
             Celebrating the generous contributors driving regenerative change for
             communities and the planet.
           </p>
