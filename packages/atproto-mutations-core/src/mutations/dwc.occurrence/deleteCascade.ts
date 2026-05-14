@@ -57,12 +57,18 @@ function isNotFoundError(value: unknown): boolean {
   return false;
 }
 
-function validateInput(input: unknown): DeleteDwcOccurrenceCascadeInput {
+function makeValidationError(message: string): DwcOccurrenceValidationError {
+  return new DwcOccurrenceValidationError({ message });
+}
+
+function validateInput(
+  input: unknown,
+): Effect.Effect<DeleteDwcOccurrenceCascadeInput, DwcOccurrenceValidationError> {
   if (!isRecord(input) || typeof input.rkey !== "string" || input.rkey.length === 0) {
-    throw new Error("Tree occurrence rkey is required.");
+    return Effect.fail(makeValidationError("Tree occurrence rkey is required."));
   }
 
-  return { rkey: input.rkey };
+  return Effect.succeed({ rkey: input.rkey });
 }
 
 function getOccurrenceRef(value: unknown): string | null {
@@ -308,14 +314,7 @@ export const deleteDwcOccurrenceCascade = (
   AtprotoAgent
 > =>
   Effect.gen(function* () {
-    const { rkey } = yield* Effect.try({
-      try: () => validateInput(input),
-      catch: (cause) =>
-        new DwcOccurrenceValidationError({
-          message: "Tree occurrence rkey is required.",
-          cause,
-        }),
-    });
+    const { rkey } = yield* validateInput(input);
     const agent = yield* AtprotoAgent;
     const repo = agent.assertDid;
     const uri = `at://${repo}/${OCCURRENCE_COLLECTION}/${rkey}`;

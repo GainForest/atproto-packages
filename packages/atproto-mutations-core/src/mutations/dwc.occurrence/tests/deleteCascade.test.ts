@@ -3,6 +3,7 @@ import type { Agent } from "@atproto/api";
 import { Effect, Layer } from "effect";
 import { AtprotoAgent } from "../../../services/AtprotoAgent";
 import { deleteDwcOccurrenceCascade } from "../deleteCascade";
+import { DwcOccurrenceValidationError } from "../utils/errors";
 
 const DID = "did:plc:testdeletecascade";
 const OCCURRENCE_COLLECTION = "app.gainforest.dwc.occurrence";
@@ -243,6 +244,25 @@ async function runDeleteCascade(agent: Agent) {
 }
 
 describe("deleteDwcOccurrenceCascade", () => {
+  it("fails through the typed validation channel when the rkey is missing", async () => {
+    const { agent, state } = makeFakeAgent({ photoCount: 0 });
+    const layer = Layer.succeed(AtprotoAgent, agent);
+
+    const result = await Effect.runPromise(
+      deleteDwcOccurrenceCascade({ rkey: "" }).pipe(
+        Effect.either,
+        Effect.provide(layer),
+      ),
+    );
+
+    expect(result._tag).toBe("Left");
+    if (result._tag === "Left") {
+      expect(result.left).toBeInstanceOf(DwcOccurrenceValidationError);
+      expect(result.left.message).toBe("Tree occurrence rkey is required.");
+    }
+    expect(state.applyWritesBatches).toEqual([]);
+  });
+
   it("keeps cascades at the applyWrites limit in a single batch", async () => {
     const { agent, state } = makeFakeAgent({ photoCount: 198 });
 
