@@ -30,6 +30,7 @@ import {
   $parse as parseActorProfile,
   main as actorProfileSchema,
 } from "@gainforest/generated/app/certified/actor/profile.defs";
+import { buildCombinedActorSaveWrites } from "./combined-actor-save-writes";
 
 const PROFILE_COLLECTION = "app.certified.actor.profile";
 const ORGANIZATION_COLLECTION = "app.certified.actor.organization";
@@ -207,6 +208,7 @@ const combinedActorSaveEffect = (
       makeProfileValidationError,
     );
 
+    let existingOrganization: ActorOrganizationRecord | null;
     let organizationRecord: ActorOrganizationRecord;
     let organizationCreated = false;
 
@@ -216,7 +218,7 @@ const combinedActorSaveEffect = (
         ORGANIZATION_BLOB_CONSTRAINTS,
       );
 
-      const existingOrganization = yield* fetchRecord(
+      existingOrganization = yield* fetchRecord(
         ORGANIZATION_COLLECTION,
         RKEY,
         parseActorOrganization,
@@ -256,7 +258,7 @@ const combinedActorSaveEffect = (
         ORGANIZATION_BLOB_CONSTRAINTS,
       );
 
-      const existingOrganization = yield* fetchRecord(
+      existingOrganization = yield* fetchRecord(
         ORGANIZATION_COLLECTION,
         RKEY,
         parseActorOrganization,
@@ -284,43 +286,28 @@ const combinedActorSaveEffect = (
       organizationCreated = existingOrganization === null;
     }
 
-    const organizationWrite =
-      input.organization.operation === "update"
-        ? {
-            $type: "com.atproto.repo.applyWrites#update" as const,
-            collection: ORGANIZATION_COLLECTION,
-            rkey: RKEY,
-            value: organizationRecord,
-          }
-        : {
-            $type: organizationCreated
-              ? ("com.atproto.repo.applyWrites#create" as const)
-              : ("com.atproto.repo.applyWrites#update" as const),
-            collection: ORGANIZATION_COLLECTION,
-            rkey: RKEY,
-            value: organizationRecord,
-          };
-
-    yield* Effect.tryPromise({
-      try: () =>
-        agent.com.atproto.repo.applyWrites({
-          repo: agent.assertDid,
-          writes: [
-            {
-              $type: "com.atproto.repo.applyWrites#update",
-              collection: PROFILE_COLLECTION,
-              rkey: RKEY,
-              value: profileRecord,
-            },
-            organizationWrite,
-          ],
-        }),
-      catch: (cause) =>
-        new ActorOrganizationPdsError({
-          message: "PDS rejected combined actor save.",
-          cause,
-        }),
+    const writes = buildCombinedActorSaveWrites({
+      existingProfile,
+      profileRecord,
+      existingOrganization,
+      organizationRecord,
+      organizationCreated,
     });
+
+    if (writes.length > 0) {
+      yield* Effect.tryPromise({
+        try: () =>
+          agent.com.atproto.repo.applyWrites({
+            repo: agent.assertDid,
+            writes,
+          }),
+        catch: (cause) =>
+          new ActorOrganizationPdsError({
+            message: "PDS rejected combined actor save.",
+            cause,
+          }),
+      });
+    }
 
     return {
       profile: profileRecord,
