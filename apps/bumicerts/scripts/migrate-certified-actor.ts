@@ -65,10 +65,10 @@ function usage(): string {
     "  bun run apps/bumicerts/scripts/migrate-certified-actor.ts --config <path> [--dry-run] [--force] [--verbose] [--service <host>]",
     "",
     "Expected config JSON:",
-    '  { "handle": "org.climateai.org", "password": "...", "did": "did:plc:...", "service": "climateai.org" }',
+    '  { "handle": "karma.com", "password": "...", "did": "did:plc:...", "service": "pds.example.com" }',
     "",
     "Notes:",
-    "  - service is optional; if omitted it is inferred from the handle domain",
+    "  - service is required in the config or via --service",
     "  - default behavior is safe: if actor records already exist, the script aborts",
     "  - use --force only when you intentionally want to overwrite existing actor records",
   ].join("\n");
@@ -202,17 +202,6 @@ function normalizeServiceHost(value: string): string {
   }
 
   return trimmed;
-}
-
-function inferServiceHostFromHandle(handle: string): string {
-  const parts = handle.split(".").filter((part) => part.length > 0);
-  if (parts.length < 2) {
-    throw new Error(
-      `Could not infer service host from handle "${handle}". Pass service explicitly in the config or via --service.`,
-    );
-  }
-
-  return parts.slice(1).join(".");
 }
 
 async function readAccountConfig(configPath: string): Promise<AccountConfig> {
@@ -639,9 +628,12 @@ function ensureSafeToWrite(options: {
 async function main() {
   const cliOptions = parseArgs(process.argv.slice(2));
   const config = await readAccountConfig(cliOptions.configPath);
-  const serviceHost = normalizeServiceHost(
-    cliOptions.serviceOverride ?? config.service ?? inferServiceHostFromHandle(config.handle),
-  );
+  const configuredServiceHost = cliOptions.serviceOverride ?? config.service;
+  if (!configuredServiceHost) {
+    throw new Error("Service host is required in the config or via --service.");
+  }
+
+  const serviceHost = normalizeServiceHost(configuredServiceHost);
 
   const agent = await login({
     handle: config.handle,

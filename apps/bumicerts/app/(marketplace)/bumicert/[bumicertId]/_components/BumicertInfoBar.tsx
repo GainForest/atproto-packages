@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2Icon, CheckIcon, BuildingIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { getProxiedImageUrl } from "@/lib/images";
 import type { BumicertData } from "@/lib/types";
 import { links } from "@/lib/links";
 
@@ -64,7 +65,7 @@ function BumicertMetaAvatar({ bumicert }: { bumicert: BumicertData }) {
       <div className="h-9 w-9 overflow-hidden rounded-full border border-border bg-muted">
         {bumicert.logoUrl ? (
           <Image
-            src={bumicert.logoUrl}
+            src={getProxiedImageUrl(bumicert.logoUrl)}
             alt={bumicert.organizationName}
             width={36}
             height={36}

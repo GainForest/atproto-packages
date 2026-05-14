@@ -19,9 +19,18 @@ import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
 import { trpc } from "@/lib/trpc/client";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
-import type { PhotoEntry, ValidatedRow } from "@/lib/upload/types";
+import type {
+  PhotoEntry,
+  TreeUploadRowAttentionSummary,
+  ValidatedRow,
+} from "@/lib/upload/types";
 import { occurrenceInputToCreateInput } from "@/lib/upload/occurrence-adapter";
 import { fetchPhotoFromUrl } from "@/lib/upload/fetch-photo-from-url";
+import {
+  createTreeUploadRowAttentionSummary,
+  getTreeUploadRowAttentionKindLabel,
+  getValidatedRowLabel,
+} from "@/lib/upload/row-attention";
 import { useModal } from "@/components/ui/modal/context";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import PhotoAttachModal from "@/components/global/modals/upload/photo-attachment";
@@ -39,8 +48,15 @@ import {
   APPEND_EXISTING_DWC_DATASET_CLIENT_ROWS,
   toAppendExistingDatasetRows,
 } from "@/lib/upload/append-existing-dataset";
+import {
+  checkUploadRowsAgainstSelectedSite,
+  fetchUploadSiteBoundary,
+  type SkippedBoundaryRow,
+  type UploadableBoundaryRow,
+} from "@/lib/upload/site-boundary";
 import { uploadTreeDatasetsQueryKey } from "@/lib/upload/tree-upload-datasets";
 import { type UploadDatasetSelection } from "@/lib/upload/upload-dataset-selection";
+import type { UploadSiteSelection } from "@/lib/upload/site-selection";
 import { useUploadStepEffects } from "./useUploadStepEffects";
 import { clearPendingUpload } from "./upload-session";
 
@@ -87,6 +103,45 @@ type PhotoUploadQueueEntry = {
   rowIndex: number;
   photo: PhotoEntry;
 };
+
+function buildPhotoFetchQueue(
+  rows: ValidatedRow[],
+  skippedRowIndexes: ReadonlySet<number>,
+): PhotoUploadQueueEntry[] {
+  const queue: PhotoUploadQueueEntry[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    if (skippedRowIndexes.has(i)) {
+      continue;
+    }
+
+    const row = rows[i];
+    if (!row?.photos) {
+      continue;
+    }
+
+    for (const photo of row.photos) {
+      queue.push({ rowIndex: i, photo });
+    }
+  }
+
+  return queue;
+}
+
+function getInitialRowStatuses(
+  rows: ValidatedRow[],
+  skippedRows: SkippedBoundaryRow[],
+): RowStatus[] {
+  const statuses = rows.map<RowStatus>(() => ({ state: "pending" }));
+
+  for (const skippedRow of skippedRows) {
+    statuses[skippedRow.rowIndex] = {
+      state: "error",
+      error: skippedRow.message,
+    };
+  }
+
+  return statuses;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -138,9 +193,11 @@ type UploadStepProps = {
   uploadId: string;
   did: string;
   validRows: ValidatedRow[];
+  previewSkippedRows: TreeUploadRowAttentionSummary[];
   koboMediaZipFile: File | null;
   establishmentMeans: string | null;
   datasetSelection: UploadDatasetSelection;
+  siteSelection: UploadSiteSelection | null;
   backLabel: string;
   onBack: () => void;
   onComplete: () => void;
@@ -154,9 +211,11 @@ export default function UploadStep({
   uploadId,
   did,
   validRows,
+  previewSkippedRows,
   koboMediaZipFile,
   establishmentMeans,
   datasetSelection,
+  siteSelection,
   backLabel,
   onBack,
   onComplete,
@@ -195,30 +254,23 @@ export default function UploadStep({
     validRows.map(() => ({ state: "pending" as const })),
   );
   const [failedRowsOpen, setFailedRowsOpen] = useState(false);
+  const [skippedUploadRowIndexes, setSkippedUploadRowIndexes] = useState<
+    number[]
+  >([]);
 
   // Photo attachment state (manual)
   const [photoUris, setPhotoUris] = useState<Map<number, string[]>>(new Map());
 
   // Phase 2: background photo upload from public URLs or Kobo media ZIP entries
-  const photoFetchQueue = useMemo(() => {
-    const queue: PhotoUploadQueueEntry[] = [];
-    for (let i = 0; i < validRows.length; i++) {
-      const row = validRows[i];
-      if (!row?.photos) continue;
-      for (const photo of row.photos) {
-        queue.push({
-          rowIndex: i,
-          photo,
-        });
-      }
-    }
-    return queue;
-  }, [validRows]);
-  const hasPhotoAttachments = photoFetchQueue.length > 0;
-  const needsKoboMediaZipFile = useMemo(
-    () => photoFetchQueue.some((entry) => entry.photo.source === "koboZip"),
-    [photoFetchQueue],
+  const skippedUploadRowIndexSet = useMemo(
+    () => new Set(skippedUploadRowIndexes),
+    [skippedUploadRowIndexes],
   );
+  const photoFetchQueue = useMemo(
+    () => buildPhotoFetchQueue(validRows, skippedUploadRowIndexSet),
+    [skippedUploadRowIndexSet, validRows],
+  );
+  const hasPhotoAttachments = photoFetchQueue.length > 0;
 
   const [photoFetchStarted, setPhotoFetchStarted] = useState(false);
   const [photoFetchDone, setPhotoFetchDone] = useState(false);
@@ -245,10 +297,6 @@ export default function UploadStep({
     datasetSelection.mode === "existing"
       ? datasetSelection.dataset
       : null;
-  const appendExistingDatasetRows = useMemo(
-    () => toAppendExistingDatasetRows(validRows),
-    [validRows],
-  );
 
   // ── Photo attachment ──────────────────────────────────────────────────────
   const handleAddPhoto = (
@@ -262,6 +310,7 @@ export default function UploadStep({
         content: (
           <PhotoAttachModal
             occurrenceUri={occurrenceUri}
+            siteRef={siteSelection?.uri}
             speciesName={speciesName}
             onPhotoUploaded={(uploadedPhoto) => {
               if (uploadedPhoto.previewUrl) {
@@ -310,10 +359,10 @@ export default function UploadStep({
   }, [did, indexerUtils, queryClient, setRefreshWarning]);
 
   const detachUploadedRowsFromUnavailableDataset = useCallback(
-    async (statuses: RowStatus[], endExclusive: number) => {
+    async (statuses: RowStatus[], rowIndexes: number[]) => {
       let demotedSuccesses = 0;
 
-      for (let index = 0; index < endExclusive; index += 1) {
+      for (const index of rowIndexes) {
         const status = statuses[index];
         if (!status || (status.state !== "success" && status.state !== "partial")) {
           continue;
@@ -385,6 +434,8 @@ export default function UploadStep({
     if (uploadRef.current) return;
     uploadRef.current = true;
     const uploadStartMs = Date.now();
+    const previewSkippedCount = previewSkippedRows.length;
+    const sourceTotalRows = validRows.length + previewSkippedCount;
     setClockMs(uploadStartMs);
     setUploadStartedAtMs(null);
     setPhotoFetchStartedAtMs(null);
@@ -393,24 +444,143 @@ export default function UploadStep({
     setDatasetUpdateWarning(null);
     setUploadedDatasetUri(null);
 
+    let rowsToUpload: UploadableBoundaryRow[] = [];
+    let skippedRowsForUpload: SkippedBoundaryRow[] = [];
+    let photoFetchQueueForUploadableRows: PhotoUploadQueueEntry[] = [];
+
     trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_STARTED, {
       uploadId,
       datasetMode: datasetSelection.mode,
-      totalRows: validRows.length,
+      totalRows: sourceTotalRows,
+      validRows: validRows.length,
+      invalidRows: previewSkippedCount,
       photoTotal: photoFetchQueue.length,
       hasKoboZip: koboMediaZipFile !== null,
     });
 
-    // Clear sessionStorage once upload begins (state is no longer "pending")
-    clearPendingUpload();
-
-    if (needsKoboMediaZipFile && !koboMediaZipFile) {
+    if (!siteSelection) {
       const completedAtMs = Date.now();
       trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_FAILED, {
         uploadId,
         datasetMode: datasetSelection.mode,
-        totalRows: validRows.length,
-        photoTotal: photoFetchQueue.length,
+        totalRows: sourceTotalRows,
+        photoTotal: photoFetchQueueForUploadableRows.length,
+        failureReason: "site_selection_missing",
+        durationSeconds: Math.round((completedAtMs - uploadStartMs) / 1_000),
+      });
+      setUploadFatalError(
+        "This upload is missing its required site selection. Please start over and choose a site boundary.",
+      );
+      setClockMs(completedAtMs);
+      setUploadDone(true);
+      return;
+    }
+
+    try {
+      const boundary = await fetchUploadSiteBoundary(siteSelection);
+      const siteBoundaryCheck = checkUploadRowsAgainstSelectedSite({
+        rows: validRows,
+        siteSelection,
+        boundary,
+      });
+      const skippedRowIndexes = siteBoundaryCheck.skippedRows.map(
+        (row) => row.rowIndex,
+      );
+      const skippedRowIndexSet = new Set(skippedRowIndexes);
+      const nextPhotoFetchQueue = siteBoundaryCheck.fatalError
+        ? []
+        : buildPhotoFetchQueue(validRows, skippedRowIndexSet);
+      const nextStatuses = getInitialRowStatuses(
+        validRows,
+        siteBoundaryCheck.skippedRows,
+      );
+
+      rowsToUpload = siteBoundaryCheck.rowsToUpload;
+      skippedRowsForUpload = siteBoundaryCheck.skippedRows;
+      photoFetchQueueForUploadableRows = nextPhotoFetchQueue;
+
+      setSkippedUploadRowIndexes(skippedRowIndexes);
+      setRowStatuses(nextStatuses);
+      setPhotoFetchStatuses({});
+      setPhotoFetchProgress({
+        current: 0,
+        total: nextPhotoFetchQueue.length,
+        successes: 0,
+        failures: 0,
+      });
+      setProgress({
+        current: siteBoundaryCheck.skippedRows.length,
+        total: validRows.length,
+        successes: 0,
+        partials: 0,
+        failures: siteBoundaryCheck.skippedRows.length,
+        currentRow: "",
+      });
+
+      if (siteBoundaryCheck.fatalError) {
+        const completedAtMs = Date.now();
+        trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_FAILED, {
+          uploadId,
+          datasetMode: datasetSelection.mode,
+          totalRows: sourceTotalRows,
+          photoTotal: photoFetchQueueForUploadableRows.length,
+          failureReason: "site_boundary_validation_failed",
+          durationSeconds: Math.round((completedAtMs - uploadStartMs) / 1_000),
+        });
+        setUploadFatalError(siteBoundaryCheck.fatalError);
+        setClockMs(completedAtMs);
+        setUploadDone(true);
+        return;
+      }
+
+      if (rowsToUpload.length === 0) {
+        const completedAtMs = Date.now();
+        clearPendingUpload();
+        trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_COMPLETED, {
+          uploadId,
+          datasetMode: datasetSelection.mode,
+          totalRows: sourceTotalRows,
+          savedRows: 0,
+          partialRows: 0,
+          failedRows: previewSkippedCount + siteBoundaryCheck.skippedRows.length,
+          photoTotal: 0,
+          hasKoboZip: false,
+          durationSeconds: Math.round((completedAtMs - uploadStartMs) / 1_000),
+        });
+        setClockMs(completedAtMs);
+        setUploadDone(true);
+        return;
+      }
+    } catch {
+      const completedAtMs = Date.now();
+      trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_FAILED, {
+        uploadId,
+        datasetMode: datasetSelection.mode,
+        totalRows: sourceTotalRows,
+        photoTotal: photoFetchQueueForUploadableRows.length,
+        failureReason: "site_boundary_validation_failed",
+        durationSeconds: Math.round((completedAtMs - uploadStartMs) / 1_000),
+      });
+      setUploadFatalError(
+        "Couldn't recheck the selected site boundary before upload. Please return to site selection and choose a valid GeoJSON boundary.",
+      );
+      setClockMs(completedAtMs);
+      setUploadDone(true);
+      return;
+    }
+
+    const needsKoboMediaZipFileForUploadableRows =
+      photoFetchQueueForUploadableRows.some(
+        (entry) => entry.photo.source === "koboZip",
+      );
+
+    if (needsKoboMediaZipFileForUploadableRows && !koboMediaZipFile) {
+      const completedAtMs = Date.now();
+      trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_FAILED, {
+        uploadId,
+        datasetMode: datasetSelection.mode,
+        totalRows: sourceTotalRows,
+        photoTotal: photoFetchQueueForUploadableRows.length,
         failureReason: "missing_kobo_media_zip",
         durationSeconds: Math.round((completedAtMs - uploadStartMs) / 1_000),
       });
@@ -421,6 +591,9 @@ export default function UploadStep({
       setUploadDone(true);
       return;
     }
+
+    // Clear sessionStorage once upload begins (state is no longer "pending")
+    clearPendingUpload();
 
     // ── Phase 0: Resolve dataset target ───────────────────────────────────
     let datasetUri: string | undefined;
@@ -442,8 +615,8 @@ export default function UploadStep({
         trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_FAILED, {
           uploadId,
           datasetMode: datasetSelection.mode,
-          totalRows: validRows.length,
-          photoTotal: photoFetchQueue.length,
+          totalRows: sourceTotalRows,
+          photoTotal: photoFetchQueueForUploadableRows.length,
           failureReason: "dataset_create_failed",
           durationSeconds: Math.round((completedAtMs - uploadStartMs) / 1_000),
         });
@@ -459,10 +632,14 @@ export default function UploadStep({
       setClockMs(rowUploadStartMs);
       setUploadStartedAtMs(rowUploadStartMs);
 
-      const nextStatuses = validRows.map<RowStatus>(() => ({ state: "pending" }));
+      const appendExistingDatasetRows = toAppendExistingDatasetRows(
+        rowsToUpload.map(({ row }) => row),
+        siteSelection.uri,
+      );
+      const nextStatuses = getInitialRowStatuses(validRows, skippedRowsForUpload);
       let successes = 0;
       let partials = 0;
-      let failures = 0;
+      let failures = skippedRowsForUpload.length;
       let stopExistingDatasetUpload = false;
 
       for (
@@ -474,20 +651,27 @@ export default function UploadStep({
           chunkStart,
           chunkStart + APPEND_EXISTING_DWC_DATASET_CLIENT_ROWS,
         );
+        const chunkEntries = rowsToUpload.slice(
+          chunkStart,
+          chunkStart + APPEND_EXISTING_DWC_DATASET_CLIENT_ROWS,
+        );
         const chunkEnd = chunkStart + chunkRows.length;
         const chunkLabel =
-          chunkRows.length === 1
-            ? (validRows[chunkStart]?.occurrence.scientificName ||
-              `Row ${chunkStart + 1}`)
-            : `Rows ${chunkStart + 1}-${chunkEnd}`;
+          chunkEntries.length === 1
+            ? (chunkEntries[0]?.row.occurrence.scientificName ||
+              `Row ${(chunkEntries[0]?.rowIndex ?? chunkStart) + 1}`)
+            : `Rows ${chunkStart + 1}-${chunkEnd} of ${rowsToUpload.length}`;
 
-        for (const [chunkIndex] of chunkRows.entries()) {
-          nextStatuses[chunkStart + chunkIndex] = { state: "uploading" };
+        for (const entry of chunkEntries) {
+          nextStatuses[entry.rowIndex] = { state: "uploading" };
         }
         setRowStatuses([...nextStatuses]);
         setProgress((prev) => ({
           ...prev,
-          current: Math.min(chunkStart + 1, validRows.length),
+          current: Math.min(
+            skippedRowsForUpload.length + chunkStart + 1,
+            validRows.length,
+          ),
           currentRow: chunkLabel,
         }));
 
@@ -504,8 +688,13 @@ export default function UploadStep({
           );
 
           for (const result of response.results) {
-            const globalIndex = chunkStart + result.index;
-            handledIndexes.add(globalIndex);
+            const entry = chunkEntries[result.index];
+            if (!entry) {
+              continue;
+            }
+
+            const globalIndex = entry.rowIndex;
+            handledIndexes.add(result.index);
 
             if (result.state === "success") {
               successes += 1;
@@ -536,13 +725,13 @@ export default function UploadStep({
           }
 
           for (const [chunkIndex] of chunkRows.entries()) {
-            const globalIndex = chunkStart + chunkIndex;
-            if (handledIndexes.has(globalIndex)) {
+            const entry = chunkEntries[chunkIndex];
+            if (!entry || handledIndexes.has(chunkIndex)) {
               continue;
             }
 
             failures += 1;
-            nextStatuses[globalIndex] = {
+            nextStatuses[entry.rowIndex] = {
               state: "error",
               error: "Unexpected append response for this row.",
             };
@@ -551,7 +740,7 @@ export default function UploadStep({
           if (response.datasetBecameUnavailable) {
             const demotedSuccesses = await detachUploadedRowsFromUnavailableDataset(
               nextStatuses,
-              chunkStart,
+              rowsToUpload.slice(0, chunkStart).map((entry) => entry.rowIndex),
             );
             successes -= demotedSuccesses;
             partials += demotedSuccesses;
@@ -559,10 +748,15 @@ export default function UploadStep({
 
             for (
               let remainingIndex = chunkEnd;
-              remainingIndex < nextStatuses.length;
+              remainingIndex < rowsToUpload.length;
               remainingIndex += 1
             ) {
-              nextStatuses[remainingIndex] = {
+              const remainingEntry = rowsToUpload[remainingIndex];
+              if (!remainingEntry) {
+                continue;
+              }
+
+              nextStatuses[remainingEntry.rowIndex] = {
                 state: "error",
                 error: EXISTING_DATASET_UNAVAILABLE_MESSAGE,
               };
@@ -581,7 +775,7 @@ export default function UploadStep({
           if (datasetUnavailable) {
             const demotedSuccesses = await detachUploadedRowsFromUnavailableDataset(
               nextStatuses,
-              chunkStart,
+              rowsToUpload.slice(0, chunkStart).map((entry) => entry.rowIndex),
             );
             successes -= demotedSuccesses;
             partials += demotedSuccesses;
@@ -590,10 +784,15 @@ export default function UploadStep({
 
           for (
             let remainingIndex = chunkStart;
-            remainingIndex < nextStatuses.length;
+            remainingIndex < rowsToUpload.length;
             remainingIndex += 1
           ) {
-            nextStatuses[remainingIndex] = {
+            const remainingEntry = rowsToUpload[remainingIndex];
+            if (!remainingEntry) {
+              continue;
+            }
+
+            nextStatuses[remainingEntry.rowIndex] = {
               state: "error",
               error: chunkMessage,
             };
@@ -626,11 +825,11 @@ export default function UploadStep({
       trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_COMPLETED, {
         uploadId,
         datasetMode: datasetSelection.mode,
-        totalRows: validRows.length,
+        totalRows: sourceTotalRows,
         savedRows: successes + partials,
         partialRows: partials,
-        failedRows: failures,
-        photoTotal: photoFetchQueue.length,
+        failedRows: previewSkippedCount + failures,
+        photoTotal: photoFetchQueueForUploadableRows.length,
         hasKoboZip: koboMediaZipFile !== null,
         durationSeconds: Math.round((completedAtMs - rowUploadStartMs) / 1_000),
       });
@@ -646,22 +845,26 @@ export default function UploadStep({
 
     let successes = 0;
     let partials = 0;
-    let failures = 0;
+    let failures = skippedRowsForUpload.length;
 
-    for (let i = 0; i < validRows.length; i++) {
-      const row = validRows[i];
-      if (!row) continue;
-      const speciesName = row.occurrence.scientificName || `Row ${i + 1}`;
+    for (let uploadIndex = 0; uploadIndex < rowsToUpload.length; uploadIndex++) {
+      const entry = rowsToUpload[uploadIndex];
+      if (!entry) continue;
+      const { row, rowIndex } = entry;
+      const speciesName = row.occurrence.scientificName || `Row ${rowIndex + 1}`;
 
       // Mark row as uploading
       setRowStatuses((prev) => {
         const next = [...prev];
-        next[i] = { state: "uploading" };
+        next[rowIndex] = { state: "uploading" };
         return next;
       });
       setProgress((prev) => ({
         ...prev,
-        current: i + 1,
+        current: Math.min(
+          skippedRowsForUpload.length + uploadIndex + 1,
+          validRows.length,
+        ),
         currentRow: speciesName,
       }));
 
@@ -670,6 +873,7 @@ export default function UploadStep({
         const occurrence: typeof row.occurrence = {
           ...row.occurrence,
           ...(establishmentMeans ? { establishmentMeans } : {}),
+          siteRef: siteSelection.uri,
           ...(datasetUri ? { datasetRef: datasetUri } : {}),
           dynamicProperties: buildTreeDynamicProperties(datasetUri),
         };
@@ -696,7 +900,7 @@ export default function UploadStep({
             partials += 1;
             setRowStatuses((prev) => {
               const next = [...prev];
-              next[i] = {
+              next[rowIndex] = {
                 state: "partial",
                 occurrenceUri: occResult.uri,
                 photoCount: 0,
@@ -707,7 +911,10 @@ export default function UploadStep({
             });
             setProgress((prev) => ({
               ...prev,
-              current: i + 1,
+              current: Math.min(
+                skippedRowsForUpload.length + uploadIndex + 1,
+                validRows.length,
+              ),
               currentRow: speciesName,
               successes,
               partials,
@@ -722,7 +929,7 @@ export default function UploadStep({
         successes += 1;
         setRowStatuses((prev) => {
           const next = [...prev];
-          next[i] = {
+          next[rowIndex] = {
             state: "success",
             occurrenceUri: occResult.uri,
             photoCount: 0,
@@ -733,7 +940,7 @@ export default function UploadStep({
         failures += 1;
         setRowStatuses((prev) => {
           const next = [...prev];
-          next[i] = { state: "error", error: formatError(err) };
+          next[rowIndex] = { state: "error", error: formatError(err) };
           return next;
         });
       }
@@ -788,11 +995,11 @@ export default function UploadStep({
     trackTreeUploadEvent(TREE_UPLOAD_EVENTS.UPLOAD_COMPLETED, {
       uploadId,
       datasetMode: datasetSelection.mode,
-      totalRows: validRows.length,
+      totalRows: sourceTotalRows,
       savedRows: successes + partials,
       partialRows: partials,
-      failedRows: failures,
-      photoTotal: photoFetchQueue.length,
+      failedRows: previewSkippedCount + failures,
+      photoTotal: photoFetchQueueForUploadableRows.length,
       hasKoboZip: koboMediaZipFile !== null,
       durationSeconds: Math.round((completedAtMs - rowUploadStartMs) / 1_000),
     });
@@ -800,7 +1007,6 @@ export default function UploadStep({
     setUploadDone(true);
   }, [
     appendExistingDataset,
-    appendExistingDatasetRows,
     createDataset,
     deleteDataset,
     deleteOccurrence,
@@ -811,8 +1017,9 @@ export default function UploadStep({
     establishmentMeans,
     invalidateTreeQueries,
     koboMediaZipFile,
-    needsKoboMediaZipFile,
     photoFetchQueue.length,
+    previewSkippedRows.length,
+    siteSelection,
     updateDataset,
     uploadId,
     validRows,
@@ -895,6 +1102,7 @@ export default function UploadStep({
             ? await fetchPhotoFromUrl({
                 url: photo.url,
                 occurrenceRef: occurrenceUri,
+                siteRef: siteSelection?.uri,
                 subjectPart,
               })
             : await (async () => {
@@ -917,6 +1125,7 @@ export default function UploadStep({
                 const uploadResult = await createMultimedia.mutateAsync({
                   imageFile: serializableFile,
                   occurrenceRef: occurrenceUri,
+                  siteRef: siteSelection?.uri,
                   subjectPart,
                   caption: `Imported from KoboToolbox Media Attachments ZIP: ${photo.fileName}`,
                   format: serializableFile.type,
@@ -1008,22 +1217,65 @@ export default function UploadStep({
     photoFetchQueue,
     rowStatuses,
     setRefreshWarning,
+    siteSelection?.uri,
     uploadId,
     validRows.length,
   ]);
 
+  const rowAttentionSummaries = useMemo(() => {
+    const uploadAttentionSummaries = rowStatuses.flatMap((status, rowIndex) => {
+      if (status.state !== "error" && status.state !== "partial") {
+        return [];
+      }
+
+      const row = validRows[rowIndex];
+      if (!row) {
+        return [];
+      }
+
+      return [
+        createTreeUploadRowAttentionSummary({
+          sourceRowIndex: row.index,
+          rowLabel: getValidatedRowLabel(row),
+          messages: [status.error],
+          kind:
+            status.state === "partial"
+              ? "partial"
+              : skippedUploadRowIndexSet.has(rowIndex)
+                ? "skipped"
+                : "failed",
+        }),
+      ];
+    });
+
+    return [...previewSkippedRows, ...uploadAttentionSummaries].sort(
+      (a, b) => a.sourceRowIndex - b.sourceRowIndex,
+    );
+  }, [previewSkippedRows, rowStatuses, skippedUploadRowIndexSet, validRows]);
+
   // ── Derived values ────────────────────────────────────────────────────────
-  const { current, total, successes, partials, failures, currentRow } = progress;
+  const {
+    current,
+    total: uploadTotal,
+    successes,
+    partials,
+    failures,
+    currentRow,
+  } = progress;
   const completedRows = successes + partials + failures;
-  const progressPercent = total > 0 ? Math.round((current / total) * 100) : 0;
-  const progressLabel = uploadStarted && current > 0
-    ? `Uploading row ${current} of ${total}${currentRow ? ` — ${currentRow}` : ""}...`
-    : "Preparing upload...";
+  const progressPercent =
+    uploadTotal > 0 ? Math.round((current / uploadTotal) * 100) : 0;
+  const progressLabel =
+    uploadStarted && current > 0
+      ? `Uploading row ${current} of ${uploadTotal}${
+          currentRow ? ` — ${currentRow}` : ""
+        }...`
+      : "Preparing upload...";
   const treeUploadTimeEstimate = getUploadTimeEstimate({
     startedAtMs: uploadStartedAtMs,
     nowMs: clockMs,
     completedUnits: completedRows,
-    totalUnits: total,
+    totalUnits: uploadTotal,
     isComplete: uploadDone,
     unitLabel: "record",
   });
@@ -1031,10 +1283,12 @@ export default function UploadStep({
     datasetSelection.mode === "new"
       ? datasetSelection.name
       : resolvedExistingDataset?.name ?? null;
-  const attentionCount = failures + partials;
+  const sourceTotalCount = uploadTotal + previewSkippedRows.length;
+  const totalFailureCount = failures + previewSkippedRows.length;
+  const attentionCount = rowAttentionSummaries.length;
   const persistedCount = successes + partials;
   const allSucceeded =
-    uploadDone && failures === 0 && partials === 0 && !uploadFatalError;
+    uploadDone && totalFailureCount === 0 && partials === 0 && !uploadFatalError;
   const someFailed = uploadDone && attentionCount > 0 && !uploadFatalError;
 
   // Phase 2 is complete when either there are no photo attachments, photo upload is done,
@@ -1075,10 +1329,10 @@ export default function UploadStep({
     const payload: TreeUploadEventPayload = {
       uploadId,
       datasetMode: datasetSelection.mode,
-      totalRows: total,
+      totalRows: sourceTotalCount,
       savedRows: persistedCount,
       partialRows: partials,
-      failedRows: failures,
+      failedRows: totalFailureCount,
       photoTotal: photoFetchProgress.total,
       photoSucceeded: photoFetchProgress.successes,
       photoFailed: photoFetchProgress.failures,
@@ -1095,14 +1349,14 @@ export default function UploadStep({
     return payload;
   }, [
     datasetSelection.mode,
-    failures,
     koboMediaZipFile,
     partials,
     persistedCount,
     photoFetchProgress.failures,
     photoFetchProgress.successes,
     photoFetchProgress.total,
-    total,
+    sourceTotalCount,
+    totalFailureCount,
     uploadDurationSeconds,
     uploadId,
   ]);
@@ -1111,8 +1365,10 @@ export default function UploadStep({
     did,
     uploadId,
     validRows,
+    previewSkippedRows,
     establishmentMeans,
     datasetSelection,
+    siteSelection,
     uploadStarted,
     runUpload,
     uploadDone,
@@ -1126,9 +1382,10 @@ export default function UploadStep({
     allPhasesComplete,
     hasUploadedTrees,
     completionModalShownRef,
-    total,
+    total: sourceTotalCount,
     partials,
-    failures,
+    failures: totalFailureCount,
+    rowAttentionSummaries,
     photoFailureCount: photoFetchProgress.failures,
     treeManagerHref,
     treeManagerLabel,
@@ -1138,10 +1395,6 @@ export default function UploadStep({
     show,
   });
 
-  const attentionRows = rowStatuses
-    .map((status, i) => ({ status, row: validRows[i], index: i }))
-    .filter((r) => r.status.state === "error" || r.status.state === "partial");
-
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-5">
@@ -1149,9 +1402,14 @@ export default function UploadStep({
       <div>
         <h2 className="text-lg font-semibold">Saving your records</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Saving {total} tree record{total !== 1 ? "s" : ""} to the GainForest
-          network.
+          Saving {uploadTotal} tree record{uploadTotal !== 1 ? "s" : ""} to
+          the GainForest network.
         </p>
+        {siteSelection ? (
+          <p className="text-xs text-muted-foreground mt-1">
+            Assigning these trees to {siteSelection.name}.
+          </p>
+        ) : null}
         {selectedDatasetName ? (
           <p className="text-xs text-muted-foreground mt-1">
             {datasetSelection.mode === "existing"
@@ -1215,7 +1473,7 @@ export default function UploadStep({
       ) : null}
 
       {uploadDone && allSucceeded && (
-        <div className="flex items-center gap-2 rounded-md border border-green-500/40 bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400">
+        <div className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 p-3 text-sm text-primary">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>
             Successfully uploaded {successes} tree record
@@ -1231,7 +1489,9 @@ export default function UploadStep({
           <span>
             {persistedCount} record{persistedCount !== 1 ? "s" : ""} saved
             {partials > 0 ? `, ${partials} need follow-up` : ""}
-            {failures > 0 ? `, ${failures} failed` : ""}.
+            {totalFailureCount > 0
+              ? `, ${totalFailureCount} skipped or failed.`
+              : "."}
           </span>
         </div>
       )}
@@ -1307,7 +1567,7 @@ export default function UploadStep({
           <div className="max-h-64 overflow-y-auto divide-y divide-border">
             {validRows.map((row, i) => {
               const status = rowStatuses[i];
-              const species = row.occurrence.scientificName || `Row ${i + 1}`;
+              const species = getValidatedRowLabel(row);
               const rowPhotos = photoUris.get(i) ?? [];
               const hasOccurrence = hasPersistedOccurrence(status);
               const occUri = getOccurrenceUriFromStatus(status);
@@ -1318,11 +1578,11 @@ export default function UploadStep({
                 : null;
               return (
                 <div
-                  key={i}
+                  key={row.index}
                   className="flex items-center gap-3 px-3 py-2 text-sm"
                 >
                   <span className="font-mono text-xs text-muted-foreground w-6 shrink-0">
-                    {i + 1}
+                    {row.index + 1}
                   </span>
                   <div className="flex-1 min-w-0">
                     <span className="block truncate">{species}</span>
@@ -1373,7 +1633,7 @@ export default function UploadStep({
                         <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
                       ) : null}
                       {status?.state === "success" ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
                       ) : null}
                       {status?.state === "partial" ? (
                         <span title={status.error}>
@@ -1404,7 +1664,7 @@ export default function UploadStep({
       ) : null}
 
       {/* Failed rows detail (collapsible) */}
-      {attentionRows.length > 0 && !uploadFatalError && (
+      {rowAttentionSummaries.length > 0 && !uploadFatalError && (
         <div className="rounded-lg border border-destructive/30 overflow-hidden">
           <button
             type="button"
@@ -1424,22 +1684,32 @@ export default function UploadStep({
           {failedRowsOpen && (
             <div className="border-t border-destructive/20 px-4 py-3">
               <ul className="space-y-2 max-h-48 overflow-y-auto">
-                {attentionRows.map(({ status, row, index }) => (
-                  <li
-                    key={index}
-                    className="text-xs border border-destructive/20 rounded-md p-2 space-y-0.5"
-                  >
-                    <p className="font-medium text-foreground">
-                      Row {index + 1} —{" "}
-                      {row?.occurrence.scientificName ?? "(no species)"}
-                    </p>
-                    <p className="text-destructive">
-                      {status.state === "error" || status.state === "partial"
-                        ? status.error
-                        : "Unknown error"}
-                    </p>
-                  </li>
-                ))}
+                {rowAttentionSummaries.map((summary) => {
+                  const statusLabel = getTreeUploadRowAttentionKindLabel(
+                    summary.kind,
+                  );
+
+                  return (
+                    <li
+                      key={`${summary.kind}-${summary.sourceRowIndex}`}
+                      className="text-xs border border-destructive/20 rounded-md p-2 space-y-1"
+                    >
+                      <p className="font-medium text-foreground">
+                        Row {summary.sourceRowIndex + 1} — {summary.rowLabel}
+                      </p>
+                      <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
+                        {statusLabel}
+                      </p>
+                      <ul className="space-y-0.5">
+                        {summary.messages.map((message, messageIndex) => (
+                          <li key={messageIndex} className="text-destructive">
+                            {message}
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

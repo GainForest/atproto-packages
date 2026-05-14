@@ -1,145 +1,112 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowUpRightIcon } from "lucide-react";
-import Link from "next/link";
+import { ArrowUpRightIcon, LeafIcon } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { links } from "@/lib/links";
+
+const OPTION_CARDS = [
+  {
+    href: links.explore,
+    image: "/assets/media/images/landing/supporter-river.jpg",
+    alt: "River winding through rainforest",
+    label: "For Funders",
+    title: "I want to support",
+    emphasis: "a project",
+    description:
+      "Browse verified certificates and fund the exact moment of restoration.",
+    cta: "Explore Bumicerts",
+  },
+  {
+    href: links.bumicert.create,
+    image: "/assets/media/images/landing/steward-waterfall.jpg",
+    alt: "Waterfall in a tropical forest",
+    label: "For Organizations",
+    title: "I am a nature",
+    emphasis: "steward",
+    description:
+      "Showcase your regenerative work and connect with funders who care.",
+    cta: "Create a Bumicert",
+  },
+];
 
 export function UserOptionCards() {
   return (
-    <section className="py-16 md:py-24 px-6 bg-muted/30">
-      <div className="max-w-6xl mx-auto">
-        {/* Section intro */}
+    <section className="px-6 pb-6 pt-0 sm:px-12 md:px-6 md:pb-10 md:pt-2">
+      <div className="mx-auto max-w-6xl">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-          className="text-center mb-12 md:mb-16"
+          transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
+          className="mb-6 text-center md:mb-8"
         >
-          <h2 
-            className="text-3xl md:text-4xl font-light tracking-[-0.01em] text-foreground"
-            style={{ fontFamily: "var(--font-garamond-var)" }}
-          >
+          <div className="mb-4 flex items-center justify-center gap-3 text-primary/60">
+            <span className="h-px w-8 bg-border" />
+            <LeafIcon className="size-4" />
+            <span className="h-px w-8 bg-border" />
+          </div>
+          <h2 className="font-garamond text-4xl font-light tracking-[-0.01em] text-foreground md:text-5xl">
             Choose Your Path
           </h2>
-          <p className="mt-3 text-muted-foreground text-base max-w-md mx-auto">
-            Whether you&apos;re here to fund impact or showcase your work, there&apos;s a place for you.
+          <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-muted-foreground">
+            Whether you&apos;re here to fund impact or showcase your work, there&apos;s a
+            place for you.
           </p>
         </motion.div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Supporter Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
-          >
-            <Link href={links.explore} className="block group">
-              <div className="relative overflow-hidden rounded-2xl bg-card border border-border h-[320px] md:h-[360px] transition-all duration-500 hover:shadow-2xl hover:border-primary/20">
-                {/* Background image */}
-                <div className="absolute inset-0">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {OPTION_CARDS.map((card, index) => (
+            <motion.div
+              key={card.href}
+              initial={{ opacity: 0, y: 22 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{
+                duration: 0.5,
+                delay: index * 0.08 + 0.08,
+                ease: [0.25, 0.1, 0.25, 1],
+              }}
+            >
+              <Link href={card.href} className="group block">
+                <div className="relative h-[320px] overflow-hidden rounded-2xl border border-border bg-card shadow-lg shadow-foreground/5 transition-all duration-500 hover:border-primary/20 hover:shadow-xl sm:h-[360px]">
                   <Image
-                    src="/assets/media/images/hero-bumicert-card/image0.png"
-                    alt="Forest landscape"
+                    src={card.image}
+                    alt={card.alt}
                     fill
-                    className="object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-700"
+                    sizes="(min-width: 640px) 50vw, calc(100vw - 3rem)"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
-                </div>
-                
-                {/* Content */}
-                <div className="relative h-full flex flex-col justify-end p-6 md:p-8">
-                  <span 
-                    className="text-xs uppercase tracking-[0.2em] text-primary mb-2"
-                    style={{ fontFamily: "var(--font-instrument-serif-var)" }}
-                  >
-                    For Funders
-                  </span>
-                  <h3 
-                    className="text-2xl md:text-3xl font-light text-foreground mb-3"
-                    style={{ fontFamily: "var(--font-garamond-var)" }}
-                  >
-                    I want to support
-                    <br />
-                    <span className="italic" style={{ fontFamily: "var(--font-instrument-serif-var)" }}>
-                      a project
+                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/88 to-card/0" />
+                  <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
+                    <span className="inline-flex rounded-full bg-background/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-primary shadow-sm backdrop-blur">
+                      {card.label}
                     </span>
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-                    Browse verified certificates and fund the exact moment of restoration.
-                  </p>
-                  
-                  <motion.div 
-                    className="flex items-center gap-2 text-sm font-medium text-foreground group-hover:text-primary transition-colors"
-                    whileHover={{ x: 4 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  >
-                    Explore Bumicerts
-                    <ArrowUpRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </motion.div>
-                </div>
-              </div>
-            </Link>
-          </motion.div>
+                    <h3 className="mt-4 font-garamond text-4xl font-light leading-[1.05] tracking-[-0.015em] text-foreground">
+                      {card.title}
+                      <br />
+                      <span className="font-instrument italic text-primary">
+                        {card.emphasis}
+                      </span>
+                    </h3>
+                    <p className="mt-4 max-w-sm text-base leading-relaxed text-muted-foreground">
+                      {card.description}
+                    </p>
 
-          {/* Organization Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-          >
-            <Link href={links.bumicert.create} className="block group">
-              <div className="relative overflow-hidden rounded-2xl bg-card border border-border h-[320px] md:h-[360px] transition-all duration-500 hover:shadow-2xl hover:border-primary/20">
-                {/* Background image */}
-                <div className="absolute inset-0">
-                  <Image
-                    src="/assets/media/images/hero-bumicert-card/image2.png"
-                    alt="Community planting"
-                    fill
-                    className="object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
+                    <motion.div
+                      className="mt-5 flex items-center gap-2 text-sm font-semibold text-foreground transition-colors group-hover:text-primary"
+                      whileHover={{ x: 4 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                    >
+                      {card.cta}
+                      <ArrowUpRightIcon className="size-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                    </motion.div>
+                  </div>
                 </div>
-                
-                {/* Content */}
-                <div className="relative h-full flex flex-col justify-end p-6 md:p-8">
-                  <span 
-                    className="text-xs uppercase tracking-[0.2em] text-primary mb-2"
-                    style={{ fontFamily: "var(--font-instrument-serif-var)" }}
-                  >
-                    For Organizations
-                  </span>
-                  <h3 
-                    className="text-2xl md:text-3xl font-light text-foreground mb-3"
-                    style={{ fontFamily: "var(--font-garamond-var)" }}
-                  >
-                    I am a nature
-                    <br />
-                    <span className="italic" style={{ fontFamily: "var(--font-instrument-serif-var)" }}>
-                      steward
-                    </span>
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-                    Showcase your regenerative work and connect with funders who care.
-                  </p>
-                  
-                  <motion.div 
-                    className="flex items-center gap-2 text-sm font-medium text-foreground group-hover:text-primary transition-colors"
-                    whileHover={{ x: 4 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  >
-                    Create a Bumicert
-                    <ArrowUpRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </motion.div>
-                </div>
-              </div>
-            </Link>
-          </motion.div>
+              </Link>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>

@@ -67,6 +67,8 @@ export const serverEnv = createEnv({
     // Facilitator — pays gas for USDC donations, writes funding receipts
     // NOTE: FACILITATOR_DID is public — use NEXT_PUBLIC_FACILITATOR_DID in client.ts
     FACILITATOR_HANDLE: z.string().min(1).optional(),
+    // PDS host for credential login; do not infer this from the handle.
+    FACILITATOR_SERVICE_HOST: z.string().min(1).optional(),
     FACILITATOR_PASSWORD: z.string().min(1).optional(),
     FACILITATOR_PRIVATE_KEY: z.string().min(1).optional(),
 
@@ -108,6 +110,7 @@ export const serverEnv = createEnv({
     RATE_LIMIT_FAIL_OPEN: process.env.RATE_LIMIT_FAIL_OPEN,
     DEBUG: process.env.DEBUG,
     FACILITATOR_HANDLE: process.env.FACILITATOR_HANDLE,
+    FACILITATOR_SERVICE_HOST: process.env.FACILITATOR_SERVICE_HOST,
     FACILITATOR_PASSWORD: process.env.FACILITATOR_PASSWORD,
     FACILITATOR_PRIVATE_KEY: process.env.FACILITATOR_PRIVATE_KEY,
     BASE_RPC_URL: process.env.BASE_RPC_URL,

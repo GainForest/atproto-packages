@@ -48,6 +48,9 @@ function toUserMessage(tag: string, message: string, issues?: ValidationIssue[])
   if (tag.includes("IsDefault")) {
     return "This action cannot be completed right now.";
   }
+  if (tag.includes("Conflict")) {
+    return message || "This action conflicts with existing records.";
+  }
   if (tag.includes("PdsError") || tag.includes("BlobUpload")) {
     return "A server error occurred while saving your changes. Please try again.";
   }
@@ -104,6 +107,11 @@ export function mapEffectErrorToTRPC(error: unknown): TRPCError {
 
     // Is default (can't delete)
     if (tag.includes("IsDefault")) {
+      return new TRPCError({ code: "PRECONDITION_FAILED", message: userMessage, cause: actualError });
+    }
+
+    // State conflicts with linked records
+    if (tag.includes("Conflict")) {
       return new TRPCError({ code: "PRECONDITION_FAILED", message: userMessage, cause: actualError });
     }
 

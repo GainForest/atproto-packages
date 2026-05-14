@@ -17,8 +17,21 @@
 import type { AppWorld } from './world.js'
 import type { Browser, BrowserContext } from '@playwright/test'
 import { getPage } from './utils.js'
-import { resolve } from 'node:path'
 import { testEnv } from './env.js'
+
+function isExpectedOAuthUrl(url: URL, appUrl: string, expectedHost?: string): boolean {
+  const appHost = new URL(appUrl).hostname
+  const isExpectedHost = expectedHost
+    ? url.hostname === expectedHost || url.hostname.endsWith(`.${expectedHost}`)
+    : url.hostname !== appHost
+
+  return isExpectedHost &&
+    (url.pathname.includes('/oauth/') || url.pathname.includes('/authorize'))
+}
+
+function isAppUrl(urlString: string, appUrl: string): boolean {
+  return new URL(urlString).origin === new URL(appUrl).origin
+}
 
 /**
  * Logs in using the full OAuth flow
@@ -35,7 +48,7 @@ import { testEnv } from './env.js'
  * Requirements:
  * - E2E_TEST_HANDLE must be set in e2e/.env
  * - E2E_TEST_PASSWORD must be set in e2e/.env
- * - E2E_TEST_PDS_DOMAIN must be set (defaults to climateai.org)
+ * - E2E_TEST_PDS_DOMAIN may be set when the auth provider host differs from the handle
  *
  * @param world - Cucumber world context
  * @throws Error if required env vars are missing or login fails
@@ -94,57 +107,23 @@ export async function loginViaOAuth(world: AppWorld): Promise<void> {
   await handleTab.click()
   await page.waitForTimeout(500)
 
-  // Step 4: Enter just the username part (before the @)
-  // Extract username from full handle (e.g., "satyam-test-004" from "satyam-test-004.climateai.org")
-  const username = testHandle.split('.')[0]
-  console.log(`  → Entering username: ${username}`)
+  // Step 4: Enter the complete handle
+  console.log(`  → Entering handle: ${testHandle}`)
   
   const handleInput = page.locator('input#login-handle')
   await handleInput.waitFor({ state: 'visible', timeout: 3000 })
-  await handleInput.fill(username)
+  await handleInput.fill(testHandle)
 
-  // Step 5: Select PDS domain from dropdown
-  console.log(`  → Selecting PDS domain: ${testPdsDomain}`)
-  
-  // Click the dropdown button (shows current domain like ".climateai.org")
-  const pdsDropdownButton = page.locator('button:has-text(".' + (testPdsDomain ?? 'climateai.org') + '")').first()
-  const dropdownExists = await pdsDropdownButton.isVisible({ timeout: 2000 }).catch(() => false)
-  
-  if (!dropdownExists || testPdsDomain !== 'climateai.org') {
-    // If not visible or need to change domain, click to open dropdown
-    const anyPdsButton = page.locator('button.shrink-0:has(svg)').filter({ hasText: '.' }).first()
-    const anyDropdownExists = await anyPdsButton.isVisible().catch(() => false)
-    
-    if (anyDropdownExists) {
-      await anyPdsButton.click()
-      await page.waitForTimeout(300)
-      
-      // Select the desired domain from the list
-      const domainOption = page.locator(`button:has-text("${testPdsDomain ?? 'climateai.org'}")`)
-      await domainOption.first().click()
-      await page.waitForTimeout(300)
-    }
-  }
-
-  // Step 6: Click the Continue button
+  // Step 5: Click the Continue button
   console.log('  → Clicking Continue button...')
   const continueButton = page.locator('button[type="submit"]:has-text("Continue")').first()
-  
-  // Store the current page URL to detect when we leave
-  const currentUrl = page.url()
   
   await continueButton.click()
 
   console.log('⏳ Waiting for redirect to PDS authorization page...')
 
-  // Step 7: Wait for redirect to PDS authorization page
-  // The URL should now be on the PDS domain (climateai.org/oauth/authorize)
-  await page.waitForURL(url => {
-    const urlString = url.toString()
-    const pdsDomain = testPdsDomain ?? 'climateai.org'
-    return urlString.includes(pdsDomain) && 
-           (urlString.includes('/oauth/') || urlString.includes('/authorize'))
-  }, { timeout: 15000 })
+  // Step 6: Wait for redirect to authorization page
+  await page.waitForURL(url => isExpectedOAuthUrl(url, world.env.appUrl, testPdsDomain), { timeout: 15000 })
 
   console.log(`✓ Redirected to PDS authorization page: ${page.url()}`)
 
@@ -172,7 +151,7 @@ export async function loginViaOAuth(world: AppWorld): Promise<void> {
   // Just wait for network to be idle and we're back on our domain
   try {
     await page.waitForLoadState('networkidle', { timeout: 15000 })
-  } catch (e) {
+  } catch {
     // networkidle might timeout, that's okay - just continue
   }
 
@@ -183,9 +162,9 @@ export async function loginViaOAuth(world: AppWorld): Promise<void> {
   console.log(`✓ OAuth flow complete!`)
   console.log(`   Final URL: ${finalUrl}`)
 
-  // Verify we're back on our app (not on climateai.org)
-  if (finalUrl.includes('climateai.org')) {
-    throw new Error(`OAuth flow did not complete - still on PDS page: ${finalUrl}`)
+  // Verify we're back on our app
+  if (!isAppUrl(finalUrl, world.env.appUrl)) {
+    throw new Error(`OAuth flow did not complete - still on authorization page: ${finalUrl}`)
   }
 
   // Mark world as authenticated
@@ -316,48 +295,22 @@ export async function performAuthSetup(
     await handleTab.click()
     await page.waitForTimeout(500)
 
-    // Step 5: Enter just the username part
-    const username = testHandle.split('.')[0]
-    console.log(`  → Entering username: ${username}`)
+    // Step 5: Enter the complete handle
+    console.log(`  → Entering handle: ${testHandle}`)
     
     const handleInput = page.locator('input#login-handle')
     await handleInput.waitFor({ state: 'visible', timeout: 3000 })
-    await handleInput.fill(username)
+    await handleInput.fill(testHandle)
 
-    // Step 6: Select PDS domain from dropdown
-    console.log(`  → Selecting PDS domain: ${testPdsDomain}`)
-    
-    const pdsDropdownButton = page.locator('button:has-text(".' + (testPdsDomain ?? 'climateai.org') + '")').first()
-    const dropdownExists = await pdsDropdownButton.isVisible({ timeout: 2000 }).catch(() => false)
-    
-    if (!dropdownExists || testPdsDomain !== 'climateai.org') {
-      const anyPdsButton = page.locator('button.shrink-0:has(svg)').filter({ hasText: '.' }).first()
-      const anyDropdownExists = await anyPdsButton.isVisible().catch(() => false)
-      
-      if (anyDropdownExists) {
-        await anyPdsButton.click()
-        await page.waitForTimeout(300)
-        
-        const domainOption = page.locator(`button:has-text("${testPdsDomain ?? 'climateai.org'}")`)
-        await domainOption.first().click()
-        await page.waitForTimeout(300)
-      }
-    }
-
-    // Step 7: Click the Continue button
+    // Step 6: Click the Continue button
     console.log('  → Clicking Continue button...')
     const continueButton = page.locator('button[type="submit"]:has-text("Continue")').first()
     await continueButton.click()
 
     console.log('⏳ Waiting for redirect to PDS authorization page...')
 
-    // Step 8: Wait for redirect to PDS authorization page
-    await page.waitForURL(url => {
-      const urlString = url.toString()
-      const pdsDomain = testPdsDomain ?? 'climateai.org'
-      return urlString.includes(pdsDomain) && 
-             (urlString.includes('/oauth/') || urlString.includes('/authorize'))
-    }, { timeout: 15000 })
+    // Step 7: Wait for redirect to authorization page
+    await page.waitForURL(url => isExpectedOAuthUrl(url, appUrl, testPdsDomain), { timeout: 15000 })
 
     console.log(`✓ Redirected to PDS authorization page`)
 
@@ -383,7 +336,7 @@ export async function performAuthSetup(
     // Step 12: Wait for navigation to complete
     try {
       await page.waitForLoadState('networkidle', { timeout: 15000 })
-    } catch (e) {
+    } catch {
       // networkidle might timeout, that's okay
     }
 
@@ -392,8 +345,8 @@ export async function performAuthSetup(
     const finalUrl = page.url()
 
     // Verify we're back on our app
-    if (finalUrl.includes(testPdsDomain ?? 'climateai.org')) {
-      throw new Error(`OAuth flow did not complete - still on PDS page: ${finalUrl}`)
+    if (!isAppUrl(finalUrl, appUrl)) {
+      throw new Error(`OAuth flow did not complete - still on authorization page: ${finalUrl}`)
     }
 
     console.log(`✓ OAuth flow complete! Final URL: ${finalUrl}`)

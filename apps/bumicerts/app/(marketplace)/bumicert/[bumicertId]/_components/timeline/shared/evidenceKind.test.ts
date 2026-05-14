@@ -8,6 +8,21 @@ describe("timeline evidence kind", () => {
     expect(getTimelineEvidenceKind("audio", [])).toBe("audio");
   });
 
+  test("preserves legacy site classification for location content", () => {
+    expect(getTimelineEvidenceKind("location", [])).toBe("site");
+  });
+
+  test("classifies location attachment content as site evidence", () => {
+    expect(
+      getTimelineEvidenceKind(null, [
+        {
+          $type: "org.hypercerts.defs#uri",
+          uri: "at://did:test/app.certified.location/site-1",
+        },
+      ]),
+    ).toBe("site");
+  });
+
   test("classifies dataset attachment content as tree evidence", () => {
     expect(
       getTimelineEvidenceKind(null, [

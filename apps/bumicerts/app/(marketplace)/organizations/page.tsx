@@ -16,7 +16,10 @@ export default async function AllOrganizationsPage() {
   let fetchError = false;
 
   try {
-    organizations = await listOrganizationData({ limit: 1000 });
+    organizations = await listOrganizationData({
+      limit: 1000,
+      labelTier: "high-quality",
+    });
   } catch (error) {
     console.error("Failed to fetch organizations:", error);
     fetchError = true;

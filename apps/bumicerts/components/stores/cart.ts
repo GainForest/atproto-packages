@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 
 type CartState = {
   /** Bumicert IDs in the cart (format: "{did}-{rkey}") */
@@ -11,6 +11,27 @@ type CartActions = {
   removeItem: (id: string) => void;
   isInCart: (id: string) => boolean;
   clearCart: () => void;
+};
+
+const noopStorage: StateStorage = {
+  getItem: () => null,
+  setItem: () => undefined,
+  removeItem: () => undefined,
+};
+
+const getCartStorage = (): StateStorage => {
+  if (typeof window === "undefined") return noopStorage;
+
+  const storage = window.localStorage;
+  if (
+    typeof storage.getItem !== "function" ||
+    typeof storage.setItem !== "function" ||
+    typeof storage.removeItem !== "function"
+  ) {
+    return noopStorage;
+  }
+
+  return storage;
 };
 
 export const useCartStore = create<CartState & CartActions>()(
@@ -34,6 +55,7 @@ export const useCartStore = create<CartState & CartActions>()(
     }),
     {
       name: "bumicerts-cart",
+      storage: createJSONStorage(getCartStorage),
     }
   )
 );

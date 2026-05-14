@@ -4,6 +4,7 @@ import { computePolygonMetrics } from "../../../geojson/computations";
 import { GeoJsonValidationError, GeoJsonProcessingError } from "../../../geojson/errors";
 import { fromSerializableFile } from "../../../blob/types";
 import type { SerializableFile } from "../../../blob/types";
+import type { GeoJsonObject } from "geojson";
 
 export type GeoJsonMetrics = {
   /** Latitude of centroid to 6 decimal places */
@@ -14,18 +15,9 @@ export type GeoJsonMetrics = {
   area: string;
 };
 
-/**
- * Validate and process a SerializableFile containing GeoJSON.
- *
- * 1. Validates MIME type is application/geo+json
- * 2. Parses and structurally validates the GeoJSON
- * 3. Computes polygon metrics (centroid lat/lon, area in hectares)
- *
- * Fails if the file is not valid GeoJSON or the geometry cannot produce metrics.
- */
-export const processGeoJsonFile = (
+export const validateSerializableGeoJsonFile = (
   file: SerializableFile
-): Effect.Effect<GeoJsonMetrics, GeoJsonValidationError | GeoJsonProcessingError> =>
+): Effect.Effect<GeoJsonObject, GeoJsonValidationError> =>
   Effect.gen(function* () {
     if (file.type !== "application/geo+json") {
       return yield* Effect.fail(
@@ -35,25 +27,26 @@ export const processGeoJsonFile = (
       );
     }
 
-    // Decode base64 → text
     const bytes = fromSerializableFile(file);
     const text = new TextDecoder().decode(bytes);
 
-    // Parse JSON
     const parsed = yield* Effect.try({
       try: () => JSON.parse(text),
       catch: (cause) =>
         new GeoJsonValidationError({ message: `Invalid JSON in GeoJSON file: ${String(cause)}`, cause }),
     });
 
-    // Structural GeoJSON validation
-    const geoJson = yield* Effect.try({
+    return yield* Effect.try({
       try: () => validateGeojsonOrThrow(parsed),
       catch: (cause) =>
         new GeoJsonValidationError({ message: `Invalid GeoJSON: ${String(cause)}`, cause }),
     });
+  });
 
-    // Compute metrics
+export const processGeoJsonObject = (
+  geoJson: GeoJsonObject
+): Effect.Effect<GeoJsonMetrics, GeoJsonProcessingError> =>
+  Effect.gen(function* () {
     const metrics = computePolygonMetrics(geoJson);
 
     const lat = metrics.centroid?.lat;
@@ -73,4 +66,21 @@ export const processGeoJsonFile = (
       lon: lon.toFixed(6),
       area: area.toFixed(2),
     };
+  });
+
+/**
+ * Validate and process a SerializableFile containing GeoJSON.
+ *
+ * 1. Validates MIME type is application/geo+json
+ * 2. Parses and structurally validates the GeoJSON
+ * 3. Computes polygon metrics (centroid lat/lon, area in hectares)
+ *
+ * Fails if the file is not valid GeoJSON or the geometry cannot produce metrics.
+ */
+export const processGeoJsonFile = (
+  file: SerializableFile
+): Effect.Effect<GeoJsonMetrics, GeoJsonValidationError | GeoJsonProcessingError> =>
+  Effect.gen(function* () {
+    const geoJson = yield* validateSerializableGeoJsonFile(file);
+    return yield* processGeoJsonObject(geoJson);
   });

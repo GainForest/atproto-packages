@@ -53,6 +53,7 @@ import type {
   MultimediaItem,
   OccurrenceItem,
 } from "@/graphql/indexer/queries";
+import { getProxiedImageUrl } from "@/lib/images";
 import { links } from "@/lib/links";
 import useMediaQuery from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
@@ -82,6 +83,7 @@ import {
   formatEventDate,
   formatTreeSubtitle,
   getPhotoUrl,
+  getTreeDeletionTarget,
   getTreeMeasurementDraft,
   getTreeOccurrenceDraft,
   hasAnyMeasurementValue,
@@ -89,6 +91,7 @@ import {
   toFloraMeasurementPayload,
   validateMeasurementDraft,
   validateOccurrenceDraft,
+  type TreeDeletionTarget,
   type TreeManagerItem,
   type TreeMeasurementDraft,
   type TreeOccurrenceDraft,
@@ -190,6 +193,58 @@ function getSelectedRkey(item: TreeManagerItem | null): string | null {
 function getOccurrenceUri(item: TreeManagerItem | null): string | null {
   const metadata = item?.occurrence.metadata;
   return metadata?.uri ?? null;
+}
+
+function formatCountLabel(
+  count: number,
+  singularLabel: string,
+  pluralLabel: string,
+): string {
+  return `${count} ${count === 1 ? singularLabel : pluralLabel}`;
+}
+
+function getLinkedDeletionLabels(target: TreeDeletionTarget): string[] {
+  const labels: string[] = [];
+
+  if (target.photoCount > 0) {
+    labels.push(formatCountLabel(target.photoCount, "linked photo", "linked photos"));
+  }
+
+  if (target.measurementCount > 0) {
+    labels.push(
+      formatCountLabel(
+        target.measurementCount,
+        "measurement record",
+        "measurement records",
+      ),
+    );
+  }
+
+  return labels;
+}
+
+function formatDeletionImpact(target: TreeDeletionTarget): string {
+  const linkedLabels = getLinkedDeletionLabels(target);
+
+  if (linkedLabels.length === 0) {
+    return "This will permanently delete the tree occurrence record and any linked photos or measurements found at deletion time. This action cannot be undone.";
+  }
+
+  return `This will permanently delete the tree occurrence record, currently indexed ${linkedLabels.join(" and ")}, and any other linked photos or measurements found at deletion time. This action cannot be undone.`;
+}
+
+function formatDangerZoneDescription(target: TreeDeletionTarget | null): string {
+  if (!target) {
+    return "This tree cannot be deleted until its occurrence record finishes loading.";
+  }
+
+  const linkedLabels = getLinkedDeletionLabels(target);
+
+  if (linkedLabels.length === 0) {
+    return "Delete this tree occurrence and any linked photos or measurements in one confirmed step.";
+  }
+
+  return `Delete this tree, currently indexed ${linkedLabels.join(" and ")}, and any other linked photos or measurements in one confirmed step.`;
 }
 
 function getDatasetIdentity(
@@ -423,7 +478,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
   const datasetsQuery = indexerTrpc.datasets.list.useQuery({ did });
 
   const updateOccurrence = trpc.dwc.occurrence.update.useMutation();
-  const deleteOccurrence = trpc.dwc.occurrence.delete.useMutation();
+  const deleteTree = trpc.dwc.occurrence.deleteCascade.useMutation();
   const attachExistingOccurrences =
     trpc.dwc.dataset.attachExistingOccurrences.useMutation();
   const createMeasurement = trpc.dwc.measurement.create.useMutation();
@@ -799,6 +854,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     activeTree?.occurrence.record?.datasetRef === activeDatasetPreviewRef
       ? activeTree
       : null;
+  const activeTreeDeletionTarget = activeTree
+    ? getTreeDeletionTarget(activeTree)
+    : null;
 
   useEffect(() => {
     if (!showDatasetLanding || !selectedTreeRkey) {
@@ -1703,6 +1761,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
         content: (
           <PhotoAttachModal
             occurrenceUri={occurrenceUri}
+            siteRef={activeTree?.occurrence.record?.siteRef ?? undefined}
             speciesName={speciesName}
             onPhotoUploaded={(uploadedPhoto) => {
               setOptimisticAddedPhotos((current) => {
@@ -1789,31 +1848,83 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
   };
 
   const openDeleteTreeModal = (item: TreeManagerItem) => {
-    const occurrenceRkey = item.occurrence.metadata?.rkey;
-    if (!occurrenceRkey) {
-      return;
-    }
-
-    const hasLinkedChildren =
-      item.photos.length > 0 || item.measurements.length > 0;
-    if (hasLinkedChildren) {
+    const target = getTreeDeletionTarget(item);
+    if (!target) {
       return;
     }
 
     pushModal(
       {
-        id: `upload/trees/manage/delete-tree/${occurrenceRkey}`,
+        id: MODAL_IDS.MANAGE_TREE_DELETE,
         content: (
           <ManageConfirmModal
             title="Delete tree record?"
-            description="This will permanently remove the tree occurrence record. This action cannot be undone."
+            description={formatDeletionImpact(target)}
             confirmLabel="Delete tree"
             onConfirm={async () => {
-              await deleteOccurrence.mutateAsync({ rkey: occurrenceRkey });
+              const result = await deleteTree
+                .mutateAsync({ rkey: target.occurrenceRkey })
+                .catch(async (error: unknown) => {
+                  await invalidateTreeQueries();
+                  throw error;
+                });
+
+              const deletedPhotoRkeys = result.deletedMultimediaRkeys;
+
+              setOptimisticMeasurementRecords((current) => ({
+                ...current,
+                [target.occurrenceUri]: [],
+              }));
+              setOptimisticAddedPhotos((current) => {
+                const removedItems = current[target.occurrenceUri] ?? [];
+                if (removedItems.length === 0) {
+                  return current;
+                }
+
+                removedItems.forEach((photo) => revokeBlobUrl(photo.record.accessUri));
+
+                return Object.fromEntries(
+                  Object.entries(current).filter(
+                    ([occurrenceUri]) => occurrenceUri !== target.occurrenceUri,
+                  ),
+                );
+              });
+              setOptimisticDeletedPhotoRkeys((current) => {
+                if (deletedPhotoRkeys.length === 0) {
+                  return current;
+                }
+
+                const next = { ...current };
+                for (const photoRkey of deletedPhotoRkeys) {
+                  next[photoRkey] = true;
+                }
+                return next;
+              });
+              setOptimisticMultimediaRecords((current) => {
+                if (deletedPhotoRkeys.length === 0) {
+                  return current;
+                }
+
+                const deletedPhotoRkeySet = new Set(deletedPhotoRkeys);
+                return Object.fromEntries(
+                  Object.entries(current).filter(
+                    ([rkey]) => !deletedPhotoRkeySet.has(rkey),
+                  ),
+                );
+              });
               setOptimisticDeletedOccurrenceRkeys((current) => ({
                 ...current,
-                [occurrenceRkey]: true,
+                [target.occurrenceRkey]: true,
               }));
+              setSelectedUngroupedTreeRkeys((current) =>
+                current.filter((rkey) => rkey !== target.occurrenceRkey),
+              );
+              if (
+                editingPhotoCaptionRkey &&
+                deletedPhotoRkeys.includes(editingPhotoCaptionRkey)
+              ) {
+                handleCancelEditPhotoCaption();
+              }
               void setSelectedTreeRkey(null);
               await invalidateTreeQueries();
             }}
@@ -1839,10 +1950,11 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
   const canAttachActiveTreeToDataset =
     Boolean(activeTree && isUngroupedTree(activeTree)) &&
     attachableDatasets.length > 0;
-  const canDeleteTree =
-    Boolean(activeTree?.occurrence.metadata?.rkey) &&
-    (activeTree?.photos.length ?? 0) === 0 &&
-    (activeTree?.measurements.length ?? 0) === 0;
+  const canDeleteTree = activeTreeDeletionTarget !== null;
+  const isDeletingTree =
+    deleteTree.isPending ||
+    deleteMeasurement.isPending ||
+    deleteMultimedia.isPending;
   const searchPlaceholder = showDatasetLanding
     ? "Search by dataset, location, or status"
     : isPendingDatasetFilter
@@ -2752,10 +2864,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                           <div className="relative h-48 w-full overflow-hidden bg-muted">
                             {photoUrl ? (
                               <Image
-                                src={photoUrl}
+                                src={getProxiedImageUrl(photoUrl)}
                                 alt={photoAlt}
                                 fill
-                                unoptimized
                                 sizes="(min-width: 1280px) 24rem, (min-width: 768px) 50vw, 100vw"
                                 className="object-cover"
                               />
@@ -2890,7 +3001,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
               <SectionCard
                 title="Danger zone"
-                description="Delete this tree record after linked measurements and photos have been removed."
+                description="Delete this tree record and any linked measurements or photos."
                 className="border-destructive/20"
               >
                 <div className="flex flex-col gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -2899,17 +3010,15 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       Delete this tree permanently
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {canDeleteTree
-                        ? "This tree no longer has linked photos or measurements, so it can be deleted safely."
-                        : `Delete linked photos and measurement records first. This tree still has ${activeTree.photos.length} photo${activeTree.photos.length === 1 ? "" : "s"} and ${activeTree.measurements.length} measurement record${activeTree.measurements.length === 1 ? "" : "s"}.`}
+                      {formatDangerZoneDescription(activeTreeDeletionTarget)}
                     </p>
                   </div>
                   <Button
                     variant="destructive"
-                    disabled={!canDeleteTree || deleteOccurrence.isPending}
+                    disabled={!canDeleteTree || isDeletingTree}
                     onClick={() => openDeleteTreeModal(activeTree)}
                   >
-                    {deleteOccurrence.isPending ? (
+                    {isDeletingTree ? (
                       <Loader2 className="animate-spin" />
                     ) : null}
                     <Trash2 />

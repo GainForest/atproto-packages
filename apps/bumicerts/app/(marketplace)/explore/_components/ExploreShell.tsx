@@ -1,43 +1,50 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
-import { CompassIcon } from "lucide-react";
+import { LeafIcon } from "lucide-react";
 import type { BumicertData } from "@/lib/types";
 import { countryToRealm } from "@/lib/bioregions";
 import { BumicertGrid } from "./BumicertGrid";
-import { ExploreHeaderSlots, type Filters } from "./ExploreHeader";
+import { EMPTY_FILTERS, ExploreHeaderSlots, type Filters } from "./ExploreHeader";
 
-// ── Constants ──────────────────────────────────────────────────────────────────
+const HERO_IMAGE_CLASS = "object-cover object-center";
 
-const EMPTY_FILTERS: Filters = { organizations: [], countries: [], bioregions: [], objectives: [] };
+function HeroBackdrop() {
+  return (
+    <div className="absolute inset-0 overflow-hidden" aria-hidden>
+      <Image
+        src="/images/explore/explore-hero-light.png"
+        alt=""
+        fill
+        priority
+        sizes="(min-width: 768px) calc(100vw - 15rem), 100vw"
+        className={`${HERO_IMAGE_CLASS} dark:hidden`}
+      />
+      <Image
+        src="/images/explore/explore-hero-dark.png"
+        alt=""
+        fill
+        priority
+        sizes="(min-width: 768px) calc(100vw - 15rem), 100vw"
+        className={`${HERO_IMAGE_CLASS} hidden dark:block`}
+      />
+      <div className="absolute inset-0 bg-linear-to-r from-background/92 via-background/55 to-background/5 dark:from-background/78 dark:via-background/42 dark:to-background/0" />
+      <div className="absolute inset-x-0 top-0 h-24 bg-linear-to-b from-background/80 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-44 bg-linear-to-b from-transparent via-background/70 to-background" />
+    </div>
+  );
+}
 
-// ── Shell ─────────────────────────────────────────────────────────────────────
-
-/**
- * ExploreShell — the shared wrapper used by both loading.tsx and page.tsx.
- *
- * Renders all static chrome immediately:
- *   - heading (h1 — SEO-critical)
- *   - search, sort, filter chips, and "All filters" modal button (via ExploreHeaderSlots)
- *
- * `bumicerts` drives both the filter chips and the grid.
- * Fetched once in page.tsx, passed here as a prop — no duplicate fetches.
- *
- * `children` is the skeleton grid in loading.tsx.
- * When `bumicerts` has data (page.tsx), children is undefined → real filtered grid renders.
- */
 export function ExploreShell({
   bumicerts,
   animate = true,
   children,
 }: {
-  /** Full dataset — [] in loading.tsx, real data in page.tsx */
   bumicerts: BumicertData[];
-  /** false in loading.tsx so chrome appears instantly; true (default) in page.tsx */
   animate?: boolean;
-  /** Grid skeleton in loading.tsx; undefined in page.tsx (Shell renders the real grid) */
-  children?: React.ReactNode;
+  children?: ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("newest");
@@ -54,21 +61,32 @@ export function ExploreShell({
   }, []);
 
   const activeFilterCount =
-    filters.organizations.length + filters.countries.length + filters.bioregions.length + filters.objectives.length;
+    filters.organizations.length +
+    filters.countries.length +
+    filters.bioregions.length +
+    filters.objectives.length;
 
   const filtered = useMemo(() => {
     let result = [...bumicerts];
-    if (filters.organizations.length > 0)
-      result = result.filter((b) => filters.organizations.includes(b.organizationDid));
-    if (filters.bioregions.length > 0)
+    if (filters.organizations.length > 0) {
+      result = result.filter((b) =>
+        filters.organizations.includes(b.organizationDid),
+      );
+    }
+    if (filters.bioregions.length > 0) {
       result = result.filter((b) => {
         const realmId = countryToRealm[b.country];
         return realmId ? filters.bioregions.includes(realmId) : false;
       });
-    if (filters.countries.length > 0)
+    }
+    if (filters.countries.length > 0) {
       result = result.filter((b) => filters.countries.includes(b.country));
-    if (filters.objectives.length > 0)
-      result = result.filter((b) => b.objectives.some((o) => filters.objectives.includes(o)));
+    }
+    if (filters.objectives.length > 0) {
+      result = result.filter((b) =>
+        b.objectives.some((o) => filters.objectives.includes(o)),
+      );
+    }
     if (query.trim()) {
       const q = query.toLowerCase();
       result = result.filter(
@@ -76,53 +94,57 @@ export function ExploreShell({
           b.title.toLowerCase().includes(q) ||
           b.organizationName.toLowerCase().includes(q) ||
           b.country.toLowerCase().includes(q) ||
-          b.objectives.some((o) => o.toLowerCase().includes(q))
+          b.objectives.some((o) => o.toLowerCase().includes(q)),
       );
     }
     result.sort((a, b) =>
       sort === "newest"
         ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
     return result;
   }, [bumicerts, query, sort, filters]);
 
   return (
-    <section className="pt-6 pb-20 md:pb-28 px-6">
-      <div className="max-w-6xl mx-auto">
-
-        {/* Static heading */}
+    <section className="-mt-14 pb-20 md:pb-28">
+      <div className="relative isolate overflow-hidden px-6 pb-24 pt-[86px] md:pb-32">
+        <HeroBackdrop />
         <motion.div
           initial={animate ? { opacity: 0, y: 16 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-8"
+          className="relative z-10 mx-auto max-w-[96rem]"
         >
-          <div className="flex items-center gap-2 mb-3">
-            <CompassIcon className="h-4 w-4 text-primary" />
-            <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
+          <div className="flex items-center gap-2.5 mb-5">
+            <LeafIcon className="h-4 w-4 text-primary" />
+            <span className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
               Explore Projects
             </span>
           </div>
           <h1
-            className="text-3xl md:text-4xl lg:text-5xl font-light tracking-[-0.02em] leading-[1.1] text-foreground"
+            className="max-w-4xl text-4xl font-light leading-[0.98] tracking-[-0.035em] text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
             style={{ fontFamily: "var(--font-garamond-var)" }}
           >
             Discover{" "}
             <span
-              className="text-foreground/80"
-              style={{ fontFamily: "var(--font-instrument-serif-var)", fontStyle: "italic" }}
+              className="whitespace-nowrap text-foreground/85"
+              style={{
+                fontFamily: "var(--font-instrument-serif-var)",
+                fontStyle: "italic",
+              }}
             >
               Regenerative Impact
             </span>
           </h1>
+          <p className="mt-7 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
+            Browse projects from communities and organizations restoring
+            ecosystems, strengthening livelihoods, and building a more resilient
+            future.
+          </p>
         </motion.div>
+      </div>
 
-        {/*
-          Search, sort, filter chips, and "All filters" modal button.
-          ExploreHeaderSlots also injects the "Create Project" button into the
-          page header via HeaderContent.
-        */}
+      <div className="relative z-10 mx-auto -mt-16 max-w-[96rem] px-6">
         <ExploreHeaderSlots
           query={query}
           setQuery={setQuery}
@@ -136,16 +158,16 @@ export function ExploreShell({
           shouldAnimate={animate}
         />
 
-        {/* Gradient separator */}
-        <div className="h-px bg-linear-to-r from-transparent via-primary/30 to-transparent my-8" />
+        {!children ? (
+          <p className="mt-8 text-sm text-muted-foreground">
+            <span className="font-semibold text-primary">{filtered.length}</span>{" "}
+            projects found
+          </p>
+        ) : null}
 
-        {/*
-          Main content slot.
-          - loading.tsx passes a skeleton grid as children.
-          - page.tsx passes nothing → Shell renders the real filtered BumicertGrid.
-        */}
-        {children ?? <BumicertGrid bumicerts={filtered} />}
-
+        <div className="mt-5">
+          {children ?? <BumicertGrid bumicerts={filtered} />}
+        </div>
       </div>
     </section>
   );

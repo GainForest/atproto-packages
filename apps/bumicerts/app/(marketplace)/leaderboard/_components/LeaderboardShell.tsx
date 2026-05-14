@@ -1,12 +1,29 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
-import { TrophyIcon } from "lucide-react";
+import {
+  ArrowDownWideNarrowIcon,
+  LeafIcon,
+  SproutIcon,
+  TrophyIcon,
+  UserRoundCheckIcon,
+  UserRoundXIcon,
+  UsersRoundIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
-import type { Period as LeaderboardPeriod } from "@/lib/utils/leaderboard";
-
-// ── Period filter chips ───────────────────────────────────────────────────────
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type {
+  LeaderboardDonorFilter,
+  LeaderboardSort,
+  Period as LeaderboardPeriod,
+} from "@/lib/utils/leaderboard";
 
 const PERIODS: { value: LeaderboardPeriod; label: string }[] = [
   { value: "all", label: "All Time" },
@@ -14,75 +31,260 @@ const PERIODS: { value: LeaderboardPeriod; label: string }[] = [
   { value: "week", label: "This Week" },
 ];
 
+const DONOR_FILTERS: {
+  value: LeaderboardDonorFilter;
+  label: string;
+  Icon: typeof UsersRoundIcon;
+}[] = [
+  { value: "all", label: "All Donors", Icon: UsersRoundIcon },
+  { value: "anonymous", label: "Anonymous Only", Icon: UserRoundXIcon },
+  { value: "known", label: "Known Only", Icon: UserRoundCheckIcon },
+];
+
+const SORT_OPTIONS: { value: LeaderboardSort; label: string }[] = [
+  { value: "total-raised", label: "Total Raised" },
+  { value: "donation-count", label: "Donation Count" },
+  { value: "recent-donation", label: "Recent Donation" },
+];
+
 function PeriodChips({
   period,
   onPeriodChange,
 }: {
   period: LeaderboardPeriod;
-  onPeriodChange: (p: LeaderboardPeriod) => void;
+  onPeriodChange?: (period: LeaderboardPeriod) => void;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      {PERIODS.map((p) => (
-        <button
-          key={p.value}
-          onClick={() => onPeriodChange(p.value)}
-          className={cn(
-            "shrink-0 text-xs font-medium rounded-full px-3 py-1.5 border transition-all whitespace-nowrap",
-            period === p.value
-              ? "bg-foreground text-background border-foreground"
-              : "text-muted-foreground border-border hover:border-foreground/50 hover:text-foreground"
-          )}
-        >
-          {p.label}
-        </button>
-      ))}
+    <div className="grid grid-cols-3 rounded-full border border-border/80 bg-card/85 p-1 shadow-sm shadow-primary/5 backdrop-blur">
+      {PERIODS.map((option) => {
+        const isSelected = period === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={isSelected}
+            disabled={!onPeriodChange}
+            onClick={() => onPeriodChange?.(option.value)}
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 disabled:pointer-events-none",
+              isSelected
+                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-// ── Stats summary ─────────────────────────────────────────────────────────────
+function DonorTypeTabs({
+  donorFilter,
+  onDonorFilterChange,
+}: {
+  donorFilter: LeaderboardDonorFilter;
+  onDonorFilterChange?: (donorFilter: LeaderboardDonorFilter) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 rounded-full border border-border/80 bg-card/85 p-1 shadow-sm shadow-primary/5 backdrop-blur sm:grid-cols-3">
+      {DONOR_FILTERS.map(({ value, label, Icon }) => {
+        const isSelected = donorFilter === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={isSelected}
+            disabled={!onDonorFilterChange}
+            onClick={() => onDonorFilterChange?.(value)}
+            className={cn(
+              "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 disabled:pointer-events-none",
+              isSelected
+                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+            )}
+          >
+            <Icon className="size-4" />
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SortControl({
+  sortBy,
+  onSortChange,
+}: {
+  sortBy: LeaderboardSort;
+  onSortChange?: (sortBy: LeaderboardSort) => void;
+}) {
+  const handleSortChange = (value: string) => {
+    if (!onSortChange) return;
+
+    switch (value) {
+      case "total-raised":
+        onSortChange("total-raised");
+        break;
+      case "donation-count":
+        onSortChange("donation-count");
+        break;
+      case "recent-donation":
+        onSortChange("recent-donation");
+        break;
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-full border border-border/80 bg-card/85 py-1.5 pr-1.5 pl-4 shadow-sm shadow-primary/5 backdrop-blur">
+      <span
+        id="leaderboard-sort-label"
+        className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground"
+      >
+        <ArrowDownWideNarrowIcon className="size-4" />
+        Sort by
+      </span>
+      <Select value={sortBy} onValueChange={handleSortChange} disabled={!onSortChange}>
+        <SelectTrigger
+          aria-labelledby="leaderboard-sort-label"
+          className="h-9 min-w-[10.5rem] rounded-full border-0 bg-transparent px-3 shadow-none focus-visible:ring-0"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent align="end" className="rounded-xl">
+          {SORT_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  detail,
+  icon,
+  accent = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  detail: string;
+  icon: React.ReactNode;
+  accent?: boolean;
+}) {
+  return (
+    <div className="group relative overflow-hidden rounded-3xl border border-border/80 bg-card/85 p-6 shadow-sm shadow-primary/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/10">
+      <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+      <div className="flex items-center gap-5">
+        <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/10 transition-transform duration-300 group-hover:scale-105">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            {label}
+          </p>
+          <div
+            className={cn(
+              "mt-1 text-3xl font-semibold tracking-[-0.02em] tabular-nums",
+              accent ? "text-primary" : "text-foreground",
+            )}
+          >
+            {value}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">{detail}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HeroLandscapeArt() {
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-[22rem] overflow-hidden">
+      <Image
+        src="/assets/media/images/leaderboard/hero-landscape-light.png"
+        alt=""
+        fill
+        priority
+        sizes="(min-width: 1280px) 1152px, calc(100vw - 48px)"
+        aria-hidden="true"
+        className="object-cover object-center opacity-90 dark:hidden"
+      />
+      <Image
+        src="/assets/media/images/leaderboard/hero-landscape-dark.png"
+        alt=""
+        fill
+        priority
+        sizes="(min-width: 1280px) 1152px, calc(100vw - 48px)"
+        aria-hidden="true"
+        className="hidden object-cover object-center opacity-80 dark:block"
+      />
+      <div className="absolute inset-y-0 left-0 w-[54%] bg-gradient-to-r from-background via-background/90 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-background via-background/80 to-transparent" />
+    </div>
+  );
+}
 
 function StatsSummary({
   totalDonors,
   totalRaised,
+  totalProjectsSupported,
 }: {
   totalDonors: number;
   totalRaised: number;
+  totalProjectsSupported: number;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-4 md:gap-6">
-      <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 inline-flex flex-col">
-        <span className="text-[10px] uppercase tracking-[0.12em] text-primary/70 font-medium">
-          Total Raised
-        </span>
-        <span className="text-xl font-bold text-primary">
-          ${totalRaised.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
-          <span className="text-sm font-normal text-primary/70">USD</span>
-        </span>
-      </div>
-      <div className="rounded-xl border border-border bg-muted/30 px-4 py-2.5 inline-flex flex-col">
-        <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-medium">
-          Donors
-        </span>
-        <span className="text-xl font-bold text-foreground">
-          {totalDonors}
-        </span>
-      </div>
+    <div className="grid gap-4 lg:grid-cols-3">
+      <StatCard
+        label="Total Raised"
+        value={
+          <>
+            ${totalRaised.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}{" "}
+            <span className="align-baseline text-sm font-medium text-primary/80">USD</span>
+          </>
+        }
+        detail="All time across the platform"
+        icon={<LeafIcon className="size-8" />}
+        accent
+      />
+      <StatCard
+        label="Total Donors"
+        value={totalDonors.toLocaleString("en-US")}
+        detail="Generous impact champions"
+        icon={<UsersRoundIcon className="size-8" />}
+      />
+      <StatCard
+        label="Projects Supported"
+        value={totalProjectsSupported.toLocaleString("en-US")}
+        detail="Restoring ecosystems & livelihoods"
+        icon={<SproutIcon className="size-8" />}
+        accent
+      />
     </div>
   );
 }
 
-// ── Shell ─────────────────────────────────────────────────────────────────────
-
 export interface LeaderboardShellProps {
   animate?: boolean;
   period?: LeaderboardPeriod;
-  onPeriodChange?: (p: LeaderboardPeriod) => void;
-  includeAnonymous?: boolean;
-  onIncludeAnonymousChange?: (include: boolean) => void;
+  onPeriodChange?: (period: LeaderboardPeriod) => void;
+  donorFilter?: LeaderboardDonorFilter;
+  onDonorFilterChange?: (donorFilter: LeaderboardDonorFilter) => void;
+  sortBy?: LeaderboardSort;
+  onSortChange?: (sortBy: LeaderboardSort) => void;
   totalDonors?: number;
   totalRaised?: number;
+  totalProjectsSupported?: number;
   children?: React.ReactNode;
 }
 
@@ -90,92 +292,73 @@ export function LeaderboardShell({
   animate = true,
   period = "all",
   onPeriodChange,
-  includeAnonymous = true,
-  onIncludeAnonymousChange,
+  donorFilter = "all",
+  onDonorFilterChange,
+  sortBy = "total-raised",
+  onSortChange,
   totalDonors = 0,
   totalRaised = 0,
+  totalProjectsSupported = 0,
   children,
 }: LeaderboardShellProps) {
   return (
-    <section className="pt-6 pb-20 md:pb-28 px-6">
-      <div className="max-w-4xl mx-auto">
+    <section className="relative -mt-14 overflow-hidden px-4 pb-20 pt-8 md:px-8 md:pb-28">
+      <div className="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-primary/[0.08] via-transparent to-transparent dark:from-primary/[0.12]" />
+      <HeroLandscapeArt />
 
-        {/* Heading */}
-        <motion.div
+      <div className="relative mx-auto max-w-7xl">
+        <motion.header
           initial={animate ? { opacity: 0, y: 16 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-8"
+          className="mb-10 max-w-3xl pt-8 md:pt-14"
         >
-          <div className="flex items-center gap-2 mb-3">
-            <TrophyIcon className="h-4 w-4 text-primary" />
-            <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
+          <div className="mb-5 flex items-center gap-2">
+            <TrophyIcon className="size-5 text-primary" />
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Leaderboard
             </span>
           </div>
-          <h1
-            className="text-3xl md:text-4xl lg:text-5xl font-light tracking-[-0.02em] leading-[1.1] text-foreground"
-            style={{ fontFamily: "var(--font-garamond-var)" }}
-          >
+          <h1 className="text-5xl font-light leading-[0.95] tracking-[-0.04em] text-foreground md:text-7xl lg:text-8xl font-garamond">
             Impact{" "}
-            <span
-              className="text-foreground/80"
-              style={{ fontFamily: "var(--font-instrument-serif-var)", fontStyle: "italic" }}
-            >
-              Champions
-            </span>
+            <span className="font-instrument italic text-primary">Champions</span>
           </h1>
-        </motion.div>
+          <p className="mt-7 max-w-xl text-base leading-7 text-muted-foreground md:text-lg">
+            Celebrating the generous contributors driving regenerative change for
+            communities and the planet.
+          </p>
+        </motion.header>
 
-        {/* Period filters + stats */}
         <motion.div
           initial={animate ? { opacity: 0, y: 12 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+          className="mb-5 rounded-3xl border border-border/80 bg-background/70 p-2 shadow-sm shadow-primary/5 backdrop-blur-xl"
         >
-          <div className="flex flex-col gap-3">
-            {onPeriodChange ? (
-              <PeriodChips period={period} onPeriodChange={onPeriodChange} />
-            ) : (
-              <div className="flex items-center gap-2">
-                {PERIODS.map((p) => (
-                  <div
-                    key={p.value}
-                    className={cn(
-                      "shrink-0 text-xs font-medium rounded-full px-3 py-1.5 border",
-                      p.value === "all"
-                        ? "bg-foreground text-background border-foreground"
-                        : "text-muted-foreground/50 border-border/50"
-                    )}
-                  >
-                    {p.label}
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {onIncludeAnonymousChange && (
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={includeAnonymous}
-                  onCheckedChange={onIncludeAnonymousChange}
-                />
-                <span className="text-xs text-muted-foreground select-none">
-                  Include anonymous donors
-                </span>
-              </label>
-            )}
+          <div className="grid gap-3 xl:grid-cols-[1fr_1.15fr_auto] xl:items-center">
+            <PeriodChips period={period} onPeriodChange={onPeriodChange} />
+            <DonorTypeTabs
+              donorFilter={donorFilter}
+              onDonorFilterChange={onDonorFilterChange}
+            />
+            <SortControl sortBy={sortBy} onSortChange={onSortChange} />
           </div>
-          <StatsSummary totalDonors={totalDonors} totalRaised={totalRaised} />
         </motion.div>
 
-        {/* Gradient separator */}
-        <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent mb-8" />
+        <motion.div
+          initial={animate ? { opacity: 0, y: 12 } : false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.16, ease: [0.25, 0.1, 0.25, 1] }}
+          className="mb-5"
+        >
+          <StatsSummary
+            totalDonors={totalDonors}
+            totalRaised={totalRaised}
+            totalProjectsSupported={totalProjectsSupported}
+          />
+        </motion.div>
 
-        {/* Main content slot */}
         {children}
-
       </div>
     </section>
   );

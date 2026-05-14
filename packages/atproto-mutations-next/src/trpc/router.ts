@@ -61,6 +61,7 @@ export const appRouter = router({
       create: effectMutation(mutations.dwc.occurrence.create),
       update: effectMutation(mutations.dwc.occurrence.update),
       delete: effectMutation(mutations.dwc.occurrence.delete),
+      deleteCascade: effectMutation(mutations.dwc.occurrence.deleteCascade),
     }),
     measurement: router({
       create: effectMutation(mutations.dwc.measurement.create),

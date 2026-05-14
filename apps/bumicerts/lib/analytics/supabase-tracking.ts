@@ -14,7 +14,7 @@ const SESSION_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 const isSessionExpired = (): boolean => {
   if (typeof window === "undefined") return true;
 
-  const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+  const lastActivity = window.localStorage.getItem(LAST_ACTIVITY_KEY);
   if (!lastActivity) return true;
 
   const elapsed = Date.now() - parseInt(lastActivity, 10);
@@ -34,7 +34,7 @@ export const getOrCreateSessionId = (): string => {
     return crypto.randomUUID();
   }
 
-  const existingSessionId = localStorage.getItem(SESSION_ID_KEY);
+  const existingSessionId = window.localStorage.getItem(SESSION_ID_KEY);
 
   if (existingSessionId && !isSessionExpired()) {
     return existingSessionId;
@@ -42,8 +42,8 @@ export const getOrCreateSessionId = (): string => {
 
   // Create new session
   const newSessionId = crypto.randomUUID();
-  localStorage.setItem(SESSION_ID_KEY, newSessionId);
-  localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+  window.localStorage.setItem(SESSION_ID_KEY, newSessionId);
+  window.localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
 
   // Create session record in database (fire and forget)
   upsertSession(newSessionId).catch(console.error);
@@ -56,7 +56,7 @@ export const getOrCreateSessionId = (): string => {
  */
 const updateLastActivity = (): void => {
   if (typeof window === "undefined") return;
-  localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+  window.localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
 };
 
 // ============================================

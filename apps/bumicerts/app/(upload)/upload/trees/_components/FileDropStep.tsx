@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { useCsvParser } from "@/lib/upload/use-csv-parser";
 import { PARTNER_ESTABLISHMENT_MEANS_OPTIONS } from "@/lib/upload/establishment-means";
 import { detectKoboFormat } from "@/lib/upload/kobo-mapper";
@@ -40,12 +41,23 @@ import type {
   ExistingUploadDatasetSelection,
   UploadDatasetSelection,
 } from "@/lib/upload/upload-dataset-selection";
+import {
+  resolveUploadSiteSelection,
+  toUploadSiteSelection,
+  uploadSiteHasBoundary,
+  type UploadSiteSelection,
+} from "@/lib/upload/site-selection";
+import {
+  fetchUploadSiteBoundary,
+  uploadSiteBoundaryQueryKey,
+} from "@/lib/upload/site-boundary";
 
 type FileDropStepProps = {
   uploadId: string;
   did: string;
   initialEstablishmentMeans: string | null;
   initialDatasetSelection: UploadDatasetSelection;
+  initialSiteSelection: UploadSiteSelection | null;
   onFileAndMappings: (
     file: File,
     koboMediaZipFile: File | null,
@@ -55,6 +67,7 @@ type FileDropStepProps = {
     mappings: ColumnMapping[],
     establishmentMeans: string | null,
     datasetSelection: UploadDatasetSelection,
+    siteSelection: UploadSiteSelection,
   ) => void;
 };
 
@@ -143,6 +156,7 @@ export default function FileDropStep({
   did,
   initialEstablishmentMeans,
   initialDatasetSelection,
+  initialSiteSelection,
   onFileAndMappings,
 }: FileDropStepProps) {
   const { parsedData, headers, rowCount, error, isParsing, parseFile, reset } =
@@ -180,6 +194,11 @@ export default function FileDropStep({
         ? initialDatasetSelection.dataset.uri
         : "",
     );
+  const [selectedSiteUri, setSelectedSiteUri] = useState<string | null>(
+    initialSiteSelection?.uri ?? null,
+  );
+  const sitesQuery = indexerTrpc.locations.list.useQuery({ did });
+  const defaultSiteQuery = indexerTrpc.organization.defaultSite.useQuery({ did });
   const existingDatasetsQuery = useQuery({
     queryKey: uploadTreeDatasetsQueryKey(did),
     queryFn: fetchUploadTreeDatasets,
@@ -205,6 +224,39 @@ export default function FileDropStep({
 
     return match ? toExistingUploadDatasetSelection(match) : null;
   }, [existingDatasets, selectedExistingDatasetUri]);
+  const uploadSites = useMemo(
+    () => (sitesQuery.data ?? []).flatMap((site) => {
+      const uploadSite = toUploadSiteSelection(site);
+      return uploadSite ? [uploadSite] : [];
+    }),
+    [sitesQuery.data],
+  );
+  const selectedSite = useMemo(
+    () =>
+      resolveUploadSiteSelection({
+        sites: uploadSites,
+        selectedSiteUri,
+        defaultSiteUri: defaultSiteQuery.data,
+      }),
+    [defaultSiteQuery.data, selectedSiteUri, uploadSites],
+  );
+  const selectedSiteHasBoundary = selectedSite
+    ? uploadSiteHasBoundary(selectedSite)
+    : false;
+  const siteBoundaryQuery = useQuery({
+    queryKey: uploadSiteBoundaryQueryKey(selectedSite?.uri),
+    queryFn: () => {
+      if (!selectedSite) {
+        throw new Error("Select a site before uploading tree data.");
+      }
+
+      return fetchUploadSiteBoundary(selectedSite);
+    },
+    enabled: selectedSiteHasBoundary,
+    staleTime: 5 * 60 * 1000,
+  });
+  const selectedSiteBoundaryReady =
+    selectedSiteHasBoundary && siteBoundaryQuery.isSuccess;
 
   const handleFile = useCallback(
     (file: File) => {
@@ -380,7 +432,7 @@ export default function FileDropStep({
   };
 
   const handleContinue = () => {
-    if (!selectedFile || parsedData.length === 0) return;
+    if (!selectedFile || parsedData.length === 0 || !selectedSite) return;
 
     const koboResult = detectKoboFormat(headers);
     const mappings = koboResult.isKobo
@@ -412,6 +464,7 @@ export default function FileDropStep({
       mappings,
       establishmentMeans,
       datasetSelection,
+      selectedSite,
     );
 
     trackTreeUploadEvent(TREE_UPLOAD_EVENTS.STEP_COMPLETED, {
@@ -440,6 +493,8 @@ export default function FileDropStep({
     !fileError &&
     !mediaZipError &&
     !isMediaZipParsing &&
+    selectedSite !== null &&
+    selectedSiteBoundaryReady &&
     (datasetMode !== "new" || datasetName.trim().length > 0) &&
     (datasetMode !== "existing" || selectedExistingDataset !== null);
   const hasUnavailableExistingSelection =
@@ -448,6 +503,11 @@ export default function FileDropStep({
     !existingDatasetsQuery.error &&
     selectedExistingDatasetUri.length > 0 &&
     selectedExistingDataset === null;
+  const hasUnavailableSiteSelection =
+    selectedSiteUri !== null &&
+    !sitesQuery.isLoading &&
+    !sitesQuery.error &&
+    selectedSite === null;
 
   return (
     <div className="space-y-5">
@@ -626,6 +686,117 @@ export default function FileDropStep({
           </div>
         </div>
       )}
+
+      {/* Required site selection */}
+      <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
+        <div className="space-y-1.5">
+          <label htmlFor="site-boundary-select" className="text-sm font-medium">
+            Site boundary
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Choose the project site this tree upload belongs to. Rows outside
+            this selected site will be skipped during preview.
+          </p>
+        </div>
+
+        {sitesQuery.isLoading ? (
+          <div
+            className="space-y-3 rounded-lg border border-border bg-background/80 p-4"
+            role="status"
+            aria-live="polite"
+            aria-label="Loading your sites"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-foreground">
+                  Loading your sites…
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Finding site boundaries available for this upload.
+                </p>
+              </div>
+            </div>
+            <Skeleton className="h-10 w-full rounded-md" aria-hidden="true" />
+          </div>
+        ) : sitesQuery.error ? (
+          <p className="text-sm text-destructive">
+            Couldn&apos;t load your sites right now. Refresh and try again before
+            uploading tree data.
+          </p>
+        ) : uploadSites.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Add a site boundary before uploading tree data. Tree uploads must be
+            assigned to a site.
+          </p>
+        ) : (
+          <>
+            <Select
+              value={selectedSite?.uri}
+              onValueChange={setSelectedSiteUri}
+            >
+              <SelectTrigger id="site-boundary-select">
+                <SelectValue placeholder="Select a site" />
+              </SelectTrigger>
+              <SelectContent>
+                {uploadSites.map((site) => {
+                  const isDefault = defaultSiteQuery.data === site.uri;
+                  const hasBoundary = uploadSiteHasBoundary(site);
+
+                  return (
+                    <SelectItem
+                      key={site.uri}
+                      value={site.uri}
+                      disabled={!hasBoundary}
+                    >
+                      {site.name}
+                      {isDefault ? " (default)" : ""}
+                      {!hasBoundary ? " — no boundary" : ""}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+
+            {selectedSite ? (
+              <div className="rounded-lg border border-border bg-background p-3 text-sm">
+                <p className="font-medium text-foreground">{selectedSite.name}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Validation will use only this site boundary, even if other
+                  site boundaries overlap.
+                </p>
+              </div>
+            ) : null}
+
+            {selectedSite && selectedSiteHasBoundary && siteBoundaryQuery.isLoading ? (
+              <p className="text-sm text-muted-foreground">
+                Checking that this GeoJSON boundary can be loaded…
+              </p>
+            ) : null}
+
+            {selectedSite && selectedSiteHasBoundary && siteBoundaryQuery.error ? (
+              <p className="text-sm text-destructive">
+                This site boundary could not be loaded as valid GeoJSON. Choose
+                another site or edit this site before uploading trees.
+              </p>
+            ) : null}
+
+            {hasUnavailableSiteSelection ? (
+              <p className="text-sm text-destructive">
+                The previously selected site is no longer available. Pick a
+                different site before continuing.
+              </p>
+            ) : null}
+
+            {selectedSite && !selectedSiteHasBoundary ? (
+              <p className="text-sm text-destructive">
+                This site does not have a GeoJSON boundary. Choose another site
+                or edit this site before uploading trees.
+              </p>
+            ) : null}
+          </>
+        )}
+      </div>
 
       {/* Dataset selection */}
       <div className="space-y-3">
@@ -816,7 +987,7 @@ export default function FileDropStep({
                 className={cn(
                   "flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left transition-colors last:border-b-0",
                   isSelected
-                    ? "bg-green-500/10"
+                    ? "bg-primary/10"
                     : "bg-background hover:bg-muted/30"
                 )}
               >
@@ -824,7 +995,7 @@ export default function FileDropStep({
                   className={cn(
                     "mt-1 flex size-4 shrink-0 rounded-full border transition-colors",
                     isSelected
-                      ? "border-green-700 bg-green-700 dark:border-green-500 dark:bg-green-500"
+                      ? "border-primary bg-primary"
                       : "border-muted-foreground/40 bg-background"
                   )}
                 />

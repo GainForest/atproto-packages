@@ -87,6 +87,7 @@ export function BumicertGrid({
           <motion.div key={bumicert.id} variants={cardVariants} className="h-full">
             <Link href={links.bumicert.view(bumicert.id)} className="h-full block">
               <BumicertCardVisual
+                className="h-full"
                 coverImage={bumicert.coverImageUrl}
                 logoUrl={bumicert.logoUrl}
                 title={bumicert.title}

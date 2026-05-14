@@ -122,6 +122,7 @@ import { attachExistingDwcDatasetOccurrences } from "./mutations/dwc.dataset/att
 import { createDwcOccurrence } from "./mutations/dwc.occurrence/create";
 import { updateDwcOccurrence } from "./mutations/dwc.occurrence/update";
 import { deleteDwcOccurrence } from "./mutations/dwc.occurrence/delete";
+import { deleteDwcOccurrenceCascade } from "./mutations/dwc.occurrence/deleteCascade";
 
 // ---------------------------------------------------------------------------
 // context.attachment
@@ -249,6 +250,7 @@ export const mutations = {
       create: createDwcOccurrence,
       update: updateDwcOccurrence,
       delete: deleteDwcOccurrence,
+      deleteCascade: deleteDwcOccurrenceCascade,
     },
     measurement: {
       create: createDwcMeasurement,

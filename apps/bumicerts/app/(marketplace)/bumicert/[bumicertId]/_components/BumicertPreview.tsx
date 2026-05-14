@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { getProxiedImageUrl } from "@/lib/images";
 import type { BumicertData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +14,7 @@ export function BumicertPreview({ bumicert, className }: BumicertPreviewProps) {
       {bumicert.coverImageUrl ? (
         <div className="relative aspect-4/3 w-full overflow-hidden rounded-3xl border border-border">
           <Image
-            src={bumicert.coverImageUrl}
+            src={getProxiedImageUrl(bumicert.coverImageUrl)}
             alt={bumicert.title}
             fill
             className="object-cover"

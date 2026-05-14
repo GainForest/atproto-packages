@@ -18,9 +18,13 @@ export type AppendExistingDatasetRowResult = AppendExistingDwcDatasetRowResult;
 
 export function toAppendExistingDatasetRows(
   validRows: ValidatedRow[],
+  siteRef: string,
 ): AppendExistingDatasetRowInput[] {
   return validRows.map((row) => ({
-    occurrence: occurrenceInputToCreateInput(row.occurrence),
+    occurrence: occurrenceInputToCreateInput({
+      ...row.occurrence,
+      siteRef,
+    }),
     floraMeasurement: row.floraMeasurement
       ? {
           dbh: row.floraMeasurement.dbh,

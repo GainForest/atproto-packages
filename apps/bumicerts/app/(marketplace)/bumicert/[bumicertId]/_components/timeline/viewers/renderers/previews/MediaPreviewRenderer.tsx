@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { getProxiedImageUrl } from "@/lib/images";
 import type { TimelinePreviewPayload } from "../../../shared/timelineFeedViewModel";
 
 interface MediaPreviewRendererProps {
@@ -9,7 +10,7 @@ export function MediaPreviewRenderer({ preview }: MediaPreviewRendererProps) {
   if (preview.kind === "image") {
     return (
       <div className="relative h-[320px] w-full overflow-hidden rounded-xl border border-border/40 bg-muted/20 sm:h-[420px]">
-        <Image src={preview.href} alt={preview.title} fill className="object-contain" unoptimized />
+        <Image src={getProxiedImageUrl(preview.href)} alt={preview.title} fill className="object-contain" />
       </div>
     );
   }

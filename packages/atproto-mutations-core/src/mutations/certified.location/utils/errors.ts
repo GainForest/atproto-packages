@@ -22,6 +22,12 @@ export class CertifiedLocationPdsError extends Data.TaggedError(
   cause?: unknown;
 }> {}
 
+export class CertifiedLocationLinkedTreesConflictError extends Data.TaggedError(
+  "CertifiedLocationLinkedTreesConflictError"
+)<{
+  message: string;
+}> {}
+
 /** Raised on delete when the location is set as the organization's default site. */
 export class CertifiedLocationIsDefaultError extends Data.TaggedError(
   "CertifiedLocationIsDefaultError"

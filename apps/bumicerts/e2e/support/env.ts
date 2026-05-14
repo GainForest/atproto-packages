@@ -74,5 +74,5 @@ export const testEnv = {
   // Test account credentials (for authenticated tests via OAuth)
   testHandle: optional('E2E_TEST_HANDLE'),
   testPassword: optional('E2E_TEST_PASSWORD'),
-  testPdsDomain: optional('E2E_TEST_PDS_DOMAIN', 'climateai.org'),
+  testPdsDomain: optional('E2E_TEST_PDS_DOMAIN'),
 } as const

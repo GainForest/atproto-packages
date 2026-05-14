@@ -40,7 +40,7 @@ export type AuthorizeResult =
 /**
  * Initiates the OAuth authorization flow.
  *
- * @param handle - The user's ATProto handle (e.g., "alice.climateai.org" or just "alice")
+ * @param handle - The user's full ATProto handle (e.g., "alice.example.com")
  * @returns The authorization URL on success, or an error with type information
  */
 export async function authorize(handle: string): Promise<AuthorizeResult> {
@@ -79,14 +79,14 @@ export async function authorize(handle: string): Promise<AuthorizeResult> {
     // Return error in serializable format
     if (isIdentityError) {
       return {
-        error: "Username not found. Please check your username and server.",
+        error: "Handle not found. Please check your handle.",
         errorType: "identity",
       };
     }
 
     if (isServerError) {
       return {
-        error: "Unable to connect to the server. Please check your server address or try again later.",
+        error: "Unable to connect to the identity provider. Please try again later.",
         errorType: "server",
       };
     }

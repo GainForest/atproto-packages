@@ -14,6 +14,8 @@
 
 import { getServerCaller } from "@/lib/trpc/server";
 import { transformPhotoUrl, extractFileName } from "./url-transforms";
+import { isAtUriString } from "@atproto/lex";
+import { z } from "zod";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -33,12 +35,19 @@ const ACCEPTED_MIME_TYPES = new Set([
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-type FetchPhotoInput = {
-  url: string;
-  occurrenceRef: string;
-  subjectPart: string;
-  caption?: string;
-};
+const fetchPhotoInputSchema = z.object({
+  url: z.string().url(),
+  occurrenceRef: z.string().min(1).refine(isAtUriString, {
+    message: "occurrenceRef must be a valid AT-URI.",
+  }),
+  siteRef: z.string().min(1).refine(isAtUriString, {
+    message: "siteRef must be a valid AT-URI.",
+  }).optional(),
+  subjectPart: z.string().min(1),
+  caption: z.string().optional(),
+});
+
+type FetchPhotoInput = z.input<typeof fetchPhotoInputSchema>;
 
 type FetchPhotoResult = {
   uri: string;
@@ -53,10 +62,11 @@ type FetchPhotoResult = {
 export async function fetchPhotoFromUrl(
   input: FetchPhotoInput
 ): Promise<FetchPhotoResult> {
+  const validatedInput = fetchPhotoInputSchema.parse(input);
   const caller = await getServerCaller();
 
   // 1. Transform URL for known providers (Google Drive, Dropbox, etc.)
-  const directUrl = transformPhotoUrl(input.url);
+  const directUrl = transformPhotoUrl(validatedInput.url);
 
   // 2. Fetch image with timeout
   const controller = new AbortController();
@@ -112,9 +122,10 @@ export async function fetchPhotoFromUrl(
         size: bytes.length,
         data: base64,
       },
-      occurrenceRef: input.occurrenceRef,
-      subjectPart: input.subjectPart,
-      caption: input.caption,
+      occurrenceRef: validatedInput.occurrenceRef,
+      siteRef: validatedInput.siteRef,
+      subjectPart: validatedInput.subjectPart,
+      caption: validatedInput.caption,
       format: contentType,
     });
 

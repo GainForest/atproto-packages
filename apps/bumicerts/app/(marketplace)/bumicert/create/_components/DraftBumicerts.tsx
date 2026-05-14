@@ -1,12 +1,13 @@
 "use client";
+
 import React, { useMemo } from "react";
 import Link from "next/link";
 import {
+  AlertCircleIcon,
   ArrowRightIcon,
   ClockIcon,
-  PartyPopperIcon,
+  FilePenLineIcon,
   Loader2Icon,
-  AlertCircleIcon,
 } from "lucide-react";
 
 import CircularProgressBar from "@/components/circular-progressbar";
@@ -29,8 +30,15 @@ async function fetchDrafts(): Promise<DraftBumicertResponse[]> {
   });
   if (!res.ok) {
     if (res.status === 401) throw new Error("Unauthorized");
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "Failed to fetch drafts");
+    const payload: unknown = await res.json().catch(() => null);
+    const errorMessage =
+      typeof payload === "object" &&
+      payload !== null &&
+      "error" in payload &&
+      typeof payload.error === "string"
+        ? payload.error
+        : "Failed to fetch drafts";
+    throw new Error(errorMessage);
   }
   const data: GetDraftBumicertResponse = await res.json();
   if (!data.success || !data.drafts)
@@ -38,16 +46,21 @@ async function fetchDrafts(): Promise<DraftBumicertResponse[]> {
   return data.drafts;
 }
 
-// Calculate progress based on filled fields
+const hasDescriptionBlocks = (description: DraftBumicertData["description"]) => {
+  if (typeof description !== "object" || description === null) return false;
+
+  return (
+    "blocks" in description &&
+    Array.isArray(description.blocks) &&
+    description.blocks.length > 0
+  );
+};
+
 const calculateProgress = (data: DraftBumicertData): number => {
-  // description may be a string (V0) or a LinearDocument (V1) — both truthy when present
   const descriptionFilled =
     typeof data.description === "string"
       ? data.description.trim().length > 0
-      : typeof data.description === "object" &&
-        data.description !== null &&
-        "blocks" in data.description &&
-        (data.description as { blocks: unknown[] }).blocks.length > 0;
+      : hasDescriptionBlocks(data.description);
 
   const fields = [
     data.title,
@@ -66,6 +79,28 @@ const calculateProgress = (data: DraftBumicertData): number => {
   ).length;
 
   return Math.round((filledFields / fields.length) * 100);
+};
+
+const DraftStatus = ({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) => {
+  return (
+    <div className="flex min-h-[18rem] flex-col items-center justify-center px-6 text-center text-muted-foreground">
+      <div className="mb-4 flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+        {icon}
+      </div>
+      <p className="font-serif text-2xl font-medium tracking-[-0.02em] text-foreground">
+        {title}
+      </p>
+      <p className="mt-2 max-w-sm text-sm leading-6">{description}</p>
+    </div>
+  );
 };
 
 const DraftBumicerts = () => {
@@ -92,72 +127,75 @@ const DraftBumicerts = () => {
 
   if (!auth.authenticated) {
     return (
-      <div className="bg-muted/50 rounded-xl p-4 text-muted-foreground flex flex-col items-center justify-center text-center">
-        <AlertCircleIcon className="size-8 opacity-50" />
-        <span className="text-center text-pretty mt-2">
-          Please sign in to view your drafts.
-        </span>
-      </div>
+      <DraftStatus
+        icon={<AlertCircleIcon className="size-8" />}
+        title="Sign in to view drafts"
+        description="Draft Bumicerts are saved to your account so you can continue your work later."
+      />
     );
   }
 
   if (isLoading) {
     return (
-      <div className="bg-muted/50 rounded-xl p-4 text-muted-foreground flex flex-col items-center justify-center text-center">
-        <Loader2Icon className="size-8 opacity-50 animate-spin" />
-        <span className="text-center text-pretty mt-2">Loading drafts...</span>
-      </div>
+      <DraftStatus
+        icon={<Loader2Icon className="size-8 animate-spin" />}
+        title="Loading drafts"
+        description="We are checking for saved Bumicert applications."
+      />
     );
   }
 
   if (error) {
     return (
-      <div className="bg-muted/50 rounded-xl p-4 text-muted-foreground flex flex-col items-center justify-center text-center">
-        <AlertCircleIcon className="size-8 opacity-50" />
-        <span className="text-center text-pretty mt-2">
-          {error instanceof Error
+      <DraftStatus
+        icon={<AlertCircleIcon className="size-8" />}
+        title="Couldn't load drafts"
+        description={
+          error instanceof Error
             ? error.message
-            : "Failed to load drafts. Please try again."}
-        </span>
-      </div>
+            : "Failed to load drafts. Please try again."
+        }
+      />
     );
   }
 
-  if (!draftsWithProgress || draftsWithProgress.length === 0) {
+  if (draftsWithProgress.length === 0) {
     return (
-      <div className="bg-muted/50 rounded-xl p-4 text-muted-foreground flex flex-col items-center justify-center text-center">
-        <PartyPopperIcon className="size-8 opacity-50" />
-        <span className="text-center text-pretty mt-2">
-          You do not have any Draft Bumicerts.
-        </span>
-      </div>
+      <DraftStatus
+        icon={<FilePenLineIcon className="size-8" />}
+        title="No drafts yet"
+        description="Start a new Bumicert and save it as a draft when you want to return later."
+      />
     );
   }
 
   return (
-    <div className="w-full flex flex-col gap-1">
+    <div className="grid w-full grid-cols-1 gap-3 pt-6 sm:grid-cols-2 xl:grid-cols-4">
       {draftsWithProgress.map((draft) => (
         <div
           key={draft.id}
-          className="w-full flex items-center p-2 rounded-lg border hover:bg-muted/50 transition-colors"
+          className="flex w-full items-center rounded-2xl border border-border/80 bg-card/70 p-3 shadow-sm transition-colors hover:bg-muted/40"
         >
-          <CircularProgressBar value={draft.progress} size={34} />
-          <div className="flex flex-col flex-1 ml-2">
-            <h3 className="font-medium">{draft.title}</h3>
-            <p className="text-sm text-muted-foreground flex items-center gap-1">
-              <ClockIcon className="h-3 w-3" />
+          <CircularProgressBar value={draft.progress} size={42} />
+          <div className="ml-3 flex min-w-0 flex-1 flex-col">
+            <h3 className="truncate font-medium text-foreground">
+              {draft.title}
+            </h3>
+            <p className="flex items-center gap-1 text-sm text-muted-foreground">
+              <ClockIcon className="size-3" />
               <TimeText date={new Date(draft.updated_at)} />
             </p>
           </div>
-          <Link href={links.bumicert.createWithDraftId(draft.id.toString())}>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              className="gap-2 rounded-full"
-            >
+          <Button
+            variant="outline"
+            size="icon-sm"
+            className="rounded-full"
+            asChild
+          >
+            <Link href={links.bumicert.createWithDraftId(draft.id.toString())}>
               <ArrowRightIcon />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       ))}
     </div>

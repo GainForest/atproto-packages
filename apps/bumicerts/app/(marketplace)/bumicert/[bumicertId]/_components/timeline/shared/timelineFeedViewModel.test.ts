@@ -25,4 +25,31 @@ describe("timeline feed view model", () => {
     expect(pdfTile?.preview?.kind).toBe("pdf");
     expect(imageTile?.preview?.kind).toBe("image");
   });
+
+  test("preserves site previews for already attached location records", async () => {
+    const { buildTimelineFeedTiles } = await import("./timelineFeedViewModel");
+    const [siteTile] = buildTimelineFeedTiles({
+      entryId: "entry-1",
+      references: [
+        {
+          id: "at://did:plc:test/app.certified.location/location-1",
+          kind: "location",
+          title: "Forest site",
+          description: "Site evidence",
+          actionHref: "https://example.org/site-map",
+          actionLabel: "Open site map",
+        },
+      ],
+      content: [
+        {
+          $type: "org.hypercerts.defs#uri",
+          uri: "at://did:plc:test/app.certified.location/location-1",
+        },
+      ],
+    });
+
+    expect(siteTile?.kind).toBe("site");
+    expect(siteTile?.preview?.kind).toBe("site");
+    expect(siteTile?.preview?.title).toBe("Forest site");
+  });
 });

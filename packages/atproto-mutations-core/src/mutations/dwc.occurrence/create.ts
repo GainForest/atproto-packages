@@ -30,58 +30,19 @@ export const createDwcOccurrence = (
   AtprotoAgent
 > =>
   Effect.gen(function* () {
-    const {
-      scientificName,
-      eventDate,
-      decimalLatitude,
-      decimalLongitude,
-      basisOfRecord = "HumanObservation",
-      vernacularName,
-      recordedBy,
-      locality,
-      country,
-      countryCode,
-      occurrenceRemarks,
-      habitat,
-      samplingProtocol,
-      kingdom = "Plantae",
-      occurrenceID = crypto.randomUUID(),
-      occurrenceStatus = "present",
-      geodeticDatum = "EPSG:4326",
-      license = "CC-BY-4.0",
-      projectRef,
-      establishmentMeans,
-      datasetRef,
-      dynamicProperties,
-      rkey,
-    } = input;
+    const { rkey, ...recordInput } = input;
 
     // 1. Build candidate record with $type, createdAt, and defaults applied.
     const createdAt = new Date().toISOString();
     const candidate = {
+      ...recordInput,
       $type: COLLECTION,
-      scientificName,
-      eventDate,
-      decimalLatitude,
-      decimalLongitude,
-      basisOfRecord: basisOfRecord as DwcOccurrenceRecord["basisOfRecord"],
-      occurrenceID,
-      occurrenceStatus: occurrenceStatus as DwcOccurrenceRecord["occurrenceStatus"],
-      geodeticDatum,
-      license,
-      kingdom,
-      ...(vernacularName !== undefined ? { vernacularName } : {}),
-      ...(recordedBy !== undefined ? { recordedBy } : {}),
-      ...(locality !== undefined ? { locality } : {}),
-      ...(country !== undefined ? { country } : {}),
-      ...(countryCode !== undefined ? { countryCode } : {}),
-      ...(occurrenceRemarks !== undefined ? { occurrenceRemarks } : {}),
-      ...(habitat !== undefined ? { habitat } : {}),
-      ...(samplingProtocol !== undefined ? { samplingProtocol } : {}),
-      ...(projectRef !== undefined ? { projectRef } : {}),
-      ...(establishmentMeans !== undefined ? { establishmentMeans } : {}),
-      ...(datasetRef !== undefined ? { datasetRef } : {}),
-      ...(dynamicProperties !== undefined ? { dynamicProperties } : {}),
+      basisOfRecord: recordInput.basisOfRecord ?? "HumanObservation",
+      occurrenceID: recordInput.occurrenceID ?? crypto.randomUUID(),
+      occurrenceStatus: recordInput.occurrenceStatus ?? "present",
+      geodeticDatum: recordInput.geodeticDatum ?? "EPSG:4326",
+      license: recordInput.license ?? "CC-BY-4.0",
+      kingdom: recordInput.kingdom ?? "Plantae",
       createdAt,
     };
 

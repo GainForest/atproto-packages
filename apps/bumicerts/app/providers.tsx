@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { ThemeProvider } from "next-themes";
 import { AccountProvider } from "@/components/providers/AccountProvider";
 import { AtprotoProvider } from "@/components/providers/AtprotoProvider";
@@ -10,6 +11,16 @@ import { TRPCProvider } from "@/lib/trpc/provider";
 import { IndexerTRPCProvider } from "@/lib/trpc/indexer/provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  if (pathname === "/") {
+    return (
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        {children}
+      </ThemeProvider>
+    );
+  }
+
   return (
     <NuqsAdapter>
       {/* TRPCProvider creates the QueryClient + QueryClientProvider for mutations */}

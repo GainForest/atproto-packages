@@ -2,27 +2,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function LeaderboardSkeleton() {
   return (
-    <div className="space-y-3">
-      {/* Skeleton rows for leaderboard entries */}
-      {Array.from({ length: 10 }).map((_, i) => (
+    <div className="space-y-2.5">
+      {Array.from({ length: 8 }).map((_, index) => (
         <div
-          key={i}
-          className="flex items-center gap-4 p-4 rounded-xl border border-border bg-background"
+          key={index}
+          className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-3xl border border-border/80 bg-card/80 p-4 shadow-sm shadow-primary/5 sm:gap-5 sm:p-5 lg:grid-cols-[auto_auto_minmax(0,1.15fr)_minmax(10rem,0.8fr)_auto_auto]"
         >
-          {/* Rank */}
-          <Skeleton className="h-8 w-8 rounded-full shrink-0" />
-          {/* Avatar */}
-          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
-          {/* Name/ID */}
-          <div className="flex-1 space-y-1.5">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3 w-20" />
+          <Skeleton className="size-10 rounded-full" />
+          <Skeleton className="size-12 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-44 max-w-full" />
+            <Skeleton className="h-3 w-56 max-w-full" />
           </div>
-          {/* Amount */}
-          <div className="text-right space-y-1">
-            <Skeleton className="h-5 w-24 ml-auto" />
-            <Skeleton className="h-3 w-16 ml-auto" />
+          <Skeleton className="hidden h-6 w-40 lg:block" />
+          <div className="space-y-2 text-right">
+            <Skeleton className="ml-auto h-5 w-28" />
+            <Skeleton className="ml-auto h-3 w-12" />
           </div>
+          <Skeleton className="size-9 rounded-full" />
         </div>
       ))}
     </div>

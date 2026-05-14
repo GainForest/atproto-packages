@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BuildingIcon, LeafIcon } from "lucide-react";
 import { countries } from "@/lib/countries";
 import type { OrganizationData } from "@/lib/types";
+import { getProxiedImageUrl } from "@/lib/images";
 import { links } from "@/lib/links";
 import { blo } from "blo";
 
@@ -39,7 +40,7 @@ export function OrganizationCard({ org }: { org: OrganizationData }) {
           <div className="h-32 relative overflow-hidden shrink-0">
             {org.coverImageUrl ? (
               <Image
-                src={org.coverImageUrl}
+                src={getProxiedImageUrl(org.coverImageUrl)}
                 alt={org.displayName}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
@@ -63,7 +64,7 @@ export function OrganizationCard({ org }: { org: OrganizationData }) {
               {/*Image is intentionally misaligned for visual satisfaction.*/}
               <div className="-ml-1 h-12 w-12 rounded-full bg-background/80 overflow-hidden flex items-center justify-center shrink-0">
                 <Image
-                  src={org.logoUrl ?? blo(org.did as `0x${string}`)}
+                  src={getProxiedImageUrl(org.logoUrl ?? blo(org.did as `0x${string}`))}
                   alt={org.displayName}
                   width={42}
                   height={42}

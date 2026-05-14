@@ -26,6 +26,14 @@ import {
   buildOptimisticCertifiedLocation,
   SITE_CREATE_INVALIDATION_DELAY_MS,
 } from "./optimistic-site";
+import type { OccurrenceItem } from "@/graphql/indexer/queries/occurrences";
+import {
+  findTreeBoundaryFailures,
+  formatBoundaryDistance,
+  readGeoJsonFile,
+  type TreeBoundaryCoordinate,
+} from "@/lib/upload/site-boundary";
+import { extractSiteLocationUrl } from "@/lib/sites/location";
 
 export const SiteEditorModalId = "site/editor";
 
@@ -63,6 +71,53 @@ type SiteEditorModalProps = {
   onCreated?: (site: CreatedSiteRef) => void;
 };
 
+function toTreeBoundaryCoordinate(
+  occurrence: OccurrenceItem,
+  index: number,
+): TreeBoundaryCoordinate | null {
+  const latitude = occurrence.record.decimalLatitude;
+  const longitude = occurrence.record.decimalLongitude;
+
+  if (!latitude || !longitude) {
+    return null;
+  }
+
+  const decimalLatitude = Number.parseFloat(latitude);
+  const decimalLongitude = Number.parseFloat(longitude);
+
+  if (Number.isNaN(decimalLatitude) || Number.isNaN(decimalLongitude)) {
+    return null;
+  }
+
+  return {
+    index,
+    scientificName: occurrence.record.scientificName,
+    decimalLatitude,
+    decimalLongitude,
+  };
+}
+
+function buildBoundaryEditBlockedMessage(options: {
+  failures: ReturnType<typeof findTreeBoundaryFailures>;
+  uncheckedCount: number;
+}): string {
+  if (options.uncheckedCount > 0) {
+    return `${options.uncheckedCount} linked tree${options.uncheckedCount === 1 ? "" : "s"} could not be checked because coordinates are missing. Keep the existing boundary or fix those tree records first.`;
+  }
+
+  const sample = options.failures.slice(0, 3).map((failure) => {
+    const rowLabel = failure.tree.scientificName ?? `Tree ${failure.tree.index + 1}`;
+    const issue = failure.kind === "near-boundary"
+      ? "near boundary"
+      : failure.kind === "out-of-site"
+        ? "out of site"
+        : "invalid boundary";
+    return `${rowLabel} (${issue}, ${formatBoundaryDistance(failure.distanceMeters)})`;
+  });
+
+  return `This boundary would exclude ${options.failures.length} linked tree${options.failures.length === 1 ? "" : "s"}. Keep those trees inside the site before saving. ${sample.join("; ")}`;
+}
+
 export const SiteEditorModal = ({
   initialData,
   onCreated,
@@ -70,15 +125,7 @@ export const SiteEditorModal = ({
   const initialSite = initialData?.value;
   const initialName = initialSite?.name;
 
-  // Extract location URL from the initial data.
-  // The indexer always injects a `uri` field into blob objects, so we can read
-  // it directly regardless of whether the location is a URI or blob variant.
-  const initialLocationURI =
-    initialSite?.location?.$type === "org.hypercerts.defs#uri"
-      ? initialSite.location.uri
-      : initialSite?.location?.$type === "org.hypercerts.defs#smallBlob"
-      ? initialSite.location.blob?.uri
-      : undefined;
+  const initialLocationURI = extractSiteLocationUrl(initialSite?.location) ?? undefined;
 
   const auth = useAtprotoStore((state) => state.auth);
   const did = auth.user?.did;
@@ -98,13 +145,22 @@ export const SiteEditorModal = ({
 
   // For edit mode, shapefile is optional if we're keeping the existing one
   const hasShapefileInput = shapefile !== null;
-  const disableSubmission =
-    !did || !name.trim() || (mode === "add" && !hasShapefileInput);
 
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isVerifyingBoundary, setIsVerifyingBoundary] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   const { stack, popModal, hide, pushModal, show } = useModal();
   const indexerUtils = indexerTrpc.useUtils();
+  const linkedTreesQuery = indexerTrpc.dwc.occurrencesBySiteRef.useQuery(
+    {
+      did: did ?? "",
+      siteRef: initialData?.uri ?? "",
+    },
+    {
+      enabled: mode === "edit" && !!did && !!initialData?.uri,
+    },
+  );
 
   // Create mutation
   const {
@@ -183,31 +239,79 @@ export const SiteEditorModal = ({
     _updateMutation({ rkey, data: { name }, newShapefile });
   };
 
-  const executeAddOrEdit = async () => {
-    if (mode === "add") {
-      if (!shapefile) {
-        throw new Error("Shapefile is required");
+  const verifyBoundaryUpdate = async (file: File) => {
+    if (mode !== "edit" || !initialData?.uri) {
+      return;
+    }
+
+    setIsVerifyingBoundary(true);
+    try {
+      const linkedTrees =
+        linkedTreesQuery.data ?? (await linkedTreesQuery.refetch()).data;
+
+      if (!linkedTrees) {
+        throw new Error(
+          "Couldn't verify existing linked trees against the new boundary. Try again before saving.",
+        );
       }
 
-      await handleAdd({
-        name: name.trim(),
-        shapefile,
+      const boundary = await readGeoJsonFile(file);
+      const treeCoordinates = linkedTrees.flatMap((occurrence, index) => {
+        const coordinate = toTreeBoundaryCoordinate(occurrence, index);
+        return coordinate ? [coordinate] : [];
       });
-    } else {
-      // Edit mode
-      if (!rkey) {
-        throw new Error("Record key is required for editing");
-      }
+      const uncheckedCount = linkedTrees.length - treeCoordinates.length;
+      const failures = findTreeBoundaryFailures({
+        trees: treeCoordinates,
+        boundary,
+      });
 
-      await handleUpdate({
-        rkey,
-        name: name.trim(),
-        shapefile: hasShapefileInput ? shapefile : null,
-      });
+      if (uncheckedCount > 0 || failures.length > 0) {
+        throw new Error(
+          buildBoundaryEditBlockedMessage({ failures, uncheckedCount }),
+        );
+      }
+    } finally {
+      setIsVerifyingBoundary(false);
     }
   };
 
-  const isPending = isAdding || isUpdating;
+  const executeAddOrEdit = async () => {
+    setSubmissionError(null);
+
+    try {
+      if (mode === "add") {
+        if (!shapefile) {
+          throw new Error("Shapefile is required");
+        }
+
+        await handleAdd({
+          name: name.trim(),
+          shapefile,
+        });
+      } else {
+        if (!rkey) {
+          throw new Error("Record key is required for editing");
+        }
+
+        if (hasShapefileInput && shapefile) {
+          await verifyBoundaryUpdate(shapefile);
+        }
+
+        await handleUpdate({
+          rkey,
+          name: name.trim(),
+          shapefile: hasShapefileInput ? shapefile : null,
+        });
+      }
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const isPending = isAdding || isUpdating || isVerifyingBoundary;
+  const disableSubmission =
+    !did || !name.trim() || (mode === "add" && !hasShapefileInput) || isPending;
   const error = addError || updateError;
 
   return (
@@ -333,11 +437,11 @@ export const SiteEditorModal = ({
                 </div>
               </>
             )}
-            {error && (
+            {submissionError || error ? (
               <div className="text-sm text-destructive mt-2">
-                {formatError(error)}
+                {submissionError ?? formatError(error)}
               </div>
-            )}
+            ) : null}
           </motion.section>
         )}
         {isCompleted && (
@@ -368,13 +472,15 @@ export const SiteEditorModal = ({
       <ModalFooter>
         {!isCompleted && (
           <Button
-            onClick={() => executeAddOrEdit()}
+            onClick={() => void executeAddOrEdit()}
             disabled={disableSubmission || isPending}
           >
             {isPending && <Loader2Icon className="animate-spin mr-2" />}
             {mode === "edit"
               ? isPending
-                ? "Saving..."
+                ? isVerifyingBoundary
+                  ? "Checking boundary..."
+                  : "Saving..."
                 : "Save"
               : isPending
               ? "Adding..."

@@ -1,0 +1,6 @@
+scientificName,eventDate,decimalLatitude,decimalLongitude,basisOfRecord,recordedBy,occurrenceRemarks,dbh,totalHeight
+QA Alpha Inside Only,2026-05-13,9.75250,-4.63590,HumanObservation,QA Agent,Inside Alpha only,12,8
+QA Alpha Beta Overlap,2026-05-13,9.75250,-4.63525,HumanObservation,QA Agent,Inside both overlapping boundaries,14,9
+QA Beta Near Alpha Edge,2026-05-13,9.75250,-4.63495,HumanObservation,QA Agent,Inside Beta but near Alpha outside edge,16,10
+QA Beta Out Of Alpha,2026-05-13,9.75250,-4.63470,HumanObservation,QA Agent,Inside Beta but beyond Alpha near-boundary band,18,11
+QA Alpha East Boundary,2026-05-13,9.75250,-4.63500,HumanObservation,QA Agent,Exactly on Alpha east boundary,20,12
