@@ -3,7 +3,10 @@ import type { Agent } from "@atproto/api";
 import { Effect, Layer } from "effect";
 import { AtprotoAgent } from "../../../services/AtprotoAgent";
 import { deleteDwcOccurrenceCascade } from "../deleteCascade";
-import { DwcOccurrenceValidationError } from "../utils/errors";
+import {
+  DwcOccurrencePdsError,
+  DwcOccurrenceValidationError,
+} from "../utils/errors";
 
 const DID = "did:plc:testdeletecascade";
 const OCCURRENCE_COLLECTION = "app.gainforest.dwc.occurrence";
@@ -81,7 +84,11 @@ function makeOccurrenceRecord(): StoredRecord {
   });
 }
 
-function makeFakeAgent(options: { photoCount: number; measurementCount?: number }): {
+function makeFakeAgent(options: {
+  photoCount: number;
+  measurementCount?: number;
+  datasetRecord?: Record<string, unknown>;
+}): {
   agent: Agent;
   state: FakeAgentState;
 } {
@@ -99,7 +106,7 @@ function makeFakeAgent(options: { photoCount: number; measurementCount?: number 
   );
   const state: FakeAgentState = {
     datasetCid: "dataset-cid-0",
-    datasetRecord: {
+    datasetRecord: options.datasetRecord ?? {
       $type: DATASET_COLLECTION,
       name: "Target dataset",
       recordCount: 5,
@@ -261,6 +268,53 @@ describe("deleteDwcOccurrenceCascade", () => {
       expect(result.left.message).toBe("Tree occurrence rkey is required.");
     }
     expect(state.applyWritesBatches).toEqual([]);
+  });
+
+  it("fails before deleting when linked dataset data is invalid", async () => {
+    const { agent, state } = makeFakeAgent({
+      photoCount: 1,
+      datasetRecord: {
+        $type: DATASET_COLLECTION,
+        name: "Target dataset",
+        recordCount: "5",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    });
+    const layer = Layer.succeed(AtprotoAgent, agent);
+
+    const result = await Effect.runPromise(
+      deleteDwcOccurrenceCascade({ rkey: OCCURRENCE_RKEY }).pipe(
+        Effect.either,
+        Effect.provide(layer),
+      ),
+    );
+
+    expect(result._tag).toBe("Left");
+    if (result._tag === "Left") {
+      expect(result.left).toBeInstanceOf(DwcOccurrencePdsError);
+      expect(result.left.message).toBe(
+        "Linked dataset record is invalid; aborting tree deletion to preserve dataset counts.",
+      );
+    }
+    expect(state.applyWritesBatches).toEqual([]);
+    expect(state.multimediaRecords.size).toBe(1);
+    expect(state.occurrenceRecords.has(OCCURRENCE_RKEY)).toBe(true);
+  });
+
+  it("recounts legacy datasets missing recordCount before decrementing", async () => {
+    const { agent, state } = makeFakeAgent({
+      photoCount: 0,
+      datasetRecord: {
+        $type: DATASET_COLLECTION,
+        name: "Target dataset",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    });
+
+    await runDeleteCascade(agent);
+
+    expect(state.datasetRecord["recordCount"]).toBe(0);
+    expect(state.occurrenceRecords.has(OCCURRENCE_RKEY)).toBe(false);
   });
 
   it("keeps cascades at the applyWrites limit in a single batch", async () => {

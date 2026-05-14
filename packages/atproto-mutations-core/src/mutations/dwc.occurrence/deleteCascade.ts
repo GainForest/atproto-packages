@@ -120,16 +120,49 @@ function resolveOccurrenceForDeletion(options: {
   });
 }
 
-function createDatasetCountUpdateWrite(options: {
+function countDatasetOccurrences(options: {
   agent: Agent;
-  datasetRef: string | null;
-}): Effect.Effect<UpdateWrite | null, DwcOccurrencePdsError> {
+  datasetRef: string;
+}): Effect.Effect<number, DwcOccurrencePdsError> {
   const { agent, datasetRef } = options;
-  const datasetRkey = datasetRef ? getRkeyFromUri(datasetRef) : null;
 
-  if (!datasetRkey) {
-    return Effect.succeed(null);
-  }
+  return Effect.tryPromise({
+    try: async () => {
+      let cursor: string | undefined;
+      let count = 0;
+
+      do {
+        const response = await agent.com.atproto.repo.listRecords({
+          repo: agent.assertDid,
+          collection: OCCURRENCE_COLLECTION,
+          limit: LIST_RECORDS_PAGE_LIMIT,
+          cursor,
+        });
+
+        for (const record of response.data.records) {
+          if (getDatasetRef(record.value) === datasetRef) {
+            count += 1;
+          }
+        }
+
+        cursor = response.data.cursor;
+      } while (cursor);
+
+      return count;
+    },
+    catch: (cause) =>
+      makePdsError(
+        "Failed to recount linked dataset occurrences before deleting the tree.",
+        cause,
+      ),
+  });
+}
+
+function fetchDatasetForCountUpdate(options: {
+  agent: Agent;
+  datasetRkey: string;
+}): Effect.Effect<{ cid?: string; value: unknown } | null, DwcOccurrencePdsError> {
+  const { agent, datasetRkey } = options;
 
   return Effect.tryPromise({
     try: async () => {
@@ -139,27 +172,11 @@ function createDatasetCountUpdateWrite(options: {
           collection: DATASET_COLLECTION,
           rkey: datasetRkey,
         });
-        let record: DwcDatasetRecord;
-        try {
-          record = parseDatasetRecord(response.data.value);
-        } catch {
-          return null;
-        }
-
-        if (typeof record.recordCount !== "number") {
-          return null;
-        }
 
         return {
-          $type: "com.atproto.repo.applyWrites#update",
-          collection: DATASET_COLLECTION,
-          rkey: datasetRkey,
-          value: {
-            ...record,
-            recordCount: Math.max(0, record.recordCount - 1),
-          },
-          swapRecord: response.data.cid,
-        } satisfies UpdateWrite;
+          cid: response.data.cid,
+          value: response.data.value,
+        };
       } catch (error) {
         if (isNotFoundError(error)) {
           return null;
@@ -169,7 +186,57 @@ function createDatasetCountUpdateWrite(options: {
       }
     },
     catch: (cause) =>
-      makePdsError("Failed to prepare the dataset count update.", cause),
+      makePdsError("Failed to load the linked dataset for count update.", cause),
+  });
+}
+
+function parseDatasetForCountUpdate(
+  value: unknown,
+): Effect.Effect<DwcDatasetRecord, DwcOccurrencePdsError> {
+  return Effect.try({
+    try: () => parseDatasetRecord(value),
+    catch: (cause) =>
+      makePdsError(
+        "Linked dataset record is invalid; aborting tree deletion to preserve dataset counts.",
+        cause,
+      ),
+  });
+}
+
+function createDatasetCountUpdateWrite(options: {
+  agent: Agent;
+  datasetRef: string | null;
+}): Effect.Effect<UpdateWrite | null, DwcOccurrencePdsError> {
+  const { agent, datasetRef } = options;
+  const datasetRkey = datasetRef ? getRkeyFromUri(datasetRef) : null;
+
+  if (!datasetRkey || !datasetRef) {
+    return Effect.succeed(null);
+  }
+
+  return Effect.gen(function* () {
+    const dataset = yield* fetchDatasetForCountUpdate({ agent, datasetRkey });
+
+    if (!dataset) {
+      return null;
+    }
+
+    const record = yield* parseDatasetForCountUpdate(dataset.value);
+    const currentRecordCount =
+      typeof record.recordCount === "number"
+        ? record.recordCount
+        : yield* countDatasetOccurrences({ agent, datasetRef });
+
+    return {
+      $type: "com.atproto.repo.applyWrites#update",
+      collection: DATASET_COLLECTION,
+      rkey: datasetRkey,
+      value: {
+        ...record,
+        recordCount: Math.max(0, currentRecordCount - 1),
+      },
+      swapRecord: dataset.cid,
+    } satisfies UpdateWrite;
   });
 }
 
