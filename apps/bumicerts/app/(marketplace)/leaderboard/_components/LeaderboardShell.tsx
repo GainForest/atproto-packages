@@ -302,16 +302,16 @@ export function LeaderboardShell({
   children,
 }: LeaderboardShellProps) {
   return (
-    <section className="relative -mt-14 overflow-hidden px-6 pb-20 pt-0 md:pb-28">
+    <section className="relative -mt-14 overflow-hidden pb-20 pt-0 md:pb-28">
       <div className="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-primary/[0.08] via-transparent to-transparent dark:from-primary/[0.12]" />
       <HeroLandscapeArt />
 
-      <div className="relative mx-auto max-w-6xl px-2 sm:px-4 lg:px-3">
+      <div className="relative mx-auto max-w-6xl px-6">
         <motion.header
           initial={animate ? { opacity: 0, y: 16 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-10 max-w-4xl pt-[86px]"
+          className="mb-0 min-h-[330px] max-w-4xl px-2 pb-14 pt-[86px] sm:px-4 lg:px-3"
         >
           <div className="mb-5 flex items-center gap-2.5">
             <TrophyIcon className="h-4 w-4 text-primary" />
@@ -329,6 +329,7 @@ export function LeaderboardShell({
           </p>
         </motion.header>
 
+        <div className="relative z-20 -mt-6 space-y-3 mb-0 px-3">
         <motion.div
           initial={animate ? { opacity: 0, y: 12 } : false}
           animate={{ opacity: 1, y: 0 }}
@@ -359,6 +360,7 @@ export function LeaderboardShell({
         </motion.div>
 
         {children}
+        </div>
       </div>
     </section>
   );

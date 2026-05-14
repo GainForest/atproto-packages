@@ -107,7 +107,7 @@ export function ExploreShell({
 
   return (
     <section className="-mt-14 pb-20 md:pb-28">
-      <div className="relative isolate overflow-hidden px-8 pb-24 pt-[86px] sm:px-10 md:pb-32 lg:px-9">
+      <div className="relative isolate min-h-[330px] overflow-hidden px-8 pb-14 pt-[86px] sm:px-10 lg:px-9">
         <HeroBackdrop />
         <motion.div
           initial={animate ? { opacity: 0, y: 16 } : false}
@@ -144,7 +144,8 @@ export function ExploreShell({
         </motion.div>
       </div>
 
-      <div className="relative z-10 mx-auto -mt-16 max-w-6xl px-6">
+      <div className="relative z-10 mx-auto max-w-6xl px-6">
+        <div className="relative z-20 -mt-6 space-y-3 mb-0 px-3">
         <ExploreHeaderSlots
           query={query}
           setQuery={setQuery}
@@ -157,6 +158,8 @@ export function ExploreShell({
           bumicerts={bumicerts}
           shouldAnimate={animate}
         />
+
+        </div>
 
         {!children ? (
           <p className="mt-8 text-sm text-muted-foreground">
