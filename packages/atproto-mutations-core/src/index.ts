@@ -198,6 +198,7 @@ export {
 } from "./mutations/dwc.dataset/utils/errors";
 
 // dwc.occurrence
+export { deleteDwcOccurrenceCascade } from "./mutations/dwc.occurrence/deleteCascade";
 export {
   DwcOccurrenceValidationError,
   DwcOccurrenceNotFoundError,
@@ -385,6 +386,8 @@ export type {
   UpdateDwcOccurrenceInput,
   DwcOccurrenceMutationResult,
   DwcOccurrenceRecord,
+  DeleteDwcOccurrenceCascadeInput,
+  DeleteDwcOccurrenceCascadeResult,
 } from "./mutations/dwc.occurrence/utils/types";
 
 // dwc.measurement
