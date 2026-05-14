@@ -132,7 +132,7 @@ function getHandleError(handle: string): string | null {
   const labels = trimmedHandle.split(".");
 
   if (labels.length < 2) {
-    return "Enter your full ATProto handle, including its domain.";
+    return "Enter your full handle, including its domain.";
   }
 
   if (labels.some((label) => label.length === 0)) {
@@ -183,7 +183,7 @@ function HandleForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <label htmlFor="login-handle" className="text-sm font-medium">
-          ATProto handle
+          Handle
         </label>
         <Input
           id="login-handle"
