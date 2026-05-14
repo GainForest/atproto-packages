@@ -13,7 +13,7 @@ function RankBadge({ rank }: { rank: number }) {
     const medals = ["", "🥇", "🥈", "🥉"];
     return (
       <span
-        className="flex size-10 items-center justify-center rounded-full bg-gradient-to-b from-primary/10 to-background text-2xl shadow-sm"
+        className="flex size-10 items-center justify-center rounded-full bg-gradient-to-b from-primary/10 to-background text-2xl shadow-sm ring-1 ring-foreground/5"
         role="img"
         aria-label={`Rank ${rank}`}
       >
@@ -23,7 +23,7 @@ function RankBadge({ rank }: { rank: number }) {
   }
 
   return (
-    <span className="flex size-10 items-center justify-center rounded-full bg-card text-base font-medium tabular-nums text-muted-foreground shadow-sm">
+    <span className="flex size-10 items-center justify-center rounded-full bg-card text-base font-medium tabular-nums text-muted-foreground shadow-sm ring-1 ring-foreground/5">
       {rank}
     </span>
   );
@@ -115,7 +115,7 @@ export function DonorCard({ entry, index }: DonorCardProps) {
         delay: Math.min(index, 12) * 0.025,
         ease: [0.25, 0.1, 0.25, 1],
       }}
-      className="group grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-3xl bg-card/70 p-4 shadow-sm shadow-primary/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 sm:gap-5 sm:p-5"
+      className="group grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-3xl bg-card/75 p-4 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-card/90 hover:shadow-lg hover:shadow-primary/10 sm:gap-5 sm:p-5"
     >
       <div className="flex items-center justify-center">
         <RankBadge rank={entry.rank} />
@@ -123,7 +123,7 @@ export function DonorCard({ entry, index }: DonorCardProps) {
 
       <div
         className={cn(
-          "flex size-12 items-center justify-center rounded-full bg-muted/50 text-muted-foreground",
+          "flex size-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground ring-1 ring-foreground/5",
           !isWallet && "bg-primary/10 text-primary ring-primary/10",
         )}
       >

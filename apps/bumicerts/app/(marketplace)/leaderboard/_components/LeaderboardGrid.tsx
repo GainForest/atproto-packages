@@ -11,7 +11,7 @@ interface LeaderboardGridProps {
 export function LeaderboardGrid({ entries }: LeaderboardGridProps) {
   if (entries.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-3xl bg-card/70 py-16 text-center text-muted-foreground shadow-sm shadow-primary/5 backdrop-blur">
+      <div className="flex flex-col items-center gap-3 rounded-3xl bg-card/75 py-16 text-center text-muted-foreground shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur">
         <div className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary">
           <TrophyIcon className="size-8 opacity-60" />
         </div>

@@ -55,7 +55,7 @@ function PeriodChips({
   onPeriodChange?: (period: LeaderboardPeriod) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 rounded-full bg-card/70 p-1 shadow-sm shadow-primary/5 backdrop-blur">
+    <div className="grid grid-cols-3 rounded-full bg-muted/55 p-1 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur">
       {PERIODS.map((option) => {
         const isSelected = period === option.value;
         return (
@@ -88,7 +88,7 @@ function DonorTypeTabs({
   onDonorFilterChange?: (donorFilter: LeaderboardDonorFilter) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 rounded-full bg-card/70 p-1 shadow-sm shadow-primary/5 backdrop-blur sm:grid-cols-3">
+    <div className="grid grid-cols-1 rounded-full bg-muted/55 p-1 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur sm:grid-cols-3">
       {DONOR_FILTERS.map(({ value, label, Icon }) => {
         const isSelected = donorFilter === value;
         return (
@@ -138,7 +138,7 @@ function SortControl({
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-full bg-card/70 py-1.5 pr-1.5 pl-4 shadow-sm shadow-primary/5 backdrop-blur">
+    <div className="flex items-center justify-between gap-3 rounded-full bg-muted/55 py-1.5 pr-1.5 pl-4 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur">
       <span
         id="leaderboard-sort-label"
         className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground"
@@ -179,7 +179,7 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-3xl bg-card/70 p-6 shadow-sm shadow-primary/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10">
+    <div className="group relative overflow-hidden rounded-3xl bg-card/75 p-6 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-card/90 hover:shadow-lg hover:shadow-primary/10">
       <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
       <div className="flex items-center gap-5">
         <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/10 transition-transform duration-300 group-hover:scale-105">
@@ -333,7 +333,7 @@ export function LeaderboardShell({
           initial={animate ? { opacity: 0, y: 12 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-5 rounded-3xl bg-background/60 p-2 shadow-sm shadow-primary/5 backdrop-blur-xl"
+          className="mb-5 rounded-3xl bg-background/65 p-2 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur-xl"
         >
           <div className="grid gap-3 xl:grid-cols-[1fr_1.15fr_auto] xl:items-center">
             <PeriodChips period={period} onPeriodChange={onPeriodChange} />
