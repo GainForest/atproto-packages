@@ -292,6 +292,7 @@ async function createOccurrenceRecord(options: {
   occurrenceInput: AppendExistingDwcDatasetRowInput["occurrence"] & {
     datasetRef: string;
     dynamicProperties: string;
+    establishmentMeans?: string;
   };
 }): Promise<CreatedRecord> {
   const { agent, occurrenceInput } = options;
@@ -331,6 +332,9 @@ async function createOccurrenceRecord(options: {
       : {}),
     ...(occurrenceInput.siteRef !== undefined
       ? { siteRef: occurrenceInput.siteRef }
+      : {}),
+    ...(occurrenceInput.establishmentMeans
+      ? { establishmentMeans: occurrenceInput.establishmentMeans }
       : {}),
     datasetRef: occurrenceInput.datasetRef,
     dynamicProperties: occurrenceInput.dynamicProperties,
@@ -779,6 +783,9 @@ export const appendExistingDwcDataset = (
           const speciesName = row.occurrence.scientificName || `Row ${rowIndex + 1}`;
           const occurrenceInput = {
             ...row.occurrence,
+            ...(validatedInput.establishmentMeans
+              ? { establishmentMeans: validatedInput.establishmentMeans }
+              : {}),
             datasetRef: datasetRecord.uri,
             dynamicProperties: buildTreeDynamicProperties(datasetRecord.uri),
           };

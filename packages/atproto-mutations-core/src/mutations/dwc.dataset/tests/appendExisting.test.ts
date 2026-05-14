@@ -197,6 +197,34 @@ describe("appendExistingDwcDataset", () => {
     expect(state.occurrenceRecords[0]?.["siteRef"]).toBe(SITE_REF);
   });
 
+  it("applies batch establishmentMeans to created occurrences", async () => {
+    const { agent, state } = makeFakeAgent();
+    const layer = Layer.succeed(AtprotoAgent, agent);
+
+    const result = await Effect.runPromise(
+      appendExistingDwcDataset({
+        datasetRkey: DATASET_RKEY,
+        establishmentMeans: "managed",
+        rows: [
+          {
+            occurrence: {
+              scientificName: "Shorea leprosula",
+              eventDate: "2026-02-01",
+              basisOfRecord: "HumanObservation",
+              decimalLatitude: "4.1234",
+              decimalLongitude: "117.5678",
+            },
+            floraMeasurement: null,
+          },
+        ],
+      }).pipe(Effect.provide(layer)),
+    );
+
+    expect(result.results[0]?.state).toBe("success");
+    expect(state.occurrenceRecords).toHaveLength(1);
+    expect(state.occurrenceRecords[0]?.["establishmentMeans"]).toBe("managed");
+  });
+
   it("rejects an explicitly blank siteRef instead of creating an unlinked occurrence", async () => {
     const { agent, state } = makeFakeAgent();
     const layer = Layer.succeed(AtprotoAgent, agent);
