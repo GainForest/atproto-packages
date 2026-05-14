@@ -325,7 +325,7 @@ function applyCascadeWrites(options: {
   agent: Agent;
   datasetCountWrite: UpdateWrite | null;
   childDeleteWrites: DeleteWrite[];
-  occurrenceDeleteWrite: DeleteWrite;
+  occurrenceDeleteWrite: DeleteWrite | null;
 }): Effect.Effect<void, DwcOccurrencePdsError> {
   const {
     agent,
@@ -333,14 +333,14 @@ function applyCascadeWrites(options: {
     childDeleteWrites,
     occurrenceDeleteWrite,
   } = options;
-  const finalWrites: ApplyWrite[] = [
+  const parentDeleteWrites: ApplyWrite[] = [
     ...(datasetCountWrite ? [datasetCountWrite] : []),
-    occurrenceDeleteWrite,
+    ...(occurrenceDeleteWrite ? [occurrenceDeleteWrite] : []),
   ];
   const allWrites: ApplyWrite[] = [
     ...(datasetCountWrite ? [datasetCountWrite] : []),
     ...childDeleteWrites,
-    occurrenceDeleteWrite,
+    ...(occurrenceDeleteWrite ? [occurrenceDeleteWrite] : []),
   ];
 
   if (allWrites.length <= MAX_APPLY_WRITES_PER_COMMIT) {
@@ -352,6 +352,17 @@ function applyCascadeWrites(options: {
   }
 
   return Effect.gen(function* () {
+    // Oversized cascades cannot fit in one ATProto commit. Make the
+    // dataset/occurrence state durable first so a stale dataset swap or parent
+    // delete failure cannot leave a partially-deleted tree. If child cleanup
+    // fails after this point, callers can retry: a missing occurrence with
+    // remaining linked children is handled as resumable cleanup below.
+    yield* applyDeleteWrites({
+      agent,
+      writes: parentDeleteWrites,
+      failureMessage: "Failed to delete the tree occurrence before deleting linked records.",
+    });
+
     for (const childDeleteChunk of chunkArray(
       childDeleteWrites,
       MAX_APPLY_WRITES_PER_COMMIT,
@@ -359,15 +370,10 @@ function applyCascadeWrites(options: {
       yield* applyDeleteWrites({
         agent,
         writes: childDeleteChunk,
-        failureMessage: "Failed to delete linked records before deleting the tree.",
+        failureMessage:
+          "Failed to delete linked records after deleting the tree occurrence. Retry tree deletion to clean up remaining linked records.",
       });
     }
-
-    yield* applyDeleteWrites({
-      agent,
-      writes: finalWrites,
-      failureMessage: "Failed to delete the tree occurrence after deleting linked records.",
-    });
   });
 }
 
@@ -388,10 +394,6 @@ export const deleteDwcOccurrenceCascade = (
 
     const occurrence = yield* resolveOccurrenceForDeletion({ agent, rkey });
 
-    if (!occurrence) {
-      return yield* Effect.fail(new DwcOccurrenceNotFoundError({ rkey }));
-    }
-
     const linkedMultimediaRkeys = yield* listLinkedRecordRkeys({
       agent,
       collection: MULTIMEDIA_COLLECTION,
@@ -404,10 +406,21 @@ export const deleteDwcOccurrenceCascade = (
       occurrenceUri: uri,
       failureMessage: "Failed to load linked measurement records before deleting the tree.",
     });
-    const datasetCountWrite = yield* createDatasetCountUpdateWrite({
-      agent,
-      datasetRef: occurrence.datasetRef,
-    });
+
+    if (
+      !occurrence &&
+      linkedMultimediaRkeys.length === 0 &&
+      linkedMeasurementRkeys.length === 0
+    ) {
+      return yield* Effect.fail(new DwcOccurrenceNotFoundError({ rkey }));
+    }
+
+    const datasetCountWrite = occurrence
+      ? yield* createDatasetCountUpdateWrite({
+          agent,
+          datasetRef: occurrence.datasetRef,
+        })
+      : null;
     const childDeleteWrites = [
       ...linkedMultimediaRkeys.map((linkedRkey) =>
         createDeleteWrite(MULTIMEDIA_COLLECTION, linkedRkey),
@@ -421,7 +434,9 @@ export const deleteDwcOccurrenceCascade = (
       agent,
       datasetCountWrite,
       childDeleteWrites,
-      occurrenceDeleteWrite: createDeleteWrite(OCCURRENCE_COLLECTION, rkey),
+      occurrenceDeleteWrite: occurrence
+        ? createDeleteWrite(OCCURRENCE_COLLECTION, rkey)
+        : null,
     });
 
     return {

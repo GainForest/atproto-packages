@@ -88,6 +88,8 @@ function makeFakeAgent(options: {
   photoCount: number;
   measurementCount?: number;
   datasetRecord?: Record<string, unknown>;
+  occurrenceExists?: boolean;
+  failDatasetUpdate?: boolean;
 }): {
   agent: Agent;
   state: FakeAgentState;
@@ -112,7 +114,10 @@ function makeFakeAgent(options: {
       recordCount: 5,
       createdAt: "2026-01-01T00:00:00.000Z",
     },
-    occurrenceRecords: new Map([[OCCURRENCE_RKEY, makeOccurrenceRecord()]]),
+    occurrenceRecords:
+      options.occurrenceExists === false
+        ? new Map()
+        : new Map([[OCCURRENCE_RKEY, makeOccurrenceRecord()]]),
     multimediaRecords,
     measurementRecords,
     applyWritesBatches: [],
@@ -193,6 +198,17 @@ function makeFakeAgent(options: {
           applyWrites: async (input: { writes: FakeApplyWrite[] }) => {
             if (input.writes.length > APPLY_WRITES_LIMIT) {
               throw new Error(`applyWrites exceeded ${APPLY_WRITES_LIMIT} writes.`);
+            }
+
+            if (
+              options.failDatasetUpdate === true &&
+              input.writes.some(
+                (write) =>
+                  write.$type === "com.atproto.repo.applyWrites#update" &&
+                  write.collection === DATASET_COLLECTION,
+              )
+            ) {
+              throw new Error("Dataset count update failed.");
             }
 
             state.applyWritesBatches.push(input.writes.map((write) => ({ ...write })));
@@ -334,8 +350,38 @@ describe("deleteDwcOccurrenceCascade", () => {
     expect(state.datasetRecord["recordCount"]).toBe(4);
   });
 
-  it("chunks child deletes before the final occurrence delete when the cascade exceeds the applyWrites limit", async () => {
-    const { agent, state } = makeFakeAgent({ photoCount: 201 });
+  it("does not delete children when the oversized cascade parent delete fails", async () => {
+    const { agent, state } = makeFakeAgent({
+      photoCount: 201,
+      failDatasetUpdate: true,
+    });
+    const layer = Layer.succeed(AtprotoAgent, agent);
+
+    const result = await Effect.runPromise(
+      deleteDwcOccurrenceCascade({ rkey: OCCURRENCE_RKEY }).pipe(
+        Effect.either,
+        Effect.provide(layer),
+      ),
+    );
+
+    expect(result._tag).toBe("Left");
+    if (result._tag === "Left") {
+      expect(result.left).toBeInstanceOf(DwcOccurrencePdsError);
+      expect(result.left.message).toBe(
+        "Failed to delete the tree occurrence before deleting linked records.",
+      );
+    }
+    expect(state.applyWritesBatches).toEqual([]);
+    expect(state.multimediaRecords.size).toBe(201);
+    expect(state.occurrenceRecords.has(OCCURRENCE_RKEY)).toBe(true);
+    expect(state.datasetRecord["recordCount"]).toBe(5);
+  });
+
+  it("resumes orphaned child cleanup when the occurrence was already deleted", async () => {
+    const { agent, state } = makeFakeAgent({
+      photoCount: 201,
+      occurrenceExists: false,
+    });
 
     const result = await runDeleteCascade(agent);
 
@@ -344,7 +390,30 @@ describe("deleteDwcOccurrenceCascade", () => {
     expect(state.applyWritesBatches.map((batch) => batch.length)).toEqual([
       APPLY_WRITES_LIMIT,
       1,
+    ]);
+    expect(
+      state.applyWritesBatches.flat().every(
+        (write) =>
+          write.$type === "com.atproto.repo.applyWrites#delete" &&
+          write.collection === MULTIMEDIA_COLLECTION,
+      ),
+    ).toBe(true);
+    expect(state.multimediaRecords.size).toBe(0);
+    expect(state.occurrenceRecords.has(OCCURRENCE_RKEY)).toBe(false);
+    expect(state.datasetRecord["recordCount"]).toBe(5);
+  });
+
+  it("commits the occurrence delete before chunking children when the cascade exceeds the applyWrites limit", async () => {
+    const { agent, state } = makeFakeAgent({ photoCount: 201 });
+
+    const result = await runDeleteCascade(agent);
+
+    expect(result.deletedMultimediaRkeys).toHaveLength(201);
+    expect(result.deletedMeasurementRkeys).toEqual([]);
+    expect(state.applyWritesBatches.map((batch) => batch.length)).toEqual([
       2,
+      APPLY_WRITES_LIMIT,
+      1,
     ]);
     expect(
       state.applyWritesBatches.every(
@@ -352,7 +421,15 @@ describe("deleteDwcOccurrenceCascade", () => {
       ),
     ).toBe(true);
 
-    const childBatches = state.applyWritesBatches.slice(0, -1).flat();
+    const parentBatch = state.applyWritesBatches[0];
+    expect(
+      parentBatch?.map((write) => `${write.$type}:${write.collection}:${write.rkey}`),
+    ).toEqual([
+      `com.atproto.repo.applyWrites#update:${DATASET_COLLECTION}:${DATASET_RKEY}`,
+      `com.atproto.repo.applyWrites#delete:${OCCURRENCE_COLLECTION}:${OCCURRENCE_RKEY}`,
+    ]);
+
+    const childBatches = state.applyWritesBatches.slice(1).flat();
     expect(
       childBatches.every(
         (write) =>
@@ -360,14 +437,6 @@ describe("deleteDwcOccurrenceCascade", () => {
           write.collection === MULTIMEDIA_COLLECTION,
       ),
     ).toBe(true);
-
-    const finalBatch = state.applyWritesBatches.at(-1);
-    expect(
-      finalBatch?.map((write) => `${write.$type}:${write.collection}:${write.rkey}`),
-    ).toEqual([
-      `com.atproto.repo.applyWrites#update:${DATASET_COLLECTION}:${DATASET_RKEY}`,
-      `com.atproto.repo.applyWrites#delete:${OCCURRENCE_COLLECTION}:${OCCURRENCE_RKEY}`,
-    ]);
     expect(state.multimediaRecords.size).toBe(0);
     expect(state.occurrenceRecords.has(OCCURRENCE_RKEY)).toBe(false);
     expect(state.datasetRecord["recordCount"]).toBe(4);
