@@ -20,6 +20,7 @@ const MEASUREMENT_COLLECTION = "app.gainforest.dwc.measurement";
 const MULTIMEDIA_COLLECTION = "app.gainforest.ac.multimedia";
 const DATASET_COLLECTION = "app.gainforest.dwc.dataset";
 const LIST_RECORDS_PAGE_LIMIT = 100;
+const MAX_APPLY_WRITES_PER_COMMIT = 200;
 
 const makePdsError = (message: string, cause: unknown) =>
   new DwcOccurrencePdsError({ message, cause });
@@ -215,6 +216,16 @@ function createDeleteWrite(collection: string, rkey: string): DeleteWrite {
   };
 }
 
+function chunkArray<T>(values: T[], chunkSize: number): T[][] {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < values.length; index += chunkSize) {
+    chunks.push(values.slice(index, index + chunkSize));
+  }
+
+  return chunks;
+}
+
 function applyDeleteWrites(options: {
   agent: Agent;
   writes: ApplyWrite[];
@@ -234,6 +245,56 @@ function applyDeleteWrites(options: {
       });
     },
     catch: (cause) => makePdsError(failureMessage, cause),
+  });
+}
+
+function applyCascadeWrites(options: {
+  agent: Agent;
+  datasetCountWrite: UpdateWrite | null;
+  childDeleteWrites: DeleteWrite[];
+  occurrenceDeleteWrite: DeleteWrite;
+}): Effect.Effect<void, DwcOccurrencePdsError> {
+  const {
+    agent,
+    datasetCountWrite,
+    childDeleteWrites,
+    occurrenceDeleteWrite,
+  } = options;
+  const finalWrites: ApplyWrite[] = [
+    ...(datasetCountWrite ? [datasetCountWrite] : []),
+    occurrenceDeleteWrite,
+  ];
+  const allWrites: ApplyWrite[] = [
+    ...(datasetCountWrite ? [datasetCountWrite] : []),
+    ...childDeleteWrites,
+    occurrenceDeleteWrite,
+  ];
+
+  if (allWrites.length <= MAX_APPLY_WRITES_PER_COMMIT) {
+    return applyDeleteWrites({
+      agent,
+      writes: allWrites,
+      failureMessage: "Failed to delete the tree and linked records.",
+    });
+  }
+
+  return Effect.gen(function* () {
+    for (const childDeleteChunk of chunkArray(
+      childDeleteWrites,
+      MAX_APPLY_WRITES_PER_COMMIT,
+    )) {
+      yield* applyDeleteWrites({
+        agent,
+        writes: childDeleteChunk,
+        failureMessage: "Failed to delete linked records before deleting the tree.",
+      });
+    }
+
+    yield* applyDeleteWrites({
+      agent,
+      writes: finalWrites,
+      failureMessage: "Failed to delete the tree occurrence after deleting linked records.",
+    });
   });
 }
 
@@ -281,21 +342,20 @@ export const deleteDwcOccurrenceCascade = (
       agent,
       datasetRef: occurrence.datasetRef,
     });
-    const writes = [
-      ...(datasetCountWrite ? [datasetCountWrite] : []),
+    const childDeleteWrites = [
       ...linkedMultimediaRkeys.map((linkedRkey) =>
         createDeleteWrite(MULTIMEDIA_COLLECTION, linkedRkey),
       ),
       ...linkedMeasurementRkeys.map((linkedRkey) =>
         createDeleteWrite(MEASUREMENT_COLLECTION, linkedRkey),
       ),
-      createDeleteWrite(OCCURRENCE_COLLECTION, rkey),
     ];
 
-    yield* applyDeleteWrites({
+    yield* applyCascadeWrites({
       agent,
-      writes,
-      failureMessage: "Failed to delete the tree and linked records.",
+      datasetCountWrite,
+      childDeleteWrites,
+      occurrenceDeleteWrite: createDeleteWrite(OCCURRENCE_COLLECTION, rkey),
     });
 
     return {
