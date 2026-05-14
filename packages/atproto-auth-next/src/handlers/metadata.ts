@@ -25,6 +25,8 @@ export type ClientMetadataOptions = {
   policyUri?: string;
   /** ePDS handle mode for new account creation. */
   epdsHandleMode?: EpdsHandleMode;
+  /** Whether ePDS should skip consent after signup. */
+  epdsSkipConsentOnSignup?: boolean;
 };
 
 /**
@@ -78,6 +80,9 @@ export function createClientMetadataHandler(
     if (options.tosUri) commonFields.tos_uri = options.tosUri;
     if (options.policyUri) commonFields.policy_uri = options.policyUri;
     if (options.epdsHandleMode) commonFields.epds_handle_mode = options.epdsHandleMode;
+    if (options.epdsSkipConsentOnSignup !== undefined) {
+      commonFields.epds_skip_consent_on_signup = options.epdsSkipConsentOnSignup;
+    }
 
     if (loopback) {
       // Loopback/native client (RFC 8252)

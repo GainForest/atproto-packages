@@ -69,6 +69,7 @@ export function createEpdsLoginHandler(config: EpdsLoginHandlerConfig) {
       // This is identical to handle login — the SDK is agnostic to input type.
       const authUrl = await config.oauthClient.authorize(config.epdsUrl, {
         scope: config.scope,
+        prompt: "login",
       });
 
       // Append login_hint so the ePDS can pre-fill the email field.

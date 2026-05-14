@@ -63,6 +63,7 @@ function getAuth() {
       ? { url: clientEnv.NEXT_PUBLIC_EPDS_URL }
       : undefined,
     epdsHandleMode: "random",
+    epdsSkipConsentOnSignup: true,
     onCallback: { redirectTo: "/auth/complete" },
     logoUri: publicUrl
       ? `${publicUrl}/assets/media/images/app-icon.png`
