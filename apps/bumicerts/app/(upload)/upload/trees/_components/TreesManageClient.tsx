@@ -53,6 +53,7 @@ import type {
   MultimediaItem,
   OccurrenceItem,
 } from "@/graphql/indexer/queries";
+import { getProxiedImageUrl } from "@/lib/images";
 import { links } from "@/lib/links";
 import useMediaQuery from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
@@ -2752,10 +2753,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                           <div className="relative h-48 w-full overflow-hidden bg-muted">
                             {photoUrl ? (
                               <Image
-                                src={photoUrl}
+                                src={getProxiedImageUrl(photoUrl)}
                                 alt={photoAlt}
                                 fill
-                                unoptimized
                                 sizes="(min-width: 1280px) 24rem, (min-width: 768px) 50vw, 100vw"
                                 className="object-cover"
                               />

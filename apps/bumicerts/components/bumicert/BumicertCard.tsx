@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { getProxiedImageUrl } from "@/lib/images";
 import { cn } from "@/lib/utils";
 
 function resolveImageSrc(coverImage: File | string): string {
   return typeof coverImage === "string"
-    ? coverImage
+    ? getProxiedImageUrl(coverImage)
     : URL.createObjectURL(coverImage);
 }
 
@@ -136,7 +137,7 @@ export function BumicertCardVisual({
         <div className="relative h-6 w-6 rounded-full bg-white shadow-sm overflow-hidden shrink-0 scale-120 group-hover:scale-100 transition-all duration-300">
           {logoUrl ? (
             <Image
-              src={logoUrl}
+              src={getProxiedImageUrl(logoUrl)}
               alt={organizationName}
               fill
               className="object-cover"
