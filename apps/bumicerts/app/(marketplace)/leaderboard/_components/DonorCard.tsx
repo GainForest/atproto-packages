@@ -115,7 +115,7 @@ export function DonorCard({ entry, index }: DonorCardProps) {
         delay: Math.min(index, 12) * 0.025,
         ease: [0.25, 0.1, 0.25, 1],
       }}
-      className="group grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-3xl bg-card/75 p-4 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-card/90 hover:shadow-lg hover:shadow-primary/10 sm:gap-5 sm:p-5"
+      className="group grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-4 py-4 transition-colors duration-200 hover:bg-card/65 sm:gap-5 sm:px-5"
     >
       <div className="flex items-center justify-center">
         <RankBadge rank={entry.rank} />
@@ -141,8 +141,8 @@ export function DonorCard({ entry, index }: DonorCardProps) {
               did={entry.donorId}
               avatarSize={24}
               showCopyButton="hover"
-              linkMode="none"
-              className="min-w-0 max-w-full border !border-transparent hover:!border-border"
+              linkMode="user-page"
+              className="min-w-0 max-w-full"
               textClassName="text-sm sm:text-base font-semibold text-foreground"
             />
           )}

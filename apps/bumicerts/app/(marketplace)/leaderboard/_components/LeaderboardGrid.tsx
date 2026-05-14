@@ -26,7 +26,7 @@ export function LeaderboardGrid({ entries }: LeaderboardGridProps) {
   }
 
   return (
-    <div className="space-y-2.5">
+    <div className="overflow-hidden rounded-3xl bg-card/70 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur divide-y divide-border/60">
       {entries.map((entry, index) => (
         <DonorCard key={entry.donorId} entry={entry} index={index} />
       ))}
