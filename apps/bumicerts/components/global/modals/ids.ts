@@ -34,6 +34,7 @@ export const MODAL_IDS = {
   MANAGE_VISIBILITY_SELECTOR: "manage/visibility-selector",
   MANAGE_PHOTO_ATTACH: "manage/photo-attach",
   MANAGE_TREE_ADD_TO_DATASET: "manage/tree-add-to-dataset",
+  MANAGE_TREE_DELETE: "manage/tree-delete",
 
   // Upload flows
   UPLOAD_TREES_COMPLETE: "upload/trees/complete",

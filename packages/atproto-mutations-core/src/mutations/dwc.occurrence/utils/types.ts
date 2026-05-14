@@ -53,3 +53,10 @@ export type UpdateDwcOccurrenceInput = {
 };
 
 export type { DeleteRecordInput, DeleteRecordResult };
+
+export type DeleteDwcOccurrenceCascadeInput = DeleteRecordInput;
+
+export type DeleteDwcOccurrenceCascadeResult = DeleteRecordResult & {
+  deletedMeasurementRkeys: string[];
+  deletedMultimediaRkeys: string[];
+};
