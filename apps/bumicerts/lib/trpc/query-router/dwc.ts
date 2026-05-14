@@ -9,6 +9,7 @@
  * Uses `occurrences` (plural) to distinguish from the `occurrence` entity router.
  */
 
+import { isAtUriString } from "@atproto/lex";
 import { z } from "zod";
 import { INDEXER_REFERENCE_LOOKUP_BATCH_LIMIT } from "../reference-limits";
 import { queryRouter, publicQueryProcedure } from "./init";
@@ -32,6 +33,14 @@ export const dwcQueryRouter = queryRouter({
         .max(INDEXER_REFERENCE_LOOKUP_BATCH_LIMIT),
     }))
     .query(({ input }) => occurrencesModule.fetchByDatasetRefs(input)),
+  occurrencesBySiteRef: publicQueryProcedure
+    .input(z.object({
+      did: z.string().min(1),
+      siteRef: z.string().min(1).refine(isAtUriString, {
+        message: "siteRef must be a valid AT-URI.",
+      }),
+    }))
+    .query(({ input }) => occurrencesModule.fetchBySiteRef(input)),
   measurements: publicQueryProcedure
     .input(z.object({ did: z.string().min(1) }))
     .query(({ input }) => measurementsModule.fetch({ did: input.did })),

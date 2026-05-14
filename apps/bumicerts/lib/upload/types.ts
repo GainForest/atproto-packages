@@ -1,3 +1,5 @@
+import type { CreateDwcOccurrenceInput } from "@gainforest/atproto-mutations-next";
+
 export type ColumnMapping = {
   sourceColumn: string;
   targetField: string;
@@ -11,7 +13,7 @@ export type OccurrenceInput = {
   eventDate: string;
   decimalLatitude: number;
   decimalLongitude: number;
-  basisOfRecord?: string;
+  basisOfRecord?: NonNullable<CreateDwcOccurrenceInput["basisOfRecord"]>;
   vernacularName?: string;
   recordedBy?: string;
   locality?: string;
@@ -21,6 +23,7 @@ export type OccurrenceInput = {
   habitat?: string;
   samplingProtocol?: string;
   kingdom?: string;
+  siteRef?: string;
   establishmentMeans?: string;
   datasetRef?: string;
   dynamicProperties?: string;
@@ -59,6 +62,15 @@ export type ValidatedRow = {
 export type RowError = {
   index: number;
   issues: { path: string; message: string }[];
+};
+
+export type TreeUploadRowAttentionKind = "skipped" | "failed" | "partial";
+
+export type TreeUploadRowAttentionSummary = {
+  sourceRowIndex: number;
+  rowLabel: string;
+  messages: string[];
+  kind: TreeUploadRowAttentionKind;
 };
 
 export type ValidationResult = {

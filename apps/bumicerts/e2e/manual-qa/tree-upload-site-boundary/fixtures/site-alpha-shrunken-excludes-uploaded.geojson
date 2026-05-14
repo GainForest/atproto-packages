@@ -1,0 +1,18 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "QA Alpha Shrunken Boundary"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-4.63595, 9.75205],
+        [-4.63585, 9.75205],
+        [-4.63585, 9.75215],
+        [-4.63595, 9.75215],
+        [-4.63595, 9.75205]
+      ]
+    ]
+  }
+}

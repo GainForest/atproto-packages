@@ -1704,6 +1704,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
         content: (
           <PhotoAttachModal
             occurrenceUri={occurrenceUri}
+            siteRef={activeTree?.occurrence.record?.siteRef ?? undefined}
             speciesName={speciesName}
             onPhotoUploaded={(uploadedPhoto) => {
               setOptimisticAddedPhotos((current) => {

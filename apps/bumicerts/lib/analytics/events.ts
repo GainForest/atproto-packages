@@ -93,6 +93,8 @@ export const TREE_UPLOAD_FAILURE_REASONS = [
   "media_zip_no_supported_images",
   "media_zip_read_failed",
   "missing_kobo_media_zip",
+  "site_selection_missing",
+  "site_boundary_validation_failed",
   "dataset_create_failed",
 ] as const;
 

@@ -1,0 +1,18 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "QA Alpha Row 1 Only Boundary"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-4.63595, 9.75245],
+        [-4.63585, 9.75245],
+        [-4.63585, 9.75255],
+        [-4.63595, 9.75255],
+        [-4.63595, 9.75245]
+      ]
+    ]
+  }
+}

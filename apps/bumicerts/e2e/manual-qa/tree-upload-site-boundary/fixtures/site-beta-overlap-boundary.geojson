@@ -1,0 +1,18 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "QA Beta Overlap Boundary"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-4.6355, 9.752],
+        [-4.6345, 9.752],
+        [-4.6345, 9.753],
+        [-4.6355, 9.753],
+        [-4.6355, 9.752]
+      ]
+    ]
+  }
+}

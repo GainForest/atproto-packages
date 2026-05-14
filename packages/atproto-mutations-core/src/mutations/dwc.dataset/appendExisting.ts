@@ -58,6 +58,13 @@ function isOptionalString(value: unknown): value is string | undefined {
   return typeof value === "string" || typeof value === "undefined";
 }
 
+function isOptionalNonEmptyString(value: unknown): value is string | undefined {
+  return (
+    typeof value === "undefined" ||
+    (typeof value === "string" && value.trim().length > 0)
+  );
+}
+
 function isAppendExistingDwcDatasetOccurrenceInput(
   value: unknown,
 ): value is AppendExistingDwcDatasetRowInput["occurrence"] {
@@ -70,7 +77,7 @@ function isAppendExistingDwcDatasetOccurrenceInput(
     typeof value.eventDate === "string" &&
     typeof value.decimalLatitude === "string" &&
     typeof value.decimalLongitude === "string" &&
-    isOptionalString(value.basisOfRecord) &&
+    typeof value.basisOfRecord === "string" &&
     isOptionalString(value.vernacularName) &&
     isOptionalString(value.recordedBy) &&
     isOptionalString(value.locality) &&
@@ -85,7 +92,7 @@ function isAppendExistingDwcDatasetOccurrenceInput(
     isOptionalString(value.geodeticDatum) &&
     isOptionalString(value.license) &&
     isOptionalString(value.projectRef) &&
-    isOptionalString(value.establishmentMeans)
+    isOptionalNonEmptyString(value.siteRef)
   );
 }
 
@@ -285,6 +292,7 @@ async function createOccurrenceRecord(options: {
   occurrenceInput: AppendExistingDwcDatasetRowInput["occurrence"] & {
     datasetRef: string;
     dynamicProperties: string;
+    establishmentMeans?: string;
   };
 }): Promise<CreatedRecord> {
   const { agent, occurrenceInput } = options;
@@ -321,6 +329,9 @@ async function createOccurrenceRecord(options: {
       : {}),
     ...(occurrenceInput.projectRef
       ? { projectRef: occurrenceInput.projectRef }
+      : {}),
+    ...(occurrenceInput.siteRef !== undefined
+      ? { siteRef: occurrenceInput.siteRef }
       : {}),
     ...(occurrenceInput.establishmentMeans
       ? { establishmentMeans: occurrenceInput.establishmentMeans }
