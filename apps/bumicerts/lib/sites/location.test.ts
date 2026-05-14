@@ -11,6 +11,24 @@ describe("extractInlineSiteCoordinate", () => {
     ).toEqual({ lat: 9.75, lon: -4.63 });
   });
 
+  test("rejects correct $type with wrong locationType", () => {
+    expect(
+      extractInlineSiteCoordinate(
+        { $type: "app.certified.location#string", string: "9.75,-4.63" },
+        "coordinate-dms",
+      ),
+    ).toBeNull();
+  });
+
+  test("rejects wrong $type with correct locationType", () => {
+    expect(
+      extractInlineSiteCoordinate(
+        { $type: "app.certified.location#blob", string: "9.75,-4.63" },
+        "coordinate-decimal",
+      ),
+    ).toBeNull();
+  });
+
   test("rejects coordinate strings with extra comma-separated values", () => {
     expect(
       extractInlineSiteCoordinate(

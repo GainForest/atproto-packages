@@ -36,7 +36,7 @@ export function extractInlineSiteCoordinate(
   }
 
   if (
-    location.$type !== "app.certified.location#string" &&
+    location.$type !== "app.certified.location#string" ||
     locationType !== "coordinate-decimal"
   ) {
     return null;
