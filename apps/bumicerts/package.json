@@ -17,6 +17,8 @@
     "init-marketplace-route": "bun run scripts/init-marketplace-route.ts",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
+    "publish:e2e-report": "bun run scripts/publish-e2e-report.ts",
+    "test:e2e:publish-report": "bun run test:e2e && bun run publish:e2e-report",
     "prepare": "husky"
   },
   "dependencies": {
