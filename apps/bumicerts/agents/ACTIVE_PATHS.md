@@ -64,16 +64,6 @@ Use this doc when file ownership, placement, or search results are ambiguous.
 
 - Do not hardcode paths or domains outside these modules when a helper should own them.
 
-## Test Sources vs Generated Artifacts
-
-| Need | Canonical path | Notes |
-|---|---|---|
-| E2E feature specs | `e2e/features/*` | Source files. |
-| E2E step definitions | `e2e/step-definitions/*` | Source files. |
-| E2E support runtime | `e2e/support/*` | Source files. |
-| Generated E2E output | `e2e/.e2e-dist/*` | Build artifact. Do not edit first. |
-| Reports and screenshots | `reports/*` | Output artifact. Do not edit first. |
-
 ## When to Extend This Map
 
 If another area repeatedly causes wrong-file edits, add it here after approval.

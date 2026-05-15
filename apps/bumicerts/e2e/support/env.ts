@@ -1,78 +1,45 @@
-/**
- * E2E Test Environment Configuration
- *
- * Loads and validates environment variables from e2e/.env
- * Provides typed access to test configuration values
- */
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
 
-import { config } from 'dotenv'
-import { resolve } from 'node:path'
+type E2EEnv = {
+  appUrl: string;
+  testHandle: string;
+  testPassword: string;
+  testPdsDomain: string | null;
+};
 
-// Load environment variables from e2e/.env
-// Use process.cwd() which is the project root where tests are run from
-const envPath = resolve(process.cwd(), 'e2e', '.env')
-const result = config({ path: envPath })
+function loadDotEnvFile(path: string): void {
+  if (!existsSync(path)) return;
 
-if (result.error) {
-  console.error('❌ Failed to load .env file:', result.error)
-  console.error('Tried path:', envPath)
-  console.error('Current working directory:', process.cwd())
-  throw result.error
-}
+  for (const line of readFileSync(path, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
 
-console.log('✅ Loaded .env from:', envPath)
-console.log('📋 E2E_APP_URL:', process.env.E2E_APP_URL)
-console.log('📋 E2E_TEST_HANDLE:', process.env.E2E_TEST_HANDLE)
+    const equalsIndex = trimmed.indexOf("=");
+    if (equalsIndex === -1) continue;
 
-/**
- * Helper to require an environment variable
- * @throws Error if the variable is not set
- */
-function required(name: string): string {
-  const value = process.env[name]
-  if (!value) {
-    throw new Error(
-      `Missing required environment variable: ${name}\n` +
-        `Please set it in e2e/.env (see e2e/.env.example for reference)`
-    )
+    const key = trimmed.slice(0, equalsIndex).trim();
+    const rawValue = trimmed.slice(equalsIndex + 1).trim();
+    const value = rawValue.replace(/^['"]|['"]$/g, "");
+    process.env[key] ??= value;
   }
-  return value
 }
 
-/**
- * Helper to get an optional environment variable
- */
-function optional(name: string, defaultValue?: string): string | undefined {
-  return process.env[name] ?? defaultValue
+loadDotEnvFile(resolve(process.cwd(), "e2e/.env"));
+
+function required(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`${name} is required. Copy e2e/.env.example to e2e/.env and fill it in.`);
+  }
+  return value;
 }
 
-/**
- * Test environment configuration
- *
- * All URLs, credentials, and runtime settings should be accessed through this object
- */
-export const testEnv = {
-  // Main application URL under test
-  appUrl: required('E2E_APP_URL'),
-
-  // Browser behavior
-  headless: optional('E2E_HEADLESS', 'false') === 'true',
-
-  // Optional: Separate service URLs (if your platform has them)
-  authUrl: optional('E2E_AUTH_URL'),
-  apiUrl: optional('E2E_API_URL'),
-
-  // Optional: Email/OTP service (for auth testing)
-  mailUrl: optional('E2E_MAIL_URL'),
-  mailUser: optional('E2E_MAIL_USER'),
-  mailPass: optional('E2E_MAIL_PASS'),
-
-  // Timeouts (in milliseconds)
-  defaultTimeout: Number.parseInt(optional('E2E_DEFAULT_TIMEOUT', '30000') ?? '30000'),
-  navigationTimeout: Number.parseInt(optional('E2E_NAVIGATION_TIMEOUT', '30000') ?? '30000'),
-
-  // Test account credentials (for authenticated tests via OAuth)
-  testHandle: optional('E2E_TEST_HANDLE'),
-  testPassword: optional('E2E_TEST_PASSWORD'),
-  testPdsDomain: optional('E2E_TEST_PDS_DOMAIN'),
-} as const
+export function getE2EEnv(): E2EEnv {
+  return {
+    appUrl: process.env.E2E_BASE_URL ?? "http://127.0.0.1:3001",
+    testHandle: required("E2E_TEST_HANDLE"),
+    testPassword: required("E2E_TEST_PASSWORD"),
+    testPdsDomain: process.env.E2E_TEST_PDS_DOMAIN?.trim() || null,
+  };
+}

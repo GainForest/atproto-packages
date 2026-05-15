@@ -1,16 +1,21 @@
 {
-  "type": "Feature",
-  "geometry": {
-    "type": "Polygon",
-    "coordinates": [[
-      [-122.4194, 37.7749],
-      [-122.4094, 37.7749],
-      [-122.4094, 37.7649],
-      [-122.4194, 37.7649],
-      [-122.4194, 37.7749]
-    ]]
-  },
-  "properties": {
-    "name": "E2E Test Site"
-  }
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "E2E Site Boundary" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [85.3200, 27.7000],
+            [85.3250, 27.7000],
+            [85.3250, 27.7050],
+            [85.3200, 27.7050],
+            [85.3200, 27.7000]
+          ]
+        ]
+      }
+    }
+  ]
 }
