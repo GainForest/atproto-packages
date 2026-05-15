@@ -179,6 +179,12 @@ export type AuthSetupConfig = {
    */
   backgroundColor?: string;
   /**
+   * Custom CSS URI for ePDS OAuth consent branding.
+   * Non-standard ATProto metadata; ignored by regular PDSes.
+   * e.g. "https://example.com/branding.css"
+   */
+  brandingCssUri?: string;
+  /**
    * Email template URI for OTP emails (ePDS).
    * e.g. "https://example.com/email-template.html"
    */
@@ -313,6 +319,7 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     logoUri,
     brandColor,
     backgroundColor,
+    brandingCssUri,
     emailTemplateUri,
     emailSubjectTemplate,
     tosUri,
@@ -393,6 +400,7 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     logoUri,
     brandColor,
     backgroundColor,
+    brandingCssUri,
     emailTemplateUri,
     emailSubjectTemplate,
     tosUri,

@@ -15,6 +15,8 @@ export type ClientMetadataOptions = {
   brandColor?: string;
   /** Background color (hex) for OAuth consent screens. */
   backgroundColor?: string;
+  /** Custom CSS URI for ePDS OAuth consent branding (non-standard metadata). */
+  brandingCssUri?: string;
   /** Email template URI for OTP emails (ePDS). */
   emailTemplateUri?: string;
   /** Email subject template for OTP emails (ePDS). */
@@ -75,6 +77,7 @@ export function createClientMetadataHandler(
     if (options.logoUri) commonFields.logo_uri = options.logoUri;
     if (options.brandColor) commonFields.brand_color = options.brandColor;
     if (options.backgroundColor) commonFields.background_color = options.backgroundColor;
+    if (options.brandingCssUri) commonFields.branding_css_uri = options.brandingCssUri;
     if (options.emailTemplateUri) commonFields.email_template_uri = options.emailTemplateUri;
     if (options.emailSubjectTemplate) commonFields.email_subject_template = options.emailSubjectTemplate;
     if (options.tosUri) commonFields.tos_uri = options.tosUri;

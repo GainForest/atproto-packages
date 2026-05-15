@@ -66,9 +66,11 @@ function getAuth() {
     epdsSkipConsentOnSignup: true,
     onCallback: { redirectTo: "/auth/complete" },
     logoUri: publicUrl
-      ? `${publicUrl}/assets/media/images/app-icon.png`
+      ? `${publicUrl}/assets/media/images/gainforest-logo.svg`
       : undefined,
-    backgroundColor: "#FFFFFF",
+    brandColor: "#2FCE8A",
+    backgroundColor: "#F8FBF6",
+    brandingCssUri: publicUrl ? `${publicUrl}/branding.css` : undefined,
     emailTemplateUri: publicUrl
       ? `${publicUrl}/assets/email/otp-template.html`
       : undefined,
