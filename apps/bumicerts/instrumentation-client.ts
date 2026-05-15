@@ -9,10 +9,18 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { scrubEvent } from "@/lib/sentry/scrub";
+import { buildTracePropagationTargets } from "@/lib/sentry/trace-propagation-targets";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 const environment =
   process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV ?? "development";
+const tracePropagationTargets = buildTracePropagationTargets(
+  process.env.NEXT_PUBLIC_BASE_URL,
+  process.env.NEXT_PUBLIC_VERCEL_URL,
+  process.env.NEXT_PUBLIC_PRODUCTION_URL,
+  process.env.NEXT_PUBLIC_STAGING_URL,
+  globalThis.location?.origin,
+);
 
 Sentry.init({
   dsn,
@@ -29,7 +37,7 @@ Sentry.init({
   // Only attach Sentry trace headers (sentry-trace, baggage) to our own
   // origin. Default would propagate them to every third-party fetch
   // (Supabase, S3, Resend, ATProto PDSes, ...).
-  tracePropagationTargets: [/^\//],
+  tracePropagationTargets,
 
   // Session Replay disabled. Even with input masking, replays of an OAuth
   // / donation flow can capture wallet addresses, donation amounts, and

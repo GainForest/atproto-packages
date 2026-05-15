@@ -20,7 +20,7 @@
 import type { Event } from "@sentry/nextjs";
 
 const SENSITIVE_URL_PARAM =
-  /([?&])(code|state|access_token|id_token|refresh_token|token|api_key|session|password|secret)=[^&#]*/gi;
+  /([#?&])(code|state|access_token|id_token|refresh_token|token|api_key|session|password|secret)=[^&#]*/gi;
 
 const SENSITIVE_KEY =
   /jwk|private[_-]?key|cookie[_-]?secret|facilitator[_-]?(?:password|private[_-]?key)|hmac[_-]?key|service[_-]?role[_-]?key|aws[_-]?secret|api[_-]?key|access[_-]?token|refresh[_-]?token|^password$|^secret$|^cookie$|^authorization$/i;
@@ -29,6 +29,18 @@ const FILTERED = "[Filtered]";
 
 function scrubUrl(url: string): string {
   return url.replace(SENSITIVE_URL_PARAM, `$1$2=${FILTERED}`);
+}
+
+function scrubValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(scrubValue);
+  }
+
+  if (value !== null && typeof value === "object") {
+    return scrubRecord(value as Record<string, unknown>);
+  }
+
+  return value;
 }
 
 function scrubRecord(
@@ -40,11 +52,7 @@ function scrubRecord(
       out[key] = FILTERED;
       continue;
     }
-    if (raw !== null && typeof raw === "object" && !Array.isArray(raw)) {
-      out[key] = scrubRecord(raw as Record<string, unknown>);
-      continue;
-    }
-    out[key] = raw;
+    out[key] = scrubValue(raw);
   }
   return out;
 }

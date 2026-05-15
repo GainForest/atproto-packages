@@ -5,10 +5,18 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { scrubEvent } from "@/lib/sentry/scrub";
+import { buildTracePropagationTargets } from "@/lib/sentry/trace-propagation-targets";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 const environment =
   process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? "development";
+const tracePropagationTargets = buildTracePropagationTargets(
+  process.env.NEXT_PUBLIC_BASE_URL,
+  process.env.NEXT_PUBLIC_VERCEL_URL,
+  process.env.NEXT_PUBLIC_PRODUCTION_URL,
+  process.env.NEXT_PUBLIC_STAGING_URL,
+  process.env.VERCEL_URL,
+);
 
 Sentry.init({
   dsn,
@@ -23,7 +31,7 @@ Sentry.init({
 
   // Only propagate sentry-trace / baggage to our own origin so we don't
   // leak trace IDs to third-party APIs (Supabase, S3, ATProto PDSes, ...).
-  tracePropagationTargets: [/^\//],
+  tracePropagationTargets,
 
   beforeSend: scrubEvent,
   beforeSendTransaction: scrubEvent,
