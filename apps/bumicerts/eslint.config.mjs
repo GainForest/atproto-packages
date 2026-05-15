@@ -14,9 +14,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     // Generated files — lint rules do not apply.
-    "e2e/.e2e-dist/**",
     "graphql/indexer/env.d.ts",
-    "reports/**",
   ]),
   {
     plugins: {
