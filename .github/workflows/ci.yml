@@ -172,6 +172,58 @@ jobs:
           SKIP_ENV_VALIDATION: "1"
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # Bumicerts E2E: Playwright tests + per-run report artifact
+  # ─────────────────────────────────────────────────────────────────────────────
+  bumicerts-e2e:
+    name: Bumicerts E2E Tests
+    needs: setup
+    if: needs.setup.outputs.bumicerts_changed == 'true' || needs.setup.outputs.packages_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.7"
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-deps-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-deps-
+
+      - name: Install dependencies
+        run: bun install
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: packages
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+        working-directory: apps/bumicerts
+
+      - name: Run Bumicerts E2E tests
+        run: bun run test:e2e
+        working-directory: apps/bumicerts
+        env:
+          SKIP_ENV_VALIDATION: "1"
+          E2E_TEST_HANDLE: ${{ secrets.E2E_TEST_HANDLE }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+          E2E_TEST_PDS_DOMAIN: ${{ secrets.E2E_TEST_PDS_DOMAIN }}
+
+      - name: Upload Playwright HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bumicerts-playwright-report-${{ github.run_id }}
+          path: apps/bumicerts/reports/e2e/html
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # Indexer: Validate + Deploy to Railway
   # ─────────────────────────────────────────────────────────────────────────────
   indexer:
