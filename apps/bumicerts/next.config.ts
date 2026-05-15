@@ -6,7 +6,10 @@ import { clientEnv } from "./lib/env/client";
 import { serverEnv } from "./lib/env/server";
 import { links } from "./lib/links";
 
-const imageProxyUrl = new URL(clientEnv.NEXT_PUBLIC_IMAGE_PROXY_URL);
+const imageProxyUrl = new URL(
+  clientEnv.NEXT_PUBLIC_IMAGE_PROXY_URL ??
+    "https://blob-proxy-worker.satyam1308mishra.workers.dev/image?url=",
+);
 const imageProxyProtocol = imageProxyUrl.protocol === "http:" ? "http" : "https";
 
 const nextConfig: NextConfig = {
