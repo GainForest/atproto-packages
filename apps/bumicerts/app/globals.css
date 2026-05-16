@@ -131,6 +131,22 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+  clip-path: circle(0px at var(--theme-ripple-x, 0px) var(--theme-ripple-y, 0px));
+}
+
 /* ── Scrollbar ──────────────────────────────────────── */
 .scrollbar-hidden {
   scrollbar-width: none;
