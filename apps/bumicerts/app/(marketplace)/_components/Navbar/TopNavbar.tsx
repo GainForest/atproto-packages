@@ -45,7 +45,7 @@ export function TopNavbar() {
         />
       </div>
 
-      <div className="relative z-10 mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-12 md:px-6">
+      <div className="relative z-10 mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6">
         {/* Logo + Wordmark */}
         <Link href={links.root} className="flex items-center gap-2 group">
           <motion.div
@@ -60,9 +60,7 @@ export function TopNavbar() {
               className="drop-shadow-md"
             />
           </motion.div>
-          <span
-            className="font-garamond text-base font-medium tracking-tight text-foreground/85 transition-colors duration-200 group-hover:text-foreground"
-          >
+          <span className="font-garamond text-base font-medium tracking-tight text-foreground/85 transition-colors duration-200 group-hover:text-foreground">
             Bumicerts
           </span>
         </Link>
