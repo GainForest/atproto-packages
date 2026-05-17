@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { ManageLayoutClient } from "./_components/UploadLayoutClient";
 import { SignInPrompt } from "./_components/SignInPrompt";
 import { ModalProvider } from "@/components/ui/modal/context";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 /**
  * (MANAGE) layout

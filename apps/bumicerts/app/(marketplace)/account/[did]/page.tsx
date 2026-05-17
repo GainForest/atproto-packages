@@ -4,6 +4,7 @@ import { OrgAbout } from "@/components/account/OrgAbout";
 import ErrorPage from "@/components/error-page";
 import { links } from "@/lib/links";
 import {
+  DEFAULT_ACCOUNT_METADATA,
   buildAccountPageMetadata,
   buildAccountStructuredData,
   getAccountRouteData,
@@ -20,7 +21,7 @@ export async function generateMetadata({
     const { did } = await readAccountRouteParams(params);
     return buildAccountPageMetadata(await getAccountRouteData(did));
   } catch {
-    return { title: "Account — Bumicerts" };
+    return DEFAULT_ACCOUNT_METADATA;
   }
 }
 
@@ -54,15 +55,35 @@ export default async function AccountByDidPage({
   }
 
   const structuredData = buildAccountStructuredData(routeData);
+  const organizationsUrl = new URL(links.allOrganizations, routeData.pageUrl).toString();
+  const breadcrumbStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Organizations",
+        item: organizationsUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: routeData.organization.displayName,
+        item: routeData.pageUrl,
+      },
+    ],
+  };
+  const jsonLd = structuredData
+    ? [structuredData, breadcrumbStructuredData]
+    : [breadcrumbStructuredData];
 
   return (
     <>
-      {structuredData && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
-      )}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <OrgAbout organization={routeData.organization} />
     </>
   );

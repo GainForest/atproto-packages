@@ -12,7 +12,17 @@ import { BumicertDetail } from "./_components/BumicertDetail";
 import ErrorPage from "@/components/error-page";
 import Container from "@/components/ui/container";
 import { auth } from "@/lib/auth";
+import { links } from "@/lib/links";
 import { requirePublicUrl } from "@/lib/url";
+import { sharedOpenGraphImage } from "@/lib/seo-metadata";
+
+const BUMICERT_NOT_FOUND_METADATA: Metadata = {
+  title: "Bumicert Not Found",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 const getActivityData = cache(async (did: string) => {
   try {
@@ -36,26 +46,31 @@ export async function generateMetadata({
   const { bumicertId } = await params;
   const id = decodeURIComponent(bumicertId);
   const parsed = id.includes("-") ? id.split("-") : null;
-  if (!parsed) return { title: "Bumicert Not Found" };
+  if (!parsed) return BUMICERT_NOT_FOUND_METADATA;
 
   const [did, rkey] = parsed;
   const { data, error } = await getActivityData(did);
-  if (error || !data) return { title: "Bumicert Not Found" };
+  if (error || !data) return BUMICERT_NOT_FOUND_METADATA;
 
   const activity = (data.activities ?? []).find((a) => a.metadata?.rkey === rkey);
-  if (!activity) return { title: "Bumicert Not Found" };
+  if (!activity) return BUMICERT_NOT_FOUND_METADATA;
 
   const bumicert = activityToBumicertData(activity);
-  const pageUrl = `${requirePublicUrl()}/bumicert/${encodeURIComponent(id)}`;
+  const baseUrl = requirePublicUrl();
+  const pageUrl = `${baseUrl}${links.bumicert.view(did, rkey)}`;
   const description = bumicert.shortDescription || extractTextFromLinearDocument(bumicert.description).slice(0, 160);
 
-  const baseUrl = requirePublicUrl();
   const ogImage = bumicert.coverImageUrl
     ? { url: bumicert.coverImageUrl, width: 1200, height: 630, alt: bumicert.title }
-    : { url: `${baseUrl}/opengraph-image.png`, width: 1200, height: 630, alt: "Bumicerts" };
+    : {
+        url: `${baseUrl}${sharedOpenGraphImage.url}`,
+        width: sharedOpenGraphImage.width,
+        height: sharedOpenGraphImage.height,
+        alt: sharedOpenGraphImage.alt,
+      };
 
   return {
-    title: `${bumicert.title} — Bumicerts`,
+    title: bumicert.title,
     description,
     alternates: { canonical: pageUrl },
     openGraph: {
@@ -113,7 +128,8 @@ export default async function BumicertDetailPage({
   if (!activity) notFound();
 
   const bumicert = activityToBumicertData(activity);
-  const pageUrl = `${requirePublicUrl()}/bumicert/${encodeURIComponent(id)}`;
+  const baseUrl = requirePublicUrl();
+  const pageUrl = `${baseUrl}${links.bumicert.view(did, rkey)}`;
 
   // ── Ownership check ─────────────────────────────────────────────────────────
   const isOwner = session.isLoggedIn && session.did === bumicert.organizationDid;
@@ -146,23 +162,64 @@ export default async function BumicertDetailPage({
     : null;
 
   // ── JSON-LD structured data ─────────────────────────────────────────────────
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "@id": pageUrl,
-    headline: bumicert.title,
-    description: bumicert.shortDescription || extractTextFromLinearDocument(bumicert.description).slice(0, 160) || undefined,
-    author: {
-      "@type": "Organization",
-      name: bumicert.organizationName,
-      url: `${requirePublicUrl()}/account/${encodeURIComponent(bumicert.organizationDid)}`,
+  const accountUrl = `${baseUrl}${links.account.byDid(bumicert.organizationDid)}`;
+  const structuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "@id": pageUrl,
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": pageUrl,
+      },
+      headline: bumicert.title,
+      description:
+        bumicert.shortDescription ||
+        extractTextFromLinearDocument(bumicert.description).slice(0, 160) ||
+        undefined,
+      author: {
+        "@type": "Organization",
+        name: bumicert.organizationName,
+        url: accountUrl,
+      },
+      publisher: {
+        "@type": "Organization",
+        "@id": `${baseUrl}#organization`,
+        name: "GainForest",
+        url: "https://gainforest.earth",
+      },
+      ...(bumicert.coverImageUrl
+        ? { image: { "@type": "ImageObject", url: bumicert.coverImageUrl } }
+        : {}),
+      ...(bumicert.startDate ? { datePublished: bumicert.startDate } : {}),
+      ...(bumicert.createdAt ? { dateCreated: bumicert.createdAt } : {}),
+      ...(bumicert.createdAt ? { dateModified: bumicert.createdAt } : {}),
     },
-    ...(bumicert.coverImageUrl
-      ? { image: { "@type": "ImageObject", url: bumicert.coverImageUrl } }
-      : {}),
-    ...(bumicert.startDate ? { datePublished: bumicert.startDate } : {}),
-    ...(bumicert.createdAt ? { dateCreated: bumicert.createdAt } : {}),
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Explore",
+          item: `${baseUrl}${links.explore}`,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: bumicert.organizationName,
+          item: accountUrl,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: bumicert.title,
+          item: pageUrl,
+        },
+      ],
+    },
+  ];
 
   return (
     <>

@@ -1,12 +1,12 @@
 import { clientEnv } from "./env/client";
 import type { BumicertDetailTab } from "./bumicert-tabs";
+import { getPublicUrlClient } from "./url";
 
 type DidDynamicLink = (did?: string) => string;
 const didCatcher = (callback: (did: string) => string): DidDynamicLink => {
   return (did) => (did === undefined ? "#" : callback(did));
 };
 
-const DEFAULT_GREEN_GLOBE_PREVIEW_BASE_URL = "https://gainforest.app";
 const BUMICERT_CREATE_PATH = "/bumicert/create";
 const HYPERLABEL_BASE_URL = "https://hyperlabel-production.up.railway.app";
 const CONTENTSQUARE_UXA_BASE_URL = "https://t.contentsquare.net/uxa";
@@ -15,7 +15,7 @@ const TREE_UPLOAD_FEEDBACK_FORM_URL =
 
 const GREEN_GLOBE_PREVIEW_BASE_URL =
   clientEnv.NEXT_PUBLIC_GREEN_GLOBE_URL?.trim().replace(/\/$/, "") ??
-  DEFAULT_GREEN_GLOBE_PREVIEW_BASE_URL;
+  getPublicUrlClient();
 
 function bumicertViewPath(didOrId: string, rkey?: string): string {
   if (rkey) {

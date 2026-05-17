@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ExternalLinkIcon, HelpCircleIcon, LeafIcon } from "lucide-react";
@@ -6,6 +7,16 @@ import { CreateBumicertTabs } from "./_components/CreateBumicertTabs";
 import GetStartedButton from "./_components/GetStartedButton";
 import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
+
+export const metadata: Metadata = {
+  title: "Create a Bumicert",
+  description:
+    "Create a Bumicert to document, share, and celebrate verified regenerative impact.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 function CreateHeroCard() {
   return (

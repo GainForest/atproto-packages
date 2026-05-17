@@ -41,7 +41,10 @@ export function generateMetadata(): Metadata {
   const baseUrl = requirePublicUrl();
   return {
     metadataBase: new URL(baseUrl),
-    title: TITLE,
+    title: {
+      default: TITLE,
+      template: "%s — Bumicerts",
+    },
     description: DESCRIPTION,
     applicationName: "Bumicerts",
     authors: [{ name: "GainForest", url: "https://gainforest.earth" }],
@@ -74,21 +77,38 @@ export function generateMetadata(): Metadata {
       },
       { rel: "apple-touch-icon", url: "/apple-touch-icon.png" },
     ],
-    robots: "noindex, nofollow",
+    robots: {
+      index: true,
+      follow: true,
+    },
     openGraph: {
       title: TITLE,
       siteName: "Bumicerts",
       description: DESCRIPTION,
       type: "website",
       url: baseUrl,
-      images: [{ url: "/opengraph-image.png", alt: TITLE }],
+      images: [
+        {
+          url: "/opengraph-image.png",
+          width: 2136,
+          height: 1180,
+          alt: TITLE,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       site: "@GainForestNow",
       title: TITLE,
       description: DESCRIPTION,
-      images: [{ url: "/opengraph-image.png", alt: TITLE }],
+      images: [
+        {
+          url: "/opengraph-image.png",
+          width: 2136,
+          height: 1180,
+          alt: TITLE,
+        },
+      ],
     },
   };
 }
@@ -99,16 +119,58 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
+function buildRootStructuredData(): Record<string, unknown>[] {
+  const baseUrl = requirePublicUrl();
+
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": `${baseUrl}#website`,
+      name: "Bumicerts",
+      url: baseUrl,
+      description: DESCRIPTION,
+      publisher: {
+        "@id": `${baseUrl}#organization`,
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": `${baseUrl}#organization`,
+      name: "GainForest",
+      url: "https://gainforest.earth",
+      logo: {
+        "@type": "ImageObject",
+        url: `${baseUrl}/apple-touch-icon.png`,
+        width: 180,
+        height: 180,
+      },
+      sameAs: [
+        "https://gainforest.earth",
+        "https://github.com/GainForest",
+        "https://x.com/GainForestNow",
+      ],
+    },
+  ];
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const structuredData = buildRootStructuredData();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cormorantGaramond.variable} ${instrumentSerif.variable} antialiased`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>

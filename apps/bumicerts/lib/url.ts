@@ -22,8 +22,8 @@
  * other server-only modules (e.g. lib/auth.ts).
  */
 
-import { serverEnv } from "@/lib/env/server";
-import { clientEnv } from "@/lib/env/client";
+import { serverEnv } from "./env/server";
+import { clientEnv } from "./env/client";
 
 /**
  * Returns the app's canonical public base URL, or `undefined` if none can be
@@ -121,16 +121,24 @@ export function getPublicUrlClient(): string {
     return `https://${clientEnv.NEXT_PUBLIC_VERCEL_URL.trim()}`;
   }
 
-  // 3. Production: use NEXT_PUBLIC_VERCEL_URL if available
+  // 3. Production custom domain configured through branch mapping.
+  if (
+    clientEnv.NEXT_PUBLIC_VERCEL_ENV === "production" &&
+    clientEnv.NEXT_PUBLIC_PRODUCTION_URL
+  ) {
+    return clientEnv.NEXT_PUBLIC_PRODUCTION_URL.trim().replace(/\/$/, "");
+  }
+
+  // 4. Production: use NEXT_PUBLIC_VERCEL_URL if available
   if (clientEnv.NEXT_PUBLIC_VERCEL_URL) {
     return `https://${clientEnv.NEXT_PUBLIC_VERCEL_URL.trim()}`;
   }
 
-  // 4. Fallback to window.location.origin (local dev without env vars)
+  // 5. Fallback to window.location.origin (local dev without env vars)
   if (typeof window !== "undefined") {
     return window.location.origin;
   }
 
-  // 5. Last resort: empty string (SSR without env vars — should not happen)
+  // 6. Last resort: empty string (SSR without env vars — should not happen)
   return "";
 }

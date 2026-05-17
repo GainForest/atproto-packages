@@ -1,9 +1,17 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { links } from "@/lib/links";
 import { AccountOnboardingRequired } from "./_components/AccountOnboardingRequired";
 import ErrorPage from "@/components/error-page";
 import { getIndexerCaller } from "@/lib/trpc/indexer/server";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function AccountPage() {
   const session = await auth.session.getSession();
