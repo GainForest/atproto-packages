@@ -26,6 +26,8 @@ If the task prompt conflicts with a higher-priority local rule, stop and report 
 ## Working Definitions
 
 - A new user prompt means a new user message. Tool outputs and self-corrections are not new user prompts.
+- Agentic docs are repository guidance files written for agent behavior, routing, workflow, skills, examples, or review discipline. This includes this file, files in `agents/`, app-local `skills/`, root `.agents/skills/`, and agent-facing examples or decisions when they are read only because the workflow says to read them.
+- `must-read-agentic-docs` is a session-local boolean controlled by the user with `--must-read-agentic-docs true` or `--must-read-agentic-docs false`.
 - Classify each task as one or more of: code, docs, config, test, mixed.
 - A subsystem is a distinct task area with its own playbook or local contract, such as React state, Next.js routing, data boundaries, design, modal flows, upload routes, donation flows, or E2E.
 - A materially relevant skill directly improves implementation or review quality for the current task. Do not load a skill just because the surrounding stack happens to match its topic.
@@ -33,10 +35,22 @@ If the task prompt conflicts with a higher-priority local rule, stop and report 
 - A logic change alters behavior, validation, branching, mutations, derived outcomes, or data interpretation.
 - Relevant tests are the closest automated checks that protect the changed behavior. If none exist, say so clearly and run the best available targeted check.
 
+## Agentic Docs Read Mode
+
+- At the start of every session, `must-read-agentic-docs` defaults to `false`.
+- The user may include `--must-read-agentic-docs true` or `--must-read-agentic-docs false` in any prompt.
+- When the flag appears, update the session-local value before deciding which agentic docs to read for that prompt.
+- The value persists for the rest of the session until the user changes it again.
+- On the first assistant response of every session, include one concise line informing the user that agentic docs reading is off by default and can be enabled with `--must-read-agentic-docs true`.
+- When `must-read-agentic-docs` is `false`, do not read or re-read agentic docs solely because this file or the router says to read them.
+- When `must-read-agentic-docs` is `true`, follow the normal agentic documentation workflow in this file and `agents/README.md`.
+- A direct user request to inspect, summarize, propose, or edit agentic docs overrides `must-read-agentic-docs=false` only for the files needed to satisfy that explicit docs request.
+- Non-agentic source files, implementation files, and files directly required for the requested task may still be read normally.
+
 ## Required Workflow
 
-- Re-read this file after every new user message before acting.
-- Read `agents/README.md` immediately after this file. Use it as the task router before choosing any other local docs.
+- If `must-read-agentic-docs` is `true`, re-read this file after every new user message before acting.
+- If `must-read-agentic-docs` is `true`, read `agents/README.md` immediately after this file. Use it as the task router before choosing any other local docs.
 - Classify the task before editing.
 - If the task changes future decision-making for agents or humans, such as workflow, routing, ownership, approved patterns, contracts, testing flow, or recurring exceptions, read `agents/DOC_MAINTENANCE.md` before finishing.
 - If file ownership, placement, or search results are ambiguous, read `agents/ACTIVE_PATHS.md` before editing.
@@ -138,7 +152,7 @@ Read the applicable docs before changing these areas.
 
 ### Mandatory first router
 
-- After `AGENTS.md` → `agents/README.md`
+- When `must-read-agentic-docs` is `true`: after `AGENTS.md` → `agents/README.md`
 
 ### Mandatory playbooks when applicable
 

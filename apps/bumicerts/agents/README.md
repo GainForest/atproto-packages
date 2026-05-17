@@ -1,27 +1,28 @@
 # Bumicerts Agent Docs Router
 
-Use this file immediately after reading `../AGENTS.md`.
+Use this file immediately after reading `../AGENTS.md` when `must-read-agentic-docs` is `true`, or when the user explicitly asks to inspect, summarize, propose, or edit agentic docs.
 
-It is the mandatory task router before any other local docs.
+It is the task router for agentic-docs-enabled work.
 
 ## Quick Procedure
 
-1. Re-read `../AGENTS.md` after every new user message.
-2. Read this file immediately after `../AGENTS.md`.
-3. Classify the task as code, docs, config, test, or mixed.
-4. If the task changes future decision-making for agents or humans, such as workflow, routing, ownership, approved patterns, contracts, testing flow, or recurring exceptions, read `DOC_MAINTENANCE.md`.
-5. If file ownership, placement, or search results are ambiguous, read `ACTIVE_PATHS.md`.
-6. If the task includes test work, E2E work, or choosing checks, read `TESTING.md`.
-7. If the task changes code, read `CODE_RULES.md`.
-8. Identify every subsystem being touched.
-9. Read every matching playbook in this folder. Rows stack.
-10. Read mandatory local rule or contract docs when they directly apply.
-11. If a matching approved example exists in `../docs/examples/`, copy its shape before inventing a new one.
-12. If scope expands, stop, re-classify the task, and read any newly applicable docs before continuing.
-13. Use supporting skills only after local docs, and only when they directly improve the task.
-14. If a key product, architecture, naming, ownership, placement, or pattern choice is ambiguous, ask instead of inventing an answer.
-15. Make the smallest correct change, then self-review against the same docs before finishing.
-16. Before claiming completion on a substantial task, decide whether any agentic docs must be updated by applying `DOC_MAINTENANCE.md`.
+1. Check the current session-local `must-read-agentic-docs` value from `../AGENTS.md`.
+2. If `must-read-agentic-docs` is `false`, do not continue routing through agentic docs unless the user explicitly asked for agentic docs work.
+3. If `must-read-agentic-docs` is `true`, re-read `../AGENTS.md` after every new user message, then read this file immediately afterward.
+4. Classify the task as code, docs, config, test, or mixed.
+5. If the task changes future decision-making for agents or humans, such as workflow, routing, ownership, approved patterns, contracts, testing flow, or recurring exceptions, read `DOC_MAINTENANCE.md`.
+6. If file ownership, placement, or search results are ambiguous, read `ACTIVE_PATHS.md`.
+7. If the task includes test work, E2E work, or choosing checks, read `TESTING.md`.
+8. If the task changes code, read `CODE_RULES.md`.
+9. Identify every subsystem being touched.
+10. Read every matching playbook in this folder. Rows stack.
+11. Read mandatory local rule or contract docs when they directly apply.
+12. If a matching approved example exists in `../docs/examples/`, copy its shape before inventing a new one.
+13. If scope expands, stop, re-classify the task, and read any newly applicable docs before continuing.
+14. Use supporting skills only after local docs, and only when they directly improve the task.
+15. If a key product, architecture, naming, ownership, placement, or pattern choice is ambiguous, ask instead of inventing an answer.
+16. Make the smallest correct change, then self-review against the same docs before finishing.
+17. Before claiming completion on a substantial task, decide whether any agentic docs must be updated by applying `DOC_MAINTENANCE.md`.
 
 ## Task → Playbooks
 
@@ -76,7 +77,8 @@ Rows stack. For example, a new `/upload/*` route with client interactivity may r
 ## Rule of Thumb
 
 - `AGENTS.md` is the constitution and owns workflow.
-- This file is the mandatory router immediately after `AGENTS.md`.
+- This router is mandatory only when `must-read-agentic-docs` is `true`, or when the user explicitly asks for agentic docs work.
+- When `must-read-agentic-docs` is `false`, skip agentic doc routing and do not read playbooks solely because this router would normally require them.
 - `DOC_MAINTENANCE.md` decides when agentic docs should change and where that update belongs.
 - `ACTIVE_PATHS.md` resolves canonical ownership and legacy redirects.
 - `TESTING.md` resolves what to run and which test docs matter.
