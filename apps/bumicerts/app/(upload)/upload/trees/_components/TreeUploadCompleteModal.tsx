@@ -18,8 +18,13 @@ import {
   ModalHeader,
   ModalTitle,
 } from "@/components/ui/modal/modal";
-import { TREE_UPLOAD_EVENTS, type TreeUploadEventPayload } from "@/lib/analytics/events";
+import {
+  TREE_UPLOAD_EVENTS,
+  type TreeUploadEventPayload,
+} from "@/lib/analytics/events";
 import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
+import type { TreeUploadRowAttentionSummary } from "@/lib/upload/types";
+import { getTreeUploadRowAttentionKindLabel } from "@/lib/upload/row-attention";
 import { TreeUploadFeedbackModal } from "./TreeUploadFeedbackModal";
 
 type TreeUploadCompleteModalProps = {
@@ -27,6 +32,7 @@ type TreeUploadCompleteModalProps = {
   savedCount: number;
   partialCount: number;
   failedCount: number;
+  rowAttentionSummaries: TreeUploadRowAttentionSummary[];
   photoFailureCount: number;
   treeManagerHref: string;
   treeManagerLabel: string;
@@ -47,6 +53,7 @@ export function TreeUploadCompleteModal({
   savedCount,
   partialCount,
   failedCount,
+  rowAttentionSummaries,
   photoFailureCount,
   treeManagerHref,
   treeManagerLabel,
@@ -56,7 +63,8 @@ export function TreeUploadCompleteModal({
   const { hide, clear, pushModal } = useModal();
   const router = useRouter();
 
-  const hasRowAttention = partialCount > 0 || failedCount > 0;
+  const hasRowAttention =
+    partialCount > 0 || failedCount > 0 || rowAttentionSummaries.length > 0;
   const hasPhotoAttention = photoFailureCount > 0;
   const hasAttention = hasRowAttention || hasPhotoAttention;
 
@@ -100,8 +108,8 @@ export function TreeUploadCompleteModal({
       </ModalHeader>
 
       <div className="space-y-4">
-        <div className="flex flex-col items-center gap-3 rounded-3xl border border-green-500/20 bg-green-500/5 px-4 py-5 text-center">
-          <div className="flex size-14 items-center justify-center rounded-full bg-green-500/10 text-green-600 dark:text-green-400">
+        <div className="flex flex-col items-center gap-3 rounded-3xl border border-primary/20 bg-primary/5 px-4 py-5 text-center">
+          <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             <CheckCircle2 className="size-7" />
           </div>
           <div className="space-y-1">
@@ -129,7 +137,10 @@ export function TreeUploadCompleteModal({
                     </li>
                   ) : null}
                   {failedCount > 0 ? (
-                    <li>{pluralize(failedCount, "row")} failed to upload.</li>
+                    <li>
+                      {pluralize(failedCount, "row")} skipped or failed to
+                      upload.
+                    </li>
                   ) : null}
                   {photoFailureCount > 0 ? (
                     <li>
@@ -138,6 +149,34 @@ export function TreeUploadCompleteModal({
                     </li>
                   ) : null}
                 </ul>
+                {rowAttentionSummaries.length > 0 ? (
+                  <div className="mt-3 rounded-xl border border-yellow-500/20 bg-background/60 p-2">
+                    <p className="mb-2 text-xs font-medium text-foreground">
+                      Rows needing review
+                    </p>
+                    <ul className="max-h-44 space-y-2 overflow-y-auto pr-1 text-xs">
+                      {rowAttentionSummaries.map((summary) => (
+                        <li
+                          key={`${summary.kind}-${summary.sourceRowIndex}`}
+                          className="rounded-lg border border-yellow-500/20 bg-background/80 p-2"
+                        >
+                          <p className="font-medium text-foreground">
+                            Row {summary.sourceRowIndex + 1} —{" "}
+                            {summary.rowLabel}
+                          </p>
+                          <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
+                            {getTreeUploadRowAttentionKindLabel(summary.kind)}
+                          </p>
+                          <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                            {summary.messages.map((message, messageIndex) => (
+                              <li key={messageIndex}>{message}</li>
+                            ))}
+                          </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>

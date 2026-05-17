@@ -52,6 +52,7 @@ import {
 } from "../store";
 import { useManageMode } from "../../_hooks/useUploadMode";
 import type { OrganizationData } from "@/lib/types";
+import { getProxiedImageUrl } from "@/lib/images";
 import { cn } from "@/lib/utils";
 import { BskyRichTextDisplay } from "@/components/ui/bsky-richtext-display";
 import { countries } from "@/lib/countries";
@@ -327,7 +328,7 @@ export function EditableHero({
         >
           {coverImageUrl ? (
             <Image
-              src={coverImageUrl}
+              src={getProxiedImageUrl(coverImageUrl)}
               alt={`${displayName} cover image`}
               fill
               priority
@@ -354,7 +355,7 @@ export function EditableHero({
             <div className="relative h-24 w-24 rounded-full overflow-hidden bg-muted border border-white/15 shadow-sm">
               {logoUrl ? (
                 <Image
-                  src={logoUrl}
+                  src={getProxiedImageUrl(logoUrl)}
                   alt={displayName}
                   fill
                   className="object-cover"

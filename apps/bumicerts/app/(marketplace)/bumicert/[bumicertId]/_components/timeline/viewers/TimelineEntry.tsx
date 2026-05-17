@@ -271,31 +271,25 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
           className="min-w-0 flex-1 text-left"
         >
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            <span className="text-xs text-primary">
               {contentLabel}
             </span>
             {metricBadges.map((badge) => (
               <span
                 key={badge}
-                className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary"
               >
                 {badge}
               </span>
             ))}
           </div>
-          <h3 className="mt-1 text-base font-semibold text-foreground">
+          <h3 className="mt-1 text-base text-foreground">
             {entryTitle}
           </h3>
-          <dl className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-            <div>
-              <dt className="font-semibold uppercase tracking-[0.12em]">Date recorded</dt>
-              <dd className="mt-0.5 text-foreground/85">{recordedDateLabel}</dd>
-            </div>
-            <div>
-              <dt className="font-semibold uppercase tracking-[0.12em]">Linked to Bumicert</dt>
-              <dd className="mt-0.5 text-foreground/85">{linkedDateLabel}</dd>
-            </div>
-          </dl>
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+            <span>{recordedDateLabel}</span>
+            <span>linked {linkedDateLabel}</span>
+          </div>
         </button>
 
         <div className="flex items-center gap-1">
@@ -349,7 +343,7 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
           ) : null}
 
           {hasNote ? (
-            <div className="rounded-xl border border-border/50 bg-muted/20 px-3 py-2">
+            <div className="rounded-xl bg-muted/20 px-3 py-2">
               <TimelineOptionalNote
                 note={item.record?.description}
                 ownerDid={item.metadata?.did}
@@ -358,8 +352,8 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
           ) : null}
 
           {evidenceKind === "biodiversity" && observationReferences.length > 0 ? (
-            <div className="rounded-xl border border-border/50 bg-muted/20 p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <div className="rounded-xl bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground">
                 Selected observations
               </p>
               <div className="mt-2 flex flex-wrap gap-2">

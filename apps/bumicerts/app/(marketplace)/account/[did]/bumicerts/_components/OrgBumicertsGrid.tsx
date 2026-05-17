@@ -54,12 +54,13 @@ export function OrgBumicertsGrid({ bumicerts }: OrgBumicertsGridProps) {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5"
+        className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] items-stretch gap-5"
       >
         {bumicerts.map((b) => (
-          <motion.div key={b.id} variants={cardVariants}>
-            <Link href={links.bumicert.view(b.id)} className="block">
+          <motion.div key={b.id} variants={cardVariants} className="h-full">
+            <Link href={links.bumicert.view(b.id)} className="block h-full">
               <BumicertCardVisual
+                className="h-full"
                 coverImage={b.coverImageUrl}
                 logoUrl={b.logoUrl}
                 title={b.title}

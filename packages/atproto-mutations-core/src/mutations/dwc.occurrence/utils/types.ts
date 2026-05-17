@@ -14,29 +14,9 @@ export type DwcOccurrenceMutationResult = RecordMutationResult<DwcOccurrenceReco
 // Create
 // ---------------------------------------------------------------------------
 
-export type CreateDwcOccurrenceInput = {
-  scientificName: string;
-  eventDate: string;
-  decimalLatitude: string;
-  decimalLongitude: string;
-  basisOfRecord?: string;
-  vernacularName?: string;
-  recordedBy?: string;
-  locality?: string;
-  country?: string;
-  countryCode?: string;
-  occurrenceRemarks?: string;
-  habitat?: string;
-  samplingProtocol?: string;
-  kingdom?: string;
-  occurrenceID?: string;
-  occurrenceStatus?: string;
-  geodeticDatum?: string;
-  license?: string;
-  projectRef?: string;
-  establishmentMeans?: string;
-  datasetRef?: string;
-  dynamicProperties?: string;
+type CreateDwcOccurrenceData = Omit<DwcOccurrenceRecord, "$type" | "createdAt">;
+
+export type CreateDwcOccurrenceInput = CreateDwcOccurrenceData & {
   rkey?: string;
 };
 
@@ -44,7 +24,7 @@ export type CreateDwcOccurrenceInput = {
 // Update / Delete
 // ---------------------------------------------------------------------------
 
-export type UpdateDwcOccurrenceData = Partial<Omit<CreateDwcOccurrenceInput, "rkey">>;
+export type UpdateDwcOccurrenceData = Partial<CreateDwcOccurrenceData>;
 
 export type UpdateDwcOccurrenceInput = {
   rkey: string;
@@ -53,3 +33,10 @@ export type UpdateDwcOccurrenceInput = {
 };
 
 export type { DeleteRecordInput, DeleteRecordResult };
+
+export type DeleteDwcOccurrenceCascadeInput = DeleteRecordInput;
+
+export type DeleteDwcOccurrenceCascadeResult = DeleteRecordResult & {
+  deletedMeasurementRkeys: string[];
+  deletedMultimediaRkeys: string[];
+};

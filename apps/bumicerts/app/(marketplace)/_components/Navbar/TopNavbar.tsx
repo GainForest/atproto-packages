@@ -7,6 +7,7 @@ import { useState, useId } from "react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Drawer } from "vaul";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
+import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
 
 const NAV_LINKS = [
@@ -35,14 +36,7 @@ export function TopNavbar() {
     >
       {/* Progressive blur background */}
       <div className="absolute inset-0 h-24 pointer-events-none">
-        <div
-          className="absolute inset-0 z-1"
-          style={{
-            background:
-              "linear-gradient(to bottom, white 0%, transparent 100%)",
-            opacity: 0.85,
-          }}
-        />
+        <div className="absolute inset-0 z-1 bg-gradient-to-b from-background/85 to-background/0" />
         <ProgressiveBlur
           position="top"
           height="100%"
@@ -51,7 +45,7 @@ export function TopNavbar() {
         />
       </div>
 
-      <div className="relative z-10 h-16 flex items-center w-full max-w-7xl mx-auto px-6 justify-between">
+      <div className="relative z-10 mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-12 md:px-6">
         {/* Logo + Wordmark */}
         <Link href={links.root} className="flex items-center gap-2 group">
           <motion.div
@@ -67,8 +61,7 @@ export function TopNavbar() {
             />
           </motion.div>
           <span
-            className="text-base font-medium tracking-tight text-black/80 group-hover:text-black transition-colors duration-200"
-            style={{ fontFamily: "var(--font-garamond-var)" }}
+            className="font-garamond text-base font-medium tracking-tight text-foreground/85 transition-colors duration-200 group-hover:text-foreground"
           >
             Bumicerts
           </span>
@@ -82,22 +75,19 @@ export function TopNavbar() {
             whileTap={{ scale: 0.97 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
           >
-            <Link
-              href={links.explore}
-              className="text-sm font-medium bg-primary text-primary-foreground rounded-full px-4 py-1.5 hover:bg-primary/90 transition-colors"
-            >
-              Launch App
-            </Link>
+            <Button asChild size="sm" className="shadow-lg shadow-primary/15">
+              <Link href={links.explore}>Launch App</Link>
+            </Button>
           </motion.div>
 
           {/* Menu drawer — drawerId pins aria-controls to a stable useId() value */}
           <Drawer.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
             <Drawer.Trigger
               aria-controls={drawerId}
-              className="flex items-center gap-2 text-sm font-medium text-black/70 hover:text-black transition-colors cursor-pointer"
+              className="flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
             >
               Menu
-              <span className="text-black/30">=</span>
+              <span className="text-foreground/30">=</span>
             </Drawer.Trigger>
 
             <Drawer.Portal>

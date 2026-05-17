@@ -95,6 +95,7 @@ export {
   CertifiedLocationNotFoundError,
   CertifiedLocationPdsError,
   CertifiedLocationIsDefaultError,
+  CertifiedLocationLinkedTreesConflictError,
 } from "@gainforest/atproto-mutations-core";
 
 // certified.actor.profile types — safe everywhere
@@ -249,8 +250,12 @@ export {
   GeoJsonProcessingError,
   validateGeojsonOrThrow,
   computePolygonMetrics,
+  classifyPointAgainstGeoJsonBoundary,
 } from "@gainforest/atproto-mutations-core";
-export type { PolygonMetrics } from "@gainforest/atproto-mutations-core";
+export type {
+  PointBoundaryClassification,
+  PolygonMetrics,
+} from "@gainforest/atproto-mutations-core";
 
 // AT URI utilities — safe everywhere
 export { parseAtUri } from "@gainforest/internal-utils";

@@ -35,6 +35,12 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types & Data
@@ -45,6 +51,13 @@ export type Filters = {
   countries: string[];
   bioregions: string[];
   objectives: string[];
+};
+
+export const EMPTY_FILTERS: Filters = {
+  organizations: [],
+  countries: [],
+  bioregions: [],
+  objectives: [],
 };
 
 const SORT_OPTIONS = [
@@ -145,7 +158,7 @@ function AllFiltersModalContent({
   };
 
   const clearAllPending = () => {
-    setPendingFilters({ organizations: [], countries: [], bioregions: [], objectives: [] });
+    setPendingFilters(EMPTY_FILTERS);
   };
 
   const handleApply = () => {
@@ -291,7 +304,10 @@ export function ExploreHeaderSlots({
   const { isUnauthenticated } = useHeaderContext();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const modal = useModal();
-  const filterCategories = buildFilterCategories(bumicerts);
+  const filterCategories = useMemo(
+    () => buildFilterCategories(bumicerts),
+    [bumicerts],
+  );
 
   // Stable reference so HeaderContent's useEffect dependency doesn't fire every render
   const rightSlot = useMemo(
@@ -349,35 +365,41 @@ export function ExploreHeaderSlots({
       >
         {/* Row 1: Search + Sort */}
         <div className="flex items-center gap-3">
-          <div className="relative flex-1 min-w-0">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-            <input
+          <InputGroup className="h-10 flex-1 rounded-full bg-background/50 backdrop-blur">
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+            <InputGroupInput
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search projects..."
-              className="w-full h-10 pl-10 pr-4 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              aria-label="Search projects"
+              placeholder="Search projects by name, keyword, or location..."
             />
-          </div>
+          </InputGroup>
 
           <div className="relative shrink-0">
-            <button
+            <Button
               onClick={() =>
                 setOpenDropdown((prev) => (prev === "sort" ? null : "sort"))
               }
-              className="flex items-center gap-2 h-10 px-3 text-sm text-muted-foreground hover:text-foreground border border-border rounded-lg transition-colors"
+              type="button"
+              aria-label="Sort projects"
+              aria-expanded={openDropdown === "sort"}
+              variant="outline"
+              size="lg"
             >
-              <ArrowUpDownIcon className="h-4 w-4" />
+              <ArrowUpDownIcon />
               <span className="hidden sm:inline">
                 {SORT_OPTIONS.find((o) => o.value === sort)?.label}
               </span>
               <ChevronDownIcon
                 className={cn(
-                  "h-4 w-4 transition-transform",
+                  "transition-transform",
                   openDropdown === "sort" && "rotate-180",
                 )}
               />
-            </button>
+            </Button>
 
             <AnimatePresence>
               {openDropdown === "sort" && (
@@ -385,17 +407,18 @@ export function ExploreHeaderSlots({
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
-                  className="absolute right-0 top-full mt-1 w-32 bg-background border border-border rounded-lg shadow-xl z-20 py-1"
+                  className="absolute right-0 top-full z-20 mt-2 w-36 rounded-2xl border border-border bg-popover py-1.5 shadow-xl"
                 >
                   {SORT_OPTIONS.map((option) => (
                     <button
                       key={option.value}
+                      type="button"
                       onClick={() => {
                         setSort(option.value);
                         setOpenDropdown(null);
                       }}
                       className={cn(
-                        "w-full text-left px-3 py-2 text-sm transition-colors",
+                        "w-full px-3 py-2 text-left text-sm transition-colors",
                         sort === option.value
                           ? "text-primary bg-primary/5"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
@@ -414,6 +437,18 @@ export function ExploreHeaderSlots({
         <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hidden pb-px">
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setFilters(EMPTY_FILTERS)}
+                className={cn(
+                  "shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-xs font-medium transition-all",
+                  activeFilterCount === 0
+                    ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_18px_color-mix(in_oklab,var(--primary)_18%,transparent)]"
+                    : "border-border bg-card/85 text-muted-foreground hover:border-primary/35 hover:text-foreground",
+                )}
+              >
+                All Projects
+              </button>
               {(() => {
                 const allChips = filterCategories.flatMap((category) =>
                   category.options.map((option) => ({
@@ -430,12 +465,13 @@ export function ExploreHeaderSlots({
                 return sortedChips.map((chip) => (
                   <button
                     key={`${chip.category}-${chip.value}`}
+                    type="button"
                     onClick={() => toggleFilter(chip.category, chip.value)}
                     className={cn(
-                      "shrink-0 text-xs font-medium rounded-full px-3 py-1.5 border transition-all whitespace-nowrap",
+                      "shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-xs font-medium transition-all",
                       chip.isSelected
-                        ? "bg-foreground text-background border-foreground"
-                        : "text-muted-foreground border-border hover:border-foreground/50 hover:text-foreground",
+                        ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_18px_color-mix(in_oklab,var(--primary)_18%,transparent)]"
+                        : "border-border bg-card/85 text-muted-foreground hover:border-primary/35 hover:text-foreground",
                     )}
                   >
                     {chip.label}
@@ -447,9 +483,10 @@ export function ExploreHeaderSlots({
 
           {/* All filters button */}
           <button
+            type="button"
             onClick={openFiltersModal}
             className={cn(
-              "shrink-0 flex items-center gap-2 h-8 px-3 text-xs font-medium rounded-full border transition-all",
+              "flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-xs font-medium transition-all",
               activeFilterCount > 0
                 ? "border-primary/50 bg-primary/5 text-foreground"
                 : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/50",

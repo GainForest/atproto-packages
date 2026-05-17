@@ -86,10 +86,15 @@ export {
   extractPolygonFeatures,
   extractLineStringFeatures,
   extractPointFeatures,
+  classifyPointAgainstGeoJsonBoundary,
   toFeatureCollection,
   HECTARES_PER_SQUARE_METER,
 } from "./geojson/computations";
-export type { Coordinates, PolygonMetrics } from "./geojson/computations";
+export type {
+  Coordinates,
+  PointBoundaryClassification,
+  PolygonMetrics,
+} from "./geojson/computations";
 export { GeoJsonValidationError, GeoJsonProcessingError } from "./geojson/errors";
 
 // ---------------------------------------------------------------------------
@@ -102,6 +107,7 @@ export {
   CertifiedLocationNotFoundError,
   CertifiedLocationPdsError,
   CertifiedLocationIsDefaultError,
+  CertifiedLocationLinkedTreesConflictError,
 } from "./mutations/certified.location/utils/errors";
 
 // actor.profile
@@ -192,6 +198,7 @@ export {
 } from "./mutations/dwc.dataset/utils/errors";
 
 // dwc.occurrence
+export { deleteDwcOccurrenceCascade } from "./mutations/dwc.occurrence/deleteCascade";
 export {
   DwcOccurrenceValidationError,
   DwcOccurrenceNotFoundError,
@@ -379,6 +386,8 @@ export type {
   UpdateDwcOccurrenceInput,
   DwcOccurrenceMutationResult,
   DwcOccurrenceRecord,
+  DeleteDwcOccurrenceCascadeInput,
+  DeleteDwcOccurrenceCascadeResult,
 } from "./mutations/dwc.occurrence/utils/types";
 
 // dwc.measurement

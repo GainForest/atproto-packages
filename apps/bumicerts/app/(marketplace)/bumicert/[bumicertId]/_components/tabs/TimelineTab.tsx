@@ -35,25 +35,18 @@ export function TimelineTab({
       transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
       className="py-1"
     >
-      <div
-        className={`grid grid-cols-1 gap-6 ${isOwner ? "xl:grid-cols-[minmax(0,1fr)_300px]" : ""}`}
-      >
-        <div className={isOwner ? "order-2 xl:order-1" : undefined}>
-          <TimelinePanel entries={entries} isLoading={isLoading} isOwner={isOwner} />
-        </div>
-
+      <div className="flex flex-col gap-6">
         {isOwner && (
-          <div className="order-1 xl:order-2 xl:sticky xl:top-24 xl:self-start">
-            <div className="rounded-2xl border border-border/40 bg-muted/15 p-4">
-              <EvidenceAdder
-                activityUri={activityUri}
-                activityCid={activityCid}
-                bumicertTitle={bumicertTitle}
-                organizationDid={organizationDid}
-              />
-            </div>
+          <div className="rounded-2xl border border-border/40 bg-muted/15 p-4">
+            <EvidenceAdder
+              activityUri={activityUri}
+              activityCid={activityCid}
+              bumicertTitle={bumicertTitle}
+              organizationDid={organizationDid}
+            />
           </div>
         )}
+        <TimelinePanel entries={entries} isLoading={isLoading} isOwner={isOwner} />
       </div>
     </motion.div>
   );

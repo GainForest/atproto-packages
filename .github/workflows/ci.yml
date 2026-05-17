@@ -172,6 +172,74 @@ jobs:
           SKIP_ENV_VALIDATION: "1"
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # Bumicerts E2E: Playwright tests + per-run report artifact
+  # ─────────────────────────────────────────────────────────────────────────────
+  bumicerts-e2e:
+    name: Bumicerts E2E Tests
+    needs: setup
+    if: needs.setup.outputs.bumicerts_changed == 'true' || needs.setup.outputs.packages_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.7"
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-deps-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-deps-
+
+      - name: Install dependencies
+        run: bun install
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages-dist
+          path: packages
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+        working-directory: apps/bumicerts
+
+      - name: Run Bumicerts E2E tests
+        run: bun run test:e2e
+        working-directory: apps/bumicerts
+        env:
+          SKIP_ENV_VALIDATION: "1"
+          NEXT_PUBLIC_IMAGE_PROXY_URL: "https://blob-proxy-worker.satyam1308mishra.workers.dev/image?url="
+          NEXT_PUBLIC_INDEXER_URL: ${{ secrets.NEXT_PUBLIC_INDEXER_URL || 'http://localhost:4000/graphql' }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID }}
+          ATPROTO_JWK_PRIVATE: ${{ secrets.ATPROTO_JWK_PRIVATE }}
+          COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RATE_LIMIT_HMAC_KEY: ${{ secrets.RATE_LIMIT_HMAC_KEY }}
+          E2E_TEST_HANDLE: ${{ secrets.E2E_TEST_HANDLE }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+          E2E_TEST_PDS_DOMAIN: ${{ secrets.E2E_TEST_PDS_DOMAIN }}
+
+      - name: Upload Playwright HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bumicerts-playwright-report-${{ github.run_id }}
+          path: apps/bumicerts/reports/e2e/html
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # Indexer: Validate + Deploy to Railway
   # ─────────────────────────────────────────────────────────────────────────────
   indexer:

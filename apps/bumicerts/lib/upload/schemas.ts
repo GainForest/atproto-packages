@@ -13,6 +13,12 @@ import {
   resolveKoboMediaZipEntry,
   type KoboMediaZipIndex,
 } from "./kobo-media-zip";
+import {
+  formatBoundaryDistance,
+  getTreeBoundaryFailure,
+  TREE_SITE_NEAR_BOUNDARY_METERS,
+  type SiteBoundaryGeoJson,
+} from "./site-boundary";
 
 const DATE_PATTERNS = [
   /^\d{4}-\d{2}-\d{2}$/, // YYYY-MM-DD
@@ -21,6 +27,17 @@ const DATE_PATTERNS = [
   /^\d{4}$/, // YYYY
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/, // ISO 8601 datetime
 ];
+
+export const BASIS_OF_RECORD_VALUES = [
+  "HumanObservation",
+  "MachineObservation",
+  "PreservedSpecimen",
+  "LivingSpecimen",
+  "FossilSpecimen",
+  "MaterialSample",
+  "MaterialEntity",
+  "MaterialCitation",
+] as const;
 
 function isValidDate(value: string): boolean {
   return DATE_PATTERNS.some((pattern) => pattern.test(value));
@@ -37,7 +54,7 @@ export const OccurrenceRowSchema = z.object({
     }),
   decimalLatitude: z.coerce.number().min(-90).max(90),
   decimalLongitude: z.coerce.number().min(-180).max(180),
-  basisOfRecord: z.string().optional().default("HumanObservation"),
+  basisOfRecord: z.enum(BASIS_OF_RECORD_VALUES).optional().default("HumanObservation"),
   vernacularName: z.string().optional(),
   recordedBy: z.string().optional(),
   locality: z.string().optional(),
@@ -95,7 +112,7 @@ function extractFloraMeasurement(row: TreeRowOutput): FloraMeasurementBundle | n
   return hasAnyField ? bundle : null;
 }
 
-function extractOccurrence(row: TreeRowOutput): OccurrenceInput {
+function extractOccurrence(row: TreeRowOutput, siteRef?: string): OccurrenceInput {
   return {
     scientificName: row.scientificName,
     eventDate: row.eventDate,
@@ -111,6 +128,47 @@ function extractOccurrence(row: TreeRowOutput): OccurrenceInput {
     habitat: row.habitat,
     samplingProtocol: row.samplingProtocol,
     kingdom: row.kingdom,
+    siteRef,
+  };
+}
+
+function getBoundaryIssue(
+  row: TreeRowOutput,
+  index: number,
+  boundary: SiteBoundaryGeoJson,
+): { path: string; message: string } | null {
+  const failure = getTreeBoundaryFailure({
+    tree: {
+      index,
+      scientificName: row.scientificName,
+      decimalLatitude: row.decimalLatitude,
+      decimalLongitude: row.decimalLongitude,
+    },
+    boundary,
+    nearBoundaryMeters: TREE_SITE_NEAR_BOUNDARY_METERS,
+  });
+
+  if (!failure) {
+    return null;
+  }
+
+  if (failure.kind === "near-boundary") {
+    return {
+      path: "siteBoundary",
+      message: `Near boundary: this tree is ${formatBoundaryDistance(failure.distanceMeters)} outside the selected site and will be skipped.`,
+    };
+  }
+
+  if (failure.kind === "invalid-boundary") {
+    return {
+      path: "siteBoundary",
+      message: `Invalid selected site boundary: ${failure.reason ?? "the boundary could not be used for tree validation."}`,
+    };
+  }
+
+  return {
+    path: "siteBoundary",
+    message: `Out of site: this tree is outside the selected site boundary and will be skipped.`,
   };
 }
 
@@ -225,7 +283,13 @@ export function parseAndValidateRows(
   rows: Record<string, string>[],
   rawRows?: Record<string, string>[],
   mappings?: ColumnMapping[],
-  options?: { koboMediaZipIndex?: KoboMediaZipIndex | null },
+  options?: {
+    koboMediaZipIndex?: KoboMediaZipIndex | null;
+    siteBoundary?: {
+      geoJson: SiteBoundaryGeoJson;
+      siteRef: string;
+    } | null;
+  },
 ): ValidationResult {
   const valid: ValidatedRow[] = [];
   const errors: RowError[] = [];
@@ -243,7 +307,19 @@ export function parseAndValidateRows(
     const result = TreeRowSchema.safeParse(row);
 
     if (result.success) {
-      const occurrence = extractOccurrence(result.data);
+      const boundaryIssue = options?.siteBoundary
+        ? getBoundaryIssue(result.data, index, options.siteBoundary.geoJson)
+        : null;
+
+      if (boundaryIssue) {
+        errors.push({ index, issues: [boundaryIssue] });
+        continue;
+      }
+
+      const occurrence = extractOccurrence(
+        result.data,
+        options?.siteBoundary?.siteRef,
+      );
       const floraMeasurement = extractFloraMeasurement(result.data);
       const validatedRow: ValidatedRow = { index, occurrence, floraMeasurement };
 

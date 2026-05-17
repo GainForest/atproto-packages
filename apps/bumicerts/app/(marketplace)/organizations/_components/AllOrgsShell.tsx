@@ -2,6 +2,7 @@
 
 import { useState, useMemo, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import {
   UsersIcon,
   SearchIcon,
@@ -11,6 +12,12 @@ import {
 import type { OrganizationData } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { OrganizationCard } from "./OrganizationCard";
 import { countries } from "@/lib/countries";
 import { realms, countryToRealm } from "@/lib/bioregions";
@@ -147,6 +154,87 @@ const containerVariants = {
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
+function LeafAccent() {
+  return (
+    <span
+      aria-hidden="true"
+      className="absolute -right-2 -top-3 flex h-5 w-5 -rotate-12 items-center justify-center"
+    >
+      <span className="absolute h-3.5 w-2 rotate-45 rounded-[100%_0_100%_0] bg-primary/85 shadow-sm shadow-primary/20" />
+      <span className="absolute left-2.5 top-2 h-2.5 w-px rotate-45 bg-primary/70" />
+    </span>
+  );
+}
+
+function OrganizationsHero({ animate }: { animate: boolean }) {
+  return (
+    <motion.div
+      initial={animate ? { opacity: 0, y: 16 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+      className="relative min-h-[330px] overflow-hidden bg-card"
+    >
+      <div className="absolute inset-0">
+        <Image
+          src="/assets/organizations/organizations-hero-light.png"
+          alt="Misty mountain forest at sunrise"
+          fill
+          priority
+          sizes="(min-width: 1280px) 1152px, calc(100vw - 48px)"
+          className="object-cover object-center dark:hidden"
+        />
+        <Image
+          src="/assets/organizations/organizations-hero-dark.png"
+          alt="Misty mountain forest at dusk"
+          fill
+          priority
+          sizes="(min-width: 1280px) 1152px, calc(100vw - 48px)"
+          className="hidden object-cover object-center dark:block"
+        />
+      </div>
+
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_36%,color-mix(in_oklab,var(--primary)_16%,transparent)_0%,transparent_28%),linear-gradient(90deg,color-mix(in_oklab,var(--background)_58%,transparent)_0%,color-mix(in_oklab,var(--background)_42%,transparent)_26%,transparent_58%),linear-gradient(180deg,color-mix(in_oklab,var(--background)_46%,transparent)_0%,transparent_42%,var(--background)_100%)]" />
+      <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background via-background/70 to-transparent" />
+
+      <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-8 pb-14 pt-[86px] sm:px-10 lg:px-9">
+        <div className="mb-5 flex items-center gap-2.5">
+          <UsersIcon className="h-4 w-4 text-primary" />
+          <span className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
+            Organizations
+          </span>
+        </div>
+        <h1
+          aria-label="Nature Stewards"
+          className="max-w-4xl text-4xl font-light leading-[0.98] tracking-[-0.035em] text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
+          style={{ fontFamily: "var(--font-garamond-var)" }}
+        >
+          <span aria-hidden="true">
+            Nature{" "}
+            <span
+              className="text-foreground/90"
+              style={{
+                fontFamily: "var(--font-instrument-serif-var)",
+                fontStyle: "italic",
+              }}
+            >
+              Stewa
+              <span className="relative inline-block">
+                r
+                <LeafAccent />
+              </span>
+              ds
+            </span>
+          </span>
+        </h1>
+        <p className="mt-7 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
+          Discover organizations leading environmental stewardship and
+          community-driven change.
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -213,77 +301,52 @@ export function AllOrgsShell({
   }, [organizations, query, sort, countryFilter, bioregionFilter]);
 
   return (
-    <section className="pt-6 pb-20 md:pb-28 px-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Static heading */}
-        <motion.div
-          initial={animate ? { opacity: 0, y: 16 } : false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-8"
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <UsersIcon className="h-4 w-4 text-primary" />
-            <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-              Organizations
-            </span>
-          </div>
-          <h1
-            className="text-3xl md:text-4xl lg:text-5xl font-light tracking-[-0.02em] leading-[1.1] text-foreground"
-            style={{ fontFamily: "var(--font-garamond-var)" }}
-          >
-            Nature{" "}
-            <span
-              className="text-foreground/80"
-              style={{
-                fontFamily: "var(--font-instrument-serif-var)",
-                fontStyle: "italic",
-              }}
-            >
-              Stewards
-            </span>
-          </h1>
-        </motion.div>
+    <section className="-mt-14 pb-20 md:pb-28">
+      <OrganizationsHero animate={animate} />
 
+      <div className="max-w-6xl mx-auto px-6">
         {/* Search + sort row */}
-        <div className="space-y-3 mb-0">
+        <div className="relative z-20 -mt-6 space-y-3 mb-0 px-3">
           <div className="flex items-center gap-3">
-            <div className="relative flex-1 min-w-0">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-              <input
+            <InputGroup className="h-10 flex-1 rounded-full bg-background/50 backdrop-blur">
+              <InputGroupAddon>
+                <SearchIcon />
+              </InputGroupAddon>
+              <InputGroupInput
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search organizations..."
-                className="w-full h-10 pl-10 pr-4 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               />
-            </div>
+            </InputGroup>
 
             <div className="relative shrink-0">
-              <button
+              <Button
                 onClick={() =>
                   setOpenDropdown((p) => (p === "sort" ? null : "sort"))
                 }
-                className="flex items-center gap-2 h-10 px-3 text-sm text-muted-foreground hover:text-foreground border border-border rounded-lg transition-colors"
+                type="button"
+                variant="outline"
+                size="lg"
               >
-                <ArrowUpDownIcon className="h-4 w-4" />
+                <ArrowUpDownIcon />
                 <span className="hidden sm:inline">
                   {SORT_OPTIONS.find((o) => o.value === sort)?.label}
                 </span>
                 <ChevronDownIcon
                   className={cn(
-                    "h-4 w-4 transition-transform",
+                    "transition-transform",
                     openDropdown === "sort" && "rotate-180",
                   )}
                 />
-              </button>
+              </Button>
               <AnimatePresence>
                 {openDropdown === "sort" && (
                   <motion.div
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="absolute right-0 top-full mt-1 w-40 bg-background border border-border rounded-lg shadow-xl z-20 py-1"
+                    className="absolute right-0 top-full mt-2 w-44 bg-background border border-border rounded-2xl shadow-xl z-20 py-1.5"
                   >
                     {SORT_OPTIONS.map((option) => (
                       <button
@@ -339,7 +402,7 @@ export function AllOrgsShell({
         </div>
 
         {/* Gradient separator */}
-        <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent my-8" />
+        <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent my-6" />
 
         {/*
           Main content slot.

@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { parseAndValidateRows } from "./schemas";
 import type { ColumnMapping } from "./types";
 import type { KoboMediaZipIndex } from "./kobo-media-zip";
+import type { SiteBoundaryGeoJson } from "./site-boundary";
+import { validateGeojsonOrThrow } from "@gainforest/atproto-mutations-next/geojson";
 
 const VALID_MAPPED_ROW = {
   scientificName: "Donald",
@@ -47,6 +49,24 @@ const KOBO_MEDIA_ZIP_INDEX: KoboMediaZipIndex = {
     },
   ],
 };
+
+const SITE_REF = "at://did:plc:test/app.certified.location/site-1";
+const SITE_BOUNDARY: SiteBoundaryGeoJson = validateGeojsonOrThrow({
+  type: "Feature",
+  properties: {},
+  geometry: {
+    type: "Polygon",
+    coordinates: [
+      [
+        [-4.636, 9.752],
+        [-4.635, 9.752],
+        [-4.635, 9.753],
+        [-4.636, 9.753],
+        [-4.636, 9.752],
+      ],
+    ],
+  },
+});
 
 describe("parseAndValidateRows photo extraction", () => {
   test("extracts Kobo ZIP-backed Whole Tree, Leaf, and Bark photos", () => {
@@ -170,5 +190,146 @@ describe("parseAndValidateRows photo extraction", () => {
         subjectPart: "leaf",
       },
     ]);
+  });
+});
+
+describe("parseAndValidateRows site boundary validation", () => {
+  test("adds the selected siteRef to valid rows inside the selected site", () => {
+    const result = parseAndValidateRows(
+      [VALID_MAPPED_ROW],
+      undefined,
+      undefined,
+      {
+        siteBoundary: {
+          geoJson: SITE_BOUNDARY,
+          siteRef: SITE_REF,
+        },
+      },
+    );
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.valid).toHaveLength(1);
+    expect(result.valid[0]?.occurrence.siteRef).toBe(SITE_REF);
+  });
+
+  test("keeps exact-boundary rows valid", () => {
+    const result = parseAndValidateRows(
+      [
+        {
+          ...VALID_MAPPED_ROW,
+          decimalLatitude: "9.752",
+          decimalLongitude: "-4.636",
+        },
+      ],
+      undefined,
+      undefined,
+      {
+        siteBoundary: {
+          geoJson: SITE_BOUNDARY,
+          siteRef: SITE_REF,
+        },
+      },
+    );
+
+    expect(result.errors).toHaveLength(0);
+    expect(result.valid).toHaveLength(1);
+  });
+
+  test("uploads valid rows while skipping near-boundary and out-of-site rows", () => {
+    const result = parseAndValidateRows(
+      [
+        VALID_MAPPED_ROW,
+        {
+          ...VALID_MAPPED_ROW,
+          decimalLongitude: "-4.63495",
+        },
+        {
+          ...VALID_MAPPED_ROW,
+          decimalLongitude: "-4.6345",
+        },
+      ],
+      undefined,
+      undefined,
+      {
+        siteBoundary: {
+          geoJson: SITE_BOUNDARY,
+          siteRef: SITE_REF,
+        },
+      },
+    );
+
+    expect(result.valid).toHaveLength(1);
+    expect(result.valid[0]?.index).toBe(0);
+    expect(result.errors).toHaveLength(2);
+    expect(result.errors[0]?.issues[0]?.message).toContain("Near boundary");
+    expect(result.errors[1]?.issues[0]?.message).toContain("Out of site");
+  });
+
+  test("skips rows just outside the selected site as near boundary", () => {
+    const result = parseAndValidateRows(
+      [
+        {
+          ...VALID_MAPPED_ROW,
+          decimalLongitude: "-4.63495",
+        },
+      ],
+      undefined,
+      undefined,
+      {
+        siteBoundary: {
+          geoJson: SITE_BOUNDARY,
+          siteRef: SITE_REF,
+        },
+      },
+    );
+
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0]?.issues[0]?.message).toContain("Near boundary");
+  });
+
+  test("skips rows far outside the selected site as out of site", () => {
+    const result = parseAndValidateRows(
+      [
+        {
+          ...VALID_MAPPED_ROW,
+          decimalLongitude: "-4.6345",
+        },
+      ],
+      undefined,
+      undefined,
+      {
+        siteBoundary: {
+          geoJson: SITE_BOUNDARY,
+          siteRef: SITE_REF,
+        },
+      },
+    );
+
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0]?.issues[0]?.message).toContain("Out of site");
+  });
+
+  test("reports invalid selected site boundaries clearly", () => {
+    const invalidBoundary: SiteBoundaryGeoJson = validateGeojsonOrThrow({
+      type: "Point",
+      coordinates: [0, 0],
+    });
+
+    const result = parseAndValidateRows(
+      [VALID_MAPPED_ROW],
+      undefined,
+      undefined,
+      {
+        siteBoundary: {
+          geoJson: invalidBoundary,
+          siteRef: SITE_REF,
+        },
+      },
+    );
+
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors[0]?.issues[0]?.message).toContain(
+      "Invalid selected site boundary",
+    );
   });
 });

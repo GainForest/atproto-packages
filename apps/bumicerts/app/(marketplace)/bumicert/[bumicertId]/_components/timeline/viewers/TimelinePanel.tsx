@@ -92,7 +92,7 @@ export function TimelinePanel({ entries, isLoading, isOwner }: TimelinePanelProp
         <div className="rounded-2xl border border-border/50 bg-background p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+              <h2 className="text-2xl tracking-tight text-foreground">
                 Evidence Timeline
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">

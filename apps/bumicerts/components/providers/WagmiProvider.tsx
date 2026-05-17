@@ -14,7 +14,7 @@
  * focus-trap conflict with our custom modal system.
  */
 
-import { WagmiProvider as WagmiProviderBase } from "wagmi";
+import { createStorage, WagmiProvider as WagmiProviderBase } from "wagmi";
 import { base } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -26,12 +26,30 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { useMemo, useState } from "react";
 import { clientEnv } from "@/lib/env/client";
 
-export function WagmiProvider({ children }: { children: React.ReactNode }) {
+const noopWalletStorage = {
+  getItem: () => null,
+  setItem: () => undefined,
+  removeItem: () => undefined,
+};
+
+const getWalletStorage = () => {
+  if (typeof window === "undefined") return noopWalletStorage;
+
+  const storage = window.localStorage;
+  if (
+    typeof storage.getItem !== "function" ||
+    typeof storage.setItem !== "function" ||
+    typeof storage.removeItem !== "function"
+  ) {
+    return noopWalletStorage;
+  }
+
+  return storage;
+};
+
+function WagmiClientProvider({ children }: { children: React.ReactNode }) {
   const [wagmiQueryClient] = useState(() => new QueryClient());
 
-  // Build wagmiConfig inside the component so it is only evaluated on the
-  // client, after the env has been validated. Memoised so it is stable across
-  // re-renders without being a module-level singleton.
   const wagmiConfig = useMemo(
     () =>
       getDefaultConfig({
@@ -39,9 +57,20 @@ export function WagmiProvider({ children }: { children: React.ReactNode }) {
         projectId: clientEnv.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
         chains: [base],
         ssr: true,
+        storage: createStorage({ storage: getWalletStorage() }),
       }),
     []
   );
+
+  if (typeof window === "undefined") {
+    return (
+      <WagmiProviderBase config={wagmiConfig}>
+        <QueryClientProvider client={wagmiQueryClient}>
+          {children}
+        </QueryClientProvider>
+      </WagmiProviderBase>
+    );
+  }
 
   return (
     <WagmiProviderBase config={wagmiConfig}>
@@ -58,4 +87,8 @@ export function WagmiProvider({ children }: { children: React.ReactNode }) {
       </QueryClientProvider>
     </WagmiProviderBase>
   );
+}
+
+export function WagmiProvider({ children }: { children: React.ReactNode }) {
+  return <WagmiClientProvider>{children}</WagmiClientProvider>;
 }

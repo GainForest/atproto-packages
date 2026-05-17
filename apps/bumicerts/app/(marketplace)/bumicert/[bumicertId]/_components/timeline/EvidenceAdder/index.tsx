@@ -2,7 +2,7 @@
 
 /**
  * EvidenceAdder — inline sticky panel (owner only) that lets an org
- * link existing records (audio, tree occurrences, sites, files) as evidence on
+ * link existing records (audio, tree datasets, biodiversity, files) as evidence on
  * a bumicert by creating org.hypercerts.context.attachment records.
  *
  * Lives in the right column of the full-width timeline tab. No modal involved.
@@ -12,7 +12,6 @@ import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type {
   AudioRecordingItem,
-  CertifiedLocation,
   DatasetItem,
   OccurrenceItem,
 } from "@/graphql/indexer/queries";
@@ -20,7 +19,6 @@ import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import AudioEvidencePicker from "./AudioEvidencePicker";
 import DatasetEvidencePicker from "./DatasetEvidencePicker";
 import BiodiversityEvidencePicker from "./BiodiversityEvidencePicker";
-import SiteEvidencePicker from "./SiteEvidencePicker";
 import FileEvidencePicker from "./FileEvidencePicker";
 import { ListSkeleton } from "./shared/RecordList";
 import {
@@ -80,13 +78,10 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
     indexerTrpc.dwc.occurrences.useQuery({ did: organizationDid });
   const { data: datasetData, isLoading: datasetLoading } =
     indexerTrpc.datasets.list.useQuery({ did: organizationDid });
-  const { data: locationData, isLoading: locationLoading } =
-    indexerTrpc.locations.list.useQuery({ did: organizationDid });
 
   const audioItems: AudioRecordingItem[] = audioData ?? [];
   const occurrenceItems: OccurrenceItem[] = occurrenceData ?? [];
   const datasetItems: DatasetItem[] = datasetData ?? [];
-  const locationItems: CertifiedLocation[] = locationData ?? [];
 
   // ── Selection ──────────────────────────────────────────────────────────────
 
@@ -99,7 +94,7 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
         <span className="text-sm text-muted-foreground">
           Select the type of evidence to add.
         </span>
-        <div className="grid grid-cols-2 gap-2 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 mt-4">
           {EVIDENCE_TABS.map(({ id, label, icon: Icon }) => {
             return (
               <Button
@@ -160,12 +155,6 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
           <LoadingWrapper isLoading={occurrenceLoading}>
             <BiodiversityEvidencePicker
               data={occurrenceItems}
-            />
-          </LoadingWrapper>
-        ) : activeTab === "sites" ? (
-          <LoadingWrapper isLoading={locationLoading}>
-            <SiteEvidencePicker
-              data={locationItems}
             />
           </LoadingWrapper>
         ) : (

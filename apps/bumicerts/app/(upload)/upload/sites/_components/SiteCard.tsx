@@ -30,47 +30,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-// ── Type helpers ───────────────────────────────────────────────────────────────
-
-/** Extract a URL from the location JSON field the indexer returns. */
-function extractLocationUrl(location: unknown): string | null {
-  if (!location || typeof location !== "object") return null;
-  const loc = location as Record<string, unknown>;
-  const $type = loc["$type"] as string | undefined;
-  // String variant (coordinate-decimal) — no URL to fetch
-  if ($type === "app.certified.location#string") return null;
-  // URI variant
-  if (typeof loc["uri"] === "string") return loc["uri"];
-  // Blob variant — indexer injects uri into blob objects
-  if (loc["blob"] && typeof loc["blob"] === "object") {
-    const blob = loc["blob"] as Record<string, unknown>;
-    if (typeof blob["uri"] === "string") return blob["uri"];
-  }
-  return null;
-}
-
-/** Extract inline coordinate from a string-variant location (e.g. "-15,30"). */
-function extractInlineCoordinate(
-  location: unknown,
-  locationType: string | undefined,
-): { lat: number; lon: number } | null {
-  if (!location || typeof location !== "object") return null;
-  const loc = location as Record<string, unknown>;
-  const $type = loc["$type"] as string | undefined;
-  if (
-    $type !== "app.certified.location#string" &&
-    locationType !== "coordinate-decimal"
-  )
-    return null;
-  const raw = loc["string"] as string | undefined;
-  if (!raw) return null;
-  const parts = raw.split(",").map((s) => parseFloat(s.trim()));
-  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-    return { lat: parts[0], lon: parts[1] };
-  }
-  return null;
-}
+import {
+  extractInlineSiteCoordinate,
+  extractSiteLocationUrl,
+} from "@/lib/sites/location";
 
 // ── SiteCard ──────────────────────────────────────────────────────────────────
 
@@ -91,10 +54,10 @@ export function SiteCard({
   const { pushModal, show } = useModal();
   const [mutationError, setMutationError] = useState<string | null>(null);
 
-  const locationUrl = extractLocationUrl(site.record?.location);
-  const inlineCoord = extractInlineCoordinate(
+  const locationUrl = extractSiteLocationUrl(site.record?.location);
+  const inlineCoord = extractInlineSiteCoordinate(
     site.record?.location,
-    site.record?.locationType ?? undefined,
+    site.record?.locationType,
   );
   const previewUrl = locationUrl ? getShapefilePreviewUrl(locationUrl) : null;
   const isPreviewable = !!previewUrl;

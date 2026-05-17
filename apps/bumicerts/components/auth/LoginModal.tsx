@@ -2,22 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ArrowRightIcon,
-  LoaderIcon,
-  ChevronDownIcon,
-  CheckIcon,
-} from "lucide-react";
+import { ArrowRightIcon, LoaderIcon } from "lucide-react";
 import { authorize } from "@/components/actions/oauth";
-import { loginPDSDomains, isValidPdsDomain } from "@/lib/config/pds";
 import { clientEnv as env } from "@/lib/env/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -57,82 +46,6 @@ function PillToggle({
         Handle
       </button>
     </div>
-  );
-}
-
-// ─── PDS Domain Dropdown ──────────────────────────────────────────────────────
-
-const CUSTOM_SENTINEL = "__custom__";
-
-function PdsDomainDropdown({
-  value,
-  customValue,
-  onChange,
-}: {
-  value: string;
-  customValue: string;
-  onChange: (domain: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const isCustom = value === CUSTOM_SENTINEL;
-
-  const displayLabel = isCustom ? customValue || "custom server" : value;
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="flex items-center gap-1 h-9 px-2 bg-muted border-y border-r border-input rounded-r-md text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 max-w-[160px]"
-        >
-          <span className="truncate font-mono">.{displayLabel}</span>
-          <ChevronDownIcon
-            className={cn(
-              "w-3 h-3 shrink-0 transition-transform",
-              open && "rotate-180",
-            )}
-          />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-48 p-1">
-        {loginPDSDomains.map((domain) => (
-          <button
-            key={domain}
-            type="button"
-            onClick={() => {
-              onChange(domain);
-              setOpen(false);
-            }}
-            className={cn(
-              "w-full text-left flex items-center justify-between px-3 py-2 text-xs rounded-sm hover:bg-accent transition-colors",
-              value === domain && "bg-accent/60",
-            )}
-          >
-            <span className="font-mono">{domain}</span>
-            {value === domain && (
-              <CheckIcon className="w-3 h-3 shrink-0 text-primary" />
-            )}
-          </button>
-        ))}
-
-        <div className="h-px bg-border mx-2 my-1" />
-
-        <button
-          type="button"
-          onClick={() => {
-            onChange(CUSTOM_SENTINEL);
-            setOpen(false);
-          }}
-          className={cn(
-            "w-full text-left flex items-center justify-between px-3 py-2 text-xs rounded-sm hover:bg-accent transition-colors",
-            isCustom && "bg-accent/60",
-          )}
-        >
-          <span className="text-muted-foreground">Custom server…</span>
-          {isCustom && <CheckIcon className="w-3 h-3 shrink-0 text-primary" />}
-        </button>
-      </PopoverContent>
-    </Popover>
   );
 }
 
@@ -201,43 +114,46 @@ function EmailForm() {
 
 // ─── Handle Form ──────────────────────────────────────────────────────────────
 
+function isValidHandleLabel(label: string): boolean {
+  return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label);
+}
+
+function getHandleError(handle: string): string | null {
+  const trimmedHandle = handle.trim();
+
+  if (!trimmedHandle) {
+    return null;
+  }
+
+  if (/[^a-z0-9\-.]/.test(trimmedHandle)) {
+    return "Only letters, numbers, hyphens, and dots are allowed.";
+  }
+
+  const labels = trimmedHandle.split(".");
+
+  if (labels.length < 2) {
+    return "Enter your full handle, including its domain.";
+  }
+
+  if (labels.some((label) => label.length === 0)) {
+    return "Handle labels cannot be empty.";
+  }
+
+  if (!labels.every(isValidHandleLabel)) {
+    return "Handle labels must start and end with a letter or number.";
+  }
+
+  return null;
+}
+
 function HandleForm() {
   const [handle, setHandle] = useState("");
-  const [selectedDomain, setSelectedDomain] = useState<string>(
-    loginPDSDomains[0],
-  );
-  const [customDomain, setCustomDomain] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const isCustom = selectedDomain === CUSTOM_SENTINEL;
-  // The effective PDS domain — either a preset or the custom input
-  const effectiveDomain = isCustom ? customDomain.trim() : selectedDomain;
-
-  // If the user typed a full handle (contains "."), use it as-is.
-  // Otherwise, append the effective PDS domain.
-  const fullHandle = handle.includes(".")
-    ? handle.trim()
-    : handle.trim() && effectiveDomain
-      ? `${handle.trim()}.${effectiveDomain}`
-      : "";
-
-  const customDomainError =
-    isCustom && customDomain && !isValidPdsDomain(customDomain)
-      ? "Enter a valid server address (e.g. pds.example.com)"
-      : null;
-
-  const handleError =
-    handle && /[^a-zA-Z0-9\-.]/.test(handle)
-      ? "Only letters, numbers, hyphens and dots are allowed."
-      : null;
-
-  const canSubmit =
-    handle.trim() &&
-    !handleError &&
-    effectiveDomain &&
-    !customDomainError &&
-    (!isCustom || isValidPdsDomain(customDomain));
+  const normalizedHandle = handle.trim();
+  const handleError = getHandleError(handle);
+  const canSubmit = Boolean(normalizedHandle) && !handleError;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,7 +166,7 @@ function HandleForm() {
     );
     startTransition(async () => {
       try {
-        const result = await authorize(fullHandle || handle.trim());
+        const result = await authorize(handle.trim());
         if ("authorizationUrl" in result) {
           window.location.href = result.authorizationUrl;
         } else {
@@ -267,64 +183,22 @@ function HandleForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <label htmlFor="login-handle" className="text-sm font-medium">
-          Username
+          Handle
         </label>
-        <div className="flex rounded-md border border-input">
-          <Input
-            id="login-handle"
-            type="text"
-            value={handle}
-            onChange={(e) => {
-              setHandle(e.target.value);
-              setError(null);
-            }}
-            placeholder="your-handle"
-            autoComplete="username"
-            autoFocus
-            disabled={isPending}
-            className="flex-1 rounded-l-md rounded-r-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-          />
-          <PdsDomainDropdown
-            value={selectedDomain}
-            customValue={customDomain}
-            onChange={setSelectedDomain}
-          />
-        </div>
+        <Input
+          id="login-handle"
+          type="text"
+          value={handle}
+          onChange={(e) => {
+            setHandle(e.target.value.toLowerCase());
+            setError(null);
+          }}
+          placeholder="alice.example.com"
+          autoComplete="username"
+          autoFocus
+          disabled={isPending}
+        />
 
-        {/* Custom PDS input — revealed when "Custom PDS…" is selected */}
-        <AnimatePresence>
-          {isCustom && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <Input
-                type="text"
-                value={customDomain}
-                onChange={(e) =>
-                  setCustomDomain(e.target.value.toLowerCase().trim())
-                }
-                placeholder="pds.example.com"
-                autoFocus
-                disabled={isPending}
-                className={cn(
-                  "mt-1.5 h-8 text-xs font-mono",
-                  customDomainError &&
-                    "border-destructive focus-visible:ring-destructive/50",
-                )}
-              />
-              {customDomainError && (
-                <p className="text-xs text-destructive mt-1">
-                  {customDomainError}
-                </p>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Handle preview / error */}
         <AnimatePresence mode="wait">
           {handleError ? (
             <motion.p
@@ -336,7 +210,7 @@ function HandleForm() {
             >
               {handleError}
             </motion.p>
-          ) : fullHandle ? (
+          ) : normalizedHandle ? (
             <motion.p
               key="hpreview"
               initial={{ opacity: 0, y: -4 }}
@@ -345,7 +219,9 @@ function HandleForm() {
               className="text-xs text-muted-foreground"
             >
               Signing in as{" "}
-              <span className="font-mono text-foreground">{fullHandle}</span>
+              <span className="font-mono text-foreground">
+                {normalizedHandle}
+              </span>
             </motion.p>
           ) : null}
         </AnimatePresence>

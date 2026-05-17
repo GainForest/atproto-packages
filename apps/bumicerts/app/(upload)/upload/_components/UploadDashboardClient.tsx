@@ -82,6 +82,34 @@ function resolveEditValue<T>(
   return isUnchangedEdit(editValue) ? currentValue : editValue;
 }
 
+function buildProfileUpsertData(options: {
+  currentProfile: AuthenticatedAccountState["profile"];
+  currentOrganization: OrganizationData;
+  data: Record<string, unknown>;
+  unset: string[];
+}): Record<string, unknown> {
+  const nextData: Record<string, unknown> = {
+    displayName:
+      options.currentProfile?.displayName || options.currentOrganization.displayName,
+    description:
+      options.currentProfile?.description ||
+      options.currentOrganization.shortDescription,
+    pronouns: options.currentProfile?.pronouns,
+    website: options.currentProfile?.website || options.currentOrganization.website,
+    ...options.data,
+  };
+
+  for (const key of options.unset) {
+    delete nextData[key];
+  }
+
+  return Object.fromEntries(
+    Object.entries(nextData).filter(
+      ([, value]) => value !== undefined && value !== null,
+    ),
+  );
+}
+
 function buildNextOrganizationData(options: {
   current: OrganizationData;
   edits: EditableFields;
@@ -467,7 +495,7 @@ export function ManageDashboardClient({
   const setSaveError = useManageDashboardState((state) => state.setSaveError);
   const onSaveSuccess = useManageDashboardState((state) => state.onSaveSuccess);
 
-  const updateProfile = trpc.certified.actor.profile.update.useMutation();
+  const upsertProfile = trpc.certified.actor.profile.upsert.useMutation();
   const updateOrganization =
     trpc.certified.actor.organization.update.useMutation();
   const upsertOrganization =
@@ -814,10 +842,14 @@ export function ManageDashboardClient({
           organization: organizationResult.record,
         };
       } else if (hasProfileChanges) {
-        const profileResult = await updateProfile.mutateAsync({
-          data: profileData,
-          ...(profileUnset.length > 0 ? { unset: profileUnset } : {}),
-        });
+        const profileResult = await upsertProfile.mutateAsync(
+          buildProfileUpsertData({
+            currentProfile: currentAccount.profile,
+            currentOrganization,
+            data: profileData,
+            unset: profileUnset,
+          }),
+        );
         nextProfile = profileResult.record;
 
         nextAccount =
@@ -909,9 +941,9 @@ export function ManageDashboardClient({
     setSaving,
     startReconciliation,
     updateOrganization,
-    updateProfile,
     updateProfileAndOrganization,
     upsertOrganization,
+    upsertProfile,
   ]);
 
   if (currentAccountQuery.isLoading && pageData.kind === "unknown") {

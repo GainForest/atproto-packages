@@ -9,12 +9,17 @@ import { TREE_UPLOAD_EVENTS } from "@/lib/analytics/events";
 import { getTreeUploadStepName } from "@/lib/analytics/tree-upload";
 import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
 import { useAnalyticsConsent } from "@/lib/analytics/use-analytics-consent";
-import type { ColumnMapping, ValidatedRow } from "@/lib/upload/types";
+import type {
+  ColumnMapping,
+  TreeUploadRowAttentionSummary,
+  ValidatedRow,
+} from "@/lib/upload/types";
 import type { KoboMediaZipIndex } from "@/lib/upload/kobo-media-zip";
 import {
   NO_UPLOAD_DATASET_SELECTION,
   type UploadDatasetSelection,
 } from "@/lib/upload/upload-dataset-selection";
+import type { UploadSiteSelection } from "@/lib/upload/site-selection";
 import { readPendingUpload } from "./upload-session";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,8 +35,10 @@ type WizardState = {
   headers: string[] | null;
   mappings: ColumnMapping[];
   validRows: ValidatedRow[];
+  previewSkippedRows: TreeUploadRowAttentionSummary[];
   establishmentMeans: string | null;
   datasetSelection: UploadDatasetSelection;
+  siteSelection: UploadSiteSelection | null;
 };
 
 const INITIAL_STATE: WizardState = {
@@ -43,8 +50,10 @@ const INITIAL_STATE: WizardState = {
   headers: null,
   mappings: [],
   validRows: [],
+  previewSkippedRows: [],
   establishmentMeans: null,
   datasetSelection: NO_UPLOAD_DATASET_SELECTION,
+  siteSelection: null,
 };
 
 type InitializedWizard = {
@@ -84,8 +93,10 @@ function initWizard(did: string): InitializedWizard {
       state: {
         ...INITIAL_STATE,
         validRows: pending.validRows,
+        previewSkippedRows: pending.previewSkippedRows,
         establishmentMeans: pending.establishmentMeans,
         datasetSelection: pending.datasetSelection,
+        siteSelection: pending.siteSelection,
         currentStep: 4,
       },
       uploadId: pending.uploadId ?? createUploadId(),
@@ -250,6 +261,7 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
     mappings: ColumnMapping[],
     establishmentMeans: string | null,
     datasetSelection: UploadDatasetSelection,
+    siteSelection: UploadSiteSelection,
   ) => {
     setState((prev) => ({
       ...prev,
@@ -259,8 +271,11 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
       parsedData,
       headers,
       mappings,
+      validRows: [],
+      previewSkippedRows: [],
       establishmentMeans,
       datasetSelection,
+      siteSelection,
       currentStep: 2,
     }));
   };
@@ -276,8 +291,16 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
   };
 
   // ── Step 3 → 4: valid rows from PreviewStep ───────────────────────────────
-  const handleValidRows = (validRows: ValidatedRow[]) => {
-    setState((prev) => ({ ...prev, validRows, currentStep: 4 }));
+  const handleValidRows = (
+    validRows: ValidatedRow[],
+    previewSkippedRows: TreeUploadRowAttentionSummary[],
+  ) => {
+    setState((prev) => ({
+      ...prev,
+      validRows,
+      previewSkippedRows,
+      currentStep: 4,
+    }));
   };
 
   // ── Step 4 → 1: wizard complete, reset ────────────────────────────────────
@@ -308,10 +331,12 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
     headers,
     mappings,
     validRows,
+    previewSkippedRows,
     koboMediaZipFile,
     koboMediaZipIndex,
     establishmentMeans,
     datasetSelection,
+    siteSelection,
   } = state;
 
   return (
@@ -332,6 +357,7 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
           did={did}
           initialEstablishmentMeans={establishmentMeans}
           initialDatasetSelection={datasetSelection}
+          initialSiteSelection={siteSelection}
           onFileAndMappings={handleFileAndMappings}
         />
       )}
@@ -356,6 +382,7 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
           parsedData={parsedData}
           mappings={mappings}
           koboMediaZipIndex={koboMediaZipIndex}
+          siteSelection={siteSelection}
           onBack={handleBackToStep2}
           onNext={handleValidRows}
         />
@@ -367,9 +394,11 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
           uploadId={uploadId}
           did={did}
           validRows={validRows}
+          previewSkippedRows={previewSkippedRows}
           koboMediaZipFile={koboMediaZipFile}
           establishmentMeans={establishmentMeans}
           datasetSelection={datasetSelection}
+          siteSelection={siteSelection}
           backLabel={parsedData !== null ? "Back to Preview" : "Start Over"}
           onBack={handleBackToStep3}
           onComplete={handleComplete}

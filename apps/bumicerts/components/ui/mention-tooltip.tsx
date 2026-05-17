@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAccountByDid } from "@/hooks/use-account";
 import { useProfile } from "@/hooks/use-profile";
+import { getProxiedImageUrl } from "@/lib/images";
 import { links } from "@/lib/links";
 
 // ── Tooltip card content ──────────────────────────────────────────────────────
@@ -53,7 +54,7 @@ function MentionCard({ did, handle }: MentionCardProps) {
         <div className="h-10 w-10 shrink-0 rounded-full overflow-hidden bg-muted flex items-center justify-center border border-border">
           {profile?.avatar ? (
             <Image
-              src={profile.avatar}
+              src={getProxiedImageUrl(profile.avatar)}
               alt={displayName}
               width={40}
               height={40}

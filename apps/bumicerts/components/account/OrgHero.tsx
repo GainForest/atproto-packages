@@ -15,6 +15,7 @@ import type { OrganizationData } from "@/lib/types";
 import { links } from "@/lib/links";
 import { countries } from "@/lib/countries";
 import { formatOrganizationSinceDate } from "@/lib/date";
+import { getProxiedImageUrl } from "@/lib/images";
 
 interface OrgHeroProps {
   organization: OrganizationData;
@@ -66,7 +67,7 @@ export function OrgHero({
         >
           {organization.coverImageUrl ? (
             <Image
-              src={organization.coverImageUrl}
+              src={getProxiedImageUrl(organization.coverImageUrl)}
               alt={`${organization.displayName} cover image`}
               fill
               priority
@@ -140,7 +141,7 @@ export function OrgHero({
           <div className="relative h-24 w-24 rounded-full overflow-hidden bg-muted border border-white/15 shadow-sm shrink-0">
             {organization.logoUrl ? (
               <Image
-                src={organization.logoUrl}
+                src={getProxiedImageUrl(organization.logoUrl)}
                 alt={organization.displayName}
                 fill
                 className="object-cover"

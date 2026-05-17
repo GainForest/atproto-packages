@@ -16,7 +16,7 @@ interface ContributorRowProps {
 function isDidOrHandle(value: string): boolean {
     // DID format: did:plc:... or did:web:...
     if (value.startsWith("did:")) return true;
-    // Handle format: contains dot, no spaces (e.g., user.bsky.social)
+    // ATProto handles contain at least one dot and no spaces.
     if (value.includes(".") && !value.includes(" ")) return true;
     return false;
 }

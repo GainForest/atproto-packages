@@ -36,6 +36,7 @@ export type UploadedPhotoPayload = {
 
 type PhotoAttachModalProps = {
   occurrenceUri: string;
+  siteRef?: string;
   speciesName: string;
   onPhotoUploaded: (uploadedPhoto: UploadedPhotoPayload) => void;
 };
@@ -87,6 +88,7 @@ function formatBytes(bytes: number): string {
 
 export default function PhotoAttachModal({
   occurrenceUri,
+  siteRef,
   speciesName,
   onPhotoUploaded,
 }: PhotoAttachModalProps) {
@@ -173,6 +175,7 @@ export default function PhotoAttachModal({
       const result = await createMultimedia.mutateAsync({
         imageFile: serializableFile,
         occurrenceRef: occurrenceUri,
+        siteRef,
         subjectPart: selectedPart,
         caption: caption.trim() || undefined,
         format: imageFile.type,

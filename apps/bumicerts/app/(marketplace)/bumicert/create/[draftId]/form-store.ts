@@ -204,11 +204,28 @@ const deserializeFormValues = (
   ];
 };
 
+const getBrowserStorage = (): Storage | null => {
+  if (typeof window === "undefined") return null;
+
+  const storage = window.localStorage;
+  if (
+    typeof storage.getItem !== "function" ||
+    typeof storage.setItem !== "function" ||
+    typeof storage.removeItem !== "function"
+  ) {
+    return null;
+  }
+
+  return storage;
+};
+
 // Custom storage with expiry check and hydration guard
 const createStorageWithExpiry = (): StateStorage => ({
   getItem: (name: string): string | null => {
-    if (typeof window === "undefined") return null;
-    const item = localStorage.getItem(name);
+    const storage = getBrowserStorage();
+    if (!storage) return null;
+
+    const item = storage.getItem(name);
     if (!item) return null;
 
     try {
@@ -218,7 +235,7 @@ const createStorageWithExpiry = (): StateStorage => ({
         const expiryTime = STORAGE_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
         if (Date.now() - savedAt > expiryTime) {
           // Data has expired, remove it
-          localStorage.removeItem(name);
+          storage.removeItem(name);
           return null;
         }
       }
@@ -228,7 +245,8 @@ const createStorageWithExpiry = (): StateStorage => ({
     }
   },
   setItem: (name: string, value: string): void => {
-    if (typeof window === "undefined") return;
+    const storage = getBrowserStorage();
+    if (!storage) return;
     
     // IMPORTANT: Don't overwrite localStorage until the store is hydrated.
     // This prevents the initial empty state from overwriting saved data.
@@ -238,7 +256,7 @@ const createStorageWithExpiry = (): StateStorage => ({
       const parsed = JSON.parse(value);
       const isHydrated = parsed?.state?.isHydrated;
       if (isHydrated) {
-        localStorage.setItem(name, value);
+        storage.setItem(name, value);
         return;
       }
       
@@ -256,30 +274,33 @@ const createStorageWithExpiry = (): StateStorage => ({
       }
       
       // Has meaningful data, allow the save
-      localStorage.setItem(name, value);
+      storage.setItem(name, value);
     } catch {
       // If we can't parse, don't save
       return;
     }
   },
   removeItem: (name: string): void => {
-    if (typeof window === "undefined") return;
-    localStorage.removeItem(name);
+    const storage = getBrowserStorage();
+    if (!storage) return;
+    storage.removeItem(name);
   },
 });
 
 // Function to clear persisted state (call after successful submit)
 export const clearPersistedFormState = (): void => {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(STORAGE_KEY);
+  const storage = getBrowserStorage();
+  if (!storage) return;
+  storage.removeItem(STORAGE_KEY);
 };
 
 // Function to get persisted form values (for StoreHydrator fallback)
 export const getPersistedFormValues = (): [Step1FormValues, Step2FormValues, Step3FormValues] | null => {
-  if (typeof window === "undefined") return null;
+  const storage = getBrowserStorage();
+  if (!storage) return null;
   
   try {
-    const item = localStorage.getItem(STORAGE_KEY);
+    const item = storage.getItem(STORAGE_KEY);
     if (!item) return null;
     
     const parsed = JSON.parse(item);
@@ -289,7 +310,7 @@ export const getPersistedFormValues = (): [Step1FormValues, Step2FormValues, Ste
     if (savedAt) {
       const expiryTime = STORAGE_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
       if (Date.now() - savedAt > expiryTime) {
-        localStorage.removeItem(STORAGE_KEY);
+        storage.removeItem(STORAGE_KEY);
         return null;
       }
     }

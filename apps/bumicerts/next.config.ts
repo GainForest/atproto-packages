@@ -2,7 +2,12 @@ import "./lib/env/server"; // Validate server env vars at build time
 import "./lib/env/client"; // Validate client env vars at build time
 
 import type { NextConfig } from "next";
+import { clientEnv } from "./lib/env/client";
+import { serverEnv } from "./lib/env/server";
 import { links } from "./lib/links";
+
+const imageProxyUrl = new URL(clientEnv.NEXT_PUBLIC_IMAGE_PROXY_URL);
+const imageProxyProtocol = imageProxyUrl.protocol === "http:" ? "http" : "https";
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
@@ -35,11 +40,13 @@ const nextConfig: NextConfig = {
   ],
 
   images: {
-    unoptimized: process.env.NODE_ENV === "development",
+    loader: "custom",
+    loaderFile: "./lib/cloudflare-image-loader.ts",
+    unoptimized: serverEnv.NODE_ENV === "development",
     remotePatterns: [
       {
-        protocol: "https",
-        hostname: "**",
+        protocol: imageProxyProtocol,
+        hostname: imageProxyUrl.hostname,
       },
     ],
   },

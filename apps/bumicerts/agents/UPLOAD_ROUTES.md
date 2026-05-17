@@ -8,6 +8,12 @@
 - Use `upsert` only for the first-time user → organization upgrade flow on root `/upload`.
 - Serialize image files with `toSerializableFile` and wrap them in the `SmallImage` shape before the tRPC boundary.
 - Edit mode is owned by `nuqs` via `useUploadMode`. Never switch it to Zustand or local component state.
+- `/upload/trees` requires a selected site with a fetchable GeoJSON boundary before rows can proceed to preview.
+- Tree row boundary validation must use only the selected site, even when other site boundaries overlap.
+- For tree uploads, inside or exactly on the selected boundary is valid; outside within 15 meters is invalid as `near boundary`; outside beyond 15 meters is invalid as `out of site`.
+- Tree upload flows must skip invalid rows, upload valid rows, and persist the selected `siteRef` on created occurrences and uploaded or fetched photos.
+- Do not backfill legacy trees without `siteRef` as part of routine tree upload changes.
+- Site boundary edits must not save if existing trees linked by `siteRef` would become missing-coordinate, near-boundary, or out-of-site under the new boundary.
 
 ## Rendering Strategy
 
@@ -65,6 +71,7 @@ Current sub-routes and their status:
 | `/upload` | ✅ | ✅ |
 | `/upload/sites` | ✅ | ✅ |
 | `/upload/audio` | ✅ | ✅ |
+| `/upload/trees` | ✅ | ✅ |
 
 When adding a new sub-route, always create all three files. The `loading.tsx`
 should render the same skeleton the client component shows before data loads.

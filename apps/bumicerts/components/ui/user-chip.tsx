@@ -14,6 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getProxiedImageUrl } from "@/lib/images";
 import { links } from "@/lib/links";
 
 /**
@@ -127,7 +128,7 @@ export function UserChip({
             style={{ height: `${avatarSize}px`, width: `${avatarSize}px` }}
           >
             <AvatarImage
-              src={profile?.avatar ?? blo(didToAddress(did))}
+              src={getProxiedImageUrl(profile?.avatar ?? blo(didToAddress(did)))}
               alt={displayName}
             />
             <AvatarFallback>

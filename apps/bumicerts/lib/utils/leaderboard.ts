@@ -8,17 +8,15 @@
 import type { FundingReceiptItem } from "@/graphql/indexer/queries/fundingReceipts";
 import { extractDonor as extractDonorFromReceipt } from "./extract-donor";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-/**
- * USD-pegged currencies accepted by the platform.
- * All are treated as equivalent to USD for display purposes.
- */
 const USD_CURRENCIES: ReadonlyArray<string> = ["USD", "USDC"];
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+export const LEADERBOARD_PERIODS = ["all", "month", "week"] as const;
+export const LEADERBOARD_DONOR_FILTERS = ["all", "anonymous", "known"] as const;
+export const LEADERBOARD_SORTS = ["total-raised", "donation-count", "recent-donation"] as const;
 
-export type Period = "all" | "month" | "week";
+export type Period = (typeof LEADERBOARD_PERIODS)[number];
+export type LeaderboardDonorFilter = (typeof LEADERBOARD_DONOR_FILTERS)[number];
+export type LeaderboardSort = (typeof LEADERBOARD_SORTS)[number];
 
 export interface LeaderboardEntry {
   rank: number;
@@ -33,21 +31,20 @@ export interface LeaderboardResult {
   entries: LeaderboardEntry[];
   totalDonorsCount: number;
   totalAmountSum: number;
+  totalProjectsSupported: number;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+export interface LeaderboardOptions {
+  period?: Period;
+  limit?: number;
+  donorFilter?: LeaderboardDonorFilter;
+  sortBy?: LeaderboardSort;
+}
 
-/**
- * Extracts donor identifier from a funding receipt.
- * Returns { id, type } where type is "did" or "wallet".
- */
 function extractDonor(item: FundingReceiptItem): { id: string; type: "did" | "wallet" } | null {
   return extractDonorFromReceipt(item.record?.from);
 }
 
-/**
- * Filters receipts by time period.
- */
 function filterByPeriod(receipts: FundingReceiptItem[], period: Period): FundingReceiptItem[] {
   if (period === "all") return receipts;
 
@@ -57,39 +54,75 @@ function filterByPeriod(receipts: FundingReceiptItem[], period: Period): Funding
       ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
       : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  return receipts.filter((r) => {
-    const dateStr = r.record?.occurredAt ?? r.record?.createdAt;
+  return receipts.filter((receipt) => {
+    const dateStr = receipt.record?.occurredAt ?? receipt.record?.createdAt;
     if (!dateStr) return false;
-    try {
-      return new Date(dateStr) >= cutoff;
-    } catch {
-      return false;
-    }
+    return new Date(dateStr) >= cutoff;
   });
 }
 
-/**
- * Aggregates funding receipts into a leaderboard result.
- *
- * Only USD-pegged currencies are counted. Donors are identified from
- * `record.from` as either DID-backed or wallet-backed donors.
- */
+function donorMatchesFilter(
+  donorType: "did" | "wallet",
+  donorFilter: LeaderboardDonorFilter,
+): boolean {
+  switch (donorFilter) {
+    case "all":
+      return true;
+    case "anonymous":
+      return donorType === "wallet";
+    case "known":
+      return donorType === "did";
+  }
+}
+
+function dateTimeValue(date: string | null): number {
+  if (!date) return 0;
+  const time = Date.parse(date);
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function compareEntries(
+  a: Omit<LeaderboardEntry, "rank">,
+  b: Omit<LeaderboardEntry, "rank">,
+  sortBy: LeaderboardSort,
+): number {
+  switch (sortBy) {
+    case "total-raised": {
+      const amountDiff = b.totalAmount - a.totalAmount;
+      if (amountDiff !== 0) return amountDiff;
+      return b.donationCount - a.donationCount;
+    }
+    case "donation-count": {
+      const countDiff = b.donationCount - a.donationCount;
+      if (countDiff !== 0) return countDiff;
+      return b.totalAmount - a.totalAmount;
+    }
+    case "recent-donation": {
+      const dateDiff = dateTimeValue(b.lastDonatedAt) - dateTimeValue(a.lastDonatedAt);
+      if (dateDiff !== 0) return dateDiff;
+      return b.totalAmount - a.totalAmount;
+    }
+  }
+}
+
 export function aggregateToLeaderboard(
   receipts: FundingReceiptItem[],
-  period: Period = "all",
-  limit: number = 100,
-  includeAnonymous: boolean = true
+  options: LeaderboardOptions = {},
 ): LeaderboardResult {
-  // 1. Filter by period
+  const {
+    period = "all",
+    limit = 100,
+    donorFilter = "all",
+    sortBy = "total-raised",
+  } = options;
+
   const filtered = filterByPeriod(receipts, period);
 
-  // 2. Filter USD-pegged currencies only
-  const usdOnly = filtered.filter((r) => {
-    const currency = r.record?.currency?.toUpperCase();
+  const usdOnly = filtered.filter((receipt) => {
+    const currency = receipt.record?.currency?.toUpperCase();
     return currency ? USD_CURRENCIES.includes(currency) : false;
   });
 
-  // 3. Group by donor
   const donorMap = new Map<
     string,
     {
@@ -99,16 +132,16 @@ export function aggregateToLeaderboard(
       lastDonatedAt: string | null;
     }
   >();
+  const projectUris = new Set<string>();
 
   for (const receipt of usdOnly) {
     const donor = extractDonor(receipt);
-    if (!donor) continue;
+    if (!donor || !donorMatchesFilter(donor.type, donorFilter)) continue;
 
-    // Filter anonymous donations if includeAnonymous is false
-    if (!includeAnonymous && donor.type === "wallet") continue;
-
-    const amount = parseFloat(receipt.record?.amount ?? "0");
+    const amount = Number.parseFloat(receipt.record?.amount ?? "0");
     const dateStr = receipt.record?.occurredAt ?? receipt.record?.createdAt ?? null;
+    const projectUri = receipt.record?.for?.uri;
+    if (projectUri) projectUris.add(projectUri);
 
     const existing = donorMap.get(donor.id);
     if (existing) {
@@ -127,7 +160,6 @@ export function aggregateToLeaderboard(
     }
   }
 
-  // 4. Convert to array and sort by totalAmount DESC
   const sorted = Array.from(donorMap.entries())
     .map(([donorId, data]) => ({
       donorId,
@@ -136,23 +168,22 @@ export function aggregateToLeaderboard(
       donationCount: data.donationCount,
       lastDonatedAt: data.lastDonatedAt,
     }))
-    .sort((a, b) => b.totalAmount - a.totalAmount);
+    .sort((a, b) => compareEntries(a, b, sortBy) || a.donorId.localeCompare(b.donorId));
 
-  // 5. Apply limit and add ranks
   const entries: LeaderboardEntry[] = sorted.slice(0, limit).map((entry, index) => ({
     rank: index + 1,
     ...entry,
   }));
 
-  // Calculate total from entries that were actually aggregated
   const totalAmountSum = Array.from(donorMap.values()).reduce(
     (sum, data) => sum + data.totalAmount,
-    0
+    0,
   );
 
   return {
     entries,
     totalDonorsCount: donorMap.size,
     totalAmountSum,
+    totalProjectsSupported: projectUris.size,
   };
 }

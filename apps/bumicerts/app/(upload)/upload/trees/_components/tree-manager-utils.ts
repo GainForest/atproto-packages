@@ -43,6 +43,13 @@ export type TreeManagerItem = {
   hasDuplicateBundledMeasurements: boolean;
 };
 
+export type TreeDeletionTarget = {
+  occurrenceRkey: string;
+  occurrenceUri: string;
+  measurementCount: number;
+  photoCount: number;
+};
+
 type BlobWithUri = {
   uri?: string;
   cid?: string;
@@ -57,6 +64,28 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function getString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
+}
+
+function getNonEmptyString(value: string | null | undefined): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+export function getTreeDeletionTarget(
+  item: TreeManagerItem,
+): TreeDeletionTarget | null {
+  const occurrenceRkey = getNonEmptyString(item.occurrence.metadata?.rkey);
+  const occurrenceUri = getNonEmptyString(item.occurrence.metadata?.uri);
+
+  if (!occurrenceRkey || !occurrenceUri) {
+    return null;
+  }
+
+  return {
+    occurrenceRkey,
+    occurrenceUri,
+    measurementCount: item.measurements.length,
+    photoCount: item.photos.length,
+  };
 }
 
 export function parseFloraMeasurement(value: unknown): FloraMeasurement | null {

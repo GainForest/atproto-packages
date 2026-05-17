@@ -1,80 +1,112 @@
-import React from "react";
-import AuthWrapper from "./[draftId]/_components/AuthWrapper";
-import { ChartPieIcon, HelpCircleIcon, LeafIcon } from "lucide-react";
-import GetStartedButton from "./_components/GetStartedButton";
 import Image from "next/image";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import MyBumicerts from "./_components/MyBumicerts";
-import DraftBumicerts from "./_components/DraftBumicerts";
+import Link from "next/link";
+import { ExternalLinkIcon, HelpCircleIcon, LeafIcon } from "lucide-react";
+import AuthWrapper from "./[draftId]/_components/AuthWrapper";
+import { CreateBumicertTabs } from "./_components/CreateBumicertTabs";
+import GetStartedButton from "./_components/GetStartedButton";
+import { Button } from "@/components/ui/button";
+import { links } from "@/lib/links";
+
+function CreateHeroCard() {
+  return (
+    <section className="relative overflow-visible rounded-[1.6rem] border border-border/80 bg-card shadow-sm">
+      <div className="relative min-h-[17.5rem] overflow-hidden rounded-[1.55rem]">
+        <Image
+          src="/assets/media/images/create-bumicert/hero-light.png"
+          alt=""
+          fill
+          priority
+          sizes="(min-width: 1024px) 720px, 100vw"
+          className="object-cover object-center dark:hidden"
+        />
+        <Image
+          src="/assets/media/images/create-bumicert/hero-dark.png"
+          alt=""
+          fill
+          priority
+          sizes="(min-width: 1024px) 720px, 100vw"
+          className="hidden object-cover object-center dark:block"
+        />
+        <div className="absolute inset-0 bg-linear-to-r from-background/95 via-background/72 to-background/5 dark:from-background/90 dark:via-background/58 dark:to-background/10" />
+        <div className="absolute -top-8 right-[7%] h-28 w-52 rounded-full bg-background/50 blur-2xl dark:bg-primary/10" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-foreground/20 via-foreground/5 to-transparent dark:from-black/55" />
+
+        <div className="relative z-10 flex min-h-[17.5rem] max-w-[29rem] flex-col justify-center px-6 py-8 sm:px-8 lg:px-9">
+          <div className="mb-7 flex size-12 items-center justify-center rounded-2xl border border-border/70 bg-background/90 text-primary shadow-sm backdrop-blur-sm">
+            <LeafIcon className="size-6" />
+          </div>
+          <h1 className="font-serif text-4xl font-medium leading-[0.98] tracking-[-0.03em] text-foreground sm:text-5xl">
+            Create impact.
+            <br />
+            Certify change.
+          </h1>
+          <p className="mt-5 max-w-[25rem] text-base leading-7 text-muted-foreground">
+            Create a Bumicert to showcase your commitment to sustainability and
+            inspire real change.
+          </p>
+          <div className="mt-7">
+            <GetStartedButton />
+          </div>
+        </div>
+      </div>
+      <Image
+        src="/assets/media/images/create-bumicert/plant-light.png"
+        alt=""
+        width={1002}
+        height={1146}
+        priority
+        className="pointer-events-none absolute bottom-0 right-[4%] z-20 hidden h-[28rem] w-auto max-w-[58%] object-contain dark:hidden md:block"
+      />
+      <Image
+        src="/assets/media/images/create-bumicert/plant-dark.png"
+        alt=""
+        width={964}
+        height={1129}
+        priority
+        className="pointer-events-none absolute bottom-0 right-[4%] z-20 hidden h-[28rem] w-auto max-w-[58%] object-contain dark:md:block"
+      />
+    </section>
+  );
+}
+
+function ExplainerCard() {
+  return (
+    <aside className="rounded-[1.6rem] border border-border/80 bg-card/75 p-7 shadow-sm backdrop-blur-sm lg:min-h-[17.5rem]">
+      <div className="mb-8 flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary">
+        <HelpCircleIcon className="size-5" />
+      </div>
+      <h2 className="font-serif text-3xl font-medium leading-tight tracking-[-0.02em] text-foreground">
+        What is a Bumicert?
+      </h2>
+      <div className="mt-4 space-y-4 text-base leading-7 text-muted-foreground">
+        <p>
+          A Bumicert is your impact story—proof of your contribution to people,
+          communities, and the planet.
+        </p>
+        <p>
+          It helps you document, share, and celebrate your positive impact with
+          transparency and credibility.
+        </p>
+      </div>
+      <Button variant="outline" size="sm" asChild className="mt-5">
+        <Link href={links.external.docs} target="_blank" rel="noreferrer">
+          Learn more
+          <ExternalLinkIcon />
+        </Link>
+      </Button>
+    </aside>
+  );
+}
 
 const CreateBumicertPage = () => {
   return (
-    <AuthWrapper>
-      <div className="w-full grid grid-cols-1 lg:grid-cols-[1fr_20rem] gap-6 mt-4">
-        <div className="flex-1 flex flex-col gap-4">
-          {/* Create New Section */}
-          <section className="rounded-3xl gap-1 border border-border shadow-xl relative overflow-hidden">
-            <Image
-              src="/assets/media/images/jeremy-bishop-vGjGvtSfys4-unsplash.jpg"
-              alt="Create Bumicert"
-              fill
-              className="object-cover object-[50%_40%]"
-            />
-            <div className="relative inset-0 flex flex-col p-4 gap-2 bg-linear-to-b from-black/60 via-black/20 to-black/0">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-                  <LeafIcon className="size-4 text-white" />
-                </div>
-                <h1 className="text-3xl font-medium italic font-instrument text-white">
-                  Start a new application
-                </h1>
-              </div>
-              <p className="text-gray-200">
-                Start a new application to create a bumicert for the
-                organization, and showcase your commitment to sustainability.
-              </p>
-              <div className="flex items-center justify-end mt-20">
-                <GetStartedButton />
-              </div>
-            </div>
-          </section>
-
-          {/* My Bumicerts Section */}
-          <MyBumicerts />
+    <AuthWrapper className="max-w-[1440px] px-4 py-8 sm:px-6">
+      <div className="space-y-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_30rem]">
+          <CreateHeroCard />
+          <ExplainerCard />
         </div>
-        <div className="w-full">
-          <Accordion type="multiple" defaultValue={["item-2"]}>
-            <AccordionItem value="item-1">
-              <AccordionTrigger>
-                <div className="flex items-center gap-2">
-                  <HelpCircleIcon className="size-4 opacity-50" />
-                  What is a Bumicert?
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                A Bumicert is a certificate that records the creation of a
-                specific environmental action by a community, giving it a
-                permanent digital identity.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger>
-                <div className="flex items-center gap-2">
-                  <ChartPieIcon className="size-4 opacity-50" />
-                  Draft Bumicerts
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <DraftBumicerts />
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
+        <CreateBumicertTabs />
       </div>
     </AuthWrapper>
   );

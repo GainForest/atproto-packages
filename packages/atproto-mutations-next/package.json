@@ -25,12 +25,19 @@
       "types": "./dist/trpc.d.ts",
       "import": "./dist/trpc.js",
       "require": "./dist/trpc.cjs"
+    },
+    "./geojson": {
+      "source": "./src/geojson.ts",
+      "types": "./dist/geojson.d.ts",
+      "import": "./dist/geojson.js",
+      "require": "./dist/geojson.cjs"
     }
   },
   "typesVersions": {
     "*": {
       "server": ["dist/server.d.ts"],
-      "trpc": ["dist/trpc.d.ts"]
+      "trpc": ["dist/trpc.d.ts"],
+      "geojson": ["dist/geojson.d.ts"]
     }
   },
   "files": ["dist"],

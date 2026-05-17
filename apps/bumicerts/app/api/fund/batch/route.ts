@@ -138,16 +138,16 @@ async function getActivityCid(activityUri: string): Promise<string> {
 // ---------------------------------------------------------------------------
 
 function getFacilitatorLayer() {
-  const handle = serverEnv.FACILITATOR_HANDLE;
+  const serviceHost = serverEnv.FACILITATOR_SERVICE_HOST;
   const did = clientEnv.NEXT_PUBLIC_FACILITATOR_DID;
   const password = serverEnv.FACILITATOR_PASSWORD;
 
-  if (!handle) throw new Error("FACILITATOR_HANDLE env var is not set");
+  if (!serviceHost) throw new Error("FACILITATOR_SERVICE_HOST env var is not set");
   if (!did) throw new Error("NEXT_PUBLIC_FACILITATOR_DID env var is not set");
   if (!password) throw new Error("FACILITATOR_PASSWORD env var is not set");
 
   return makeCredentialAgentLayer({
-    service:    handle.split(".").slice(1).join(".") ?? "bsky.social",
+    service: serviceHost,
     identifier: did,
     password,
   });

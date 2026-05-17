@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRightIcon, PlusIcon } from "lucide-react";
 import BumicertIcon from "@/icons/BumicertIcon";
+import { getProxiedImageUrl } from "@/lib/images";
 import { links } from "@/lib/links";
 import { Skeleton } from "@/components/ui/skeleton";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
@@ -76,7 +77,7 @@ export function BumicertsPreview({ organization }: BumicertsPreviewProps) {
                 <div className="relative h-16 w-16 rounded-lg overflow-hidden bg-muted shrink-0">
                   {b.coverImageUrl ? (
                     <Image
-                      src={b.coverImageUrl}
+                      src={getProxiedImageUrl(b.coverImageUrl)}
                       alt={b.title}
                       fill
                       className="object-cover"
