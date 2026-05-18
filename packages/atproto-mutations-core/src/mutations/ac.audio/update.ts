@@ -45,7 +45,8 @@ export const updateAudioRecording = (
   AtprotoAgent
 > =>
   Effect.gen(function* () {
-    const { rkey, data, newAudioFile, newTechnicalMetadata } = input;
+    const { rkey, data, unset, newAudioFile, newTechnicalMetadata } = input;
+    const technicalMetadata = newTechnicalMetadata;
 
     // 1. Validate the new audio file (if provided) before any PDS calls.
     //    This catches size/MIME/missing-metadata errors offline.
@@ -66,7 +67,7 @@ export const updateAudioRecording = (
           })
         );
       }
-      if (!newTechnicalMetadata) {
+      if (!technicalMetadata) {
         return yield* Effect.fail(
           new AudioRecordingValidationError({
             message: "newTechnicalMetadata must be provided when newAudioFile is supplied",
@@ -88,6 +89,13 @@ export const updateAudioRecording = (
     let techMeta: AudioTechnicalMetadata;
 
     if (newAudioFile) {
+      if (!technicalMetadata) {
+        return yield* Effect.fail(
+          new AudioRecordingValidationError({
+            message: "newTechnicalMetadata must be provided when newAudioFile is supplied",
+          })
+        );
+      }
       const agent = yield* AtprotoAgent;
       const fileBytes = fromSerializableFile(newAudioFile);
       const uploadResult = yield* Effect.tryPromise({
@@ -102,7 +110,7 @@ export const updateAudioRecording = (
         $type: "app.gainforest.common.defs#audio",
         file: { $type: "blob" as const, ref: raw.ref, mimeType: raw.mimeType, size: raw.size },
       };
-      techMeta = newTechnicalMetadata!;
+      techMeta = technicalMetadata;
     } else {
       // Preserve existing blob — normalize class BlobRef if needed.
       const existingBlob = existing.blob as Record<string, unknown>;
@@ -116,34 +124,66 @@ export const updateAudioRecording = (
       // Preserve existing technical metadata.
       const existingMeta = existing.metadata as Record<string, unknown>;
       techMeta = {
-        codec: existingMeta["codec"] as string,
+        codec: existingMeta["codec"] as string | undefined,
         channels: existingMeta["channels"] as number,
         duration: existingMeta["duration"] as string,
         sampleRate: existingMeta["sampleRate"] as number,
+        bitDepth: existingMeta["bitDepth"] as number | undefined,
+        fileFormat: existingMeta["fileFormat"] as string | undefined,
+        fileSizeBytes: existingMeta["fileSizeBytes"] as number | undefined,
+        minFrequencyHz: existingMeta["minFrequencyHz"] as number | undefined,
+        maxFrequencyHz: existingMeta["maxFrequencyHz"] as number | undefined,
+        filterHighPassHz: existingMeta["filterHighPassHz"] as number | undefined,
+        filterLowPassHz: existingMeta["filterLowPassHz"] as number | undefined,
+        signalToNoiseRatio: existingMeta["signalToNoiseRatio"] as string | undefined,
       };
     }
 
     // 3. Build merged record.
+    const unsetFields = new Set<string>(unset ?? []);
     const existingMeta = existing.metadata as Record<string, unknown>;
+    const mergedMetadata = {
+      $type: "app.gainforest.ac.audio#metadata",
+      ...(techMeta.codec !== undefined && { codec: techMeta.codec }),
+      channels: techMeta.channels,
+      duration: techMeta.duration,
+      sampleRate: techMeta.sampleRate,
+      recordedAt: data.metadata?.recordedAt ?? (existingMeta["recordedAt"] as string),
+      ...(techMeta.bitDepth !== undefined && { bitDepth: techMeta.bitDepth }),
+      ...(techMeta.fileFormat !== undefined && { fileFormat: techMeta.fileFormat }),
+      ...(techMeta.fileSizeBytes !== undefined && { fileSizeBytes: techMeta.fileSizeBytes }),
+      ...(techMeta.minFrequencyHz !== undefined && { minFrequencyHz: techMeta.minFrequencyHz }),
+      ...(techMeta.maxFrequencyHz !== undefined && { maxFrequencyHz: techMeta.maxFrequencyHz }),
+      ...((data.metadata?.filterHighPassHz ?? techMeta.filterHighPassHz) !== undefined && {
+        filterHighPassHz: data.metadata?.filterHighPassHz ?? techMeta.filterHighPassHz,
+      }),
+      ...((data.metadata?.filterLowPassHz ?? techMeta.filterLowPassHz) !== undefined && {
+        filterLowPassHz: data.metadata?.filterLowPassHz ?? techMeta.filterLowPassHz,
+      }),
+      ...((data.metadata?.signalToNoiseRatio ?? techMeta.signalToNoiseRatio) !== undefined && {
+        signalToNoiseRatio: data.metadata?.signalToNoiseRatio ?? techMeta.signalToNoiseRatio,
+      }),
+    };
     const merged = {
       $type: COLLECTION,
       name: data.name !== undefined ? data.name : existing.name,
-      description: data.description !== undefined
-        ? {
-            $type: "app.gainforest.common.defs#richtext",
-            text: data.description.text,
-            facets: data.description.facets,
-          }
-        : existing.description,
+      ...(!unsetFields.has("description") && {
+        description: data.description !== undefined
+          ? {
+              $type: "app.gainforest.common.defs#richtext",
+              text: data.description.text,
+              facets: data.description.facets,
+            }
+          : existing.description,
+      }),
       blob: audioBlob,
-      metadata: {
-        $type: "app.gainforest.ac.audio#metadata",
-        codec: techMeta.codec,
-        channels: techMeta.channels,
-        duration: techMeta.duration,
-        sampleRate: techMeta.sampleRate,
-        recordedAt: data.metadata?.recordedAt ?? (existingMeta["recordedAt"] as string),
-      },
+      metadata: mergedMetadata,
+      ...(!unsetFields.has("license") && { license: data.license ?? existing.license }),
+      ...(!unsetFields.has("recordedBy") && { recordedBy: data.recordedBy ?? existing.recordedBy }),
+      ...(!unsetFields.has("tags") && { tags: data.tags ?? existing.tags }),
+      ...(!unsetFields.has("occurrenceRef") && { occurrenceRef: data.occurrenceRef ?? existing.occurrenceRef }),
+      ...(!unsetFields.has("deploymentRef") && { deploymentRef: data.deploymentRef ?? existing.deploymentRef }),
+      ...(!unsetFields.has("siteRef") && { siteRef: data.siteRef ?? existing.siteRef }),
       createdAt: existing.createdAt,
     };
 

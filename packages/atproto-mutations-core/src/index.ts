@@ -147,6 +147,13 @@ export {
   AudioRecordingPdsError,
 } from "./mutations/ac.audio/utils/errors";
 
+// ac.deployment
+export {
+  AcDeploymentValidationError,
+  AcDeploymentNotFoundError,
+  AcDeploymentPdsError,
+} from "./mutations/ac.deployment/utils/errors";
+
 // claim.activity
 export {
   ClaimActivityValidationError,
@@ -204,6 +211,13 @@ export {
   DwcOccurrenceNotFoundError,
   DwcOccurrencePdsError,
 } from "./mutations/dwc.occurrence/utils/errors";
+
+// dwc.event
+export {
+  DwcEventValidationError,
+  DwcEventNotFoundError,
+  DwcEventPdsError,
+} from "./mutations/dwc.event/utils/errors";
 
 // dwc.measurement
 export {
@@ -292,6 +306,14 @@ export type {
   UpdateAudioRecordingInput,
   UpsertAudioRecordingInput,
 } from "./mutations/ac.audio/utils/types";
+
+// ac.deployment
+export type {
+  AcDeploymentRecord,
+  AcDeploymentMutationResult,
+  CreateAcDeploymentInput,
+  UpdateAcDeploymentInput,
+} from "./mutations/ac.deployment/utils/types";
 
 // claim.activity
 export type {
@@ -389,6 +411,14 @@ export type {
   DeleteDwcOccurrenceCascadeInput,
   DeleteDwcOccurrenceCascadeResult,
 } from "./mutations/dwc.occurrence/utils/types";
+
+// dwc.event
+export type {
+  CreateDwcEventInput,
+  UpdateDwcEventInput,
+  DwcEventMutationResult,
+  DwcEventRecord,
+} from "./mutations/dwc.event/utils/types";
 
 // dwc.measurement
 export type {

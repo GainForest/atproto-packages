@@ -26,16 +26,21 @@ export type AudioRecordingMutationResult = RecordMutationResult<AudioRecordingRe
  * responsible for extracting these values from the audio file before passing
  * them to the mutation.
  */
-export type AudioTechnicalMetadata = {
-  /** Audio codec (e.g. "MPEG 1 Layer 3", "AAC", "PCM"). */
-  codec: string;
-  /** Number of audio channels (1 = mono, 2 = stereo, …). */
-  channels: number;
-  /** Duration of the recording in seconds, as a string (e.g. "142.5"). */
-  duration: string;
-  /** Sample rate in Hz (e.g. 44100). */
-  sampleRate: number;
-};
+export type AudioTechnicalMetadata = Pick<
+  AudioMetadata,
+  | "codec"
+  | "channels"
+  | "duration"
+  | "sampleRate"
+  | "bitDepth"
+  | "fileFormat"
+  | "fileSizeBytes"
+  | "minFrequencyHz"
+  | "maxFrequencyHz"
+  | "filterHighPassHz"
+  | "filterLowPassHz"
+  | "signalToNoiseRatio"
+>;
 
 export type CreateAudioRecordingInput = {
   /** Short name / title for the recording. */
@@ -52,6 +57,12 @@ export type CreateAudioRecordingInput = {
     /** ISO 8601 datetime at which the audio was recorded. */
     recordedAt: string;
   };
+  license?: string;
+  recordedBy?: string;
+  tags?: string[];
+  occurrenceRef?: string;
+  deploymentRef?: string;
+  siteRef?: string;
   /** Optional caller-supplied rkey. PDS assigns a TID if omitted. */
   rkey?: string;
 };
@@ -70,10 +81,15 @@ export type UpdateAudioRecordingInput = {
   data: {
     name?: string;
     description?: { text: string; facets?: unknown[] };
-    metadata?: {
-      recordedAt?: string;
-    };
+    metadata?: Partial<Pick<AudioMetadata, "recordedAt" | "filterHighPassHz" | "filterLowPassHz" | "signalToNoiseRatio">>;
+    license?: string;
+    recordedBy?: string;
+    tags?: string[];
+    occurrenceRef?: string;
+    deploymentRef?: string;
+    siteRef?: string;
   };
+  unset?: ReadonlyArray<"description" | "license" | "recordedBy" | "tags" | "occurrenceRef" | "deploymentRef" | "siteRef">;
   /**
    * Optional replacement audio file. When provided:
    * - `technicalMetadata` must also be supplied (codec, channels, duration, sampleRate).

@@ -30,6 +30,12 @@ const document = graphql(`
           cid
           createdAt
           name
+          license
+          recordedBy
+          tags
+          occurrenceRef
+          deploymentRef
+          siteRef
           description {
             text
             facets {
@@ -92,6 +98,12 @@ const byUriDocument = graphql(`
       cid
       createdAt
       name
+      license
+      recordedBy
+      tags
+      occurrenceRef
+      deploymentRef
+      siteRef
       description {
         text
         facets {
@@ -156,6 +168,12 @@ export type AudioRecordingItem = {
     createdAt: string | null;
     blob: unknown;
     metadata: unknown;
+    license: string | null;
+    recordedBy: string | null;
+    tags: string[] | null;
+    occurrenceRef: string | null;
+    deploymentRef: string | null;
+    siteRef: string | null;
   };
 };
 
@@ -248,6 +266,12 @@ async function normalizeAudio(node: AudioNode | AudioByUriNode): Promise<AudioRe
       createdAt: node.createdAt,
       blob: normalizeAudioBlob(resolvedBlob),
       metadata: normalizeAudioMetadata(node.metadata),
+      license: node.license,
+      recordedBy: node.recordedBy,
+      tags: node.tags ?? null,
+      occurrenceRef: node.occurrenceRef,
+      deploymentRef: node.deploymentRef,
+      siteRef: node.siteRef,
     },
   } satisfies AudioRecordingItem;
 }

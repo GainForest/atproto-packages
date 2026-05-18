@@ -21,10 +21,10 @@ export default defineConfig({
     viewport: { width: 1440, height: 1000 },
   },
   webServer: {
-    command: `NEXT_PUBLIC_BASE_URL=${baseURL} bun run dev`,
+    command: `NEXT_PUBLIC_BASE_URL=${baseURL} bun run build && NEXT_PUBLIC_BASE_URL=${baseURL} bun run start -- --port ${port}`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    reuseExistingServer: false,
+    timeout: 300_000,
   },
   projects: [
     {
