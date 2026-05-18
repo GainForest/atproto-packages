@@ -16,18 +16,18 @@ interface Tab {
 
 type AccountTabBarKind = "organization" | "user";
 
-function buildTabs(did: string, accountKind: AccountTabBarKind): Tab[] {
+function buildTabs(accountIdentifier: string, accountKind: AccountTabBarKind): Tab[] {
   if (accountKind === "user") {
     return [
       {
         label: "Bumicerts",
-        href: links.account.bumicerts(did),
+        href: links.account.bumicerts(accountIdentifier),
         icon: BadgeIcon,
         exact: false,
       },
       {
         label: "Donation History",
-        href: links.account.donations(did),
+        href: links.account.donations(accountIdentifier),
         icon: HeartIcon,
         exact: false,
       },
@@ -37,13 +37,13 @@ function buildTabs(did: string, accountKind: AccountTabBarKind): Tab[] {
   return [
     {
       label: "Home",
-      href: links.account.byDid(did),
+      href: links.account.byDidOrHandle(accountIdentifier),
       icon: HomeIcon,
       exact: true,
     },
     {
       label: "Bumicerts",
-      href: links.account.bumicerts(did),
+      href: links.account.bumicerts(accountIdentifier),
       icon: BadgeIcon,
       exact: false,
     },
@@ -51,22 +51,22 @@ function buildTabs(did: string, accountKind: AccountTabBarKind): Tab[] {
 }
 
 interface OrgTabBarProps {
-  did: string;
+  accountIdentifier: string;
   accountKind?: AccountTabBarKind;
 }
 
 export function OrgTabBar({
-  did,
+  accountIdentifier,
   accountKind = "organization",
 }: OrgTabBarProps) {
   const pathname = usePathname();
-  const tabs = buildTabs(did, accountKind);
+  const tabs = buildTabs(accountIdentifier, accountKind);
 
   function isActive(tab: Tab): boolean {
     if (
       accountKind === "user" &&
-      tab.href === links.account.bumicerts(did) &&
-      pathname === links.account.byDid(did)
+      tab.href === links.account.bumicerts(accountIdentifier) &&
+      pathname === links.account.byDidOrHandle(accountIdentifier)
     ) {
       return true;
     }

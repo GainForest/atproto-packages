@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { links } from "@/lib/links";
 import { OrgHero } from "@/components/account/OrgHero";
 import { OrgTabBar } from "./_components/OrgTabBar";
 import ErrorPage from "@/components/error-page";
@@ -16,16 +17,17 @@ export default async function AccountLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ did: string }>;
+  params: Promise<{ didOrHandle: string }>;
 }) {
-  const { did } = await readAccountRouteParams(params);
+  const routeParams = await readAccountRouteParams(params);
+  const { did } = routeParams;
   let session: Awaited<ReturnType<typeof auth.session.getSession>>;
   let routeData: AccountRouteData;
 
   try {
     [session, routeData] = await Promise.all([
       auth.session.getSession(),
-      getAccountRouteData(did),
+      getAccountRouteData(routeParams),
     ]);
   } catch (error) {
     console.error("[AccountLayout] Failed to read account", did, error);
@@ -57,8 +59,15 @@ export default async function AccountLayout({
   return (
     <main className="w-full">
       <Container className="pt-4 pb-8">
-        <OrgHero organization={routeData.organization} showEditButton={isOwner} />
-        <OrgTabBar did={routeData.organization.did} accountKind={routeData.kind} />
+        <OrgHero
+          organization={routeData.organization}
+          publicHref={links.account.byDidOrHandle(routeData.handle ?? routeData.did)}
+          showEditButton={isOwner}
+        />
+        <OrgTabBar
+          accountIdentifier={routeData.handle ?? routeData.did}
+          accountKind={routeData.kind}
+        />
         {children}
       </Container>
     </main>

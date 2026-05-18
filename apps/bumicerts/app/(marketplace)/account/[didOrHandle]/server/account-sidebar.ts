@@ -254,7 +254,7 @@ export async function buildAccountSidebarData(
     accountKind: routeData.kind,
     displayName: routeData.organization.displayName,
     ...buildInviteCopy(routeData),
-    achievementsHref: `${links.account.bumicerts(routeData.did)}#account-achievements`,
+    achievementsHref: `${links.account.bumicerts(routeData.handle ?? routeData.did)}#account-achievements`,
     stats: [
       {
         label: "Total Bumicerts",

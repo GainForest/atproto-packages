@@ -98,7 +98,7 @@ function MentionCard({ did, handle }: MentionCardProps) {
       {/* View account profile for onboarded user and organization accounts */}
       {hasInternalAccountLink && (
         <Link
-          href={links.account.byDid(did)}
+          href={links.account.byDidOrHandle(resolvedHandle ?? did)}
           className="flex items-center justify-between w-full rounded-md px-3 py-2 bg-primary/10 hover:bg-primary/20 transition-colors text-xs font-medium text-primary"
         >
           View account profile

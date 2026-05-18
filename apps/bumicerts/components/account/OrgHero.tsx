@@ -19,6 +19,7 @@ import { getProxiedImageUrl } from "@/lib/images";
 
 interface OrgHeroProps {
   organization: OrganizationData;
+  publicHref?: string;
   showEditButton?: boolean;
 }
 
@@ -28,6 +29,7 @@ function formatWebsite(url: string): string {
 
 export function OrgHero({
   organization,
+  publicHref,
   showEditButton = false,
 }: OrgHeroProps) {
   const [copied, setCopied] = useState(false);
@@ -49,7 +51,7 @@ export function OrgHero({
     organization.website;
 
   function handleShare() {
-    const publicUrl = `${window.location.origin}${links.account.byDid(organization.did)}`;
+    const publicUrl = `${window.location.origin}${publicHref ?? links.account.byDidOrHandle(organization.did)}`;
     navigator.clipboard.writeText(publicUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
