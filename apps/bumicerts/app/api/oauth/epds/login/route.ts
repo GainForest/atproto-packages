@@ -2,7 +2,9 @@
  * ePDS OAuth Login endpoint.
  *
  * Initiates the email-based OAuth flow via the ePDS server.
- * Accepts an optional `?email=` query parameter as a login hint.
+ * Accepts optional query parameters:
+ * - `?email=` as a login hint for ePDS email auth
+ * - `?handle=` to start standard handle OAuth instead of email auth
  *
  * Uses the auth package's ePDS login handler which:
  * 1. Generates PKCE code verifier and challenge

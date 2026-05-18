@@ -399,6 +399,7 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     policyUri,
     epdsHandleMode,
     epdsSkipConsentOnSignup,
+    epdsHandleLoginUrl: isEpdsEnabled ? "/api/oauth/epds/login" : undefined,
   });
 
   const jwksHandler = createJwksHandler(privateKeyJwk);
@@ -419,6 +420,7 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
         oauthClient,
         epdsUrl: epdsConfig!.url,
         scope,
+        defaultPdsDomain,
         errorRedirectTo: "/?error=auth_failed",
       }
     : null;
