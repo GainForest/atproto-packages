@@ -13,7 +13,7 @@ function RankBadge({ rank }: { rank: number }) {
     const medals = ["", "🥇", "🥈", "🥉"];
     return (
       <span
-        className="flex size-10 items-center justify-center rounded-full bg-gradient-to-b from-primary/10 to-background text-2xl shadow-sm ring-1 ring-border"
+        className="flex size-10 items-center justify-center rounded-full bg-gradient-to-b from-primary/10 to-background text-2xl shadow-sm ring-1 ring-foreground/5"
         role="img"
         aria-label={`Rank ${rank}`}
       >
@@ -23,7 +23,7 @@ function RankBadge({ rank }: { rank: number }) {
   }
 
   return (
-    <span className="flex size-10 items-center justify-center rounded-full border border-border bg-card text-base font-medium tabular-nums text-muted-foreground shadow-sm">
+    <span className="flex size-10 items-center justify-center rounded-full bg-card text-base font-medium tabular-nums text-muted-foreground shadow-sm ring-1 ring-foreground/5">
       {rank}
     </span>
   );
@@ -43,12 +43,12 @@ function donationSummary(entry: LeaderboardEntry, relativeTime: string | null): 
 function DonorBadges({ rank }: { rank: number }) {
   if (rank === 1) {
     return (
-      <div className="hidden flex-wrap items-center gap-2 lg:flex">
-        <span className="inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+      <div className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
+        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
           <CrownIcon className="size-3.5" />
           Top Donor
         </span>
-        <span className="inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+        <span className="hidden items-center gap-1 whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary sm:inline-flex">
           <LeafIcon className="size-3.5" />
           Nature Champion
         </span>
@@ -58,8 +58,8 @@ function DonorBadges({ rank }: { rank: number }) {
 
   if (rank === 2) {
     return (
-      <div className="hidden flex-wrap items-center gap-2 lg:flex">
-        <span className="inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+      <div className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
+        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
           <SparklesIcon className="size-3.5" />
           Consistent Giver
         </span>
@@ -69,8 +69,8 @@ function DonorBadges({ rank }: { rank: number }) {
 
   if (rank === 3) {
     return (
-      <div className="hidden flex-wrap items-center gap-2 lg:flex">
-        <span className="inline-flex items-center gap-1 rounded-md border border-primary/15 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+      <div className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
+        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
           <SparklesIcon className="size-3.5" />
           Rising Supporter
         </span>
@@ -78,7 +78,7 @@ function DonorBadges({ rank }: { rank: number }) {
     );
   }
 
-  return <div className="hidden lg:block" />;
+  return null;
 }
 
 interface DonorCardProps {
@@ -115,7 +115,7 @@ export function DonorCard({ entry, index }: DonorCardProps) {
         delay: Math.min(index, 12) * 0.025,
         ease: [0.25, 0.1, 0.25, 1],
       }}
-      className="group grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-3xl border border-border/80 bg-card/85 p-4 shadow-sm shadow-primary/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/10 sm:gap-5 sm:p-5 lg:grid-cols-[auto_auto_minmax(0,1.15fr)_minmax(10rem,0.8fr)_auto_auto]"
+      className="group grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-4 py-4 transition-colors duration-200 hover:bg-card/65 sm:gap-5 sm:px-5"
     >
       <div className="flex items-center justify-center">
         <RankBadge rank={entry.rank} />
@@ -123,7 +123,7 @@ export function DonorCard({ entry, index }: DonorCardProps) {
 
       <div
         className={cn(
-          "flex size-12 items-center justify-center rounded-full border bg-muted/50 text-muted-foreground ring-1 ring-border/50",
+          "flex size-12 items-center justify-center rounded-full bg-muted/60 text-muted-foreground ring-1 ring-foreground/5",
           !isWallet && "bg-primary/10 text-primary ring-primary/10",
         )}
       >
@@ -131,35 +131,35 @@ export function DonorCard({ entry, index }: DonorCardProps) {
       </div>
 
       <div className="min-w-0">
-        {isWallet ? (
-          <span className="block truncate text-sm font-semibold text-foreground sm:text-base" title={entry.donorId}>
-            {formatWalletAddress(entry.donorId)}
-          </span>
-        ) : (
-          <UserChip
-            did={entry.donorId}
-            avatarSize={24}
-            showCopyButton="hover"
-            linkMode="none"
-            className="max-w-full border !border-transparent hover:!border-border"
-            textClassName="text-sm sm:text-base font-semibold text-foreground"
-          />
-        )}
+        <div className="flex min-w-0 items-center gap-2">
+          {isWallet ? (
+            <span className="truncate text-sm font-semibold text-foreground sm:text-base" title={entry.donorId}>
+              {formatWalletAddress(entry.donorId)}
+            </span>
+          ) : (
+            <UserChip
+              did={entry.donorId}
+              avatarSize={24}
+              showCopyButton="hover"
+              linkMode="user-page"
+              className="min-w-0 max-w-full"
+              textClassName="text-sm sm:text-base font-semibold text-foreground"
+            />
+          )}
+          <DonorBadges rank={entry.rank} />
+        </div>
         <p className="mt-1 truncate text-xs text-muted-foreground sm:text-sm">
           {donationSummary(entry, relativeTime)}
         </p>
       </div>
 
-      <DonorBadges rank={entry.rank} />
-
       <div className="text-right">
-        <div className="text-base font-bold tabular-nums text-primary sm:text-lg">
+        <div className="whitespace-nowrap text-base font-bold tabular-nums text-primary sm:text-lg">
           ${entry.totalAmount.toLocaleString("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}
         </div>
-        <div className="text-xs font-medium text-muted-foreground">USD</div>
       </div>
 
       <a

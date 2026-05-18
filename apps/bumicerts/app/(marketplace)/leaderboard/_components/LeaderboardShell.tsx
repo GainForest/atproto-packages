@@ -55,7 +55,7 @@ function PeriodChips({
   onPeriodChange?: (period: LeaderboardPeriod) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 rounded-full border border-border/80 bg-card/85 p-1 shadow-sm shadow-primary/5 backdrop-blur">
+    <div className="grid grid-cols-3 rounded-full bg-muted/55 p-1 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur">
       {PERIODS.map((option) => {
         const isSelected = period === option.value;
         return (
@@ -66,7 +66,7 @@ function PeriodChips({
             disabled={!onPeriodChange}
             onClick={() => onPeriodChange?.(option.value)}
             className={cn(
-              "rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 disabled:pointer-events-none",
+              "whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 disabled:pointer-events-none",
               isSelected
                 ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
                 : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
@@ -88,7 +88,7 @@ function DonorTypeTabs({
   onDonorFilterChange?: (donorFilter: LeaderboardDonorFilter) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 rounded-full border border-border/80 bg-card/85 p-1 shadow-sm shadow-primary/5 backdrop-blur sm:grid-cols-3">
+    <div className="grid grid-cols-1 rounded-full bg-muted/55 p-1 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur sm:grid-cols-3">
       {DONOR_FILTERS.map(({ value, label, Icon }) => {
         const isSelected = donorFilter === value;
         return (
@@ -99,7 +99,7 @@ function DonorTypeTabs({
             disabled={!onDonorFilterChange}
             onClick={() => onDonorFilterChange?.(value)}
             className={cn(
-              "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 disabled:pointer-events-none",
+              "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 disabled:pointer-events-none",
               isSelected
                 ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
                 : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
@@ -138,10 +138,10 @@ function SortControl({
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-full border border-border/80 bg-card/85 py-1.5 pr-1.5 pl-4 shadow-sm shadow-primary/5 backdrop-blur">
+    <div className="flex items-center justify-between gap-3 rounded-full bg-muted/55 py-1.5 pr-1.5 pl-4 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur">
       <span
         id="leaderboard-sort-label"
-        className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground"
+        className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-xs font-medium text-muted-foreground"
       >
         <ArrowDownWideNarrowIcon className="size-4" />
         Sort by
@@ -179,7 +179,7 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-border/80 bg-card/85 p-6 shadow-sm shadow-primary/5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/10">
+    <div className="group relative overflow-hidden rounded-3xl bg-foreground/5 p-6 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:bg-foreground/[0.07]">
       <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
       <div className="flex items-center gap-5">
         <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary ring-1 ring-primary/10 transition-transform duration-300 group-hover:scale-105">
@@ -250,7 +250,7 @@ function StatsSummary({
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}{" "}
-            <span className="align-baseline text-sm font-medium text-primary/80">USD</span>
+
           </>
         }
         detail="All time across the platform"
@@ -302,38 +302,42 @@ export function LeaderboardShell({
   children,
 }: LeaderboardShellProps) {
   return (
-    <section className="relative -mt-14 overflow-hidden px-4 pb-20 pt-8 md:px-8 md:pb-28">
+    <section className="relative -mt-14 overflow-hidden pb-20 pt-0 md:pb-28">
       <div className="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-primary/[0.08] via-transparent to-transparent dark:from-primary/[0.12]" />
       <HeroLandscapeArt />
 
-      <div className="relative mx-auto max-w-7xl">
+      <div className="relative min-h-[330px]">
         <motion.header
           initial={animate ? { opacity: 0, y: 16 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-10 max-w-3xl pt-8 md:pt-14"
+          className="mx-auto mb-0 flex max-w-6xl flex-col px-8 pb-14 pt-[86px] sm:px-10 lg:px-9"
         >
-          <div className="mb-5 flex items-center gap-2">
-            <TrophyIcon className="size-5 text-primary" />
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="mb-5 flex items-center gap-2.5">
+            <TrophyIcon className="h-4 w-4 text-primary" />
+            <span className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
               Leaderboard
             </span>
           </div>
-          <h1 className="text-5xl font-light leading-[0.95] tracking-[-0.04em] text-foreground md:text-7xl lg:text-8xl font-garamond">
+          <h1 className="max-w-4xl text-4xl font-light leading-[0.98] tracking-[-0.035em] text-foreground sm:text-5xl md:text-6xl lg:text-7xl font-garamond">
             Impact{" "}
-            <span className="font-instrument italic text-primary">Champions</span>
+            <span className="font-instrument italic text-foreground/85">Champions</span>
           </h1>
-          <p className="mt-7 max-w-xl text-base leading-7 text-muted-foreground md:text-lg">
+          <p className="mt-7 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
             Celebrating the generous contributors driving regenerative change for
             communities and the planet.
           </p>
         </motion.header>
 
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-6xl px-6">
+        <div className="relative z-20 -mt-6 space-y-3 mb-0 px-3">
         <motion.div
           initial={animate ? { opacity: 0, y: 12 } : false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
-          className="mb-5 rounded-3xl border border-border/80 bg-background/70 p-2 shadow-sm shadow-primary/5 backdrop-blur-xl"
+          className="mb-5 rounded-3xl bg-background/65 p-2 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur-xl"
         >
           <div className="grid gap-3 xl:grid-cols-[1fr_1.15fr_auto] xl:items-center">
             <PeriodChips period={period} onPeriodChange={onPeriodChange} />
@@ -359,6 +363,7 @@ export function LeaderboardShell({
         </motion.div>
 
         {children}
+        </div>
       </div>
     </section>
   );

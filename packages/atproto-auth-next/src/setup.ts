@@ -143,6 +143,10 @@ export type AuthSetupConfig = {
    * - "random": skip picker and auto-assign a random handle
    */
   epdsHandleMode?: EpdsHandleMode;
+  /**
+   * Whether the ePDS signup flow should skip consent after account creation.
+   */
+  epdsSkipConsentOnSignup?: boolean;
 
   // ─── Optional: Redirect paths ────────────────────────────────────────────────
   /**
@@ -302,6 +306,7 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     defaultPdsDomain,
     epds: epdsConfig,
     epdsHandleMode,
+    epdsSkipConsentOnSignup,
     onCallback,
     onLogout,
     // Branding options
@@ -393,6 +398,7 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     tosUri,
     policyUri,
     epdsHandleMode,
+    epdsSkipConsentOnSignup,
   });
 
   const jwksHandler = createJwksHandler(privateKeyJwk);

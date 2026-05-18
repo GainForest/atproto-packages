@@ -12,6 +12,12 @@ import {
 import type { OrganizationData } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 import { OrganizationCard } from "./OrganizationCard";
 import { countries } from "@/lib/countries";
 import { realms, countryToRealm } from "@/lib/bioregions";
@@ -191,15 +197,15 @@ function OrganizationsHero({ animate }: { animate: boolean }) {
       <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background via-background/70 to-transparent" />
 
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col px-8 pb-14 pt-[86px] sm:px-10 lg:px-9">
-        <div className="flex items-center gap-2 mb-5">
+        <div className="mb-5 flex items-center gap-2.5">
           <UsersIcon className="h-4 w-4 text-primary" />
-          <span className="text-xs uppercase tracking-[0.18em] text-primary font-semibold">
+          <span className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
             Organizations
           </span>
         </div>
         <h1
           aria-label="Nature Stewards"
-          className="max-w-3xl text-4xl font-light tracking-[-0.035em] leading-[0.98] text-foreground sm:text-5xl md:text-[56px] lg:text-[58px]"
+          className="max-w-4xl text-4xl font-light leading-[0.98] tracking-[-0.035em] text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
           <span aria-hidden="true">
@@ -220,7 +226,7 @@ function OrganizationsHero({ animate }: { animate: boolean }) {
             </span>
           </span>
         </h1>
-        <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+        <p className="mt-7 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
           Discover organizations leading environmental stewardship and
           community-driven change.
         </p>
@@ -300,37 +306,40 @@ export function AllOrgsShell({
 
       <div className="max-w-6xl mx-auto px-6">
         {/* Search + sort row */}
-        <div className="relative z-20 -mt-14 space-y-3 mb-0 px-3">
+        <div className="relative z-20 -mt-6 space-y-3 mb-0 px-3">
           <div className="flex items-center gap-3">
-            <div className="relative flex-1 min-w-0">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-              <input
+            <InputGroup className="h-10 flex-1 rounded-full bg-background/50 backdrop-blur">
+              <InputGroupAddon>
+                <SearchIcon />
+              </InputGroupAddon>
+              <InputGroupInput
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search organizations..."
-                className="w-full h-12 pl-11 pr-4 text-sm rounded-2xl border border-border/80 bg-background/90 shadow-sm shadow-foreground/5 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all dark:bg-card/90"
               />
-            </div>
+            </InputGroup>
 
             <div className="relative shrink-0">
-              <button
+              <Button
                 onClick={() =>
                   setOpenDropdown((p) => (p === "sort" ? null : "sort"))
                 }
-                className="flex items-center gap-2 h-12 px-4 text-sm text-muted-foreground hover:text-foreground border border-border/80 rounded-2xl bg-background/90 shadow-sm shadow-foreground/5 backdrop-blur-md transition-colors dark:bg-card/90"
+                type="button"
+                variant="outline"
+                size="lg"
               >
-                <ArrowUpDownIcon className="h-4 w-4" />
+                <ArrowUpDownIcon />
                 <span className="hidden sm:inline">
                   {SORT_OPTIONS.find((o) => o.value === sort)?.label}
                 </span>
                 <ChevronDownIcon
                   className={cn(
-                    "h-4 w-4 transition-transform",
+                    "transition-transform",
                     openDropdown === "sort" && "rotate-180",
                   )}
                 />
-              </button>
+              </Button>
               <AnimatePresence>
                 {openDropdown === "sort" && (
                   <motion.div

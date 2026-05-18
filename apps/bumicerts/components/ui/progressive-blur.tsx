@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
+
 import { cn } from "@/lib/utils";
 
 export interface ProgressiveBlurProps {
   className?: string;
-  borderRadiusClassName?: string;
   height?: string;
   position?: "top" | "bottom" | "both";
   blurLevels?: number[];
@@ -16,76 +16,70 @@ export function ProgressiveBlur({
   className,
   height = "30%",
   position = "bottom",
-  blurLevels = [0.5, 1, 2, 4, 8, 16, 32, 64],
-  borderRadiusClassName,
+  blurLevels = [1, 4, 10, 20],
 }: ProgressiveBlurProps) {
-  const divElements = Array(blurLevels.length - 2).fill(null);
+  // For "both", we render two stacks (top + bottom). For single direction, one stack.
+  const renderStack = (stackPosition: "top" | "bottom") => {
+    const direction = stackPosition === "top" ? "to top" : "to bottom";
+    const step = 100 / (blurLevels.length + 1); // even distribution of fade bands
+
+    return blurLevels.map((blur, i) => {
+      // Each layer: transparent until its threshold, then opaque toward the edge.
+      // Stacking opaque regions = cumulative blur intensity at the top/bottom edge.
+      const fadeStart = i * step;
+      const fadeEnd = (i + 1) * step;
+      const mask = `linear-gradient(${direction}, transparent ${fadeStart}%, #000 ${fadeEnd}%)`;
+
+      return (
+        <span
+          key={`${stackPosition}-${i}`}
+          style={{
+            gridArea: "1 / 1",
+            backdropFilter: `blur(${blur}px)`,
+            WebkitBackdropFilter: `blur(${blur}px)`,
+            maskImage: mask,
+            WebkitMaskImage: mask,
+          }}
+        />
+      );
+    });
+  };
+
+  if (position === "both") {
+    return (
+      <>
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-x-0 top-0 z-10 grid",
+            className,
+          )}
+          style={{ height }}
+        >
+          {renderStack("top")}
+        </div>
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-x-0 bottom-0 z-10 grid",
+            className,
+          )}
+          style={{ height }}
+        >
+          {renderStack("bottom")}
+        </div>
+      </>
+    );
+  }
 
   return (
     <div
       className={cn(
-        "gradient-blur pointer-events-none absolute inset-x-0 z-10",
+        "pointer-events-none absolute inset-x-0 z-10 grid",
+        position === "top" ? "top-0" : "bottom-0",
         className,
-        position === "top"
-          ? "top-0"
-          : position === "bottom"
-          ? "bottom-0"
-          : "inset-y-0"
       )}
-      style={{ height: position === "both" ? "100%" : height }}
+      style={{ height }}
     >
-      <div
-        className={cn("absolute inset-0", borderRadiusClassName)}
-        style={{
-          zIndex: 1,
-          backdropFilter: `blur(${blurLevels[0]}px)`,
-          WebkitBackdropFilter: `blur(${blurLevels[0]}px)`,
-          maskImage:
-            position === "bottom"
-              ? `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%)`
-              : position === "top"
-              ? `linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%)`
-              : `linear-gradient(rgba(0,0,0,0) 0%, rgba(0,0,0,1) 5%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)`,
-        }}
-      />
-      {divElements.map((_, index) => {
-        const blurIndex = index + 1;
-        const startPercent = blurIndex * 12.5;
-        const midPercent = (blurIndex + 1) * 12.5;
-        const endPercent = (blurIndex + 2) * 12.5;
-        const maskGradient =
-          position === "bottom"
-            ? `linear-gradient(to bottom, rgba(0,0,0,0) ${startPercent}%, rgba(0,0,0,1) ${midPercent}%, rgba(0,0,0,1) ${endPercent}%, rgba(0,0,0,0) ${endPercent + 12.5}%)`
-            : position === "top"
-            ? `linear-gradient(to top, rgba(0,0,0,0) ${startPercent}%, rgba(0,0,0,1) ${midPercent}%, rgba(0,0,0,1) ${endPercent}%, rgba(0,0,0,0) ${endPercent + 12.5}%)`
-            : `linear-gradient(rgba(0,0,0,0) 0%, rgba(0,0,0,1) 5%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)`;
-        return (
-          <div
-            key={`blur-${index}`}
-            className={cn("absolute inset-0", borderRadiusClassName)}
-            style={{
-              zIndex: index + 2,
-              backdropFilter: `blur(${blurLevels[blurIndex]}px)`,
-              WebkitBackdropFilter: `blur(${blurLevels[blurIndex]}px)`,
-              maskImage: maskGradient,
-            }}
-          />
-        );
-      })}
-      <div
-        className={cn("absolute inset-0", borderRadiusClassName)}
-        style={{
-          zIndex: blurLevels.length,
-          backdropFilter: `blur(${blurLevels[blurLevels.length - 1]}px)`,
-          WebkitBackdropFilter: `blur(${blurLevels[blurLevels.length - 1]}px)`,
-          maskImage:
-            position === "bottom"
-              ? `linear-gradient(to bottom, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%)`
-              : position === "top"
-              ? `linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%)`
-              : `linear-gradient(rgba(0,0,0,0) 0%, rgba(0,0,0,1) 5%, rgba(0,0,0,1) 95%, rgba(0,0,0,0) 100%)`,
-        }}
-      />
+      {renderStack(position)}
     </div>
   );
 }

@@ -35,6 +35,12 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Types & Data
@@ -359,39 +365,41 @@ export function ExploreHeaderSlots({
       >
         {/* Row 1: Search + Sort */}
         <div className="flex items-center gap-3">
-          <div className="relative flex-1 min-w-0">
-            <SearchIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/65" />
-            <input
+          <InputGroup className="h-10 flex-1 rounded-full bg-background/50 backdrop-blur">
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+            <InputGroupInput
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search projects"
               placeholder="Search projects by name, keyword, or location..."
-              className="h-14 w-full rounded-2xl border border-border bg-card/90 pl-12 pr-4 text-sm shadow-sm backdrop-blur-md transition-all placeholder:text-muted-foreground/75 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
-          </div>
+          </InputGroup>
 
           <div className="relative shrink-0">
-            <button
+            <Button
               onClick={() =>
                 setOpenDropdown((prev) => (prev === "sort" ? null : "sort"))
               }
               type="button"
               aria-label="Sort projects"
               aria-expanded={openDropdown === "sort"}
-              className="flex h-14 items-center gap-3 rounded-2xl border border-border bg-card/90 px-4 text-sm text-foreground shadow-sm backdrop-blur-md transition-colors hover:border-primary/30"
+              variant="outline"
+              size="lg"
             >
-              <ArrowUpDownIcon className="h-4 w-4" />
+              <ArrowUpDownIcon />
               <span className="hidden sm:inline">
                 {SORT_OPTIONS.find((o) => o.value === sort)?.label}
               </span>
               <ChevronDownIcon
                 className={cn(
-                  "h-4 w-4 transition-transform",
+                  "transition-transform",
                   openDropdown === "sort" && "rotate-180",
                 )}
               />
-            </button>
+            </Button>
 
             <AnimatePresence>
               {openDropdown === "sort" && (
