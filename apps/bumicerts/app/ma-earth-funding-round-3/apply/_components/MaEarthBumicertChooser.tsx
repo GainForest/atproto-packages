@@ -41,7 +41,7 @@ function SignInState() {
         Sign in to choose a Bumicert
       </h2>
       <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted-foreground">
-        MaEarth applications should start from an account-owned public Bumicert.
+        Ma Earth applications should start from an account-owned public Bumicert.
         Sign in first, then choose the project record you want to share.
       </p>
       <div className="mt-6 flex justify-center">
@@ -63,7 +63,7 @@ function EmptyState() {
       <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted-foreground">
         We could not find a published Bumicert for this account. Create one with
         your project story, evidence, images, and location details before
-        continuing to MaEarth.
+        continuing to Ma Earth.
       </p>
       <Button asChild className="mt-6">
         <Link href={links.bumicert.create}>
@@ -157,7 +157,7 @@ export function MaEarthBumicertChooser() {
       <div className="mx-auto max-w-5xl rounded-[1.5rem] bg-primary/[0.06] px-4 py-3 shadow-sm shadow-primary/5">
         <p className="text-sm leading-6 text-muted-foreground">
           By choosing a Bumicert, you consent to share your DID and that public
-          Bumicert identifier with MaEarth so their importer can retrieve the
+          Bumicert identifier with Ma Earth so their importer can retrieve the
           public project record.
         </p>
       </div>

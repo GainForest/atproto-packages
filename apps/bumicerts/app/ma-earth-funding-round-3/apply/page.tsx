@@ -8,9 +8,9 @@ import { links } from "@/lib/links";
 import { MaEarthBumicertChooser } from "./_components/MaEarthBumicertChooser";
 
 export const metadata: Metadata = {
-  title: "Apply with your Bumicert — MaEarth Funding Round 3",
+  title: "Apply with your Bumicert — Ma Earth Funding Round 3",
   description:
-    "Choose a published Bumicert and continue to the MaEarth Funding Round 3 importer.",
+    "Choose a published Bumicert and continue to the Ma Earth Funding Round 3 importer.",
 };
 
 export default function MaEarthApplyPage() {
@@ -29,14 +29,14 @@ export default function MaEarthApplyPage() {
           <section className="flex w-full flex-col items-center gap-10">
             <div className="flex max-w-3xl flex-col items-center">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-                MaEarth Funding Round 3
+                Ma Earth Funding Round 3
               </p>
               <h1 className="mt-4 max-w-xl font-instrument text-5xl italic leading-[0.98] tracking-[-0.05em] text-foreground sm:text-6xl">
                 Apply with your Bumicert
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-8 text-muted-foreground">
                 Choose the Bumicert that best represents the project seeking
-                funding. We will send MaEarth only the public identifiers needed
+                funding. We will send Ma Earth only the public identifiers needed
                 to start the importer: your DID, selected Bumicert, and source.
               </p>
             </div>

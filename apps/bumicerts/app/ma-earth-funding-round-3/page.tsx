@@ -17,16 +17,16 @@ import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
 
 export const metadata: Metadata = {
-  title: "Apply for MaEarth Funding Round 3 — Bumicerts",
+  title: "Apply for Ma Earth Funding Round 3 — Bumicerts",
   description:
-    "Learn how GainForest communities can apply to MaEarth Funding Round 3 with a Bumicert and prepare for the $500,000 matching pool.",
+    "Learn how GainForest communities can apply to Ma Earth Funding Round 3 with a Bumicert and prepare for the $500,000 matching pool.",
 };
 
 const ROUND_FACTS = [
   {
     label: "Matching pool",
     value: "$500,000",
-    description: "Community support is amplified through MaEarth’s matching model.",
+    description: "Community support is amplified through Ma Earth’s matching model.",
   },
   {
     label: "Project funding range",
@@ -35,8 +35,8 @@ const ROUND_FACTS = [
   },
   {
     label: "Application window",
-    value: "End of May 2026",
-    description: "Public sources list May 31 / June 1 depending on timezone.",
+    value: "Open till May 31st",
+    description: "Applications are open through May 31, 2026.",
   },
 ];
 
@@ -56,7 +56,7 @@ const IMPORT_ITEMS = [
 ];
 
 const TIMELINE = [
-  { date: "May 31 / June 1", event: "Applications close" },
+  { date: "May 31", event: "Applications close" },
   { date: "June 15", event: "Applicants notified" },
   { date: "July 1", event: "Accepted projects join the round" },
   { date: "July 21", event: "Round closes and funding is paid" },
@@ -78,7 +78,7 @@ export default function MaEarthFundingRoundPage() {
         <main className="w-full pt-24">
           <section className="relative overflow-hidden px-6 pb-14 pt-10 text-center sm:px-12 md:px-6 md:pb-20 md:pt-16">
           <Image
-            src="/assets/media/images/maearth/hero-pattern.webp"
+            src="/assets/media/images/ma-earth/hero-pattern.webp"
             alt=""
             width={925}
             height={1062}
@@ -87,18 +87,18 @@ export default function MaEarthFundingRoundPage() {
           />
           <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center">
             <Image
-              src="/assets/media/images/maearth/icon.svg"
-              alt="MaEarth"
+              src="/assets/media/images/ma-earth/icon.svg"
+              alt="Ma Earth"
               width={54}
               height={54}
               priority
               className="mb-6 text-foreground"
             />
             <h1 className="max-w-4xl font-instrument text-[3.05rem] italic leading-[0.95] tracking-[-0.05em] text-foreground sm:text-6xl md:text-7xl">
-              Bring your Bumicert to MaEarth Funding Round 3
+              Bring your Bumicert to Ma Earth Funding Round 3
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-              MaEarth is running a community-backed funding round with a $500,000
+              Ma Earth is running a community-backed funding round with a $500,000
               matching pool for nature-based projects. If your organization
               already documents impact through Bumicerts, choose a Bumicert and
               use that verified record instead of starting from scratch.
@@ -112,7 +112,7 @@ export default function MaEarthFundingRoundPage() {
               </Button>
               <Button asChild variant="outline" size="lg">
                 <Link href={links.external.maEarth.fundraise} target="_blank" rel="noreferrer">
-                  Open MaEarth round
+                  Open Ma Earth round
                   <ExternalLinkIcon />
                 </Link>
               </Button>
@@ -129,7 +129,7 @@ export default function MaEarthFundingRoundPage() {
                 Matching pool
               </p>
               <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                MaEarth uses quadratic funding: broader supporter participation
+                Ma Earth uses quadratic funding: broader supporter participation
                 can matter more than one large contribution.
               </p>
             </aside>
@@ -169,7 +169,7 @@ export default function MaEarthFundingRoundPage() {
             <p className="mt-5 max-w-2xl text-base leading-8 text-muted-foreground">
               A Bumicert gathers the project story, organization context,
               location, photos, and evidence that funders need to trust the work.
-              It helps bridge verified community work to MaEarth’s funding
+              It helps bridge verified community work to Ma Earth’s funding
               process.
             </p>
 
@@ -238,8 +238,8 @@ export default function MaEarthFundingRoundPage() {
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
                 You will review your public Bumicert, confirm consent to share
-                its project identifiers with MaEarth, and continue into the
-                MaEarth importer flow.
+                its project identifiers with Ma Earth, and continue into the
+                Ma Earth importer flow.
               </p>
               <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
                 <Button asChild size="lg">

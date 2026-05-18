@@ -134,8 +134,8 @@ export const links = {
     twitter: "https://www.x.com/GainForestNow",
     gainforest: "https://www.gainforest.earth",
     maEarth: {
-      fundraise: "https://maearth.com/fundraise",
-      restor: "https://maearth.com/restor",
+      fundraise: "https://ma-earth.com/fundraise",
+      restor: "https://ma-earth.com/restor",
       importBumicert: (params: { did: string; bumicertId: string }) => {
         const searchParams = new URLSearchParams({
           did: params.did,
@@ -143,7 +143,7 @@ export const links = {
           source: "bumicerts",
         });
 
-        return `https://maearth.com/gainforest/import?${searchParams.toString()}`;
+        return `https://ma-earth.com/gainforest/import?${searchParams.toString()}`;
       },
     },
     share: {
