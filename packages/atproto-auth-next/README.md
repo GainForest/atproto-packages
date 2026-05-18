@@ -316,6 +316,8 @@ When `epds.url` is configured, users can sign in via email OTP through the ePDS 
 
 The ePDS flow reuses the same Supabase session table as the standard OAuth flow — both produce a valid session that `restoreSession()` can use.
 
+The ePDS login route also accepts `?handle=...`. When a handle is present, it starts the standard handle OAuth flow instead of the email flow. Client metadata exposes this route as `epds_handle_login_url`.
+
 ### ePDS handle mode (optional)
 
 You can set a preferred handle mode for new account creation via `createAuthSetup`:

@@ -3,9 +3,11 @@
  *
  * Two handlers are provided:
  *
- * 1. createEpdsLoginHandler — initiates the ePDS OAuth flow
+ * 1. createEpdsLoginHandler — initiates the ePDS OAuth flow, or handle OAuth
+ *    when a handle is provided.
  *    Mount at: /api/oauth/epds/login
  *    Called with: GET /api/oauth/epds/login?email=user@example.com
+ *      or: GET /api/oauth/epds/login?handle=alice.example.com
  *
  * 2. createEpdsCallbackHandler — handles the ePDS callback
  *    Mount at: /api/oauth/epds/callback
@@ -34,6 +36,8 @@ export type EpdsLoginHandlerConfig = {
   epdsUrl: string;
   /** OAuth scope. */
   scope: string;
+  /** Default PDS domain to append when a handle has no dot. */
+  defaultPdsDomain?: string;
   /** Path to redirect to on error. Defaults to "/?error=auth_failed". */
   errorRedirectTo?: string;
 };
@@ -59,7 +63,25 @@ export type EpdsCallbackHandlerConfig = {
 export function createEpdsLoginHandler(config: EpdsLoginHandlerConfig) {
   return async function GET(req: NextRequest): Promise<NextResponse> {
     try {
+      const handle = req.nextUrl.searchParams.get("handle")?.trim() || undefined;
       const email = req.nextUrl.searchParams.get("email") ?? undefined;
+
+      if (handle) {
+        const normalizedHandle =
+          handle.includes(".") || !config.defaultPdsDomain
+            ? handle
+            : `${handle}.${config.defaultPdsDomain}`;
+
+        debug.log("[epds/login] Starting handle flow", { handle: normalizedHandle });
+
+        const authUrl = await config.oauthClient.authorize(normalizedHandle, {
+          scope: config.scope,
+        });
+
+        debug.log("[epds/login] Redirecting to handle auth", { url: authUrl.toString() });
+
+        return NextResponse.redirect(authUrl.toString());
+      }
 
       debug.log("[epds/login] Starting ePDS flow", { email: !!email, epdsUrl: config.epdsUrl });
 

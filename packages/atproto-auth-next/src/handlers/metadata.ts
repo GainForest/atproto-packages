@@ -27,6 +27,8 @@ export type ClientMetadataOptions = {
   epdsHandleMode?: EpdsHandleMode;
   /** Whether ePDS should skip consent after signup. */
   epdsSkipConsentOnSignup?: boolean;
+  /** URL or path for ePDS to restart auth with a chosen handle. */
+  epdsHandleLoginUrl?: string;
 };
 
 /**
@@ -50,12 +52,14 @@ export function createClientMetadataHandler(
     // preview deployment serves redirect_uris that match its own hostname.
     const url = resolveRequestPublicUrl(req, publicUrl);
 
+    const resolveAppUrl = (u: string) =>
+      // Values may be absolute (setup-time publicUrl) or path-relative — in either case
+      // serve them from the actual request origin for preview/loopback hosts.
+      u.startsWith("http") ? u.replace(/^https?:\/\/[^/]+/, url) : `${url}${u}`;
+
     const redirectUris = [
       `${url}/api/oauth/callback`,
-      ...(options.extraRedirectUris?.map((u) =>
-        // extraRedirectUris may be absolute (loopback) or path-relative — keep absolute as-is
-        u.startsWith("http") ? u.replace(/^https?:\/\/[^/]+/, url) : `${url}${u}`
-      ) ?? []),
+      ...(options.extraRedirectUris?.map(resolveAppUrl) ?? []),
     ];
 
     // Common fields for both loopback and web clients
@@ -80,6 +84,9 @@ export function createClientMetadataHandler(
     if (options.tosUri) commonFields.tos_uri = options.tosUri;
     if (options.policyUri) commonFields.policy_uri = options.policyUri;
     if (options.epdsHandleMode) commonFields.epds_handle_mode = options.epdsHandleMode;
+    if (options.epdsHandleLoginUrl) {
+      commonFields.epds_handle_login_url = resolveAppUrl(options.epdsHandleLoginUrl);
+    }
     if (options.epdsSkipConsentOnSignup !== undefined) {
       commonFields.epds_skip_consent_on_signup = options.epdsSkipConsentOnSignup;
     }

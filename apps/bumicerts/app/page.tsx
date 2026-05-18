@@ -1,6 +1,7 @@
 import { FeaturesSection } from "./(marketplace)/_components/Home/FeaturesSection";
 import { Hero } from "./(marketplace)/_components/Home/Hero";
 import { HomeFooter } from "./(marketplace)/_components/Home/HomeFooter";
+import { MaEarthFundingBanner } from "./(marketplace)/_components/Home/MaEarthFundingBanner";
 import { TopNavbar } from "./(marketplace)/_components/Navbar/TopNavbar";
 import { UserOptionCards } from "./(marketplace)/_components/Home/UserOptionCards";
 import { WhatIsBumicert } from "./(marketplace)/_components/Home/WhatIsBumicert";
@@ -17,6 +18,7 @@ export default function HomePage() {
       <TopNavbar />
       <main className="w-full">
         <Hero />
+        <MaEarthFundingBanner />
         <FeaturesSection />
         <UserOptionCards />
         <WhatIsBumicert />

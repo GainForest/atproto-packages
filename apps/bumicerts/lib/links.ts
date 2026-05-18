@@ -39,6 +39,8 @@ export const links = {
   myOrganization: (did?: string) =>
     did ? `/account/${encodeURIComponent(did)}` : "/account",
   allOrganizations: "/organizations",
+  maEarthFundingRound: "/ma-earth-funding-round-3",
+  maEarthApply: "/ma-earth-funding-round-3/apply",
 
   account: {
     self: "/account",
@@ -131,6 +133,19 @@ export const links = {
     github: "https://github.com/GainForest/bumicerts-monorepo",
     twitter: "https://www.x.com/GainForestNow",
     gainforest: "https://www.gainforest.earth",
+    maEarth: {
+      fundraise: "https://ma-earth.com/fundraise",
+      restor: "https://ma-earth.com/restor",
+      importBumicert: (params: { did: string; bumicertId: string }) => {
+        const searchParams = new URLSearchParams({
+          did: params.did,
+          bumicert: params.bumicertId,
+          source: "bumicerts",
+        });
+
+        return `https://ma-earth.com/gainforest/import?${searchParams.toString()}`;
+      },
+    },
     share: {
       x: (text: string) =>
         `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`,
