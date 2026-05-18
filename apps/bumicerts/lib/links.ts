@@ -6,6 +6,8 @@ const didCatcher = (callback: (did: string) => string): DidDynamicLink => {
   return (did) => (did === undefined ? "#" : callback(did));
 };
 
+const accountPathSegment = (didOrHandle: string) => encodeURIComponent(didOrHandle);
+
 const DEFAULT_GREEN_GLOBE_PREVIEW_BASE_URL = "https://gainforest.app";
 const BUMICERT_CREATE_PATH = "/bumicert/create";
 const HYPERLABEL_BASE_URL = "https://hyperlabel-production.up.railway.app";
@@ -42,11 +44,13 @@ export const links = {
 
   account: {
     self: "/account",
-    byDid: (did: string) => `/account/${encodeURIComponent(did)}`,
-    bumicerts: (did: string) =>
-      `/account/${encodeURIComponent(did)}/bumicerts`,
-    donations: (did: string) =>
-      `/account/${encodeURIComponent(did)}/donations`,
+    byDid: (didOrHandle: string) => `/account/${accountPathSegment(didOrHandle)}`,
+    byDidOrHandle: (didOrHandle: string) =>
+      `/account/${accountPathSegment(didOrHandle)}`,
+    bumicerts: (didOrHandle: string) =>
+      `/account/${accountPathSegment(didOrHandle)}/bumicerts`,
+    donations: (didOrHandle: string) =>
+      `/account/${accountPathSegment(didOrHandle)}/donations`,
   },
 
   manage: {

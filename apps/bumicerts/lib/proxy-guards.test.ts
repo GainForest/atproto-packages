@@ -45,7 +45,7 @@ describe("getProxyBlockResult", () => {
       }),
     ).toEqual({
       status: 404,
-      reason: "invalid-account-did",
+      reason: "invalid-account-did-or-handle",
     });
   });
 
@@ -60,6 +60,16 @@ describe("getProxyBlockResult", () => {
       status: 404,
       reason: "invalid-bumicert-draft-id",
     });
+  });
+
+  test("allows account handles", () => {
+    expect(
+      getProxyBlockResult({
+        method: "GET",
+        pathname: "/account/satyam-test-004.climateai.org",
+        userAgent: "Mozilla/5.0",
+      }),
+    ).toBeNull();
   });
 
   test("allows encoded account and bumicert route identifiers", () => {

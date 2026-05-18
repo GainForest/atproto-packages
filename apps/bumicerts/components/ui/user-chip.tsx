@@ -112,7 +112,7 @@ export function UserChip({
   // Determine link href
   let href: string | undefined;
   if (linkMode === "user-page") {
-    href = links.account.byDid(did);
+    href = links.account.byDidOrHandle(profile?.handle ?? did);
   } else if (linkMode === "bluesky") {
     href = `https://bsky.app/profile/${did}`;
   }

@@ -14,28 +14,33 @@ import type { AccountRouteData } from "./server/account-route";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ did: string }>;
+  params: Promise<{ didOrHandle: string }>;
 }): Promise<Metadata> {
   try {
-    const { did } = await readAccountRouteParams(params);
-    return buildAccountPageMetadata(await getAccountRouteData(did));
+    const routeParams = await readAccountRouteParams(params);
+    return buildAccountPageMetadata(await getAccountRouteData(routeParams));
   } catch {
     return { title: "Account — Bumicerts" };
   }
 }
 
-export default async function AccountByDidPage({
+export default async function AccountByDidOrHandlePage({
   params,
 }: {
-  params: Promise<{ did: string }>;
+  params: Promise<{ didOrHandle: string }>;
 }) {
-  const { did } = await readAccountRouteParams(params);
+  const routeParams = await readAccountRouteParams(params);
+  const { did } = routeParams;
+  if (routeParams.didOrHandle.startsWith("did:") && routeParams.handle) {
+    redirect(links.account.byDidOrHandle(routeParams.handle));
+  }
+
   let routeData: AccountRouteData;
 
   try {
-    routeData = await getAccountRouteData(did);
+    routeData = await getAccountRouteData(routeParams);
   } catch (error) {
-    console.error("[AccountByDidPage] Failed to read account", did, error);
+    console.error("[AccountByDidOrHandlePage] Failed to read account", did, error);
     return (
       <ErrorPage
         title="Couldn't load this account"
@@ -50,7 +55,7 @@ export default async function AccountByDidPage({
   }
 
   if (routeData.kind === "user") {
-    redirect(links.account.bumicerts(did));
+    redirect(links.account.bumicerts(routeData.handle ?? did));
   }
 
   const structuredData = buildAccountStructuredData(routeData);

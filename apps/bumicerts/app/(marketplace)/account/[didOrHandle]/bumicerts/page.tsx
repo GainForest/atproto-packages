@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { OrgBumicertsGrid } from "./_components/OrgBumicertsGrid";
 import {
   AccountContentColumns,
   AccountSidebar,
 } from "../_components/AccountSidebar";
 import ErrorPage from "@/components/error-page";
+import { links } from "@/lib/links";
 import Container from "@/components/ui/container";
 import { activitiesToBumicertDataArray } from "@/lib/adapters";
 import type { BumicertData } from "@/lib/types";
@@ -43,11 +44,11 @@ function withCreatorDisplayFallbacks(
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ did: string }>;
+  params: Promise<{ didOrHandle: string }>;
 }): Promise<Metadata> {
   try {
-    const { did } = await readAccountRouteParams(params);
-    return buildAccountBumicertsMetadata(await getAccountRouteData(did));
+    const routeParams = await readAccountRouteParams(params);
+    return buildAccountBumicertsMetadata(await getAccountRouteData(routeParams));
   } catch {
     return { title: "Bumicerts — Bumicerts" };
   }
@@ -56,13 +57,18 @@ export async function generateMetadata({
 export default async function AccountBumicertsPage({
   params,
 }: {
-  params: Promise<{ did: string }>;
+  params: Promise<{ didOrHandle: string }>;
 }) {
-  const { did } = await readAccountRouteParams(params);
+  const routeParams = await readAccountRouteParams(params);
+  const { did } = routeParams;
+  if (routeParams.didOrHandle.startsWith("did:") && routeParams.handle) {
+    redirect(links.account.bumicerts(routeParams.handle));
+  }
+
   let routeData: AccountRouteData;
 
   try {
-    routeData = await getAccountRouteData(did);
+    routeData = await getAccountRouteData(routeParams);
   } catch (error) {
     console.error("[AccountBumicertsPage] Failed to read account", did, error);
     return (

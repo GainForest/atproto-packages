@@ -25,12 +25,22 @@ const DEFAULT_DONATIONS_METADATA: Metadata = {
   title: "Donation History — Bumicerts",
 };
 
+const unknownAccount = (did: string): UnknownAccountState => ({
+  kind: "unknown",
+  did,
+  profile: null,
+  organization: null,
+});
+
 export type AccountRouteParams = {
+  didOrHandle: string;
   did: string;
+  handle: string | null;
 };
 
 type AccountRouteBase = {
   did: string;
+  handle: string | null;
   pageUrl: string;
 };
 
@@ -50,13 +60,60 @@ export type AccountRouteData =
   | OnboardedAccountRouteData;
 
 export async function readAccountRouteParams(
-  params: Promise<{ did: string }>,
+  params: Promise<{ didOrHandle: string }>,
 ): Promise<AccountRouteParams> {
-  const { did: encodedDid } = await params;
+  const { didOrHandle: encodedDidOrHandle } = await params;
+  const didOrHandle = decodeURIComponent(encodedDidOrHandle);
+
+  return resolveAccountRouteIdentifier(didOrHandle);
+}
+
+const resolveAccountRouteIdentifier = cache(async (
+  didOrHandle: string,
+): Promise<AccountRouteParams> => {
+  if (didOrHandle.startsWith("did:")) {
+    const profile = await readActorProfile(didOrHandle);
+
+    return {
+      didOrHandle,
+      did: didOrHandle,
+      handle: normalizeHandle(profile?.handle),
+    };
+  }
+
+  const profile = await readActorProfile(didOrHandle);
+  if (!profile?.did) {
+    return {
+      didOrHandle,
+      did: didOrHandle,
+      handle: didOrHandle,
+    };
+  }
 
   return {
-    did: decodeURIComponent(encodedDid),
+    didOrHandle,
+    did: profile.did,
+    handle: normalizeHandle(profile.handle) ?? didOrHandle,
   };
+});
+
+const readActorProfile = cache(async (
+  actor: string,
+): Promise<{ did?: string; handle?: string } | null> => {
+  try {
+    const indexer = await getIndexerCaller();
+    return await indexer.actor.profile({ handleOrDid: actor });
+  } catch {
+    return null;
+  }
+});
+
+function normalizeHandle(handle: string | null | undefined): string | null {
+  if (!handle || handle === "handle.invalid") {
+    return null;
+  }
+
+  return handle;
 }
 
 const readAccountByDid = cache(async (
@@ -67,15 +124,31 @@ const readAccountByDid = cache(async (
 });
 
 export const getAccountRouteData = cache(async (
-  did: string,
+  paramsOrDid: AccountRouteParams | string,
 ): Promise<AccountRouteData> => {
+  const resolved = typeof paramsOrDid === "string"
+    ? await resolveAccountRouteIdentifier(paramsOrDid)
+    : paramsOrDid;
+  const { did, handle } = resolved;
+  const pageUrl = buildPublicAccountUrl(handle ?? did);
+
+  if (!did.startsWith("did:")) {
+    return {
+      kind: "unknown",
+      did,
+      handle,
+      account: unknownAccount(did),
+      pageUrl,
+    };
+  }
+
   const account = await readAccountByDid(did);
-  const pageUrl = buildPublicAccountUrl(did);
 
   if (account.kind === "unknown") {
     return {
       kind: "unknown",
       did,
+      handle,
       account,
       pageUrl,
     };
@@ -85,6 +158,7 @@ export const getAccountRouteData = cache(async (
     return {
       kind: "user",
       did,
+      handle,
       account,
       organization: buildOrganizationDataFromUserAccount(account, {
         displayNameFallback: did,
@@ -96,6 +170,7 @@ export const getAccountRouteData = cache(async (
   return {
     kind: "organization",
     did,
+    handle,
     account,
     organization: buildOrganizationDataFromOrganizationAccount(account),
     pageUrl,
@@ -189,7 +264,7 @@ export function buildAccountBumicertsMetadata(
     title: `${displayName} Bumicerts — Bumicerts`,
     description: `Browse all Bumicerts created by ${displayName}.`,
     alternates: {
-      canonical: buildPublicUrl(links.account.bumicerts(routeData.did)),
+      canonical: buildPublicUrl(links.account.bumicerts(routeData.handle ?? routeData.did)),
     },
   };
 }
@@ -207,7 +282,7 @@ export function buildAccountDonationsMetadata(
     title: `${displayName} Donation History — Bumicerts`,
     description: `Browse the public donation history for ${displayName}.`,
     alternates: {
-      canonical: buildPublicUrl(links.account.donations(routeData.did)),
+      canonical: buildPublicUrl(links.account.donations(routeData.handle ?? routeData.did)),
     },
   };
 }
@@ -251,8 +326,8 @@ export function buildAccountStructuredData(
   };
 }
 
-function buildPublicAccountUrl(did: string): string {
-  return buildPublicUrl(links.account.byDid(did));
+function buildPublicAccountUrl(didOrHandle: string): string {
+  return buildPublicUrl(links.account.byDidOrHandle(didOrHandle));
 }
 
 function buildPublicUrl(pathname: string): string {

@@ -30,6 +30,7 @@ const BLOCKED_BOT_USER_AGENTS = [
 
 const GENERIC_BOT_USER_AGENT_PATTERN = /\b(bot|crawler|spider|scraper)\b/i;
 const DID_ROUTE_SEGMENT_PATTERN = /^did:[a-z0-9]+:[A-Za-z0-9._:%-]+$/i;
+const HANDLE_ROUTE_SEGMENT_PATTERN = /^(?=.{3,253}$)(?!.*\.\.)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{1,62}$/i;
 const DRAFT_ID_ROUTE_SEGMENT_PATTERN = /^\d+$/;
 const BUMICERT_RKEY_PATTERN = /^[A-Za-z0-9._:~-]+$/;
 
@@ -42,7 +43,7 @@ const PROXY_BYPASS_PATHS = new Set(["/client-metadata.json"]);
 
 export type ProxyBlockReason =
   | "blocked-bot-user-agent"
-  | "invalid-account-did"
+  | "invalid-account-did-or-handle"
   | "invalid-bumicert-draft-id"
   | "invalid-bumicert-id";
 
@@ -128,10 +129,10 @@ function getInvalidPathReason(pathname: string): Exclude<
   const segments = pathname.split("/").filter(Boolean);
 
   if (segments[0] === "account" && segments[1]) {
-    const did = safeDecodePathSegment(segments[1]);
+    const didOrHandle = safeDecodePathSegment(segments[1]);
 
-    if (!did || !DID_ROUTE_SEGMENT_PATTERN.test(did)) {
-      return "invalid-account-did";
+    if (!didOrHandle || !isValidAccountRouteIdentifier(didOrHandle)) {
+      return "invalid-account-did-or-handle";
     }
 
     return null;
@@ -166,6 +167,10 @@ function safeDecodePathSegment(value: string): string | null {
   } catch {
     return null;
   }
+}
+
+function isValidAccountRouteIdentifier(value: string): boolean {
+  return DID_ROUTE_SEGMENT_PATTERN.test(value) || HANDLE_ROUTE_SEGMENT_PATTERN.test(value);
 }
 
 function isValidBumicertRouteId(value: string): boolean {

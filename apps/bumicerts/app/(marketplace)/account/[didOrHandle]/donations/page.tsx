@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import ErrorPage from "@/components/error-page";
+import { links } from "@/lib/links";
 import { DonationHistory } from "@/components/account/DonationHistory";
 import {
   AccountContentColumns,
@@ -18,11 +19,11 @@ import type { AccountRouteData } from "../server/account-route";
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ did: string }>;
+  params: Promise<{ didOrHandle: string }>;
 }): Promise<Metadata> {
   try {
-    const { did } = await readAccountRouteParams(params);
-    return buildAccountDonationsMetadata(await getAccountRouteData(did));
+    const routeParams = await readAccountRouteParams(params);
+    return buildAccountDonationsMetadata(await getAccountRouteData(routeParams));
   } catch {
     return { title: "Donation History — Bumicerts" };
   }
@@ -31,13 +32,18 @@ export async function generateMetadata({
 export default async function AccountDonationsPage({
   params,
 }: {
-  params: Promise<{ did: string }>;
+  params: Promise<{ didOrHandle: string }>;
 }) {
-  const { did } = await readAccountRouteParams(params);
+  const routeParams = await readAccountRouteParams(params);
+  const { did } = routeParams;
+  if (routeParams.didOrHandle.startsWith("did:") && routeParams.handle) {
+    redirect(links.account.donations(routeParams.handle));
+  }
+
   let routeData: AccountRouteData;
 
   try {
-    routeData = await getAccountRouteData(did);
+    routeData = await getAccountRouteData(routeParams);
   } catch (error) {
     console.error("[AccountDonationsPage] Failed to read account", did, error);
     return (
