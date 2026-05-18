@@ -62,6 +62,13 @@ export function ListPanel(props: {
       : props.section === "deployments"
         ? "Deployments"
         : "Audio recordings";
+  const emptyMessage = props.searchQuery
+    ? `No ${title.toLowerCase()} match “${props.searchQuery}”.`
+    : props.section === "events"
+      ? "Create an event to anchor where and when the acoustic survey happened."
+      : props.section === "deployments"
+        ? "Add a deployment to connect an AudioMoth or recorder to an event."
+        : "Upload a short recording here, or use Taina for files larger than 4MB.";
 
   return (
     <section className="space-y-4">
@@ -80,8 +87,9 @@ export function ListPanel(props: {
         </Button>
       </div>
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground">
-          No {title.toLowerCase()} yet.
+        <div className="rounded-2xl border border-dashed bg-muted/20 p-10 text-center text-sm text-muted-foreground">
+          <p className="font-medium text-foreground">No {title.toLowerCase()} yet</p>
+          <p className="mx-auto mt-2 max-w-md">{emptyMessage}</p>
         </div>
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
@@ -242,6 +250,9 @@ export function DetailPanel(props: {
           onSaved={() => props.onUpdated()}
         />
         <RelationshipPanel title="In this event">
+          {eventDeployments.length === 0 && eventAudio.length === 0 && (
+            <EmptyRelation>Deployments and recordings linked to this event will appear here.</EmptyRelation>
+          )}
           {eventDeployments.map((deployment) => (
             <MiniLink
               key={deployment.metadata.uri}
@@ -286,6 +297,9 @@ export function DetailPanel(props: {
           onSaved={() => props.onUpdated()}
         />
         <RelationshipPanel title="Related items">
+          {!linkedEvent && deploymentAudio.length === 0 && (
+            <EmptyRelation>Link this deployment to an event, then attach recordings to build context.</EmptyRelation>
+          )}
           {linkedEvent && (
             <MiniLink
               label={linkedEvent.record.eventID}
@@ -330,6 +344,9 @@ export function DetailPanel(props: {
           onSaved={() => props.onUpdated()}
         />
         <RelationshipPanel title="Audio context">
+          {!linkedDeployment && !linkedEvent && (
+            <EmptyRelation>Select a deployment to connect this recording to place and survey context.</EmptyRelation>
+          )}
           {linkedDeployment && (
             <MiniLink
               label={linkedDeployment.record.name}
@@ -365,6 +382,14 @@ function RelationshipPanel(props: { title: string; children: ReactNode }) {
       <h3 className="font-medium">{props.title}</h3>
       <div className="space-y-2">{props.children}</div>
     </aside>
+  );
+}
+
+function EmptyRelation(props: { children: ReactNode }) {
+  return (
+    <p className="rounded-xl border border-dashed bg-muted/20 p-3 text-sm text-muted-foreground">
+      {props.children}
+    </p>
   );
 }
 

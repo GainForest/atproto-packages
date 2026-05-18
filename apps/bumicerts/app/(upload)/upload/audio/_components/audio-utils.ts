@@ -1,6 +1,16 @@
 import type { AudioRecordingItem } from "@/graphql/indexer/queries/audio";
 import type { AudioMetadataDraft } from "./types";
 
+export type AudioBlobFile = {
+  url: string;
+  mimeType: string | undefined;
+  size: number | undefined;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 export function textFromDescription(description: unknown): string {
   if (!description || typeof description !== "object") return "";
   const text = (description as Record<string, unknown>).text;
@@ -149,7 +159,26 @@ export function cleanFilename(filename: string): string {
 
 export function getAudioMeta(recording: AudioRecordingItem): Record<string, unknown> {
   const metadata = recording.record.metadata;
-  return metadata && typeof metadata === "object" ? metadata as Record<string, unknown> : {};
+  return isRecord(metadata) ? metadata : {};
+}
+
+export function getAudioBlobFile(recording: AudioRecordingItem): AudioBlobFile | null {
+  const blob = recording.record.blob;
+  if (!isRecord(blob) || !isRecord(blob.file)) return null;
+  const url = blob.file.uri;
+  if (typeof url !== "string" || url.length === 0) return null;
+  return {
+    url,
+    mimeType: typeof blob.file.mimeType === "string" ? blob.file.mimeType : undefined,
+    size: typeof blob.file.size === "number" ? blob.file.size : undefined,
+  };
+}
+
+export function formatBytes(value: number | undefined): string {
+  if (value === undefined) return "Unknown size";
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 export function getUriRkey(uri: string): string {

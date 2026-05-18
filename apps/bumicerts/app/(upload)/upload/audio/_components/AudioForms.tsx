@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { MapPinIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AudioLinesIcon, MapPinIcon } from "lucide-react";
 import FileInput from "@/components/ui/FileInput";
 import { trpc } from "@/lib/trpc/client";
 import { toSerializableFile } from "@/lib/mutations-utils";
@@ -9,7 +9,8 @@ import { formatError } from "@/lib/utils/trpc-errors";
 import type { AudioRecordingItem } from "@/graphql/indexer/queries/audio";
 import type { AudioDeploymentItem } from "@/graphql/indexer/queries/audio/deployments";
 import type { AudioEventItem } from "@/graphql/indexer/queries/audio/events";
-import { cleanFilename, datetimeLocal, extractAudioMetadata, getAudioMeta, optional, optionalNumber, splitTags, textFromDescription } from "./audio-utils";
+import { AudioSpectrogram } from "./AudioSpectrogram";
+import { cleanFilename, datetimeLocal, extractAudioMetadata, formatBytes, getAudioBlobFile, getAudioMeta, optional, optionalNumber, splitTags, textFromDescription } from "./audio-utils";
 import { AUDIO_MIME_TYPES, MAX_AUDIO_BYTES, type AudioMetadataDraft, type OperationStep } from "./types";
 import { Field, FormShell, ProgressState, SelectField, TextField } from "./FormFields";
 
@@ -310,6 +311,8 @@ export function AudioForm(
   const [license, setLicense] = useState(record?.license ?? "CC-BY-4.0");
   const [tags, setTags] = useState((record?.tags ?? []).join(", "));
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<AudioMetadataDraft | null>(null);
   const [scientificName, setScientificName] = useState("");
@@ -343,12 +346,31 @@ export function AudioForm(
     (item) => item.metadata.uri === deployment?.record.eventRef,
   );
   const canCreateOccurrence = scientificName.trim().length > 0;
+  const existingBlob = props.mode === "edit" ? getAudioBlobFile(props.recording) : null;
+  const spectrogramSource = useMemo(() => {
+    if (audioFile) return { kind: "file", file: audioFile } as const;
+    if (previewUrl) return { kind: "url", url: previewUrl } as const;
+    if (existingBlob) {
+      return { kind: "url", url: existingBlob.url, mimeType: existingBlob.mimeType } as const;
+    }
+    return null;
+  }, [audioFile, existingBlob, previewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
 
   const handleFile = async (file: File | undefined) => {
     setFileError(null);
     setMetadata(null);
     const nextFile = file ?? null;
     setAudioFile(nextFile);
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    const nextPreviewUrl = nextFile ? URL.createObjectURL(nextFile) : null;
+    previewUrlRef.current = nextPreviewUrl;
+    setPreviewUrl(nextPreviewUrl);
     if (!nextFile) return;
     if (nextFile.size > MAX_AUDIO_BYTES) {
       setFileError(
@@ -461,26 +483,34 @@ export function AudioForm(
       }
       onSave={() => void save()}
     >
-      <div className="rounded-2xl border p-4">
-        <FileInput
-          placeholder="Drop or click to upload audio"
-          value={audioFile ?? undefined}
-          supportedFileTypes={AUDIO_MIME_TYPES}
-          maxSizeInMB={4}
-          onFileChange={(file) => void handleFile(file ?? undefined)}
-          className="min-h-[120px]"
-        />
-        <p className="mt-2 text-xs text-muted-foreground">
-          WAV, MP3, M4A, AAC, FLAC, OGG, Opus, WebM, or AIFF. Max{" "}
-          {MAX_AUDIO_BYTES.toLocaleString()} bytes.
-        </p>
-        {metadata && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Detected {metadata.fileFormat}, {metadata.duration}s,{" "}
-            {metadata.sampleRate} Hz, {metadata.channels} channel(s)
-            {metadata.bitDepth ? `, ${metadata.bitDepth}-bit` : ""}.
-          </p>
-        )}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="rounded-2xl border p-4">
+          <FileInput
+            placeholder="Drop or click to upload audio"
+            value={audioFile ?? undefined}
+            supportedFileTypes={AUDIO_MIME_TYPES}
+            maxSizeInMB={4}
+            onFileChange={(file) => void handleFile(file ?? undefined)}
+            className="min-h-[120px]"
+          />
+          <div className="mt-3 flex items-start gap-2 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
+            <AudioLinesIcon className="mt-0.5 size-4 text-primary" />
+            <p>
+              WAV, MP3, M4A, AAC, FLAC, OGG, Opus, WebM, or AIFF. Files must be {formatBytes(MAX_AUDIO_BYTES)} or smaller; send larger AudioMoth files through Taina.
+            </p>
+          </div>
+          {metadata && (
+            <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+              <span className="rounded-full bg-muted px-3 py-1">{metadata.fileFormat}</span>
+              <span className="rounded-full bg-muted px-3 py-1">{metadata.duration}s</span>
+              <span className="rounded-full bg-muted px-3 py-1">{metadata.sampleRate} Hz</span>
+              <span className="rounded-full bg-muted px-3 py-1">
+                {metadata.channels} channel(s){metadata.bitDepth ? ` · ${metadata.bitDepth}-bit` : ""}
+              </span>
+            </div>
+          )}
+        </div>
+        <AudioSpectrogram source={spectrogramSource} />
       </div>
       <Field label="Name" required value={name} onChange={setName} />
       <SelectField
