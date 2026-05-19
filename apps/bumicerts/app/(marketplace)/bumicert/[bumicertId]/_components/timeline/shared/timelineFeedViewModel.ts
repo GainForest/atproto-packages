@@ -126,12 +126,12 @@ function previewForReference(
     return href ? { kind: "site", href, title: reference.title } : null;
   }
 
-  if (reference?.kind === "dataset" && reference.greenGlobeHref) {
+  if (reference?.kind === "dataset") {
     return {
-      kind: "green-globe",
-      href: reference.greenGlobeHref,
+      kind: "text",
+      href: "",
       title: reference.title,
-      body: reference.description,
+      body: reference.description ?? "Linked tree dataset",
     };
   }
 

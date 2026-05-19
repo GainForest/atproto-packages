@@ -12,6 +12,7 @@ import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type {
   AudioRecordingItem,
+  CertifiedLocation,
   DatasetItem,
   OccurrenceItem,
 } from "@/graphql/indexer/queries";
@@ -78,10 +79,13 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
     indexerTrpc.dwc.occurrences.useQuery({ did: organizationDid });
   const { data: datasetData, isLoading: datasetLoading } =
     indexerTrpc.datasets.list.useQuery({ did: organizationDid });
+  const { data: locationData, isLoading: locationLoading } =
+    indexerTrpc.locations.list.useQuery({ did: organizationDid });
 
   const audioItems: AudioRecordingItem[] = audioData ?? [];
   const occurrenceItems: OccurrenceItem[] = occurrenceData ?? [];
   const datasetItems: DatasetItem[] = datasetData ?? [];
+  const locationItems: CertifiedLocation[] = locationData ?? [];
 
   // ── Selection ──────────────────────────────────────────────────────────────
 
@@ -145,10 +149,11 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
             />
           </LoadingWrapper>
         ) : activeTab === "trees" ? (
-          <LoadingWrapper isLoading={datasetLoading || occurrenceLoading}>
+          <LoadingWrapper isLoading={datasetLoading || occurrenceLoading || locationLoading}>
             <DatasetEvidencePicker
               datasets={datasetItems}
               occurrences={occurrenceItems}
+              locations={locationItems}
             />
           </LoadingWrapper>
         ) : activeTab === "biodiversity" ? (

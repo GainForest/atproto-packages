@@ -1,5 +1,9 @@
 import type { BumicertsLeafletEditorProps } from "@/components/ui/leaflet-editor";
 import type { AttachmentItem } from "@/graphql/indexer/queries/attachments";
+import {
+  createOrderedAttachmentSubjects,
+  type AttachmentSubjectInfo,
+} from "../../shared/attachmentSubjects";
 
 export type OptimisticAttachmentContent =
   | string
@@ -41,13 +45,16 @@ export function buildOptimisticAttachmentItem(args: {
   title: string;
   contentType: string;
   description?: BumicertsLeafletEditorProps["content"];
-  subjectInfo: {
-    uri: string;
-    cid: string;
-  };
+  subjectInfo: AttachmentSubjectInfo;
+  contextualSubjects?: AttachmentSubjectInfo[];
   contents: OptimisticAttachmentContent[];
 }): AttachmentItem {
   const createdAt = new Date().toISOString();
+
+  const subjects = createOrderedAttachmentSubjects({
+    activitySubject: args.subjectInfo,
+    contextualSubjects: args.contextualSubjects,
+  });
 
   return {
     metadata: {
@@ -68,7 +75,7 @@ export function buildOptimisticAttachmentItem(args: {
       shortDescription: null,
       description: args.description,
       contentType: args.contentType,
-      subjects: [args.subjectInfo],
+      subjects,
       content: toOptimisticContent(args.contents),
       createdAt,
     },

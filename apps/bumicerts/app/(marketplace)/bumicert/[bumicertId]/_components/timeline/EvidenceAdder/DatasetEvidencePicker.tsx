@@ -1,6 +1,22 @@
-import type { DatasetItem, OccurrenceItem } from "@/graphql/indexer/queries";
-import UriEvidencePicker from "./shared/UriEvidenceViewer";
+import type {
+  CertifiedLocation,
+  DatasetItem,
+  OccurrenceItem,
+} from "@/graphql/indexer/queries";
+import { ListEmpty, ListLayout } from "./shared/RecordList";
+import CheckRow from "./shared/CheckRow";
+import ManageOption from "./shared/ManageOption";
+import OptionalNote from "./shared/OptionalNote";
+import Mutator, { type AttachmentData } from "./shared/Mutator";
 import { getManagedEvidenceTabConfig } from "./shared/evidenceRegistry";
+import { useEvidenceAdderStore } from "./shared/evidenceAdderStore";
+import { useUriSelection } from "./shared/useUriSelection";
+import {
+  buildDatasetSiteContexts,
+  getDatasetSiteContext,
+  groupDatasetUrisBySite,
+  type DatasetSiteContext,
+} from "./shared/datasetSiteContext";
 import { buildDatasetEvidenceStatsByUri } from "../shared/datasetStats";
 import {
   getOccurrenceDatasetRef,
@@ -8,17 +24,49 @@ import {
 } from "../shared/occurrenceEvidenceClassification";
 
 function hasTreeDatasetMetadata(item: DatasetItem): boolean {
-  return typeof item.record?.establishmentMeans === "string" && item.record.establishmentMeans.length > 0;
+  return (
+    typeof item.record?.establishmentMeans === "string" &&
+    item.record.establishmentMeans.length > 0
+  );
+}
+
+function formatSiteContext(context: DatasetSiteContext): string {
+  if (context.status === "ready") {
+    return context.siteName ? `Site: ${context.siteName}` : "Site context ready";
+  }
+
+  if (context.status === "mixed-site-refs") {
+    return "Multiple sites in this dataset; attach site-specific datasets instead";
+  }
+
+  if (context.status === "incomplete-site-ref") {
+    return "Some trees are missing site context";
+  }
+
+  if (context.status === "unresolved-site") {
+    return "Site record could not be resolved";
+  }
+
+  return "Site context unavailable";
 }
 
 const DatasetEvidencePicker = ({
   datasets,
   occurrences,
+  locations,
 }: {
   datasets: DatasetItem[];
   occurrences: OccurrenceItem[];
+  locations: CertifiedLocation[];
 }) => {
   const tabConfig = getManagedEvidenceTabConfig("trees");
+  const description = useEvidenceAdderStore((state) => state.description);
+  const resetDescription = useEvidenceAdderStore(
+    (state) => state.resetDescription,
+  );
+  const isSubmitting = useEvidenceAdderStore((state) => state.isSubmitting);
+  const activityUri = useEvidenceAdderStore((state) => state.activityUri);
+  const activityCid = useEvidenceAdderStore((state) => state.activityCid);
   const treeOccurrences = occurrences.filter(isTreeDatasetOccurrence);
   const statsByDataset = buildDatasetEvidenceStatsByUri(treeOccurrences);
   const treeDatasetUris = new Set(
@@ -27,39 +75,102 @@ const DatasetEvidencePicker = ({
       return datasetRef ? [datasetRef] : [];
     }),
   );
-  const treeDatasets = datasets.filter((dataset) => {
-    const datasetUri = dataset.metadata?.uri;
-    return (
-      hasTreeDatasetMetadata(dataset) ||
-      (typeof datasetUri === "string" && treeDatasetUris.has(datasetUri))
-    );
+  const siteContextsByDataset = buildDatasetSiteContexts({
+    occurrences: treeOccurrences.flatMap((occurrence) => {
+      const datasetUri = getOccurrenceDatasetRef(occurrence);
+      return datasetUri
+        ? [{ datasetUri, siteRef: occurrence.record.siteRef }]
+        : [];
+    }),
+    locations,
   });
+  const rows = datasets
+    .filter((dataset) => {
+      const datasetUri = dataset.metadata?.uri;
+      return (
+        hasTreeDatasetMetadata(dataset) ||
+        (typeof datasetUri === "string" && treeDatasetUris.has(datasetUri))
+      );
+    })
+    .flatMap((dataset) => {
+      const uri = dataset.metadata?.uri;
+      return uri ? [{ item: dataset, uri }] : [];
+    });
+  const selectableUris = new Set(
+    rows.flatMap(({ uri }) => {
+      const context = getDatasetSiteContext(siteContextsByDataset, uri);
+      return context.status === "ready" ? [uri] : [];
+    }),
+  );
+  const { selectedUris, selectedContents, toggleUri, resetSelection } =
+    useUriSelection(selectableUris);
+  const groupedSelections = groupDatasetUrisBySite({
+    datasetUris: selectedContents,
+    contexts: siteContextsByDataset,
+  });
+  const computedMutationData: AttachmentData[] = groupedSelections.map(
+    (group) => ({
+      title: tabConfig.attachment.title,
+      contentType: tabConfig.attachment.contentType,
+      description,
+      subjectInfo: {
+        uri: activityUri,
+        cid: activityCid,
+      },
+      contextualSubjects: [group.siteSubject],
+      contents: group.datasetUris,
+    }),
+  );
+
+  if (rows.length === 0) {
+    return <ListEmpty tabId="trees" />;
+  }
 
   return (
-    <UriEvidencePicker
-      tabId="trees"
-      data={treeDatasets}
-      icon={tabConfig.icon}
-      mutation={tabConfig.attachment}
-      getUri={(item) => item.metadata?.uri ?? undefined}
-      getPrimary={(item) => item.record?.name ?? "Unnamed tree dataset"}
-      getSecondary={(item) => {
-        const datasetUri = item.metadata?.uri;
-        const stats = datasetUri ? statsByDataset.get(datasetUri) : undefined;
-        const treeCount = stats?.recordCount ?? item.record?.recordCount ?? 0;
-        const speciesCount = stats?.speciesCount ?? 0;
-        const dateRange = stats?.recordedDateRange;
-        return [
-          `${treeCount} tree${treeCount === 1 ? "" : "s"}`,
-          speciesCount > 0
-            ? `${speciesCount} species`
-            : null,
-          dateRange,
-        ]
-          .filter((value): value is string => typeof value === "string" && value.length > 0)
-          .join(" · ");
-      }}
-    />
+    <>
+      <ListLayout>
+        {rows.map(({ item, uri }) => {
+          const stats = statsByDataset.get(uri);
+          const treeCount = stats?.recordCount ?? item.record?.recordCount ?? 0;
+          const speciesCount = stats?.speciesCount ?? 0;
+          const dateRange = stats?.recordedDateRange;
+          const siteContext = getDatasetSiteContext(siteContextsByDataset, uri);
+          const canSelect = siteContext.status === "ready";
+          const secondary = [
+            `${treeCount} tree${treeCount === 1 ? "" : "s"}`,
+            speciesCount > 0 ? `${speciesCount} species` : null,
+            dateRange,
+            formatSiteContext(siteContext),
+          ]
+            .filter(
+              (value): value is string =>
+                typeof value === "string" && value.length > 0,
+            )
+            .join(" · ");
+
+          return (
+            <CheckRow
+              key={uri}
+              selected={canSelect && selectedUris.has(uri)}
+              onToggle={() => toggleUri(uri)}
+              icon={tabConfig.icon}
+              primary={item.record?.name ?? "Unnamed tree dataset"}
+              secondary={secondary}
+              disabled={isSubmitting || !canSelect}
+            />
+          );
+        })}
+      </ListLayout>
+      <ManageOption type="trees" />
+      <OptionalNote disabled={isSubmitting} />
+      <Mutator
+        data={computedMutationData}
+        onSuccess={() => {
+          resetDescription();
+          resetSelection();
+        }}
+      />
+    </>
   );
 };
 
