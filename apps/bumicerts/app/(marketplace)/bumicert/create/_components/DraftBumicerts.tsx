@@ -131,7 +131,7 @@ const DraftBumicerts = () => {
       title: draft.data.title || t("untitledDraft"),
       progress: calculateProgress(draft.data),
     }));
-  }, [drafts]);
+  }, [drafts, t]);
 
   if (!auth.authenticated) {
     return (
