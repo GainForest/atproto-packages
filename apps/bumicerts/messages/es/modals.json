@@ -301,7 +301,8 @@
     "cancel": "Cancelar",
     "errors": {
       "unsupported": "Solo se admiten imágenes JPEG, PNG, WebP y HEIC.",
-      "tooLarge": "El archivo es demasiado grande. El tamaño máximo es 4,5 MB (recibido {size})."
+      "tooLarge": "El archivo es demasiado grande. El tamaño máximo es 4,5 MB (recibido {size}).",
+      "uploadFailed": "No pudimos subir esta foto. Inténtalo de nuevo."
     },
     "parts": {
       "entireOrganism": "Organismo completo",
@@ -346,7 +347,23 @@
       "treeFallback": "Árbol {index}",
       "nearBoundary": "cerca del límite",
       "outOfSite": "fuera del sitio",
-      "invalidBoundary": "límite inválido"
-    }
+      "invalidBoundary": "límite inválido",
+      "addFailed": "No pudimos agregar este sitio. Inténtalo de nuevo.",
+      "updateFailed": "No pudimos guardar este sitio. Inténtalo de nuevo.",
+      "unexpected": "Algo salió mal. Inténtalo de nuevo."
+    },
+    "back": "Volver a la vista previa",
+    "fileInput": {
+      "pasteFromClipboard": "Pegar desde el portapapeles",
+      "uploadFromDevice": "Subir desde el dispositivo",
+      "remove": "Quitar",
+      "dropToReplaceImage": "Suelta para reemplazar la imagen",
+      "dropToReplaceFile": "Suelta para reemplazar el archivo",
+      "noImageInClipboard": "No se encontró ninguna imagen en el portapapeles",
+      "clipboardReadFailed": "No se pudo leer el portapapeles",
+      "fileTooLarge": "El tamaño del archivo supera {maxSizeInMB} MB.",
+      "unsupportedFileType": "Tipo de archivo no compatible."
+    },
+    "drawnFileName": "poligono-dibujado.geojson"
   }
 }

@@ -15,9 +15,9 @@ const isImageFile = (file: File): boolean => {
 
 // Helper function to format file size
 const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes";
+  if (bytes === 0) return "0 B";
   const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
@@ -79,12 +79,13 @@ const inferMimeType = (
 const validateFile = (
   file: File,
   maxSizeInMB: number,
-  supportedFileTypes: string[]
+  supportedFileTypes: string[],
+  labels: FileInputLabels,
 ): true => {
   debug.log(file);
 
   if (file.size > maxSizeInMB * 1024 * 1024) {
-    throw new Error(`File size exceeds ${maxSizeInMB}MB.`);
+    throw new Error(labels.fileTooLarge(maxSizeInMB));
   }
 
   const fileExtension = getFileExtension(file.name);
@@ -116,13 +117,37 @@ const validateFile = (
   });
 
   if (!isValidType) {
-    throw new Error(`Unsupported file type.`);
+    throw new Error(labels.unsupportedFileType);
   }
 
   return true;
 };
 
 const DEFAULT_SUPPORTED_FILE_TYPES = ["image/*"];
+
+type FileInputLabels = {
+  pasteFromClipboard: string;
+  uploadFromDevice: string;
+  remove: string;
+  dropToReplaceImage: string;
+  dropToReplaceFile: string;
+  noImageInClipboard: string;
+  clipboardReadFailed: string;
+  fileTooLarge: (maxSizeInMB: number) => string;
+  unsupportedFileType: string;
+};
+
+const DEFAULT_LABELS: FileInputLabels = {
+  pasteFromClipboard: "Paste from clipboard",
+  uploadFromDevice: "Upload from device",
+  remove: "Remove",
+  dropToReplaceImage: "Drop to replace image",
+  dropToReplaceFile: "Drop to replace file",
+  noImageInClipboard: "No image found in clipboard",
+  clipboardReadFailed: "Failed to read from clipboard",
+  fileTooLarge: (maxSizeInMB) => `File size exceeds ${maxSizeInMB}MB.`,
+  unsupportedFileType: "Unsupported file type.",
+};
 
 interface FileInputProps {
   placeholder?: string;
@@ -131,6 +156,7 @@ interface FileInputProps {
   value?: File | null;
   maxSizeInMB?: number;
   className?: string;
+  labels?: FileInputLabels;
 }
 
 const FileInput = ({
@@ -140,6 +166,7 @@ const FileInput = ({
   value,
   maxSizeInMB = 10,
   className,
+  labels = DEFAULT_LABELS,
 }: FileInputProps) => {
   const normalizedValue =
     value instanceof File && value.size === 0 ? null : value;
@@ -169,7 +196,7 @@ const FileInput = ({
       setError("");
       let validationError: null | Error = null;
       try {
-        validateFile(file, maxSizeInMB, supportedFileTypes);
+        validateFile(file, maxSizeInMB, supportedFileTypes, labels);
       } catch (error) {
         validationError = error as Error;
       }
@@ -210,6 +237,7 @@ const FileInput = ({
       supportedFileTypes,
       previewUrl,
       handleRemoveFile,
+      labels,
     ]
   );
 
@@ -233,9 +261,9 @@ const FileInput = ({
         }
       }
 
-      setError("No image found in clipboard");
+      setError(labels.noImageInClipboard);
     } catch {
-      setError("Failed to read from clipboard");
+      setError(labels.clipboardReadFailed);
     }
   };
 
@@ -308,7 +336,7 @@ const FileInput = ({
           >
             <Trash2Icon className="size-3 text-foreground" />
             <span className="text-xs font-medium text-red-700 dark:text-red-300">
-              Remove
+              {labels.remove}
             </span>
           </button>
         )}
@@ -325,7 +353,7 @@ const FileInput = ({
             {isDragOver && (
               <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
                 <div className="text-primary font-medium">
-                  Drop to replace image
+                  {labels.dropToReplaceImage}
                 </div>
               </div>
             )}
@@ -350,7 +378,7 @@ const FileInput = ({
             {isDragOver && (
               <div className="absolute inset-0 bg-primary/20 flex items-center justify-center rounded-md">
                 <div className="text-primary font-medium">
-                  Drop to replace file
+                  {labels.dropToReplaceFile}
                 </div>
               </div>
             )}
@@ -361,18 +389,20 @@ const FileInput = ({
         {!normalizedValue && (
           <div className="w-full h-full flex flex-col items-center justify-center gap-2">
             <div className="flex items-center gap-1">
-              <QuickTooltip content="Paste from clipboard" asChild>
+              <QuickTooltip content={labels.pasteFromClipboard} asChild>
                 <button
                   type="button"
+                  aria-label={labels.pasteFromClipboard}
                   className="h-7 w-7 flex items-center justify-center bg-foreground/10 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
                   onClick={handlePasteFromClipboard}
                 >
                   <ClipboardIcon className="size-4" />
                 </button>
               </QuickTooltip>
-              <QuickTooltip content="Upload from device" asChild>
+              <QuickTooltip content={labels.uploadFromDevice} asChild>
                 <button
                   type="button"
+                  aria-label={labels.uploadFromDevice}
                   className="h-7 w-7 flex items-center justify-center bg-foreground/10 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
                   onClick={handleUploadClick}
                 >

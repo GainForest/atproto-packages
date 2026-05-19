@@ -301,7 +301,8 @@
     "cancel": "Cancel",
     "errors": {
       "unsupported": "Only JPEG, PNG, WebP, and HEIC images are supported.",
-      "tooLarge": "File is too large. Maximum size is 4.5 MB (got {size})."
+      "tooLarge": "File is too large. Maximum size is 4.5 MB (got {size}).",
+      "uploadFailed": "We could not upload this photo. Please try again."
     },
     "parts": {
       "entireOrganism": "Entire Organism",
@@ -346,7 +347,23 @@
       "treeFallback": "Tree {index}",
       "nearBoundary": "near boundary",
       "outOfSite": "out of site",
-      "invalidBoundary": "invalid boundary"
-    }
+      "invalidBoundary": "invalid boundary",
+      "addFailed": "We could not add this site. Please try again.",
+      "updateFailed": "We could not save this site. Please try again.",
+      "unexpected": "Something went wrong. Please try again."
+    },
+    "back": "Back to preview",
+    "fileInput": {
+      "pasteFromClipboard": "Paste from clipboard",
+      "uploadFromDevice": "Upload from device",
+      "remove": "Remove",
+      "dropToReplaceImage": "Drop to replace image",
+      "dropToReplaceFile": "Drop to replace file",
+      "noImageInClipboard": "No image found in clipboard",
+      "clipboardReadFailed": "Could not read from the clipboard",
+      "fileTooLarge": "File size exceeds {maxSizeInMB} MB.",
+      "unsupportedFileType": "Unsupported file type."
+    },
+    "drawnFileName": "drawn-polygon.geojson"
   }
 }

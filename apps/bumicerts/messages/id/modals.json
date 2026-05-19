@@ -301,7 +301,8 @@
     "cancel": "Batal",
     "errors": {
       "unsupported": "Hanya gambar JPEG, PNG, WebP, dan HEIC yang didukung.",
-      "tooLarge": "File terlalu besar. Ukuran maksimum 4,5 MB (diterima {size})."
+      "tooLarge": "File terlalu besar. Ukuran maksimum 4,5 MB (diterima {size}).",
+      "uploadFailed": "Kami tidak dapat mengunggah foto ini. Coba lagi."
     },
     "parts": {
       "entireOrganism": "Organisme utuh",
@@ -346,7 +347,23 @@
       "treeFallback": "Pohon {index}",
       "nearBoundary": "dekat batas",
       "outOfSite": "di luar lokasi",
-      "invalidBoundary": "batas tidak valid"
-    }
+      "invalidBoundary": "batas tidak valid",
+      "addFailed": "Kami tidak dapat menambahkan lokasi ini. Coba lagi.",
+      "updateFailed": "Kami tidak dapat menyimpan lokasi ini. Coba lagi.",
+      "unexpected": "Terjadi kesalahan. Coba lagi."
+    },
+    "back": "Kembali ke pratinjau",
+    "fileInput": {
+      "pasteFromClipboard": "Tempel dari papan klip",
+      "uploadFromDevice": "Unggah dari perangkat",
+      "remove": "Hapus",
+      "dropToReplaceImage": "Lepaskan untuk mengganti gambar",
+      "dropToReplaceFile": "Lepaskan untuk mengganti file",
+      "noImageInClipboard": "Tidak ada gambar di papan klip",
+      "clipboardReadFailed": "Tidak dapat membaca papan klip",
+      "fileTooLarge": "Ukuran file melebihi {maxSizeInMB} MB.",
+      "unsupportedFileType": "Jenis file tidak didukung."
+    },
+    "drawnFileName": "poligon-digambar.geojson"
   }
 }
