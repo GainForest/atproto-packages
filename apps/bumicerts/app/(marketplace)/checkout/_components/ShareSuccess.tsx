@@ -20,6 +20,7 @@ import { useCopy } from "@/hooks/use-copy";
 import type { CheckoutResult } from "./hooks/useCheckoutFlow";
 import { UserChip } from "@/components/ui/user-chip";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const CopyButton = ({ copyText }: { copyText: string }) => {
   const { copy, isCopied } = useCopy();
@@ -41,6 +42,7 @@ export function ShareSuccess({
 }: {
   checkoutResults: CheckoutResult;
 }) {
+  const t = useTranslations("modals.checkout.success");
   const successfulResults = checkoutResults.results.filter(
     (result) => result.success,
   );
@@ -53,13 +55,18 @@ export function ShareSuccess({
     checkoutResults.successCount > 0
       ? checkoutResults.successCount
       : successfulResults.length;
-  const bumicertLabel = successfulItemCount === 1 ? "Bumicert" : "Bumicerts";
+  const bumicertLabel = t(successfulItemCount === 1 ? "bumicertSingular" : "bumicertPlural");
 
   // Share functionality
   const baseUrl = getPublicUrlClient();
   const shareUrl = `${baseUrl}${links.explore}`;
 
-  const shareText = `I just donated $${totalAmountFormatted} to ${successfulItemCount} ${bumicertLabel}. Explore bumicerts on ${shareUrl}`;
+  const shareText = t("shareText", {
+    amount: totalAmountFormatted,
+    count: successfulItemCount,
+    bumicertLabel,
+    shareUrl,
+  });
 
   const shareXUrl = links.external.share.x(shareText);
   const shareBlueskyUrl = links.external.share.bluesky(shareText);
@@ -78,19 +85,20 @@ export function ShareSuccess({
 
         <div className="flex flex-col gap-1">
           <p className="font-instrument italic font-medium text-4xl text-primary">
-            Thank you!
+            {t("thankYou")}
           </p>
           <p className="font-medium text-muted-foreground mt-2 text-pretty">
-            Your donation worth&nbsp;
-            <span className="text-foreground text-nowrap">
-              {totalAmountFormatted} USDC
-            </span>
-            &nbsp;was successful.
+            {t.rich("successfulDonation", {
+              amount: totalAmountFormatted,
+              amountText: (chunks) => (
+                <span className="text-foreground text-nowrap">{chunks}</span>
+              ),
+            })}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {checkoutResults.donorRecordedAs === "did"
-              ? "Recorded with your Bumicerts profile."
-              : "Recorded as anonymous."}
+              ? t("recordedProfile")
+              : t("recordedAnonymous")}
           </p>
         </div>
       </div>
@@ -100,16 +108,16 @@ export function ShareSuccess({
           <thead className="bg-muted">
             <tr>
               <th scope="col" className="font-medium py-2 text-sm">
-                Creator
+                {t("creator")}
               </th>
               <th scope="col" className="font-medium py-2 text-sm">
-                Bumicert
+                {t("bumicert")}
               </th>
               <th scope="col" className="font-medium py-2 text-sm">
-                Transaction Hash
+                {t("transactionHash")}
               </th>
               <th scope="col" className="font-medium py-2 text-sm">
-                Amount (USDC)
+                {t("amountUsdc")}
               </th>
             </tr>
           </thead>
@@ -131,7 +139,7 @@ export function ShareSuccess({
                           `${r.orgDid}-${r.activityUri.split("/").at(-1)}`,
                         )}
                       >
-                        View
+                        {t("view")}
                       </Link>
                     </Button>
                   </td>
@@ -160,7 +168,7 @@ export function ShareSuccess({
                 colSpan={2}
                 className="text-sm text-muted-foreground px-2 font-semibold"
               >
-                Total Amount Donated (USDC)
+                {t("totalAmountDonated")}
               </td>
               <td></td>
               <td className="text-right px-3">{totalAmountFormatted}</td>
@@ -172,7 +180,7 @@ export function ShareSuccess({
       <div className="w-full flex flex-col items-center justify-center ">
         <div className="flex items-center px-3 gap-1.5 text-muted-foreground">
           <Share2 className="size-3.5" />
-          <span className="text-sm">Share this with others</span>
+          <span className="text-sm">{t("shareWithOthers")}</span>
         </div>
         <div className="flex items-center justify-center gap-1 flex-wrap mt-2">
           <Button variant={"secondary"} asChild>
@@ -187,11 +195,11 @@ export function ShareSuccess({
           </Button>
           <Button variant={"secondary"} asChild>
             <Link href={shareTelegramUrl} target="_blank">
-              <TelegramIcon className="text-blue-500" /> Telegram
+              <TelegramIcon className="text-blue-500" /> {t("telegram")}
             </Link>
           </Button>
           <Button variant={"secondary"} onClick={() => copy(shareText)}>
-            {isCopied ? <CheckIcon /> : <CopyIcon />} Copy
+            {isCopied ? <CheckIcon /> : <CopyIcon />} {t("copy")}
           </Button>
         </div>
       </div>
@@ -199,7 +207,7 @@ export function ShareSuccess({
       <div className="rounded-2xl w-full flex flex-col items-center gap-2 mt-4">
         <div className="flex items-center px-3 gap-1.5 text-muted-foreground text-center">
           <CompassIcon className="size-3.5" />
-          <span className="text-sm">What next?</span>
+          <span className="text-sm">{t("whatNext")}</span>
         </div>
         <div className="flex items-center justify-center flex-wrap">
           <div className="flex items-center gap-1">
@@ -210,7 +218,7 @@ export function ShareSuccess({
             >
               <Link href={links.leaderboard}>
                 <TrophyIcon className="opacity-40" />
-                <span>See Leaderboard</span>
+                <span>{t("seeLeaderboard")}</span>
               </Link>
             </Button>
             <Button
@@ -220,7 +228,7 @@ export function ShareSuccess({
             >
               <Link href={links.explore}>
                 <CompassIcon className="opacity-40" />
-                <span>Explore more Bumicerts</span>
+                <span>{t("exploreMore")}</span>
               </Link>
             </Button>
           </div>
