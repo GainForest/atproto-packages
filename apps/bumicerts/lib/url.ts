@@ -17,12 +17,11 @@
  *   client_id and redirect_uris. These must be stable across all requests — they
  *   cannot be derived per-request. The URL must therefore be known at init time.
  *
- * Server-only: this file imports serverEnv which must never be bundled into the
- * browser. Only import from server components, API routes, server actions, and
- * other server-only modules (e.g. lib/auth.ts).
+ * This module is shared by server and client code. Server-only URL resolution
+ * reads Vercel's non-public environment variables directly from `process.env`;
+ * client code should use `getPublicUrlClient()` or explicit resolver helpers.
  */
 
-import { serverEnv } from "./env/server";
 import { clientEnv } from "./env/client";
 
 const PRODUCTION_GREEN_GLOBE_PREVIEW_BASE_URL = "https://gainforest.app";
@@ -36,7 +35,7 @@ const LOCAL_GREEN_GLOBE_PREVIEW_BASE_URL = "http://localhost:8910";
  */
 export function getPublicUrl(): string | undefined {
   // 1. Branch-specific URLs for preview deployments
-  const deploymentBranch = serverEnv.VERCEL_GIT_COMMIT_REF;
+  const deploymentBranch = process.env.VERCEL_GIT_COMMIT_REF;
   if (deploymentBranch) {
     if (
       clientEnv.NEXT_PUBLIC_PRODUCTION_BRANCH_NAME &&
@@ -55,8 +54,8 @@ export function getPublicUrl(): string | undefined {
     }
 
     // For any other branch preview, use the raw Vercel URL
-    if (serverEnv.VERCEL_URL) {
-      return `https://${serverEnv.VERCEL_URL.trim()}`;
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL.trim()}`;
     }
   }
 
@@ -67,11 +66,11 @@ export function getPublicUrl(): string | undefined {
 
   // 3. Production: prefer the shortest custom domain, fall back to raw alias.
   const raw =
-    (serverEnv.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${serverEnv.VERCEL_PROJECT_PRODUCTION_URL.trim()}`
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.trim()}`
       : undefined) ??
-    (serverEnv.VERCEL_URL
-      ? `https://${serverEnv.VERCEL_URL.trim()}`
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL.trim()}`
       : undefined);
 
   return raw?.replace(/\/$/, "");
