@@ -17,7 +17,8 @@
     "itemAmountsMismatch": "Item amounts must add up to the checkout total.",
     "missingOrgWallets": "Some organizations do not have linked wallets.",
     "fundsReceiveFailed": "We could not receive funds from your wallet.",
-    "activityCidFailed": "We could not verify some donation records."
+    "activityCidFailed": "We could not verify some donation records.",
+    "nonceGenerationFailed": "Could not prepare the wallet authorization. Please try again."
   },
   "cart": {
     "title": "Your Cart",
@@ -108,7 +109,11 @@
       "seeLeaderboard": "See Leaderboard",
       "exploreMore": "Explore more Bumicerts",
       "done": "Done",
-      "shareText": "I just donated ${amount} to this bumicert: {shareUrl}"
+      "shareText": "I just donated ${amount} to this bumicert: {shareUrl}",
+      "shareOnX": "Share on X (Twitter)",
+      "shareOnBluesky": "Share on Bluesky",
+      "shareOnTelegram": "Share on Telegram",
+      "copyShareText": "Copy share text"
     }
   },
   "fundingConfig": {
@@ -139,7 +144,8 @@
     "saveError": "Could not save donation settings. Please try again.",
     "saving": "Saving…",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "notVerifiedSuffix": "Not verified"
   },
   "wallet": {
     "add": {
@@ -254,7 +260,17 @@
       "exploreMore": "Explore more Bumicerts",
       "bumicertSingular": "Bumicert",
       "bumicertPlural": "Bumicerts",
-      "shareText": "I just donated ${amount} to {count} {bumicertLabel}. Explore bumicerts on {shareUrl}"
+      "shareText": "I just donated ${amount} to {count} {bumicertLabel}. Explore bumicerts on {shareUrl}",
+      "shareOnX": "Share on X (Twitter)",
+      "shareOnBluesky": "Share on Bluesky",
+      "shareOnTelegram": "Share on Telegram",
+      "copyShareText": "Copy share text",
+      "copyTransactionHash": "Copy transaction hash",
+      "viewReceipt": "View receipt"
+    },
+    "metadata": {
+      "title": "Checkout — Bumicerts",
+      "description": "Complete your donation to multiple bumicerts in one transaction."
     }
   },
   "auth": {

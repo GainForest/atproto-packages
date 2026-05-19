@@ -13,11 +13,12 @@
     "recipientMismatch": "La billetera destinataria no coincide con esta organización.",
     "onchainFailed": "La transferencia en cadena falló.",
     "authorizationFacilitatorMismatch": "La autorización debe enviarse a la billetera facilitadora.",
-    "amountMismatch": "El importe autorizado no coincide con el total del checkout.",
-    "itemAmountsMismatch": "Los importes de los elementos deben sumar el total del checkout.",
+    "amountMismatch": "El importe autorizado no coincide con el total de pago.",
+    "itemAmountsMismatch": "Los importes de los elementos deben sumar el total de pago.",
     "missingOrgWallets": "Algunas organizaciones no tienen billeteras vinculadas.",
     "fundsReceiveFailed": "No pudimos recibir fondos de tu billetera.",
-    "activityCidFailed": "No pudimos verificar algunos registros de donación."
+    "activityCidFailed": "No pudimos verificar algunos registros de donación.",
+    "nonceGenerationFailed": "No se pudo preparar la autorización de la billetera. Inténtalo de nuevo."
   },
   "cart": {
     "title": "Tu carrito",
@@ -28,8 +29,8 @@
     "emptyTitle": "Tu carrito está vacío",
     "emptyDescription": "Añade bumicerts a los que quieras donar más tarde.",
     "exploreBumicerts": "Explorar Bumicerts",
-    "checkout": "Checkout",
-    "checkoutWithCount": "Checkout ({count, plural, one {# elemento} other {# elementos}})",
+    "checkout": "Finalizar donación",
+    "checkoutWithCount": "Finalizar donación ({count, plural, one {# elemento} other {# elementos}})",
     "cancel": "Cancelar",
     "close": "Cerrar",
     "noLongerAccepting": "Ya no aceptan donaciones"
@@ -108,7 +109,11 @@
       "seeLeaderboard": "Ver clasificación",
       "exploreMore": "Explorar más Bumicerts",
       "done": "Listo",
-      "shareText": "Acabo de donar ${amount} a este bumicert: {shareUrl}"
+      "shareText": "Acabo de donar ${amount} a este bumicert: {shareUrl}",
+      "shareOnX": "Compartir en X (Twitter)",
+      "shareOnBluesky": "Compartir en Bluesky",
+      "shareOnTelegram": "Compartir en Telegram",
+      "copyShareText": "Copiar texto para compartir"
     }
   },
   "fundingConfig": {
@@ -139,7 +144,8 @@
     "saveError": "No se pudo guardar la configuración de donaciones. Inténtalo de nuevo.",
     "saving": "Guardando…",
     "save": "Guardar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "notVerifiedSuffix": "No verificada"
   },
   "wallet": {
     "add": {
@@ -188,7 +194,7 @@
     }
   },
   "checkout": {
-    "title": "Checkout",
+    "title": "Finalizar donación",
     "subtitle": "Define el importe de donación para cada bumicert",
     "emptyTitle": "Tu carrito está vacío",
     "emptyDescription": "Añade bumicerts que quieras apoyar",
@@ -254,7 +260,17 @@
       "exploreMore": "Explorar más Bumicerts",
       "bumicertSingular": "Bumicert",
       "bumicertPlural": "Bumicerts",
-      "shareText": "Acabo de donar ${amount} a {count} {bumicertLabel}. Explora bumicerts en {shareUrl}"
+      "shareText": "Acabo de donar ${amount} a {count} {bumicertLabel}. Explora bumicerts en {shareUrl}",
+      "shareOnX": "Compartir en X (Twitter)",
+      "shareOnBluesky": "Compartir en Bluesky",
+      "shareOnTelegram": "Compartir en Telegram",
+      "copyShareText": "Copiar texto para compartir",
+      "copyTransactionHash": "Copiar hash de transacción",
+      "viewReceipt": "Ver recibo"
+    },
+    "metadata": {
+      "title": "Finalizar donación — Bumicerts",
+      "description": "Completa tu donación a varios bumicerts en una sola transacción."
     }
   },
   "auth": {

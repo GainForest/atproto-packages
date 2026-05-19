@@ -13,11 +13,12 @@
     "recipientMismatch": "Dompet penerima tidak cocok dengan organisasi ini.",
     "onchainFailed": "Transfer on-chain gagal.",
     "authorizationFacilitatorMismatch": "Otorisasi harus dikirim ke dompet fasilitator.",
-    "amountMismatch": "Jumlah yang diotorisasi tidak cocok dengan total checkout.",
-    "itemAmountsMismatch": "Jumlah item harus sama dengan total checkout.",
+    "amountMismatch": "Jumlah yang diotorisasi tidak cocok dengan total pembayaran.",
+    "itemAmountsMismatch": "Jumlah item harus sama dengan total pembayaran.",
     "missingOrgWallets": "Beberapa organisasi tidak memiliki dompet tertaut.",
     "fundsReceiveFailed": "Kami tidak dapat menerima dana dari dompet Anda.",
-    "activityCidFailed": "Kami tidak dapat memverifikasi beberapa catatan donasi."
+    "activityCidFailed": "Kami tidak dapat memverifikasi beberapa catatan donasi.",
+    "nonceGenerationFailed": "Tidak dapat menyiapkan otorisasi dompet. Coba lagi."
   },
   "cart": {
     "title": "Keranjang Anda",
@@ -28,8 +29,8 @@
     "emptyTitle": "Keranjang Anda kosong",
     "emptyDescription": "Tambahkan bumicerts yang ingin Anda donasikan nanti.",
     "exploreBumicerts": "Jelajahi Bumicerts",
-    "checkout": "Checkout",
-    "checkoutWithCount": "Checkout ({count, plural, one {# item} other {# item}})",
+    "checkout": "Selesaikan donasi",
+    "checkoutWithCount": "Selesaikan donasi ({count, plural, one {# item} other {# item}})",
     "cancel": "Batal",
     "close": "Tutup",
     "noLongerAccepting": "Tidak lagi menerima donasi"
@@ -108,7 +109,11 @@
       "seeLeaderboard": "Lihat Papan Peringkat",
       "exploreMore": "Jelajahi Bumicerts lainnya",
       "done": "Selesai",
-      "shareText": "Saya baru saja berdonasi ${amount} ke bumicert ini: {shareUrl}"
+      "shareText": "Saya baru saja berdonasi ${amount} ke bumicert ini: {shareUrl}",
+      "shareOnX": "Bagikan di X (Twitter)",
+      "shareOnBluesky": "Bagikan di Bluesky",
+      "shareOnTelegram": "Bagikan di Telegram",
+      "copyShareText": "Salin teks berbagi"
     }
   },
   "fundingConfig": {
@@ -139,7 +144,8 @@
     "saveError": "Tidak dapat menyimpan pengaturan donasi. Coba lagi.",
     "saving": "Menyimpan…",
     "save": "Simpan",
-    "cancel": "Batal"
+    "cancel": "Batal",
+    "notVerifiedSuffix": "Belum diverifikasi"
   },
   "wallet": {
     "add": {
@@ -188,7 +194,7 @@
     }
   },
   "checkout": {
-    "title": "Checkout",
+    "title": "Selesaikan donasi",
     "subtitle": "Tetapkan jumlah donasi untuk setiap bumicert",
     "emptyTitle": "Keranjang Anda kosong",
     "emptyDescription": "Tambahkan bumicerts yang ingin Anda dukung",
@@ -254,7 +260,17 @@
       "exploreMore": "Jelajahi Bumicerts lainnya",
       "bumicertSingular": "Bumicert",
       "bumicertPlural": "Bumicerts",
-      "shareText": "Saya baru saja berdonasi ${amount} ke {count} {bumicertLabel}. Jelajahi bumicerts di {shareUrl}"
+      "shareText": "Saya baru saja berdonasi ${amount} ke {count} {bumicertLabel}. Jelajahi bumicerts di {shareUrl}",
+      "shareOnX": "Bagikan di X (Twitter)",
+      "shareOnBluesky": "Bagikan di Bluesky",
+      "shareOnTelegram": "Bagikan di Telegram",
+      "copyShareText": "Salin teks berbagi",
+      "copyTransactionHash": "Salin hash transaksi",
+      "viewReceipt": "Lihat tanda terima"
+    },
+    "metadata": {
+      "title": "Selesaikan donasi — Bumicerts",
+      "description": "Selesaikan donasi Anda ke beberapa bumicert dalam satu transaksi."
     }
   },
   "auth": {

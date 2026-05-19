@@ -61,11 +61,12 @@ function isWalletTrusted(
 function walletLabel(
   link: EvmLink,
   facilitatorAddress: string | undefined,
+  notVerifiedSuffix: string,
 ): string {
   const addr = formatAddress(link.record?.address);
   const name = link.record?.name;
   const trusted = isWalletTrusted(link, facilitatorAddress);
-  const warning = !trusted ? " · Not verified" : "";
+  const warning = !trusted ? ` · ${notVerifiedSuffix}` : "";
   return name ? `${addr} (${name})${warning}` : `${addr}${warning}`;
 }
 
@@ -286,7 +287,7 @@ export function FundingConfigModal({
 
   const walletOptions = evmLinks.map((link) => ({
     value: link.metadata?.uri ?? "",
-    label: walletLabel(link, facilitatorAddress),
+    label: walletLabel(link, facilitatorAddress, t("notVerifiedSuffix")),
   }));
 
   return (

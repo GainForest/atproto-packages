@@ -28,13 +28,13 @@ function isHexBytes32(value: string): value is HexAddress {
   return /^0x[a-fA-F0-9]{64}$/.test(value);
 }
 
-function createNonce(): HexAddress {
+function createNonce(errorMessage: string): HexAddress {
   const nonce = `0x${Array.from(crypto.getRandomValues(new Uint8Array(32)))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("")}`;
 
   if (!isHexBytes32(nonce)) {
-    throw new Error("Failed to create a valid nonce");
+    throw new Error(errorMessage);
   }
 
   return nonce;
@@ -133,7 +133,14 @@ export function useBatchPayment({
       }
 
       const now = Math.floor(Date.now() / 1000);
-      const nonce = createNonce();
+      let nonce: HexAddress;
+      try {
+        nonce = createNonce(tErrors("nonceGenerationFailed"));
+      } catch (err) {
+        console.error("[useBatchPayment] Payment failed:", err);
+        onError(err instanceof Error ? err.message : tErrors("paymentFailed"));
+        return;
+      }
 
       const usdcAmount = toUsdcUnits(totalAmount);
 

@@ -22,7 +22,13 @@ import { UserChip } from "@/components/ui/user-chip";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
-const CopyButton = ({ copyText }: { copyText: string }) => {
+const CopyButton = ({
+  copyText,
+  label,
+}: {
+  copyText: string;
+  label: string;
+}) => {
   const { copy, isCopied } = useCopy();
   return (
     <Button
@@ -31,6 +37,7 @@ const CopyButton = ({ copyText }: { copyText: string }) => {
       }}
       variant={"ghost"}
       size={"icon-sm"}
+      aria-label={label}
     >
       {isCopied ? <CheckIcon /> : <CopyIcon />}
     </Button>
@@ -148,9 +155,16 @@ export function ShareSuccess({
                       {r.transactionHash.slice(0, 6)}...
                       {r.transactionHash.slice(-6)}
                     </span>
-                    <CopyButton copyText={r.transactionHash} />
+                    <CopyButton
+                      copyText={r.transactionHash}
+                      label={t("copyTransactionHash")}
+                    />
                     <Button variant={"link"} size={"icon-sm"} asChild>
-                      <Link href={r.receiptUri ?? "#"} target="_blank">
+                      <Link
+                        href={r.receiptUri ?? "#"}
+                        target="_blank"
+                        aria-label={t("viewReceipt")}
+                      >
                         <ArrowUpRightIcon />
                       </Link>
                     </Button>
@@ -185,21 +199,21 @@ export function ShareSuccess({
         <div className="flex items-center justify-center gap-1 flex-wrap mt-2">
           <Button variant={"secondary"} asChild>
             <Link href={shareXUrl} target="_blank">
-              <XIcon className="text-black dark:text-white" /> X (Twitter)
+              <XIcon className="text-black dark:text-white" /> {t("shareOnX")}
             </Link>
           </Button>
           <Button variant={"secondary"} asChild>
             <Link href={shareBlueskyUrl} target="_blank">
-              <BlueskyIcon className="text-blue-600" /> Bluesky
+              <BlueskyIcon className="text-blue-600" /> {t("shareOnBluesky")}
             </Link>
           </Button>
           <Button variant={"secondary"} asChild>
             <Link href={shareTelegramUrl} target="_blank">
-              <TelegramIcon className="text-blue-500" /> {t("telegram")}
+              <TelegramIcon className="text-blue-500" /> {t("shareOnTelegram")}
             </Link>
           </Button>
           <Button variant={"secondary"} onClick={() => copy(shareText)}>
-            {isCopied ? <CheckIcon /> : <CopyIcon />} {t("copy")}
+            {isCopied ? <CheckIcon /> : <CopyIcon />} {t("copyShareText")}
           </Button>
         </div>
       </div>
