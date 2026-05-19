@@ -68,9 +68,13 @@ export function buildDatasetSiteContexts(args: {
     siteRefsByDataset.set(datasetUri, accumulator);
   }
 
-  const locationsByUri = new Map(
-    args.locations.map((location) => [location.metadata.uri, location]),
-  );
+  const locationsByUri = new Map<string, DatasetSiteLocationInput>();
+  for (const location of args.locations) {
+    const locationUri = cleanRef(location.metadata.uri);
+    if (locationUri) {
+      locationsByUri.set(locationUri, location);
+    }
+  }
   const contexts = new Map<string, DatasetSiteContext>();
 
   for (const [datasetUri, accumulator] of siteRefsByDataset.entries()) {
@@ -101,7 +105,7 @@ export function buildDatasetSiteContexts(args: {
     contexts.set(datasetUri, {
       status: "ready",
       siteSubject: {
-        uri: location.metadata.uri,
+        uri: siteRef,
         cid: location.metadata.cid,
       },
       siteName: location.record.name,
@@ -115,7 +119,10 @@ export function getDatasetSiteContext(
   contexts: Map<string, DatasetSiteContext>,
   datasetUri: string,
 ): DatasetSiteContext {
-  return contexts.get(datasetUri) ?? { status: "missing-site-ref" };
+  const normalizedDatasetUri = cleanRef(datasetUri);
+  return normalizedDatasetUri
+    ? contexts.get(normalizedDatasetUri) ?? { status: "missing-site-ref" }
+    : { status: "missing-site-ref" };
 }
 
 export function groupDatasetUrisBySite(args: {
@@ -125,7 +132,12 @@ export function groupDatasetUrisBySite(args: {
   const groupsBySiteUri = new Map<string, DatasetSiteGroup>();
 
   for (const datasetUri of args.datasetUris) {
-    const context = getDatasetSiteContext(args.contexts, datasetUri);
+    const normalizedDatasetUri = cleanRef(datasetUri);
+    if (!normalizedDatasetUri) {
+      continue;
+    }
+
+    const context = getDatasetSiteContext(args.contexts, normalizedDatasetUri);
     if (context.status !== "ready") {
       continue;
     }
@@ -134,7 +146,7 @@ export function groupDatasetUrisBySite(args: {
       siteSubject: context.siteSubject,
       datasetUris: [],
     };
-    group.datasetUris.push(datasetUri);
+    group.datasetUris.push(normalizedDatasetUri);
     groupsBySiteUri.set(context.siteSubject.uri, group);
   }
 

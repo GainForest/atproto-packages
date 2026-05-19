@@ -22,8 +22,11 @@
  * other server-only modules (e.g. lib/auth.ts).
  */
 
-import { serverEnv } from "@/lib/env/server";
-import { clientEnv } from "@/lib/env/client";
+import { serverEnv } from "./env/server";
+import { clientEnv } from "./env/client";
+
+const PRODUCTION_GREEN_GLOBE_PREVIEW_BASE_URL = "https://gainforest.app";
+const LOCAL_GREEN_GLOBE_PREVIEW_BASE_URL = "http://localhost:8910";
 
 /**
  * Returns the app's canonical public base URL, or `undefined` if none can be
@@ -93,6 +96,27 @@ export function requirePublicUrl(): string {
     );
   }
   return url;
+}
+
+/**
+ * Returns the public Green Globe preview base URL for embedded timeline maps.
+ *
+ * Uses the configured URL when provided, production Green Globe only for Vercel
+ * production, and localhost for local/preview environments while Green Globe
+ * multi-dataset preview support is rolling out.
+ */
+export function resolveGreenGlobePreviewBaseUrl(options: {
+  configuredUrl?: string | null;
+  vercelEnv?: "development" | "preview" | "production" | null;
+}): string {
+  const configuredUrl = options.configuredUrl?.trim().replace(/\/$/, "");
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  return options.vercelEnv === "production"
+    ? PRODUCTION_GREEN_GLOBE_PREVIEW_BASE_URL
+    : LOCAL_GREEN_GLOBE_PREVIEW_BASE_URL;
 }
 
 /**

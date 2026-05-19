@@ -1,32 +1,17 @@
 import { clientEnv } from "./env/client";
 import type { BumicertDetailTab } from "./bumicert-tabs";
+import { resolveGreenGlobePreviewBaseUrl } from "./url";
 
 type DidDynamicLink = (did?: string) => string;
 const didCatcher = (callback: (did: string) => string): DidDynamicLink => {
   return (did) => (did === undefined ? "#" : callback(did));
 };
 
-const PRODUCTION_GREEN_GLOBE_PREVIEW_BASE_URL = "https://gainforest.app";
-const LOCAL_GREEN_GLOBE_PREVIEW_BASE_URL = "http://localhost:8910";
 const BUMICERT_CREATE_PATH = "/bumicert/create";
 const HYPERLABEL_BASE_URL = "https://hyperlabel-production.up.railway.app";
 const CONTENTSQUARE_UXA_BASE_URL = "https://t.contentsquare.net/uxa";
 const TREE_UPLOAD_FEEDBACK_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLScpHS_-7QTTiHIseqjzvkdbx6jzjenebkaLGXoETNrfit0ZNA/viewform";
-
-export function resolveGreenGlobePreviewBaseUrl(options: {
-  configuredUrl?: string | null;
-  vercelEnv?: "development" | "preview" | "production" | null;
-}): string {
-  const configuredUrl = options.configuredUrl?.trim().replace(/\/$/, "");
-  if (configuredUrl) {
-    return configuredUrl;
-  }
-
-  return options.vercelEnv === "production"
-    ? PRODUCTION_GREEN_GLOBE_PREVIEW_BASE_URL
-    : LOCAL_GREEN_GLOBE_PREVIEW_BASE_URL;
-}
 
 const GREEN_GLOBE_PREVIEW_BASE_URL = resolveGreenGlobePreviewBaseUrl({
   configuredUrl: clientEnv.NEXT_PUBLIC_GREEN_GLOBE_URL,

@@ -104,6 +104,43 @@ describe("dataset site context", () => {
     });
   });
 
+  test("normalizes dataset and site refs for lookups and grouping", () => {
+    const contexts = buildDatasetSiteContexts({
+      occurrences: [
+        { datasetUri: " dataset-1 ", siteRef: ` ${siteOne.metadata.uri} ` },
+      ],
+      locations: [
+        {
+          metadata: {
+            ...siteOne.metadata,
+            uri: ` ${siteOne.metadata.uri} `,
+          },
+          record: siteOne.record,
+        },
+      ],
+    });
+
+    expect(getDatasetSiteContext(contexts, " dataset-1 ")).toEqual({
+      status: "ready",
+      siteSubject: {
+        uri: siteOne.metadata.uri,
+        cid: siteOne.metadata.cid,
+      },
+      siteName: "North plot",
+    });
+    expect(
+      groupDatasetUrisBySite({ datasetUris: [" dataset-1 "], contexts }),
+    ).toEqual([
+      {
+        siteSubject: {
+          uri: siteOne.metadata.uri,
+          cid: siteOne.metadata.cid,
+        },
+        datasetUris: ["dataset-1"],
+      },
+    ]);
+  });
+
   test("groups selected dataset uris by resolved site", () => {
     const contexts = buildDatasetSiteContexts({
       occurrences: [

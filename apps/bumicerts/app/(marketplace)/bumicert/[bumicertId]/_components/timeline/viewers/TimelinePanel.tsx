@@ -13,7 +13,10 @@ import { TimelineEntryList, type TimelineEntryListItem } from "./TimelineEntryLi
 import { TimelineEmpty } from "./shared/TimelineEmpty";
 import { TimelineGreenGlobePreview } from "./shared/TimelineGreenGlobePreview";
 import { TimelineSkeleton } from "./shared/TimelineSkeleton";
-import { buildTimelineMapLayers } from "./shared/timelineMapLayers";
+import {
+  buildTimelineMapLayers,
+  type TimelineMapLayer,
+} from "./shared/timelineMapLayers";
 import { TimelineViewerStoreProvider } from "./shared/timelineViewerStore";
 import { useResolvedAttachmentReferenceMap } from "./shared/referenceResolution/useResolvedAttachmentReferences";
 
@@ -101,16 +104,23 @@ export function TimelinePanel({
       }),
     [entries, referencesByKey],
   );
-  const mapLayers = useMemo(
-    () =>
-      buildTimelineMapLayers(
-        entryViewModels.map((entry) => ({
-          item: entry.item,
-          references: entry.references,
-        })),
-      ),
-    [entryViewModels],
-  );
+  const mapLayers = useMemo<TimelineMapLayer[]>(() => {
+    const seenDatasetUris = new Set<string>();
+    const layers: TimelineMapLayer[] = [];
+
+    for (const entry of entryViewModels) {
+      for (const layer of entry.mapLayers) {
+        if (seenDatasetUris.has(layer.datasetUri)) {
+          continue;
+        }
+
+        seenDatasetUris.add(layer.datasetUri);
+        layers.push(layer);
+      }
+    }
+
+    return layers;
+  }, [entryViewModels]);
   const entriesByFilter = useMemo(() => {
     const counts: Array<[TimelineEvidenceFilter, number]> =
       TIMELINE_EVIDENCE_FILTERS.map((filter) => [

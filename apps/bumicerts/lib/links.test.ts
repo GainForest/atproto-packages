@@ -1,12 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
+process.env.SKIP_ENV_VALIDATION ??= "true";
 process.env.NEXT_PUBLIC_SUPABASE_URL ??= "https://example.supabase.co";
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= "test-key";
 process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ??= "test-project";
 
 describe("resolveGreenGlobePreviewBaseUrl", () => {
   test("uses localhost outside the production Vercel environment", async () => {
-    const { resolveGreenGlobePreviewBaseUrl } = await import("./links");
+    const { resolveGreenGlobePreviewBaseUrl } = await import("./url");
 
     expect(resolveGreenGlobePreviewBaseUrl({ vercelEnv: undefined })).toBe(
       "http://localhost:8910",
@@ -17,7 +18,7 @@ describe("resolveGreenGlobePreviewBaseUrl", () => {
   });
 
   test("uses production only for production Vercel environment", async () => {
-    const { resolveGreenGlobePreviewBaseUrl } = await import("./links");
+    const { resolveGreenGlobePreviewBaseUrl } = await import("./url");
 
     expect(resolveGreenGlobePreviewBaseUrl({ vercelEnv: "production" })).toBe(
       "https://gainforest.app",
@@ -25,7 +26,7 @@ describe("resolveGreenGlobePreviewBaseUrl", () => {
   });
 
   test("uses explicit configured URL before environment defaults", async () => {
-    const { resolveGreenGlobePreviewBaseUrl } = await import("./links");
+    const { resolveGreenGlobePreviewBaseUrl } = await import("./url");
 
     expect(
       resolveGreenGlobePreviewBaseUrl({
