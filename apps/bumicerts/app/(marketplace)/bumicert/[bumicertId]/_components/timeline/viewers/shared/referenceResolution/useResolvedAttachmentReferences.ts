@@ -20,11 +20,13 @@ import {
   chunkDatasetRefLookupGroups,
   chunkReferenceLookupInputs,
 } from "./referenceBatches";
+import { useTranslations } from "next-intl";
 
 export function useResolvedAttachmentReferences(content: unknown): {
   references: ResolvedAttachmentReference[];
   isLoading: boolean;
 } {
+  const t = useTranslations("bumicert.detail.reference");
   const atUris = useMemo(() => {
     const parsedItems = parseAttachmentContent(content);
     const uris = parsedItems.flatMap((item) =>
@@ -199,6 +201,25 @@ export function useResolvedAttachmentReferences(content: unknown): {
     return map;
   }, [locationQueries, locationRefs]);
 
+  const referenceLabels = useMemo(
+    () => ({
+      linkedRecord: t("linkedRecord"),
+      linkedAudioRecord: t("linkedAudioRecord"),
+      audioEvidence: t("audioEvidence"),
+      playRecording: t("playRecording"),
+      linkedDataset: t("linkedDataset"),
+      viewGreenGlobe: t("viewGreenGlobe"),
+      linkedTreeRecord: t("linkedTreeRecord"),
+      linkedSiteRecord: t("linkedSiteRecord"),
+      siteEvidence: t("siteEvidence"),
+      openSiteMap: t("openSiteMap"),
+      recordCount: (count: number) => t("recordCount", { count }),
+      speciesCount: (count: number) => t("speciesCount", { count }),
+      individualCount: (count: number) => t("individualCount", { count }),
+    }),
+    [t],
+  );
+
   const references = useMemo<ResolvedAttachmentReference[]>(() => {
     return parsedUris.map(({ uri, parsed }) => {
       return buildResolvedReference({
@@ -209,9 +230,10 @@ export function useResolvedAttachmentReferences(content: unknown): {
         dataset: datasetByUri.get(uri),
         datasetOccurrences: occurrencesByDatasetUri.get(uri),
         location: locationByUri.get(uri),
+        labels: referenceLabels,
       });
     });
-  }, [audioByUri, datasetByUri, locationByUri, occurrenceByUri, occurrencesByDatasetUri, parsedUris]);
+  }, [audioByUri, datasetByUri, locationByUri, occurrenceByUri, occurrencesByDatasetUri, parsedUris, referenceLabels]);
 
   const isLoading =
     audioQueries.some((query) => query.isLoading) ||

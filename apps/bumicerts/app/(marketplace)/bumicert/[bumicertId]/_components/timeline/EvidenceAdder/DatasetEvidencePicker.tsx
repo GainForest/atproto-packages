@@ -6,6 +6,7 @@ import {
   getOccurrenceDatasetRef,
   isTreeDatasetOccurrence,
 } from "../shared/occurrenceEvidenceClassification";
+import { useTranslations } from "next-intl";
 
 function hasTreeDatasetMetadata(item: DatasetItem): boolean {
   return typeof item.record?.establishmentMeans === "string" && item.record.establishmentMeans.length > 0;
@@ -18,6 +19,7 @@ const DatasetEvidencePicker = ({
   datasets: DatasetItem[];
   occurrences: OccurrenceItem[];
 }) => {
+  const t = useTranslations("bumicert.detail.evidenceAdder");
   const tabConfig = getManagedEvidenceTabConfig("trees");
   const treeOccurrences = occurrences.filter(isTreeDatasetOccurrence);
   const statsByDataset = buildDatasetEvidenceStatsByUri(treeOccurrences);
@@ -40,9 +42,9 @@ const DatasetEvidencePicker = ({
       tabId="trees"
       data={treeDatasets}
       icon={tabConfig.icon}
-      mutation={tabConfig.attachment}
+      mutation={{ ...tabConfig.attachment, title: t("attachmentTitles.trees") }}
       getUri={(item) => item.metadata?.uri ?? undefined}
-      getPrimary={(item) => item.record?.name ?? "Unnamed tree dataset"}
+      getPrimary={(item) => item.record?.name ?? t("unnamedTreeDataset")}
       getSecondary={(item) => {
         const datasetUri = item.metadata?.uri;
         const stats = datasetUri ? statsByDataset.get(datasetUri) : undefined;
@@ -50,9 +52,9 @@ const DatasetEvidencePicker = ({
         const speciesCount = stats?.speciesCount ?? 0;
         const dateRange = stats?.recordedDateRange;
         return [
-          `${treeCount} tree${treeCount === 1 ? "" : "s"}`,
+          t("treeCount", { count: treeCount }),
           speciesCount > 0
-            ? `${speciesCount} species`
+            ? t("speciesCount", { count: speciesCount })
             : null,
           dateRange,
         ]

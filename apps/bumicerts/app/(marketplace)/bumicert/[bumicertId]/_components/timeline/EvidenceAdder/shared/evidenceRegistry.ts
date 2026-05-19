@@ -28,42 +28,42 @@ type ManagedTabConfig = TabBaseConfig & {
 
 const MANAGED_TAB_CONFIG: Record<ManagedEvidenceTabId, ManagedTabConfig> = {
   audio: {
-    label: "Audio",
+    label: "",
     icon: MicIcon,
     manageHref: links.manage.audio,
-    emptyLabel: "audio recordings",
+    emptyLabel: "",
     attachment: {
-      title: "Audio Recordings",
+      title: "",
       contentType: "audio",
     },
   },
   trees: {
-    label: "Trees",
+    label: "",
     icon: TreesIcon,
     manageHref: links.manage.trees,
-    emptyLabel: "tree datasets",
+    emptyLabel: "",
     attachment: {
-      title: "Tree Data Set",
+      title: "",
       contentType: "tree-dataset",
     },
   },
   biodiversity: {
-    label: "Biodiversity",
+    label: "",
     icon: LeafIcon,
     manageHref: null,
-    emptyLabel: "biodiversity observations",
+    emptyLabel: "",
     attachment: {
-      title: "Biodiversity Observations",
+      title: "",
       contentType: "biodiversity",
     },
   },
 };
 
 const FILE_TAB_CONFIG: TabBaseConfig = {
-  label: "Documents",
+  label: "",
   icon: FileTextIcon,
   attachment: {
-    title: "Documents",
+    title: "",
     contentType: "evidence",
   },
 };

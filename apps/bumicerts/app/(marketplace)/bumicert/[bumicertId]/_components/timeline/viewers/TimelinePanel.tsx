@@ -13,6 +13,7 @@ import { TimelineEntryList } from "./TimelineEntryList";
 import { TimelineEmpty } from "./shared/TimelineEmpty";
 import { TimelineSkeleton } from "./shared/TimelineSkeleton";
 import { TimelineViewerStoreProvider } from "./shared/timelineViewerStore";
+import { useLocale, useTranslations } from "next-intl";
 
 interface TimelinePanelProps {
   entries: AttachmentItem[];
@@ -29,11 +30,11 @@ function parseDate(value: string | null | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function formatMonthYear(date: Date): string {
-  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+function formatMonthYear(date: Date, locale: string): string {
+  return date.toLocaleDateString(locale, { month: "short", year: "numeric" });
 }
 
-function formatLinkedWindow(entries: AttachmentItem[]): string | null {
+function formatLinkedWindow(entries: AttachmentItem[], locale: string): string | null {
   const dates = entries
     .map((entry) => parseDate(entry.record?.createdAt ?? entry.metadata?.createdAt))
     .filter((date): date is Date => date !== null);
@@ -53,15 +54,17 @@ function formatLinkedWindow(entries: AttachmentItem[]): string | null {
     first.getUTCFullYear() === last.getUTCFullYear() &&
     first.getUTCMonth() === last.getUTCMonth()
   ) {
-    return formatMonthYear(first);
+    return formatMonthYear(first, locale);
   }
 
-  return `${formatMonthYear(first)} – ${formatMonthYear(last)}`;
+  return `${formatMonthYear(first, locale)} – ${formatMonthYear(last, locale)}`;
 }
 
 export function TimelinePanel({ entries, isLoading, isOwner }: TimelinePanelProps) {
+  const t = useTranslations("bumicert.detail.timeline");
+  const locale = useLocale();
   const [activeFilter, setActiveFilter] = useState<TimelineEvidenceFilter>("all");
-  const linkedWindow = useMemo(() => formatLinkedWindow(entries), [entries]);
+  const linkedWindow = useMemo(() => formatLinkedWindow(entries, locale), [entries, locale]);
   const entriesByFilter = useMemo(() => {
     const counts: Array<[TimelineEvidenceFilter, number]> =
       TIMELINE_EVIDENCE_FILTERS.map((filter) => [
@@ -93,16 +96,16 @@ export function TimelinePanel({ entries, isLoading, isOwner }: TimelinePanelProp
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="text-2xl tracking-tight text-foreground">
-                Evidence Timeline
+                {t("title")}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {entries.length} item{entries.length === 1 ? "" : "s"}
-                {linkedWindow ? ` · linked ${linkedWindow}` : ""}
+                {t("itemCount", { count: entries.length })}
+                {linkedWindow ? ` · ${t("linked", { window: linkedWindow })}` : ""}
               </p>
             </div>
             {linkedWindow ? (
               <p className="text-xs text-muted-foreground">
-                Linked window: {linkedWindow}
+                {t("linkedWindow", { window: linkedWindow })}
               </p>
             ) : null}
           </div>
@@ -124,7 +127,7 @@ export function TimelinePanel({ entries, isLoading, isOwner }: TimelinePanelProp
                       : "border-border bg-background text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                   )}
                 >
-                  {filter.label}
+                  {t(`filters.${filter.id}`)}
                   {filter.id !== "all" && count > 0 ? ` ${count}` : ""}
                 </button>
               );
@@ -138,7 +141,7 @@ export function TimelinePanel({ entries, isLoading, isOwner }: TimelinePanelProp
           <TimelineEmpty />
         ) : filteredEntries.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border/70 py-10 text-center text-sm text-muted-foreground">
-            No evidence matches this filter.
+            {t("emptyFiltered")}
           </div>
         ) : (
           <TimelineEntryList entries={filteredEntries} />

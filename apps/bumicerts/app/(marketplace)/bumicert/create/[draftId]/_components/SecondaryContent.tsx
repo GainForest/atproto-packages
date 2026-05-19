@@ -1,72 +1,25 @@
 "use client";
 import React, { useState } from "react";
-import BiokoNeutralImage from "@/app/(marketplace)/bumicert/create/[draftId]/_assets/bioko-neutral.png";
-import BiokoHoldingLoudspeakerImage from "@/app/(marketplace)/bumicert/create/[draftId]/_assets/bioko-holding-loudspeaker.png";
-import BiokoHoldingEarthImage from "@/app/(marketplace)/bumicert/create/[draftId]/_assets/bioko-holding-earth.png";
-import BiokoHoldingMagnifierImage from "@/app/(marketplace)/bumicert/create/[draftId]/_assets/bioko-holding-magnifier.png";
-import BiokoHoldingConfettiImage from "@/app/(marketplace)/bumicert/create/[draftId]/_assets/bioko-holding-confetti.png";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDownIcon, EyeIcon, LightbulbIcon } from "lucide-react";
 import useNewBumicertStore from "../store";
-import BumicertPreviewCard from "./Steps/Step4/BumicertPreviewCard";
 import { BumicertCardVisual } from "@/components/bumicert/BumicertCard";
 import { useFormStore } from "../form-store";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCurrentAccountIdentity } from "@/hooks/use-current-account-identity";
+import { useTranslations } from "next-intl";
+import { getStringArray } from "../i18n";
 
-const stepImages = [
-  {
-    image: BiokoNeutralImage,
-    alt: "Bioko Neutral",
-    tips: [
-      "Use a short and descriptive name for your bumicert.",
-      "Include a website or social link to your bumicert for easy access.",
-    ],
-    previewBumicertByDefault: true,
-  },
-  {
-    image: BiokoHoldingLoudspeakerImage,
-    alt: "Bioko Holding Loudspeaker",
-    tips: [
-      "Tell your story in your own words. Explain what the problem was and what you did to solve it.",
-      "Share who was involved, such as your group, partners, or local community.",
-      "Describe how your work is helping and what has changed because of it.",
-      "Write freely. Longer stories are welcome.",
-    ],
-    previewBumicertByDefault: false,
-  },
-  {
-    image: BiokoHoldingEarthImage,
-    alt: "Bioko Holding Earth",
-    tips: [
-      "Add your own community or organization first, then other people or groups who joined.",
-      "Make sure everyone agrees to be included.",
-      "Upload your site boundary in GeoJSON format so it shows on the map.",
-    ],
-    previewBumicertByDefault: false,
-  },
-  {
-    image: BiokoHoldingMagnifierImage,
-    alt: "Bioko Holding Magnifier",
-    tips: [
-      "Make sure you have completed all the previous steps.",
-      "Review the look of your bumicert before submitting.",
-    ],
-    previewBumicertByDefault: false,
-  },
-  {
-    image: BiokoHoldingConfettiImage,
-    alt: "Bioko Holding Confetti",
-    tips: ["You have completed all the steps! No more tips for this section."],
-    previewBumicertByDefault: false,
-  },
-];
+const previewBumicertByDefaultByStep = [true, false, false, false, false];
 
 const EMPTY_COVER_IMAGE = new File([], "cover-image.png");
 
 const SecondaryContent = () => {
+  const t = useTranslations("bumicert.create.draft");
   const { currentStepIndex: currentStep } = useNewBumicertStore();
+  const stepKey = ["cover", "impact", "site", "review", "submit"][currentStep] ?? "cover";
+  const tips = getStringArray(t.raw(`steps.${stepKey}.tips.bullets`));
   const completionPercentages = useFormStore(
     (state) => state.formCompletionPercentages
   );
@@ -81,7 +34,7 @@ const SecondaryContent = () => {
   const isLoadingOrganizationInfo = query.isLoading;
 
   const [isBumicertPreviewOpen, setIsBumicertPreviewOpen] = useState(
-    stepImages[currentStep].previewBumicertByDefault
+    previewBumicertByDefaultByStep[currentStep] ?? false
   );
 
   return (
@@ -90,7 +43,7 @@ const SecondaryContent = () => {
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1 text-lg font-medium text-muted-foreground">
             <EyeIcon className="size-5" />
-            Preview Bumicert
+            {t("sidebar.previewTitle")}
           </span>
           <Button
             size={"icon"}
@@ -147,13 +100,13 @@ const SecondaryContent = () => {
               ) : isLoadingOrganizationInfo ? (
                 <div className="w-full flex items-center justify-center p-4">
                   <span className="font-medium text-muted-foreground text-center text-pretty">
-                    Generating preview metadata...
+                    {t("sidebar.generatingPreview")}
                   </span>
                 </div>
               ) : (
                 <div className="w-full flex items-center justify-center p-4">
                   <span className="font-medium text-muted-foreground text-center text-pretty">
-                    Please complete the first step to generate the preview.
+                    {t("sidebar.completeFirstStep")}
                   </span>
                 </div>
               )}
@@ -164,11 +117,11 @@ const SecondaryContent = () => {
       <div className="w-full p-2">
         <span className="flex items-center gap-1 text-lg font-medium text-muted-foreground">
           <LightbulbIcon className="size-5" />
-          Tips for this section
+          {t("sidebar.tipsTitle")}
         </span>
         <hr className="my-2" />
         <ul className="list-disc list-inside -indent-5 pl-5 mt-2 font-medium text-muted-foreground">
-          {stepImages[currentStep].tips.map((tip, index) => (
+          {tips.map((tip, index) => (
             <li key={index}>{tip}</li>
           ))}
         </ul>

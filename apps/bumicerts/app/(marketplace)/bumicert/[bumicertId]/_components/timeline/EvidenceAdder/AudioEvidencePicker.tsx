@@ -2,12 +2,14 @@ import type { AudioRecordingItem } from "@/graphql/indexer/queries";
 import { formatDate } from "@/lib/utils/date";
 import UriEvidencePicker from "./shared/UriEvidenceViewer";
 import { getManagedEvidenceTabConfig } from "./shared/evidenceRegistry";
+import { useTranslations } from "next-intl";
 
 const AudioEvidencePicker = ({
   data,
 }: {
   data: AudioRecordingItem[];
 }) => {
+  const t = useTranslations("bumicert.detail.evidenceAdder");
   const tabConfig = getManagedEvidenceTabConfig("audio");
 
   return (
@@ -15,9 +17,9 @@ const AudioEvidencePicker = ({
       tabId="audio"
       data={data}
       icon={tabConfig.icon}
-      mutation={tabConfig.attachment}
+      mutation={{ ...tabConfig.attachment, title: t("attachmentTitles.audio") }}
       getUri={(item) => item.metadata?.uri ?? undefined}
-      getPrimary={(item) => item.record?.name ?? "Untitled recording"}
+      getPrimary={(item) => item.record?.name ?? t("untitledRecording")}
       getSecondary={(item) =>
         formatDate(
           getRecordedAt(item.record?.metadata) ?? item.record?.createdAt,

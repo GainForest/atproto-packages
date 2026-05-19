@@ -8,11 +8,12 @@ import Mutator, { type AttachmentData } from "./shared/Mutator";
 import { useEvidenceAdderStore } from "./shared/evidenceAdderStore";
 import {
   FileEvidenceContentTypeSelect,
+  contentTypeLabelKeys,
   getDefaultFileContentType,
-  getFileContentTypeLabel,
   type KnownEvidenceContentType,
   toKnownFileContentType,
 } from "./shared/FileEvidenceContentTypeSelect";
+import { useTranslations } from "next-intl";
 
 const BROAD_SUPPORTED_FILE_TYPES = [
   "image/*",
@@ -36,6 +37,7 @@ function formatFileSize(bytes: number): string {
 }
 
 const FileEvidencePicker = () => {
+  const t = useTranslations("bumicert.detail.evidenceAdder");
   const description = useEvidenceAdderStore((state) => state.description);
   const resetDescription = useEvidenceAdderStore(
     (state) => state.resetDescription,
@@ -86,7 +88,7 @@ const FileEvidencePicker = () => {
     try {
       const parsed = new URL(trimmed);
       if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-        setLinkError("Use an http or https URL.");
+        setLinkError(t("invalidUrlProtocol"));
         return;
       }
 
@@ -96,7 +98,7 @@ const FileEvidencePicker = () => {
       );
       setLinkInput("");
     } catch {
-      setLinkError("Enter a valid URL.");
+      setLinkError(t("invalidUrl"));
     }
   };
 
@@ -105,7 +107,7 @@ const FileEvidencePicker = () => {
   };
 
   const computedMutationData: AttachmentData = {
-    title: getFileContentTypeLabel(selectedContentType),
+    title: t(`contentTypes.${contentTypeLabelKeys[selectedContentType]}`),
     contentType: selectedContentType,
     description,
     subjectInfo: {
@@ -128,7 +130,7 @@ const FileEvidencePicker = () => {
 
         <FileInput
           key={filePickerKey}
-          placeholder="Add a file as evidence"
+          placeholder={t("addFilePlaceholder")}
           value={filePickerValue ?? undefined}
           supportedFileTypes={BROAD_SUPPORTED_FILE_TYPES}
           maxSizeInMB={4}
@@ -148,7 +150,7 @@ const FileEvidencePicker = () => {
 
         <div className="flex flex-col gap-1.5 rounded-xl border border-border/60 bg-background p-3">
           <label htmlFor={externalLinkInputId} className="text-sm font-medium">
-            External link
+            {t("externalLink")}
           </label>
           <div className="flex gap-2">
             <Input
@@ -174,7 +176,7 @@ const FileEvidencePicker = () => {
               onClick={appendLink}
               disabled={isSubmitting || linkInput.trim().length === 0}
             >
-              Add
+              {t("addLink")}
             </Button>
           </div>
           {linkError ? (
@@ -183,7 +185,7 @@ const FileEvidencePicker = () => {
             </p>
           ) : (
             <p id={externalLinkHelpId} className="text-xs text-muted-foreground">
-              Link reports, websites, dashboards, or external evidence platforms.
+              {t("externalLinkHelp")}
             </p>
           )}
         </div>
@@ -212,7 +214,7 @@ const FileEvidencePicker = () => {
                     onClick={() => removeFile(file)}
                     disabled={isSubmitting}
                   >
-                    Remove
+                    {t("remove")}
                   </button>
                 </div>
               );
@@ -224,7 +226,7 @@ const FileEvidencePicker = () => {
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">
-                    External link
+                    {t("externalLink")}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
                     {link}
@@ -236,14 +238,14 @@ const FileEvidencePicker = () => {
                   onClick={() => removeLink(link)}
                   disabled={isSubmitting}
                 >
-                  Remove
+                  {t("remove")}
                 </button>
               </div>
             ))}
           </ListLayout>
         ) : (
           <div className="rounded-xl bg-muted/60 px-3 py-2 text-xs text-muted-foreground text-center">
-            No files or links selected yet.
+            {t("noFilesSelected")}
           </div>
         )}
       </div>

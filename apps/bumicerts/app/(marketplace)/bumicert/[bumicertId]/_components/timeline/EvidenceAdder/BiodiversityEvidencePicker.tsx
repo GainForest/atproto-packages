@@ -3,13 +3,14 @@ import { formatDate } from "@/lib/utils/date";
 import UriEvidencePicker from "./shared/UriEvidenceViewer";
 import { getManagedEvidenceTabConfig } from "./shared/evidenceRegistry";
 import { isBiodiversityOccurrence } from "../shared/occurrenceEvidenceClassification";
+import { useTranslations } from "next-intl";
 
-function getObservationTitle(item: OccurrenceItem): string {
+function getObservationTitle(item: OccurrenceItem, fallback: string): string {
   return (
     item.record?.scientificName ??
     item.record?.vernacularName ??
     item.record?.occurrenceRemarks ??
-    "Unknown observation"
+    fallback
   );
 }
 
@@ -18,6 +19,7 @@ const BiodiversityEvidencePicker = ({
 }: {
   data: OccurrenceItem[];
 }) => {
+  const t = useTranslations("bumicert.detail.evidenceAdder");
   const tabConfig = getManagedEvidenceTabConfig("biodiversity");
   const biodiversityRecords = data.filter(isBiodiversityOccurrence);
 
@@ -26,9 +28,9 @@ const BiodiversityEvidencePicker = ({
       tabId="biodiversity"
       data={biodiversityRecords}
       icon={tabConfig.icon}
-      mutation={tabConfig.attachment}
+      mutation={{ ...tabConfig.attachment, title: t("attachmentTitles.biodiversity") }}
       getUri={(item) => item.metadata?.uri ?? undefined}
-      getPrimary={getObservationTitle}
+      getPrimary={(item) => getObservationTitle(item, t("unknownObservation"))}
       getSecondary={(item) => {
         const date = formatDate(item.record?.eventDate ?? item.record?.createdAt, {
           month: "short",
