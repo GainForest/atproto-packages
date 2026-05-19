@@ -259,7 +259,41 @@
   },
   "auth": {
     "title": "Masuk ke Bumicerts",
-    "description": "Masuk dengan nama pengguna Anda untuk mengakses Bumicerts."
+    "description": "Masuk atau buat akun Anda untuk mengakses Bumicerts.",
+    "login": {
+      "logoAlt": "Logo GainForest",
+      "heading": "Mulai",
+      "subheading": "Daftar atau masuk ke akun Anda",
+      "tabs": {
+        "email": "Email",
+        "handle": "Handle"
+      },
+      "actions": {
+        "continue": "Lanjutkan",
+        "redirecting": "Mengalihkan…"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "anda@contoh.com",
+        "helper": "Kami akan mengirimkan kode verifikasi"
+      },
+      "handle": {
+        "label": "Handle",
+        "placeholder": "alice.contoh.com",
+        "signingInAs": "Masuk sebagai",
+        "validation": {
+          "invalidCharacters": "Hanya huruf, angka, tanda hubung, dan titik yang diperbolehkan.",
+          "missingDomain": "Masukkan handle lengkap Anda, termasuk domainnya.",
+          "emptyLabel": "Label handle tidak boleh kosong.",
+          "invalidLabelEdges": "Label handle harus diawali dan diakhiri dengan huruf atau angka."
+        },
+        "errors": {
+          "identity": "Handle tidak ditemukan. Periksa handle Anda.",
+          "server": "Tidak dapat terhubung ke penyedia identitas. Coba lagi nanti.",
+          "generic": "Terjadi kesalahan. Coba lagi."
+        }
+      }
+    }
   },
   "accountSetupChoice": {
     "titleSr": "Pilih bagaimana Anda akan menggunakan Bumicerts",
@@ -269,7 +303,8 @@
     "funder": "Pendana",
     "funderDescription": "Jelajahi dan danai proyek regeneratif berdampak",
     "steward": "Penjaga Alam",
-    "stewardDescription": "Kelola organisasi Anda, terbitkan Bumicerts, dan unggah bukti pendukung"
+    "stewardDescription": "Kelola organisasi Anda, terbitkan Bumicerts, dan unggah bukti pendukung",
+    "markAlt": "Ikon Bumicerts"
   },
   "evidenceDelete": {
     "title": "Hapus bukti",

@@ -259,7 +259,41 @@
   },
   "auth": {
     "title": "Sign in to Bumicerts",
-    "description": "Sign in with your username to access Bumicerts."
+    "description": "Sign in or create your account to access Bumicerts.",
+    "login": {
+      "logoAlt": "GainForest logo",
+      "heading": "Get Started",
+      "subheading": "Sign up or sign in to your account",
+      "tabs": {
+        "email": "Email",
+        "handle": "Handle"
+      },
+      "actions": {
+        "continue": "Continue",
+        "redirecting": "Redirecting…"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "you@example.com",
+        "helper": "We’ll send you a verification code"
+      },
+      "handle": {
+        "label": "Handle",
+        "placeholder": "alice.example.com",
+        "signingInAs": "Signing in as",
+        "validation": {
+          "invalidCharacters": "Only letters, numbers, hyphens, and dots are allowed.",
+          "missingDomain": "Enter your full handle, including its domain.",
+          "emptyLabel": "Handle labels cannot be empty.",
+          "invalidLabelEdges": "Handle labels must start and end with a letter or number."
+        },
+        "errors": {
+          "identity": "Handle not found. Please check your handle.",
+          "server": "Unable to connect to the identity provider. Please try again later.",
+          "generic": "Something went wrong. Please try again."
+        }
+      }
+    }
   },
   "accountSetupChoice": {
     "titleSr": "Choose how you will use Bumicerts",
@@ -269,7 +303,8 @@
     "funder": "Funder",
     "funderDescription": "Explore and fund impactful regenerative projects",
     "steward": "Nature Steward",
-    "stewardDescription": "Manage your organization, issue Bumicerts and upload supporting evidence"
+    "stewardDescription": "Manage your organization, issue Bumicerts and upload supporting evidence",
+    "markAlt": "Bumicerts icon"
   },
   "evidenceDelete": {
     "title": "Remove Evidence",

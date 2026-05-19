@@ -42,6 +42,7 @@ export function AccountSetupChoiceModal() {
       <OnboardingRoleSelector
         title={t("title")}
         description={t("description")}
+        markAlt={t("markAlt")}
         options={[
           {
             onClick: () => void handleOptionClick(links.manage.onboardUser),

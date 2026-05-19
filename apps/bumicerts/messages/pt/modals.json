@@ -259,7 +259,41 @@
   },
   "auth": {
     "title": "Entrar no Bumicerts",
-    "description": "Entre com seu nome de usuário para acessar o Bumicerts."
+    "description": "Entre ou crie sua conta para acessar o Bumicerts.",
+    "login": {
+      "logoAlt": "Logotipo da GainForest",
+      "heading": "Comece",
+      "subheading": "Cadastre-se ou entre na sua conta",
+      "tabs": {
+        "email": "E-mail",
+        "handle": "Identificador"
+      },
+      "actions": {
+        "continue": "Continuar",
+        "redirecting": "Redirecionando…"
+      },
+      "email": {
+        "label": "E-mail",
+        "placeholder": "voce@exemplo.com",
+        "helper": "Enviaremos um código de verificação"
+      },
+      "handle": {
+        "label": "Identificador",
+        "placeholder": "alice.exemplo.com",
+        "signingInAs": "Entrando como",
+        "validation": {
+          "invalidCharacters": "Somente letras, números, hífens e pontos são permitidos.",
+          "missingDomain": "Insira seu identificador completo, incluindo o domínio.",
+          "emptyLabel": "As partes do identificador não podem ficar vazias.",
+          "invalidLabelEdges": "As partes do identificador devem começar e terminar com uma letra ou número."
+        },
+        "errors": {
+          "identity": "Identificador não encontrado. Verifique e tente novamente.",
+          "server": "Não foi possível conectar ao provedor de identidade. Tente novamente mais tarde.",
+          "generic": "Algo deu errado. Tente novamente."
+        }
+      }
+    }
   },
   "accountSetupChoice": {
     "titleSr": "Escolha como você usará o Bumicerts",
@@ -269,7 +303,8 @@
     "funder": "Financiador",
     "funderDescription": "Explore e financie projetos regenerativos de impacto",
     "steward": "Guardião da natureza",
-    "stewardDescription": "Gerencie sua organização, emita Bumicerts e envie evidências de apoio"
+    "stewardDescription": "Gerencie sua organização, emita Bumicerts e envie evidências de apoio",
+    "markAlt": "Ícone do Bumicerts"
   },
   "evidenceDelete": {
     "title": "Remover evidência",

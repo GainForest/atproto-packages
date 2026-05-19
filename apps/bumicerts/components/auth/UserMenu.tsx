@@ -18,6 +18,7 @@ import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { logout } from "@/components/actions/oauth";
 import { useModal } from "@/components/ui/modal/context";
+import { MODAL_IDS } from "@/components/global/modals/ids";
 import { useAccount } from "@/components/providers/AccountProvider";
 
 const AuthModal = dynamic(
@@ -112,7 +113,7 @@ function UnauthenticatedButtons() {
   const openAuth = () => {
     pushModal(
       {
-        id: "auth",
+        id: MODAL_IDS.AUTH,
         content: <AuthModal />,
       },
       true,
