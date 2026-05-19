@@ -163,6 +163,14 @@ export default function PreviewStep({
   }, [errors]);
 
   const errorSummary = useMemo(() => buildErrorSummary(errors), [errors]);
+  const hasBoundaryErrors = errors.some((error) =>
+    error.issues.some((issue) => issue.path === "siteBoundary"),
+  );
+  const allErrorsAreBoundaryErrors =
+    errors.length > 0 &&
+    errors.every((error) =>
+      error.issues.every((issue) => issue.path === "siteBoundary"),
+    );
   const previewSkippedRows = useMemo(
     () => buildPreviewRowAttentionSummaries(errors, mappedRows),
     [errors, mappedRows],
@@ -217,7 +225,8 @@ export default function PreviewStep({
         <h2 className="text-lg font-semibold">Preview &amp; Validate</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
           Review your data before uploading. Rows with errors will be skipped;
-          go back to adjust mappings if you want to include them.
+          go back to adjust mappings, tree coordinates, or the selected boundary
+          if you want to include them.
         </p>
       </div>
 
@@ -225,7 +234,10 @@ export default function PreviewStep({
       {siteSelection === null ? (
         <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <XCircle className="h-4 w-4 shrink-0" />
-          <span>Select a site before previewing tree data.</span>
+          <span>
+            Select one site boundary before previewing tree data. If no usable
+            boundary exists, go back and create a site boundary first.
+          </span>
         </div>
       ) : siteBoundaryQuery.isLoading ? (
         <div className="flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-600 dark:text-yellow-400">
@@ -236,8 +248,9 @@ export default function PreviewStep({
         <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <XCircle className="h-4 w-4 shrink-0" />
           <span>
-            Couldn&apos;t load the selected site boundary. Go back and choose a
-            site with a valid GeoJSON boundary.
+            Couldn&apos;t load the selected site boundary as valid polygon GeoJSON.
+            Go back and choose another site boundary, or redraw/re-upload/create
+            a valid boundary before previewing trees.
           </span>
         </div>
       ) : allValid ? (
@@ -252,7 +265,11 @@ export default function PreviewStep({
         <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <XCircle className="h-4 w-4 shrink-0" />
           <span>
-            No valid rows found. Please go back and fix column mappings.
+            {allErrorsAreBoundaryErrors
+              ? "No rows fall inside the selected site polygon. Fix tree coordinates so they are inside the selected boundary, or go back and choose/create the correct site boundary."
+              : hasBoundaryErrors
+                ? "No valid rows found. Fix the listed mapping or required-field errors, and fix any tree coordinates outside the selected site polygon."
+                : "No valid rows found. Please go back and fix column mappings or required tree fields."}
           </span>
         </div>
       ) : (
@@ -261,6 +278,9 @@ export default function PreviewStep({
           <span>
             {validCount} row{validCount !== 1 ? "s" : ""} valid,{" "}
             {errorCount} row{errorCount !== 1 ? "s" : ""} have errors.
+            {hasBoundaryErrors
+              ? " Fix any tree coordinates outside the selected polygon, go back and choose/create the correct site boundary if needed, and fix any other listed mapping or field errors."
+              : " Fix the listed mapping or field errors if you want to include them."}
           </span>
         </div>
       )}
