@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const PRESETS = [10, 25, 50, 100];
 
@@ -10,6 +11,7 @@ interface SetAllAmountsProps {
 }
 
 export function SetAllAmounts({ onSetAllAmounts }: SetAllAmountsProps) {
+  const t = useTranslations("modals.checkout.setAll");
   const [customAmount, setCustomAmount] = useState("");
 
   const handleCustomApply = () => {
@@ -24,7 +26,7 @@ export function SetAllAmounts({ onSetAllAmounts }: SetAllAmountsProps) {
     <div className="px-4 py-3 border-b border-border/40 bg-muted/30">
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm text-muted-foreground whitespace-nowrap">
-          Set all to:
+          {t("setAllTo")}
         </span>
         <div className="flex flex-wrap items-center gap-2">
           {PRESETS.map((preset) => (
@@ -57,7 +59,7 @@ export function SetAllAmounts({ onSetAllAmounts }: SetAllAmountsProps) {
                   handleCustomApply();
                 }
               }}
-              placeholder="Custom"
+              placeholder={t("custom")}
               className={cn(
                 "w-20 bg-transparent border border-border rounded-xl px-3 py-1.5",
                 "text-sm text-right outline-none",
@@ -75,7 +77,7 @@ export function SetAllAmounts({ onSetAllAmounts }: SetAllAmountsProps) {
                   : "bg-muted text-muted-foreground cursor-not-allowed"
               )}
             >
-              Apply
+              {t("apply")}
             </button>
           </div>
         </div>

@@ -17,6 +17,8 @@ import { MODAL_IDS } from "@/components/global/modals/ids";
 import { useUSDCBalance } from "./hooks/useUSDCBalance";
 import { SuccessModal } from "./success";
 import { toUsdcUnits, EIP3009_TYPES, CHAIN_ID, USDC_CONTRACT } from "@/lib/facilitator/usdc";
+import { paymentErrorKeyFromResponse } from "@/components/global/modals/payment-errors";
+import { useTranslations } from "next-intl";
 
 type TxState = "idle" | "waiting-signature" | "processing" | "rejected";
 
@@ -119,6 +121,8 @@ export function ConfirmModal({
   donorChoseAnonymous,
   recipientWallet,
 }: ConfirmModalProps) {
+  const t = useTranslations("modals.donate.confirm");
+  const tErrors = useTranslations("modals.errors");
   const { pushModal, popModal, hide, clear } = useModal();
   const { address } = useAccount();
   const auth = useAtprotoStore((state) => state.auth);
@@ -146,13 +150,13 @@ export function ConfirmModal({
 
   const handlePay = async () => {
     if (!address) {
-      setErrorMsg("Please connect your wallet.");
+      setErrorMsg(tErrors("walletNotConnected"));
       setTxState("rejected");
       return;
     }
 
     if (!isHexAddress(recipientWallet)) {
-      setErrorMsg("Recipient wallet is invalid.");
+      setErrorMsg(tErrors("invalidRecipientWallet"));
       setTxState("rejected");
       return;
     }
@@ -209,14 +213,14 @@ export function ConfirmModal({
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error || "Payment failed");
+        const err = await res.json().catch(() => null);
+        throw new Error(tErrors(paymentErrorKeyFromResponse(err)));
       }
 
       const rawData = await res.json();
       const data = parseFundResponse(rawData);
       if (!data) {
-        throw new Error("Payment completed, but response was invalid.");
+        throw new Error(tErrors("invalidResponse"));
       }
 
       pushModal({
@@ -233,7 +237,7 @@ export function ConfirmModal({
       });
     } catch (err) {
       console.error("[ConfirmModal] Payment failed:", err);
-      setErrorMsg(err instanceof Error ? err.message : "Payment failed");
+      setErrorMsg(err instanceof Error ? err.message : tErrors("paymentFailed"));
       setTxState("rejected");
     }
   };
@@ -242,22 +246,24 @@ export function ConfirmModal({
     return (
       <ModalContent dismissible={false}>
         <ModalHeader>
-          <ModalTitle>Waiting for Signature</ModalTitle>
+          <ModalTitle>{t("waitingTitle")}</ModalTitle>
           <ModalDescription className="sr-only">
-            Please sign in your wallet
+            {t("waitingDescription")}
           </ModalDescription>
         </ModalHeader>
         <div className="flex flex-col items-center gap-4 py-8 text-center">
           <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
           <p className="font-medium">
-            Please sign the transaction in your wallet
+            {t("signTransaction")}
           </p>
           <p className="text-sm text-muted-foreground">
-            This authorizes ${amount.toFixed(2)} USDC to{" "}
-            {bumicert.organizationName}
+            {t("authorizes", {
+              amount: amount.toFixed(2),
+              organizationName: bumicert.organizationName,
+            })}
           </p>
           <p className="text-xs text-muted-foreground">
-            No gas required from you
+            {t("noGas")}
           </p>
         </div>
         <ModalFooter>
@@ -267,7 +273,7 @@ export function ConfirmModal({
             className="w-full"
             disabled
           >
-            Cancel
+            {t("cancel")}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -278,18 +284,18 @@ export function ConfirmModal({
     return (
       <ModalContent dismissible={false}>
         <ModalHeader>
-          <ModalTitle>Processing Donation</ModalTitle>
+          <ModalTitle>{t("processingTitle")}</ModalTitle>
           <ModalDescription className="sr-only">
-            Your donation is being confirmed on-chain
+            {t("processingDescription")}
           </ModalDescription>
         </ModalHeader>
         <div className="flex flex-col items-center gap-4 py-8 text-center">
           <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
           <p className="font-medium">
-            Your donation is being confirmed on the Base network
+            {t("confirmingOnBase")}
           </p>
           <p className="text-sm text-muted-foreground">
-            This usually takes a few seconds
+            {t("usuallySeconds")}
           </p>
         </div>
         <ModalFooter>
@@ -299,7 +305,7 @@ export function ConfirmModal({
             className="w-full"
             disabled
           >
-            Cancel
+            {t("cancel")}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -310,21 +316,21 @@ export function ConfirmModal({
     return (
       <ModalContent dismissible={false}>
         <ModalHeader>
-          <ModalTitle>Transaction Rejected</ModalTitle>
+          <ModalTitle>{t("rejectedTitle")}</ModalTitle>
           <ModalDescription className="sr-only">
-            The transaction was rejected
+            {t("rejectedDescription")}
           </ModalDescription>
         </ModalHeader>
         <div className="flex flex-col items-center gap-4 py-6 text-center">
           <span className="text-4xl">✕</span>
           <p className="font-medium">
-            The transaction was rejected in your wallet
+            {t("rejectedInWallet")}
           </p>
           {errorMsg && <p className="text-sm text-destructive">{errorMsg}</p>}
         </div>
         <ModalFooter className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={handleBack}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button
             className="flex-1"
@@ -333,7 +339,7 @@ export function ConfirmModal({
               setErrorMsg(null);
             }}
           >
-            Try Again
+            {t("tryAgain")}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -348,39 +354,39 @@ export function ConfirmModal({
   return (
     <ModalContent dismissible={false}>
       <ModalHeader backAction={handleBack}>
-        <ModalTitle>Confirm Donation</ModalTitle>
+        <ModalTitle>{t("title")}</ModalTitle>
         <ModalDescription className="sr-only">
-          Review and confirm your donation
+          {t("description")}
         </ModalDescription>
       </ModalHeader>
 
       <div className="border border-border rounded-lg px-4 py-3">
-        <p className="text-xs text-muted-foreground mb-1">Your Wallet</p>
+        <p className="text-xs text-muted-foreground mb-1">{t("yourWallet")}</p>
         <p className="font-mono font-medium">{shortAddress}</p>
         <p className="text-xs text-muted-foreground mt-1">
-          Balance:{" "}
+          {t("balanceLabel")}{" "}
           {isBalanceLoading
-            ? "Loading…"
+            ? t("loading")
             : balance !== null
-              ? `${balance} USDC on Base`
-              : "Unable to load"}
+              ? t("balanceOnBase", { balance })
+              : t("unableToLoad")}
         </p>
       </div>
 
       <div className="border border-border rounded-lg px-4 py-3 flex flex-col gap-1">
-        <p className="text-xs text-muted-foreground">You&apos;re donating</p>
+        <p className="text-xs text-muted-foreground">{t("donatingLabel")}</p>
         <p className="text-xl font-bold">${amount.toFixed(2)} USDC</p>
         <p className="text-sm text-muted-foreground">
           → {bumicert.organizationName}
         </p>
         <p className="text-xs text-muted-foreground">
-          for &ldquo;{bumicert.title}&rdquo;
+          {t("forBumicert", { title: bumicert.title })}
         </p>
       </div>
 
       {!isBalanceLoading && balance !== null && !hasEnoughBalance && (
         <p className="text-sm text-destructive font-medium">
-          ⚠️ Insufficient USDC balance
+          {t("insufficientBalance")}
         </p>
       )}
 
@@ -390,10 +396,10 @@ export function ConfirmModal({
           onClick={handlePay}
           disabled={!hasEnoughBalance || isBalanceLoading}
         >
-          Pay ${amount.toFixed(2)}
+          {t("pay", { amount: amount.toFixed(2) })}
         </Button>
         <Button variant="outline" onClick={handleCancel} className="w-full">
-          Cancel
+          {t("cancel")}
         </Button>
       </ModalFooter>
     </ModalContent>

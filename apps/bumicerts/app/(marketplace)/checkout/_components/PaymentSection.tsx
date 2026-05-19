@@ -7,6 +7,7 @@ import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { CHAIN_ID } from "@/lib/facilitator/usdc";
 import { useUSDCBalance } from "@/components/global/modals/donate/hooks/useUSDCBalance";
 import type { CheckoutState } from "./hooks/useCheckoutFlow";
+import { useTranslations } from "next-intl";
 
 interface PaymentSectionProps {
   totalAmount: number;
@@ -21,6 +22,7 @@ export function PaymentSection({
   onPay,
   disabled = false,
 }: PaymentSectionProps) {
+  const t = useTranslations("modals.checkout.payment");
   const { address, chainId, isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
@@ -40,15 +42,15 @@ export function PaymentSection({
       <div className="border border-border rounded-2xl overflow-hidden">
         <div className="px-4 py-3 bg-muted/30 border-b border-border">
           <span className="text-xs uppercase tracking-[0.1em] text-muted-foreground font-medium">
-            Payment
+            {t("title")}
           </span>
         </div>
         <div className="px-4 py-8 flex flex-col items-center gap-4">
           <p className="text-sm text-muted-foreground text-center leading-relaxed">
-            Connect your wallet to pay with USDC on Base
+            {t("connectDescription")}
           </p>
           <Button onClick={openConnectModal} className="rounded-full px-6">
-            Connect Wallet
+            {t("connectWallet")}
           </Button>
         </div>
       </div>
@@ -61,19 +63,21 @@ export function PaymentSection({
       <div className="border border-border rounded-2xl overflow-hidden">
         <div className="px-4 py-3 bg-muted/30 border-b border-border">
           <span className="text-xs uppercase tracking-[0.1em] text-muted-foreground font-medium">
-            Payment
+            {t("title")}
           </span>
         </div>
         <div className="px-4 py-8 flex flex-col items-center gap-4 text-center">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Switch to <span className="font-medium text-foreground">Base</span> network to complete your donation
+            {t.rich("switchDescription", {
+              base: (chunks) => <span className="font-medium text-foreground">{chunks}</span>,
+            })}
           </p>
           <Button
             onClick={() => switchChain({ chainId: base.id })}
             disabled={isSwitching}
             className="rounded-full px-6"
           >
-            {isSwitching ? "Switching..." : "Switch to Base"}
+            {isSwitching ? t("switching") : t("switchToBase")}
           </Button>
         </div>
       </div>
@@ -86,18 +90,18 @@ export function PaymentSection({
       <div className="border border-border rounded-2xl overflow-hidden">
         <div className="px-4 py-3 bg-muted/30 border-b border-border">
           <span className="text-xs uppercase tracking-[0.1em] text-muted-foreground font-medium">
-            Payment
+            {t("title")}
           </span>
         </div>
         <div className="px-4 py-10 flex flex-col items-center gap-5 text-center">
           <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
           <div className="space-y-1">
-            <p className="font-medium">Please sign the transaction</p>
+            <p className="font-medium">{t("signTransaction")}</p>
             <p className="text-sm text-muted-foreground">
-              This authorizes ${totalAmount.toFixed(2)} USDC
+              {t("authorizes", { amount: totalAmount.toFixed(2) })}
             </p>
             <p className="text-xs text-muted-foreground">
-              No gas required from you
+              {t("noGas")}
             </p>
           </div>
         </div>
@@ -111,18 +115,18 @@ export function PaymentSection({
       <div className="border border-border rounded-2xl overflow-hidden">
         <div className="px-4 py-3 bg-muted/30 border-b border-border">
           <span className="text-xs uppercase tracking-[0.1em] text-muted-foreground font-medium">
-            Payment
+            {t("title")}
           </span>
         </div>
         <div className="px-4 py-10 flex flex-col items-center gap-5 text-center">
           <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
           <div className="space-y-1">
-            <p className="font-medium">Processing donations</p>
+            <p className="font-medium">{t("processing")}</p>
             <p className="text-sm text-muted-foreground">
-              Your donations are being confirmed on the Base network
+              {t("confirmingOnBase")}
             </p>
             <p className="text-xs text-muted-foreground">
-              This usually takes a few seconds
+              {t("usuallySeconds")}
             </p>
           </div>
         </div>
@@ -135,30 +139,30 @@ export function PaymentSection({
     <div className="border border-border rounded-2xl overflow-hidden">
       <div className="px-4 py-3 bg-muted/30 border-b border-border">
         <span className="text-xs uppercase tracking-[0.1em] text-muted-foreground font-medium">
-          Payment
+          {t("title")}
         </span>
       </div>
       <div className="px-4 py-5 flex flex-col gap-5">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Wallet</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("wallet")}</p>
             <p className="font-mono text-sm mt-0.5">{shortAddress}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Balance</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("balance")}</p>
             <p className="text-sm font-medium mt-0.5">
               {isBalanceLoading
-                ? "Loading..."
+                ? t("loading")
                 : balance !== null
-                  ? `${balance} USDC`
-                  : "Unable to load"}
+                  ? t("balanceAmount", { balance })
+                  : t("unableToLoad")}
             </p>
           </div>
         </div>
 
         {!isBalanceLoading && balance !== null && !hasEnoughBalance && (
           <p className="text-sm text-destructive">
-            Insufficient USDC balance
+            {t("insufficientBalance")}
           </p>
         )}
 
@@ -172,7 +176,7 @@ export function PaymentSection({
             totalAmount <= 0
           }
         >
-          Pay ${totalAmount.toFixed(2)}
+          {t("pay", { amount: totalAmount.toFixed(2) })}
         </Button>
       </div>
     </div>
