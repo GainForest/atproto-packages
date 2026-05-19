@@ -259,7 +259,41 @@
   },
   "auth": {
     "title": "Ingia kwenye Bumicerts",
-    "description": "Ingia kwa jina lako la mtumiaji ili kufikia Bumicerts."
+    "description": "Ingia au fungua akaunti yako ili kufikia Bumicerts.",
+    "login": {
+      "logoAlt": "Nembo ya GainForest",
+      "heading": "Anza",
+      "subheading": "Jisajili au ingia kwenye akaunti yako",
+      "tabs": {
+        "email": "Barua pepe",
+        "handle": "Jina la utambulisho"
+      },
+      "actions": {
+        "continue": "Endelea",
+        "redirecting": "Inaelekeza…"
+      },
+      "email": {
+        "label": "Barua pepe",
+        "placeholder": "wewe@mfano.com",
+        "helper": "Tutakutumia msimbo wa uthibitishaji"
+      },
+      "handle": {
+        "label": "Jina la utambulisho",
+        "placeholder": "asha.mfano.com",
+        "signingInAs": "Unaingia kama",
+        "validation": {
+          "invalidCharacters": "Herufi, namba, vistari na nukta pekee ndivyo vinavyoruhusiwa.",
+          "missingDomain": "Weka jina lako kamili la utambulisho, pamoja na kikoa chake.",
+          "emptyLabel": "Sehemu za jina la utambulisho haziwezi kuwa tupu.",
+          "invalidLabelEdges": "Sehemu za jina la utambulisho lazima zianze na kumalizika kwa herufi au namba."
+        },
+        "errors": {
+          "identity": "Jina la utambulisho halikupatikana. Likague na ujaribu tena.",
+          "server": "Haiwezi kuunganishwa na mtoa utambulisho. Jaribu tena baadaye.",
+          "generic": "Hitilafu imetokea. Jaribu tena."
+        }
+      }
+    }
   },
   "accountSetupChoice": {
     "titleSr": "Chagua jinsi utakavyotumia Bumicerts",
@@ -269,7 +303,8 @@
     "funder": "Mfadhili",
     "funderDescription": "Gundua na ufadhili miradi ya urejeshaji yenye athari",
     "steward": "Mlezi wa Mazingira",
-    "stewardDescription": "Simamia shirika lako, toa Bumicerts na upakie ushahidi wa kuunga mkono"
+    "stewardDescription": "Simamia shirika lako, toa Bumicerts na upakie ushahidi wa kuunga mkono",
+    "markAlt": "Aikoni ya Bumicerts"
   },
   "evidenceDelete": {
     "title": "Ondoa ushahidi",

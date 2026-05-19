@@ -259,7 +259,41 @@
   },
   "auth": {
     "title": "Iniciar sesión en Bumicerts",
-    "description": "Inicia sesión con tu nombre de usuario para acceder a Bumicerts."
+    "description": "Inicia sesión o crea tu cuenta para acceder a Bumicerts.",
+    "login": {
+      "logoAlt": "Logotipo de GainForest",
+      "heading": "Comienza",
+      "subheading": "Regístrate o inicia sesión en tu cuenta",
+      "tabs": {
+        "email": "Correo electrónico",
+        "handle": "Identificador"
+      },
+      "actions": {
+        "continue": "Continuar",
+        "redirecting": "Redirigiendo…"
+      },
+      "email": {
+        "label": "Correo electrónico",
+        "placeholder": "tu@ejemplo.com",
+        "helper": "Te enviaremos un código de verificación"
+      },
+      "handle": {
+        "label": "Identificador",
+        "placeholder": "alicia.ejemplo.com",
+        "signingInAs": "Iniciando sesión como",
+        "validation": {
+          "invalidCharacters": "Solo se permiten letras, números, guiones y puntos.",
+          "missingDomain": "Ingresa tu identificador completo, incluido el dominio.",
+          "emptyLabel": "Las etiquetas del identificador no pueden estar vacías.",
+          "invalidLabelEdges": "Las etiquetas del identificador deben empezar y terminar con una letra o un número."
+        },
+        "errors": {
+          "identity": "No se encontró el identificador. Revísalo e inténtalo de nuevo.",
+          "server": "No se pudo conectar con el proveedor de identidad. Inténtalo más tarde.",
+          "generic": "Algo salió mal. Inténtalo de nuevo."
+        }
+      }
+    }
   },
   "accountSetupChoice": {
     "titleSr": "Elige cómo usarás Bumicerts",
@@ -269,7 +303,8 @@
     "funder": "Financiador",
     "funderDescription": "Explora y financia proyectos regenerativos de impacto",
     "steward": "Guardián de la naturaleza",
-    "stewardDescription": "Gestiona tu organización, emite Bumicerts y sube evidencia de respaldo"
+    "stewardDescription": "Gestiona tu organización, emite Bumicerts y sube evidencia de respaldo",
+    "markAlt": "Icono de Bumicerts"
   },
   "evidenceDelete": {
     "title": "Quitar evidencia",

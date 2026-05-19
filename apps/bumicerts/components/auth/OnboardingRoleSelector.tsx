@@ -18,11 +18,13 @@ type OnboardingRoleOption = {
 type BumicertsMarkProps = {
   showAnimations?: boolean;
   className?: string;
+  alt?: string;
 };
 
 export function BumicertsMark({
   showAnimations = false,
   className,
+  alt = "",
 }: BumicertsMarkProps) {
   return (
     <motion.div
@@ -43,7 +45,7 @@ export function BumicertsMark({
         className="drop-shadow-2xl"
         src={links.public.icon}
         fill
-        alt="Bumicerts Icon"
+        alt={alt}
       />
     </motion.div>
   );
@@ -55,16 +57,18 @@ export function OnboardingRoleSelector({
   options,
   footer,
   className,
+  markAlt,
 }: {
   title: string;
   description: string;
   options: OnboardingRoleOption[];
   footer?: ReactNode;
   className?: string;
+  markAlt?: string;
 }) {
   return (
     <div className={cn("flex flex-col items-center pt-8", className)}>
-      <BumicertsMark />
+      <BumicertsMark alt={markAlt} />
       <h1 className="mt-3 text-center text-xl font-medium">{title}</h1>
       <p className="text-center text-sm text-muted-foreground">{description}</p>
       <div className="mt-4 grid w-full gap-2">
