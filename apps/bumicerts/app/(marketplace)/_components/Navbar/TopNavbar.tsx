@@ -4,24 +4,22 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useState, useId } from "react";
+import { useTranslations } from "next-intl";
 import { LanguageSelector } from "@/components/i18n/LanguageSelector";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Drawer } from "vaul";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Button } from "@/components/ui/button";
-import { useLanguage } from "@/components/i18n/LanguageProvider";
-import { getHomeCopy } from "@/lib/i18n/translations";
 import { links } from "@/lib/links";
 
 export function TopNavbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { language } = useLanguage();
-  const copy = getHomeCopy(language).nav;
+  const t = useTranslations("landing.nav");
   const navLinks = [
-    { href: links.root, label: copy.home },
-    { href: links.explore, label: copy.explore },
-    { href: links.allOrganizations, label: copy.organizations },
-    { href: links.bumicert.create, label: copy.create },
+    { href: links.root, label: t("home") },
+    { href: links.explore, label: t("explore") },
+    { href: links.allOrganizations, label: t("organizations") },
+    { href: links.bumicert.create, label: t("create") },
   ];
 
   // Radix Dialog (used by vaul Drawer) auto-generates `aria-controls` IDs from
@@ -80,7 +78,7 @@ export function TopNavbar() {
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
           >
             <Button asChild size="sm" className="shadow-lg shadow-primary/15">
-              <Link href={links.explore}>{copy.launchApp}</Link>
+              <Link href={links.explore}>{t("launchApp")}</Link>
             </Button>
           </motion.div>
 
@@ -90,7 +88,7 @@ export function TopNavbar() {
               aria-controls={drawerId}
               className="flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
             >
-              {copy.menu}
+              {t("menu")}
               <span className="text-foreground/30">=</span>
             </Drawer.Trigger>
 
@@ -103,13 +101,13 @@ export function TopNavbar() {
                 {/* Close button */}
                 <div className="flex items-center justify-between p-6 border-b border-border">
                   <span className="text-sm font-medium tracking-wide uppercase text-muted-foreground">
-                    {copy.navigation}
+                    {t("navigation")}
                   </span>
                   <button
                     onClick={() => setDrawerOpen(false)}
                     className="text-sm font-medium text-foreground/70 hover:text-foreground transition-colors cursor-pointer"
                   >
-                    {copy.close}
+                    {t("close")}
                   </button>
                 </div>
 
@@ -147,7 +145,7 @@ export function TopNavbar() {
                 {/* Footer: theme toggle */}
                 <div className="p-6 border-t border-border flex items-center justify-between">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                    {copy.theme}
+                    {t("theme")}
                   </span>
                   <ThemeToggle />
                 </div>

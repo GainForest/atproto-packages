@@ -2,24 +2,32 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { LeafIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { BumicertCardVisual } from "@/components/bumicert/BumicertCard";
-import { useLanguage } from "@/components/i18n/LanguageProvider";
-import { getHomeCopy } from "@/lib/i18n/translations";
 
-type FaqItem = ReturnType<typeof getHomeCopy>["certificate"]["faqItems"][number];
+const FAQ_KEYS = [
+  "digitalCertificate",
+  "evidence",
+  "communities",
+  "story",
+] as const;
+
+type FaqKey = (typeof FAQ_KEYS)[number];
 
 function AccordionItem({
-  item,
+  itemKey,
   isOpen,
   onToggle,
   index,
 }: {
-  item: FaqItem;
+  itemKey: FaqKey;
   isOpen: boolean;
   onToggle: () => void;
   index: number;
 }) {
+  const t = useTranslations("landing.certificate");
+
   return (
     <div className="border-b border-border last:border-0">
       <button
@@ -33,7 +41,7 @@ function AccordionItem({
             0{index + 1}
           </span>
           <span className="font-instrument text-base leading-snug text-foreground transition-colors duration-200 group-hover:text-primary">
-            {item.question}
+            {t(`faqItems.${itemKey}.question`)}
           </span>
         </div>
         <span className="shrink-0 text-base text-muted-foreground transition-colors group-hover:text-foreground">
@@ -51,7 +59,7 @@ function AccordionItem({
             className="overflow-hidden"
           >
             <p className="max-w-lg pb-4 pl-11 text-sm leading-relaxed text-muted-foreground">
-              {item.answer}
+              {t(`faqItems.${itemKey}.answer`)}
             </p>
           </motion.div>
         )}
@@ -61,9 +69,8 @@ function AccordionItem({
 }
 
 export function WhatIsBumicert() {
-  const [openItem, setOpenItem] = useState<string>("1");
-  const { language } = useLanguage();
-  const copy = getHomeCopy(language).certificate;
+  const [openItem, setOpenItem] = useState<FaqKey | null>("digitalCertificate");
+  const t = useTranslations("landing.certificate");
 
   return (
     <section className="px-6 pb-6 pt-4 sm:px-12 md:px-6 md:pb-10 md:pt-6">
@@ -78,26 +85,26 @@ export function WhatIsBumicert() {
             <div className="mb-4 flex items-center gap-2 text-primary">
               <LeafIcon className="size-4" />
               <span className="text-xs font-bold uppercase tracking-[0.15em]">
-                {copy.eyebrow}
+                {t("eyebrow")}
               </span>
             </div>
 
             <h2 className="mb-5 font-garamond text-4xl font-light leading-[1.04] tracking-[-0.015em] text-foreground md:text-5xl">
-              {copy.titleLine1}
+              {t("titleLine1")}
               <br />
               <span className="font-instrument italic text-foreground">
-                {copy.titleLine2}
+                {t("titleLine2")}
               </span>
             </h2>
 
             <div>
-              {copy.faqItems.map((item, index) => (
+              {FAQ_KEYS.map((itemKey, index) => (
                 <AccordionItem
-                  key={item.id}
-                  item={item}
-                  isOpen={openItem === item.id}
+                  key={itemKey}
+                  itemKey={itemKey}
+                  isOpen={openItem === itemKey}
                   onToggle={() =>
-                    setOpenItem((prev) => (prev === item.id ? "" : item.id))
+                    setOpenItem((prev) => (prev === itemKey ? null : itemKey))
                   }
                   index={index}
                 />
@@ -118,10 +125,10 @@ export function WhatIsBumicert() {
                 className="relative shadow-xl shadow-foreground/10 [&_h3]:text-xl [&_h3]:leading-tight [&_p]:text-sm [&_p]:leading-relaxed"
                 logoUrl="/assets/media/images/gainforest-logo.svg"
                 coverImage="/assets/media/images/landing/certificate-river.jpg"
-                title={copy.previewTitle}
-                description={copy.previewDescription}
+                title={t("previewTitle")}
+                description={t("previewDescription")}
                 organizationName="Bumicerts"
-                objectives={copy.objectives}
+                objectives={[t("objectives.primary"), t("objectives.secondary")]}
               />
             </div>
           </motion.div>

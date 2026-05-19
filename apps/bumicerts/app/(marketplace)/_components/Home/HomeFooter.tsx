@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   ExternalLinkIcon,
   FileTextIcon,
@@ -9,8 +10,6 @@ import {
   GlobeIcon,
   TwitterIcon,
 } from "lucide-react";
-import { useLanguage } from "@/components/i18n/LanguageProvider";
-import { getHomeCopy } from "@/lib/i18n/translations";
 import { links } from "@/lib/links";
 
 const FOOTER_LINKS = [
@@ -41,11 +40,10 @@ const FOOTER_LINKS = [
 ];
 
 export function HomeFooter() {
-  const { language } = useLanguage();
-  const copy = getHomeCopy(language).footer;
+  const t = useTranslations("landing.footer");
   const footerLinks = FOOTER_LINKS.map((link) =>
     link.href === links.external.docs
-      ? { ...link, label: copy.documentation }
+      ? { ...link, label: t("documentation") }
       : link,
   );
 
@@ -73,10 +71,10 @@ export function HomeFooter() {
               fontStyle: "italic",
             }}
           >
-            {copy.tagline}
+            {t("tagline")}
           </p>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            {copy.infrastructure}
+            {t("infrastructure")}
           </p>
         </div>
 
@@ -100,7 +98,7 @@ export function HomeFooter() {
       </div>
 
       <div className="mt-8 pt-4 border-t border-border text-xs text-muted-foreground/50">
-        © {new Date().getFullYear()} Bumicerts. {copy.copyright}
+        © {new Date().getFullYear()} Bumicerts. {t("copyright")}
       </div>
     </footer>
   );
