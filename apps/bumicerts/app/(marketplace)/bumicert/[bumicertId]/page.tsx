@@ -13,6 +13,7 @@ import ErrorPage from "@/components/error-page";
 import Container from "@/components/ui/container";
 import { auth } from "@/lib/auth";
 import { requirePublicUrl } from "@/lib/url";
+import { getTranslations } from "next-intl/server";
 
 const getActivityData = cache(async (did: string) => {
   try {
@@ -34,16 +35,17 @@ export async function generateMetadata({
   params: Promise<{ bumicertId: string }>;
 }): Promise<Metadata> {
   const { bumicertId } = await params;
+  const t = await getTranslations("bumicert.detail");
   const id = decodeURIComponent(bumicertId);
   const parsed = id.includes("-") ? id.split("-") : null;
-  if (!parsed) return { title: "Bumicert Not Found" };
+  if (!parsed) return { title: t("metadata.notFound") };
 
   const [did, rkey] = parsed;
   const { data, error } = await getActivityData(did);
-  if (error || !data) return { title: "Bumicert Not Found" };
+  if (error || !data) return { title: t("metadata.notFound") };
 
   const activity = (data.activities ?? []).find((a) => a.metadata?.rkey === rkey);
-  if (!activity) return { title: "Bumicert Not Found" };
+  if (!activity) return { title: t("metadata.notFound") };
 
   const bumicert = activityToBumicertData(activity);
   const pageUrl = `${requirePublicUrl()}/bumicert/${encodeURIComponent(id)}`;
@@ -96,13 +98,15 @@ export default async function BumicertDetailPage({
     auth.session.getSession(),
   ]);
 
+  const t = await getTranslations("bumicert.detail");
+
   if (error) {
     console.error("Error fetching Bumicert", did, rkey, error);
     return (
       <Container className="pt-4">
         <ErrorPage
-          title="Couldn't load this bumicert"
-          description="We had trouble fetching this bumicert's data. Please try again or go back to the homepage."
+          title={t("error.loadTitle")}
+          description={t("error.loadDescription")}
           error={error}
         />
       </Container>

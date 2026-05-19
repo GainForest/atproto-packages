@@ -11,15 +11,17 @@ import { useNavbarContext } from "@/app/(marketplace)/_components/Navbar/context
 import { AnimatePresence, motion } from "framer-motion";
 import { useModal } from "@/components/ui/modal/context";
 import SaveAsDraftModal, { SaveAsDraftModalId } from "./SaveAsDraftModal";
+import { useTranslations } from "next-intl";
+import { getStringArray } from "../i18n";
 
 const StepFooter = () => {
+  const t = useTranslations("bumicert.create.draft");
   const { currentStepIndex, setCurrentStepIndex } = useNewBumicertStore();
   const { viewport } = useNavbarContext();
   const showTipButton = viewport === "mobile";
   const [showTips, setShowTips] = useState(false);
   const { pushModal, show } = useModal();
 
-  // Hide the tips each time the viewport changes to mobile.
   const hideTipsOnViewportChangeToMobile = useEffectEvent(
     (v: typeof viewport) => {
       if (v === "mobile") {
@@ -79,7 +81,7 @@ const StepFooter = () => {
                 }
               >
                 <ChevronLeftIcon />
-                {showTipButton ? "" : steps[currentStepIndex - 1].title}
+                {showTipButton ? "" : t(`steps.${steps[currentStepIndex - 1].key}.title`)}
               </Button>
             )}
             <AnimatePresence>
@@ -96,7 +98,7 @@ const StepFooter = () => {
                   <motion.span layoutId="tips-icon">
                     <LightbulbIcon />
                   </motion.span>
-                  <motion.span layoutId="tips-text">Tips</motion.span>
+                  <motion.span layoutId="tips-text">{t("actions.tips")}</motion.span>
                 </Button>
               )}
             </AnimatePresence>
@@ -108,13 +110,14 @@ const StepFooter = () => {
               className="hidden md:flex"
             >
               <SaveIcon />
-              Save as Draft
+              {t("actions.saveAsDraft")}
             </Button>
             <Button 
               variant="outline" 
               onClick={handleSaveDraft}
               size="icon"
               className="md:hidden"
+              aria-label={t("actions.saveAsDraft")}
             >
               <SaveIcon />
             </Button>
@@ -124,20 +127,22 @@ const StepFooter = () => {
                 disabled={!allowUserToMoveForward}
                 className="disabled:opacity-100 disabled:saturate-40 disabled:text-primary-foreground/50"
               >
-                Continue <ChevronRightIcon />
+                {t("actions.continue")} <ChevronRightIcon />
               </Button>
             )}
           </div>
         </div>
       </div>
     </AnimatePresence>
-    // <div className="flex items-center justify-between p-2 mt-6 mb-4 bg-muted rounded-2xl">
-    // </div>
   );
 };
 
 const TipsPopup = ({ onClose }: { onClose: () => void }) => {
+  const t = useTranslations("bumicert.create.draft");
   const { currentStepIndex } = useNewBumicertStore();
+  const stepKey = STEPS[currentStepIndex].key;
+  const bullets = getStringArray(t.raw(`steps.${stepKey}.tips.bullets`));
+
   return (
     <>
       <div className="fixed z-100 inset-0 bg-black/50"></div>
@@ -150,25 +155,26 @@ const TipsPopup = ({ onClose }: { onClose: () => void }) => {
             <motion.span layoutId="tips-icon">
               <LightbulbIcon className="size-5" />
             </motion.span>
-            <motion.span layoutId="tips-text">Tips</motion.span>
+            <motion.span layoutId="tips-text">{t("actions.tips")}</motion.span>
           </div>
           <Button
             onClick={onClose}
             variant={"outline"}
             size={"icon"}
             className="rounded-full"
+            aria-label={t("actions.closeTips")}
           >
             <XIcon />
           </Button>
         </div>
         <div className="mt-2">
-          {STEPS[currentStepIndex].tips.pre}
+          {t(`steps.${stepKey}.tips.pre`)}
           <ul className="list-disc list-inside -indent-5 pl-5 mt-2 font-medium text-muted-foreground">
-            {STEPS[currentStepIndex].tips.bullets.map((tip, index) => (
+            {bullets.map((tip, index) => (
               <li key={index}>{tip}</li>
             ))}
           </ul>
-          {STEPS[currentStepIndex].tips.post}
+          {t(`steps.${stepKey}.tips.post`)}
         </div>
       </motion.div>
     </>

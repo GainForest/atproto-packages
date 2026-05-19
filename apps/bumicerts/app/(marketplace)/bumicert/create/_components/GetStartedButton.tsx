@@ -6,8 +6,10 @@ import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
 import { trackBumicertFlowStarted } from "@/lib/analytics/hotjar";
+import { useTranslations } from "next-intl";
 
 const GetStartedButton = () => {
+  const t = useTranslations("bumicert.create.actions");
   const handleClick = () => {
     trackBumicertFlowStarted({ draftId: "0" });
   };
@@ -16,7 +18,7 @@ const GetStartedButton = () => {
     <Button asChild>
       <Link href={links.bumicert.createWithDraftId("0")} onClick={handleClick}>
         <PlusIcon />
-        Create a Bumicert
+        {t("createBumicert")}
       </Link>
     </Button>
   );

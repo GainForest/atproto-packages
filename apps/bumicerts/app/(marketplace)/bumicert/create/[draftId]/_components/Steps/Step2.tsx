@@ -21,8 +21,11 @@ import {
   reconcileShortDescriptionEditorSyncState,
   trackShortDescriptionEditorChange,
 } from "./shortDescriptionEditorSync";
+import { useTranslations } from "next-intl";
+import { localizeFormError } from "../../i18n";
 
 const Step2 = () => {
+  const t = useTranslations("bumicert.create.draft");
   const { maxStepIndexReached, currentStepIndex } = useNewBumicertStore();
   const shouldShowValidationErrors = currentStepIndex < maxStepIndexReached;
 
@@ -94,24 +97,24 @@ const Step2 = () => {
   return (
     <div>
       <h1 className="text-2xl font-medium text-muted-foreground">
-        Share your impact story.
+        {t("stepForms.impact.heading")}
       </h1>
       <FormField
         Icon={HandHeartIcon}
-        label="Your Impact Story"
+        label={t("stepForms.impact.story.label")}
         className="mt-8"
-        description="Tell us about your impact — what changed, who was involved, and how it's helping. Take your time. Your story helps inspire others and verify your work."
-        error={errors.description}
+        description={t("stepForms.impact.story.description")}
+        error={localizeFormError(errors.description, t)}
         showError={shouldShowValidationErrors}
         required
-        info="Tell us what you did and what happened as a result"
+        info={t("stepForms.impact.story.info")}
       >
         <div className="w-full bg-background rounded-md border border-border overflow-hidden">
           <LeafletEditor
             content={description}
             onChange={(doc) => setFormValue("description", doc)}
             ownerDid={ownerDid}
-            placeholder="Describe your impact story..."
+            placeholder={t("stepForms.impact.story.placeholder")}
             initialHeight={260}
             minHeight={200}
             maxHeight={560}
@@ -120,14 +123,14 @@ const Step2 = () => {
       </FormField>
       <FormField
         Icon={MessageCircleIcon}
-        label="Short Description"
+        label={t("stepForms.impact.shortDescription.label")}
         className="mt-4"
-        description="A short description of your impact story. This will be used as the short description of the bumicert."
-        error={errors.shortDescription}
+        description={t("stepForms.impact.shortDescription.description")}
+        error={localizeFormError(errors.shortDescription, t)}
         showError={shouldShowValidationErrors}
         inlineEndMessage={`${shortDescription.length}/3000`}
         required
-        info="Summarize your work and its results in a few lines"
+        info={t("stepForms.impact.shortDescription.info")}
       >
         <div className="w-full relative">
           <div className="w-full rounded-md border border-border bg-background overflow-hidden pr-10">
@@ -146,7 +149,7 @@ const Step2 = () => {
                 setFormValue("shortDescription", text);
                 setFormValue("shortDescriptionFacets", facets ?? []);
               }}
-              placeholder="A quick summary about this bumicert."
+              placeholder={t("stepForms.impact.shortDescription.placeholder")}
             />
           </div>
           <Button
@@ -158,8 +161,8 @@ const Step2 = () => {
             className="rounded-full absolute right-2 bottom-2"
             title={
               canGenerate
-                ? "Generate short description with AI"
-                : "Write your impact story first"
+                ? t("stepForms.impact.shortDescription.generateTitle")
+                : t("stepForms.impact.shortDescription.generateDisabledTitle")
             }
           >
             {isGenerating ? (

@@ -1,5 +1,6 @@
 import { ExternalLinkIcon } from "lucide-react";
 import type { TimelinePreviewPayload } from "../../../shared/timelineFeedViewModel";
+import { useTranslations } from "next-intl";
 
 interface GreenGlobePreviewRendererProps {
   preview: TimelinePreviewPayload;
@@ -8,6 +9,8 @@ interface GreenGlobePreviewRendererProps {
 export function GreenGlobePreviewRenderer({
   preview,
 }: GreenGlobePreviewRendererProps) {
+  const t = useTranslations("bumicert.detail.timelineEntry");
+
   if (preview.kind !== "green-globe") {
     return null;
   }
@@ -15,14 +18,14 @@ export function GreenGlobePreviewRenderer({
   return (
     <div className="overflow-hidden rounded-xl border border-border/40 bg-muted/20">
       <div className="flex items-center justify-between gap-3 border-b border-border/40 bg-background/80 px-3 py-2 text-xs text-muted-foreground">
-        <span>Green Globe preview</span>
+        <span>{t("greenGlobePreview")}</span>
         <a
           href={preview.href}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 hover:text-foreground"
         >
-          Open
+          {t("open")}
           <ExternalLinkIcon className="h-3 w-3" />
         </a>
       </div>
@@ -35,7 +38,7 @@ export function GreenGlobePreviewRenderer({
         sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
       />
       <p className="border-t border-border/40 px-3 py-2 text-xs text-muted-foreground">
-        If the preview does not load, open Green Globe in a new tab.
+        {t("greenGlobeFallback")}
       </p>
     </div>
   );

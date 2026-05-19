@@ -7,6 +7,7 @@ import {
   getManagedEvidenceTabConfig,
   type ManagedEvidenceTabId,
 } from "./evidenceRegistry";
+import { useTranslations } from "next-intl";
 
 export function ListSkeleton() {
   return (
@@ -19,11 +20,12 @@ export function ListSkeleton() {
 }
 
 export function ListEmpty({ tabId }: { tabId: ManagedEvidenceTabId }) {
+  const t = useTranslations("bumicert.detail.evidenceAdder");
   const tab = getManagedEvidenceTabConfig(tabId);
   return (
     <div className="flex flex-col items-center gap-2 py-6 text-center">
       <p className="text-xs text-muted-foreground">
-        No {tab.emptyLabel} uploaded yet.
+        {t("emptyUploaded", { type: t(`emptyLabels.${tabId}`) })}
       </p>
       {tab.manageHref ? (
         <Link
@@ -32,7 +34,7 @@ export function ListEmpty({ tabId }: { tabId: ManagedEvidenceTabId }) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
         >
-          Upload {tab.emptyLabel}
+          {t("uploadType", { type: t(`emptyLabels.${tabId}`) })}
           <ExternalLinkIcon className="h-3 w-3" />
         </Link>
       ) : null}

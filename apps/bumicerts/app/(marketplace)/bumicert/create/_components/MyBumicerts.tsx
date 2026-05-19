@@ -12,8 +12,10 @@ import {
 import { activitiesToBumicertDataArray } from "@/lib/adapters";
 import { links } from "@/lib/links";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
+import { useTranslations } from "next-intl";
 
 const MyBumicerts = () => {
+  const t = useTranslations("bumicert.create.recent");
   const auth = useAtprotoStore((state) => state.auth);
 
   const {
@@ -45,10 +47,10 @@ const MyBumicerts = () => {
           <TriangleAlertIcon className="size-8 text-muted-foreground opacity-60" />
           <div className="space-y-1">
             <p className="font-serif text-2xl font-medium text-foreground">
-              Couldn&apos;t load Bumicerts
+              {t("errorTitle")}
             </p>
             <p className="text-sm text-muted-foreground">
-              {error.message || "Please try again in a moment."}
+              {error.message || t("errorFallback")}
             </p>
           </div>
         </motion.div>
@@ -75,18 +77,18 @@ const MyBumicerts = () => {
               </div>
               <div className="space-y-2">
                 <p className="font-serif text-2xl font-medium leading-tight tracking-[-0.02em] text-foreground">
-                  No recent Bumicerts yet
+                  {t("emptyTitle")}
                 </p>
                 <p className="text-sm leading-6 text-muted-foreground">
-                  You haven&apos;t created any Bumicerts yet.
+                  {t("emptyLine1")}
                   <br />
-                  Create your first Bumicert to get started.
+                  {t("emptyLine2")}
                 </p>
               </div>
               <Button variant="outline" size="sm" asChild className="mt-5">
                 <Link href={links.bumicert.createWithDraftId("0")}>
                   <CirclePlusIcon />
-                  Create your first Bumicert
+                  {t("createFirst")}
                 </Link>
               </Button>
             </motion.div>

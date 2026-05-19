@@ -14,6 +14,7 @@ import {
   buildOptimisticAttachmentItem,
   type OptimisticAttachmentContent,
 } from "./optimisticAttachmentItem";
+import { useTranslations } from "next-intl";
 
 export type AttachmentData = {
   title: string;
@@ -33,6 +34,7 @@ const Mutator = ({
   data: AttachmentData;
   onSuccess?: () => void;
 }) => {
+  const t = useTranslations("bumicert.detail.evidenceAdder");
   const isSubmitting = useEvidenceAdderStore((state) => state.isSubmitting);
   const setIsSubmitting = useEvidenceAdderStore(
     (state) => state.setIsSubmitting,
@@ -169,10 +171,10 @@ const Mutator = ({
       >
         {isSubmitting ? <Loader2Icon className="animate-spin" /> : null}
         {isSubmitting
-          ? "Linking…"
+          ? t("linking")
           : data.contents.length === 0
-            ? "Select evidence to link"
-            : `Link ${data.contents.length} item${data.contents.length !== 1 ? "s" : ""}`}
+            ? t("selectToLink")
+            : t("linkItems", { count: data.contents.length })}
         {!isSubmitting ? <ArrowRightIcon /> : null}
       </Button>
     </>
