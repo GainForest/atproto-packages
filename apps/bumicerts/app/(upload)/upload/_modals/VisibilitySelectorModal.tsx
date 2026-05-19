@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useModal } from "@/components/ui/modal/context";
 import {
   ModalContent,
@@ -17,24 +18,22 @@ type Visibility = "Public" | "Unlisted";
 
 interface VisibilityOption {
   value: Visibility;
-  label: string;
-  description: string;
+  labelKey: "public" | "unlisted";
+  descriptionKey: "visibilityPublicDescription" | "visibilityUnlistedDescription";
   Icon: typeof GlobeIcon;
 }
 
 const OPTIONS: VisibilityOption[] = [
   {
     value: "Public",
-    label: "Public",
-    description:
-      "Visible to everyone. Appears in organization listings and search results.",
+    labelKey: "public",
+    descriptionKey: "visibilityPublicDescription",
     Icon: GlobeIcon,
   },
   {
     value: "Unlisted",
-    label: "Unlisted",
-    description:
-      "Only accessible via direct link. Not listed publicly or in search.",
+    labelKey: "unlisted",
+    descriptionKey: "visibilityUnlistedDescription",
     Icon: LockIcon,
   },
 ];
@@ -48,6 +47,9 @@ export function VisibilitySelectorModal({
   current,
   onConfirm,
 }: VisibilitySelectorModalProps) {
+  const t = useTranslations("upload.modals");
+  const tProfile = useTranslations("upload.profile");
+  const tActions = useTranslations("upload.actions");
   const { hide, popModal, stack } = useModal();
   const [selected, setSelected] = useState<Visibility>(current);
 
@@ -68,10 +70,8 @@ export function VisibilitySelectorModal({
   return (
     <ModalContent>
       <ModalHeader backAction={stack.length > 1 ? handleClose : undefined}>
-        <ModalTitle>Discoverability</ModalTitle>
-        <ModalDescription>
-          Choose who can discover your organization.
-        </ModalDescription>
+        <ModalTitle>{t("visibilityTitle")}</ModalTitle>
+        <ModalDescription>{t("visibilityDescription")}</ModalDescription>
       </ModalHeader>
 
       <div className="flex flex-col gap-2 py-4">
@@ -102,10 +102,10 @@ export function VisibilitySelectorModal({
                   selected === opt.value ? "text-primary" : "text-foreground",
                 )}
               >
-                {opt.label}
+                {tProfile(opt.labelKey)}
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                {opt.description}
+                {t(opt.descriptionKey)}
               </p>
             </div>
             {selected === opt.value && (
@@ -117,9 +117,9 @@ export function VisibilitySelectorModal({
 
       <ModalFooter className="flex justify-end gap-2">
         <Button variant="outline" onClick={handleClose}>
-          Cancel
+          {tActions("cancel")}
         </Button>
-        <Button onClick={handleConfirm}>Save</Button>
+        <Button onClick={handleConfirm}>{tActions("save")}</Button>
       </ModalFooter>
     </ModalContent>
   );
