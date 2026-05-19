@@ -4,6 +4,7 @@ import {
   LANGUAGE_COOKIE_NAME,
   resolveSupportedLanguage,
 } from "@/lib/i18n/languages";
+import { messagesByLocale } from "@/messages/locales";
 
 export default getRequestConfig(async ({ locale, requestLocale }) => {
   const cookieStore = await cookies();
@@ -14,6 +15,6 @@ export default getRequestConfig(async ({ locale, requestLocale }) => {
 
   return {
     locale: resolvedLocale,
-    messages: (await import(`../messages/${resolvedLocale}.json`)).default,
+    messages: messagesByLocale[resolvedLocale],
   };
 });
