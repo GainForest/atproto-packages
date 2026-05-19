@@ -2,12 +2,13 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { HomeIcon, BadgeIcon, HeartIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { links } from "@/lib/links";
 
 interface Tab {
-  label: string;
+  labelKey: "home" | "bumicerts" | "donationHistory";
   href: string;
   icon: React.ElementType;
   /** If true, only active on exact match; otherwise prefix match. */
@@ -20,13 +21,13 @@ function buildTabs(did: string, accountKind: AccountTabBarKind): Tab[] {
   if (accountKind === "user") {
     return [
       {
-        label: "Bumicerts",
+        labelKey: "bumicerts",
         href: links.account.bumicerts(did),
         icon: BadgeIcon,
         exact: false,
       },
       {
-        label: "Donation History",
+        labelKey: "donationHistory",
         href: links.account.donations(did),
         icon: HeartIcon,
         exact: false,
@@ -36,13 +37,13 @@ function buildTabs(did: string, accountKind: AccountTabBarKind): Tab[] {
 
   return [
     {
-      label: "Home",
+      labelKey: "home",
       href: links.account.byDid(did),
       icon: HomeIcon,
       exact: true,
     },
     {
-      label: "Bumicerts",
+      labelKey: "bumicerts",
       href: links.account.bumicerts(did),
       icon: BadgeIcon,
       exact: false,
@@ -60,6 +61,7 @@ export function OrgTabBar({
   accountKind = "organization",
 }: OrgTabBarProps) {
   const pathname = usePathname();
+  const t = useTranslations("marketplace.account.tabs");
   const tabs = buildTabs(did, accountKind);
 
   function isActive(tab: Tab): boolean {
@@ -95,7 +97,7 @@ export function OrgTabBar({
                 )}
               >
                 <Icon className="h-3.5 w-3.5 shrink-0" />
-                {tab.label}
+                {t(tab.labelKey)}
 
                 {/* Underline to highlight the active tab */}
                 {active && (

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useMobileNav } from "@/hooks/useMobileNav";
 import type { NavLeaf as NavLeafType } from "./data";
@@ -14,6 +15,7 @@ interface NavLeafProps {
 
 export function NavLeaf({ item, isActive, index }: NavLeafProps) {
   const closeMobileNav = useMobileNav((s) => s.setOpen);
+  const t = useTranslations("marketplace.sidebar");
 
   return (
     <motion.li
@@ -47,7 +49,7 @@ export function NavLeaf({ item, isActive, index }: NavLeafProps) {
             />
           )}
           <item.Icon className="h-4 w-4 shrink-0" />
-          <span className="flex-1">{item.text}</span>
+          <span className="flex-1">{t(item.labelKey)}</span>
         </motion.div>
       </Link>
     </motion.li>

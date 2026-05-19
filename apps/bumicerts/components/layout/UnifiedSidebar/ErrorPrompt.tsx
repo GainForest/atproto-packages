@@ -2,8 +2,11 @@
 
 import { motion } from "framer-motion";
 import { AlertCircleIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export function ErrorPrompt() {
+  const t = useTranslations("marketplace.sidebar.prompts");
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 4 }}
@@ -13,7 +16,7 @@ export function ErrorPrompt() {
     >
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground text-center">
         <AlertCircleIcon className="size-3.5 shrink-0" />
-        Couldn&apos;t load your account right now.
+        {t("accountError")}
       </div>
     </motion.div>
   );

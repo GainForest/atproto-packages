@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { BadgeIcon } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   BumicertCardVisual,
   cardVariants,
@@ -20,6 +21,8 @@ interface OrgBumicertsGridProps {
 }
 
 export function OrgBumicertsGrid({ bumicerts }: OrgBumicertsGridProps) {
+  const t = useTranslations("marketplace.account.bumicerts");
+
   if (bumicerts.length === 0) {
     return (
       <div className="py-16 flex flex-col items-center justify-center text-center">
@@ -32,7 +35,7 @@ export function OrgBumicertsGrid({ bumicerts }: OrgBumicertsGridProps) {
         <div className="flex items-center gap-2 mb-3">
           <BadgeIcon className="h-4 w-4 text-primary" />
           <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-            No Bumicerts
+            {t("emptyEyebrow")}
           </span>
         </div>
         <p
@@ -42,7 +45,7 @@ export function OrgBumicertsGrid({ bumicerts }: OrgBumicertsGridProps) {
             fontStyle: "italic",
           }}
         >
-          This account hasn&apos;t published any Bumicerts yet.
+          {t("emptyDescription")}
         </p>
       </div>
     );

@@ -1,1 +1,336 @@
-{}
+{
+  "explore": {
+    "metadata": {
+      "title": "Chunguza Bumicerts — Miradi ya athari endelevu iliyothibitishwa",
+      "description": "Vinjari vyeti vilivyothibitishwa vya athari za mazingira kutoka kwa walinda mazingira duniani kote. Chuja kwa nchi, shirika na eneo la athari."
+    },
+    "structuredData": {
+      "name": "Chunguza Bumicerts",
+      "description": "Vyeti vilivyothibitishwa vya athari za mazingira kutoka kwa walinda mazingira duniani kote."
+    },
+    "hero": {
+      "eyebrow": "Chunguza miradi",
+      "titlePrefix": "Gundua",
+      "titleEmphasis": "Athari endelevu",
+      "description": "Vinjari miradi kutoka kwa jamii na mashirika yanayorejesha mifumo ikolojia, kuimarisha riziki na kujenga mustakabali thabiti zaidi."
+    },
+    "actions": {
+      "createBumicert": "Unda Bumicert",
+      "allProjects": "Miradi yote",
+      "allFilters": "Vichujio vyote",
+      "clearAll": "Futa yote",
+      "applyFilters": "Tumia vichujio",
+      "applyFiltersWithCount": "Tumia vichujio ({count})",
+      "clearCategory": "Futa {category}"
+    },
+    "filters": {
+      "allTitle": "Vichujio vyote",
+      "description": "Chuja miradi kwa shirika, nchi au eneo la athari",
+      "organization": "Shirika",
+      "bioregion": "Eneo la kibaolojia",
+      "country": "Nchi",
+      "impactArea": "Eneo la athari"
+    },
+    "sort": {
+      "newest": "Mpya zaidi",
+      "oldest": "Zamani zaidi"
+    },
+    "search": {
+      "ariaLabel": "Tafuta miradi",
+      "placeholder": "Tafuta miradi kwa jina, neno muhimu au eneo...",
+      "sortAriaLabel": "Panga miradi"
+    },
+    "empty": {
+      "eyebrow": "Hakuna matokeo",
+      "title": "Hakuna miradi iliyopatikana",
+      "description": "Jaribu kubadilisha utafutaji au vichujio ili kugundua miradi zaidi ya athari endelevu."
+    },
+    "resultsFound": "{count, plural, one {mradi # umepatikana} other {miradi # imepatikana}}"
+  },
+  "organizations": {
+    "metadata": {
+      "title": "Mashirika — Bumicerts",
+      "description": "Vinjari mashirika yote ya walinda mazingira yanayounda athari za mazingira zilizothibitishwa kwenye Bumicerts."
+    },
+    "hero": {
+      "imageAltLight": "Msitu wa milimani wenye ukungu wakati wa macheo",
+      "imageAltDark": "Msitu wa milimani wenye ukungu wakati wa jioni",
+      "eyebrow": "Mashirika",
+      "titleAriaLabel": "Walinda mazingira",
+      "titleFirst": "Mazingira",
+      "titleSecond": "Walinda",
+      "description": "Gundua mashirika yanayoongoza utunzaji wa mazingira na mabadiliko yanayoendeshwa na jamii."
+    },
+    "search": {
+      "placeholder": "Tafuta mashirika..."
+    },
+    "sort": {
+      "bumicerts": "Bumicerts nyingi zaidi",
+      "alpha": "Kwa alfabeti",
+      "newest": "Mpya zaidi"
+    },
+    "empty": {
+      "title": "Hakuna mashirika yaliyopatikana",
+      "description": "Jaribu kubadilisha utafutaji au vichujio."
+    },
+    "error": {
+      "title": "Hitilafu imetokea",
+      "description": "Hatukuweza kupakia mashirika. Tafadhali jaribu kuonyesha upya ukurasa."
+    }
+  },
+  "leaderboard": {
+    "metadata": {
+      "title": "Bao la wanaoongoza — Bumicerts",
+      "description": "Tazama wachangiaji wakuu wanaoleta athari kwenye Bumicerts. Mabingwa wetu wa Athari hupangwa kulingana na jumla ya michango yao ya ufadhili."
+    },
+    "hero": {
+      "eyebrow": "Bao la wanaoongoza",
+      "titlePrefix": "Athari",
+      "titleEmphasis": "Mabingwa",
+      "description": "Tunawasherehekea wachangiaji wakarimu wanaoendesha mabadiliko endelevu kwa jamii na sayari."
+    },
+    "periods": {
+      "all": "Wakati wote",
+      "month": "Mwezi huu",
+      "week": "Wiki hii"
+    },
+    "donorFilters": {
+      "all": "Wachangiaji wote",
+      "anonymous": "Wasiojulikana pekee",
+      "known": "Wanaojulikana pekee"
+    },
+    "sort": {
+      "label": "Panga kwa",
+      "totalRaised": "Jumla iliyokusanywa",
+      "donationCount": "Idadi ya michango",
+      "recentDonation": "Mchango wa karibuni"
+    },
+    "stats": {
+      "totalRaised": "Jumla iliyokusanywa",
+      "totalRaisedDetail": "Wakati wote kwenye jukwaa",
+      "totalDonors": "Jumla ya wachangiaji",
+      "totalDonorsDetail": "Mabingwa wakarimu wa athari",
+      "projectsSupported": "Miradi iliyosaidiwa",
+      "projectsSupportedDetail": "Kurejesha mifumo ikolojia na riziki"
+    },
+    "empty": {
+      "title": "Bado hakuna michango",
+      "description": "Kuwa wa kwanza kuleta athari."
+    },
+    "card": {
+      "rankAriaLabel": "Nafasi {rank}",
+      "anonymous": "Asiyejulikana ({address})",
+      "donationSummary": "{count, plural, one {mchango #} other {michango #}}",
+      "lastDonation": "Mchango wa mwisho {relativeTime}",
+      "topDonor": "Mchangiaji mkuu",
+      "natureChampion": "Bingwa wa mazingira",
+      "consistentGiver": "Mtoaji wa kudumu",
+      "risingSupporter": "Msaidizi anayechipukia",
+      "openWallet": "Fungua {wallet} kwenye BaseScan",
+      "openAccount": "Fungua akaunti ya mchangiaji kwenye kichupo kipya"
+    }
+  },
+  "dashboard": {
+    "metadata": {
+      "title": "Dashibodi ya michango — Bumicerts",
+      "description": "Takwimu za michango katika jukwaa lote: jumla iliyokusanywa, wachangiaji wa kipekee, mwenendo wa ufadhili na miamala ya karibuni."
+    },
+    "hero": {
+      "eyebrow": "Takwimu za jukwaa",
+      "title": "Dashibodi ya michango"
+    },
+    "periods": {
+      "all": "Wakati wote",
+      "month": "Siku 30 zilizopita",
+      "week": "Siku 7 zilizopita"
+    },
+    "kpis": {
+      "totalRaised": "Jumla iliyokusanywa",
+      "totalRaisedSub": "Michango yote ya USD",
+      "totalDonations": "Jumla ya michango",
+      "totalDonationsSub": "Risiti zilizorekodiwa",
+      "uniqueDonors": "Wachangiaji wa kipekee",
+      "uniqueDonorsSub": "Kwa DID au pochi",
+      "avgDonation": "Wastani wa mchango",
+      "avgDonationSub": "Kwa kila muamala",
+      "activeBumicerts": "Bumicerts hai",
+      "activeBumicertsSub": "Zimepokea fedha"
+    },
+    "geo": {
+      "title": "Ufikiaji wa kijiografia",
+      "countriesRepresented": "Nchi zilizowakilishwa",
+      "topCountries": "Nchi zinazoongoza",
+      "empty": "Hakuna data ya kijiografia inayopatikana.",
+      "organizationCount": "{count, plural, one {shirika #} other {mashirika #}}"
+    },
+    "chart": {
+      "title": "Kiasi cha michango kwa muda",
+      "raisedPer": "USD zilizokusanywa kwa {granularity}",
+      "empty": "Hakuna data ya michango kwa kipindi hiki.",
+      "donationCount": "{count, plural, one {mchango #} other {michango #}}",
+      "granularities": {
+        "day": "Kila siku",
+        "week": "Kila wiki",
+        "month": "Kila mwezi"
+      }
+    },
+    "tables": {
+      "topDonors": "Wachangiaji wakuu",
+      "byOrganization": "Kwa shirika",
+      "recentTransactions": "Miamala ya karibuni",
+      "noDonations": "Bado hakuna michango.",
+      "noTransactions": "Bado hakuna miamala.",
+      "donor": "Mchangiaji",
+      "totalDonated": "Jumla iliyochangiwa",
+      "donations": "Michango",
+      "lastDonation": "Mchango wa mwisho",
+      "organization": "Shirika",
+      "totalRaised": "Jumla iliyokusanywa",
+      "bumicerts": "Bumicerts",
+      "donors": "Wachangiaji",
+      "date": "Tarehe",
+      "amount": "Kiasi",
+      "bumicert": "Bumicert",
+      "txHash": "Hash ya tx",
+      "anonymous": "Asiyejulikana",
+      "anonymousWallet": "Asiyejulikana ({address})",
+      "allTimeDonations": "Wakati wote · {count, plural, one {mchango #} other {michango #}}",
+      "showingLatest": "inaonyesha 50 za karibuni",
+      "viewBumicert": "Tazama bumicert"
+    }
+  },
+  "account": {
+    "metadata": {
+      "accountTitle": "Akaunti — Bumicerts",
+      "bumicertsTitle": "Bumicerts — Bumicerts",
+      "donationsTitle": "Historia ya michango — Bumicerts",
+      "accountFallback": "Akaunti",
+      "profileDescription": "{displayName} kwenye Bumicerts",
+      "organizationDescription": "{displayName} kwenye Bumicerts.",
+      "bumicertsPageTitle": "Bumicerts za {displayName} — Bumicerts",
+      "bumicertsPageDescription": "Vinjari Bumicerts zote zilizoundwa na {displayName}.",
+      "donationsPageTitle": "Historia ya michango ya {displayName} — Bumicerts",
+      "donationsPageDescription": "Vinjari historia ya michango ya umma ya {displayName}."
+    },
+    "errors": {
+      "loadOwnTitle": "Haikuweza kupakia akaunti yako",
+      "loadOwnDescription": "Tulipata tatizo kupata data ya akaunti yako. Tafadhali jaribu tena.",
+      "loadAccountTitle": "Haikuweza kupakia akaunti hii",
+      "loadAccountDescription": "Tulipata tatizo kupata data ya akaunti hii. Tafadhali jaribu tena.",
+      "loadBumicertsTitle": "Haikuweza kupakia Bumicerts za akaunti hii",
+      "loadBumicertsDescription": "Tulipata tatizo kupata Bumicerts za akaunti hii. Tafadhali jaribu tena."
+    },
+    "onboarding": {
+      "title": "Usajili wa kuanza unahitajika",
+      "description": "Umeingia, lakini akaunti yako ya Bumicerts bado haijasanidiwa. Kamilisha hatua za kuanza ili kuendelea.",
+      "action": "Anza usajili"
+    },
+    "tabs": {
+      "home": "Nyumbani",
+      "bumicerts": "Bumicerts",
+      "donationHistory": "Historia ya michango"
+    },
+    "setupPrompt": {
+      "title": "Sanidi shirika lako",
+      "description": "Kabla ya kupakia maudhui, unahitaji kusanidi wasifu wa shirika lako. Huchukua dakika chache tu.",
+      "action": "Sanidi shirika"
+    },
+    "wallet": {
+      "setUpDonations": "Sanidi michango",
+      "signInDescription": "Ingia ili kuunganisha pochi yako na kupokea michango.",
+      "enabled": "Michango imewezeshwa ✓",
+      "walletLabel": "Pochi:",
+      "enabledDescription": "Wachangiaji sasa wanaweza kutuma USDC kwa shirika lako kupitia Bumicerts.",
+      "setupDescription": "Unganisha pochi ili kupokea michango ya USDC kutoka kwa waungaji mkono.",
+      "stepConnect": "Hatua ya 1: Unganisha pochi yako",
+      "connectWallet": "Unganisha pochi",
+      "stepSwitch": "Hatua ya 2: Hamia kwenye mtandao wa Base",
+      "switching": "Inabadilisha...",
+      "switchToBase": "Hamia Base",
+      "linkedSuccess": "✓ Pochi imeunganishwa kwa mafanikio!",
+      "linkedSuccessDescription": "Kichakataji faharasa kinaweza kuchukua muda kuchakata uthibitisho wako.",
+      "refresh": "Onyesha upya",
+      "stepLink": "Hatua ya 3: Unganisha pochi yako",
+      "waitingSignature": "Inasubiri saini…",
+      "writingAttestation": "Inaandika uthibitisho…",
+      "errorLinking": "Hitilafu kuunganisha pochi",
+      "signInWallet": "Saini kwenye pochi…",
+      "writingToAtproto": "Inaandika kwenye ATProto…",
+      "retry": "Jaribu tena",
+      "signAndLink": "Saini na unganisha pochi"
+    },
+    "bumicerts": {
+      "emptyEyebrow": "Hakuna Bumicerts",
+      "emptyDescription": "Akaunti hii bado haijachapisha Bumicerts zozote.",
+      "unknownCreator": "Haijulikani"
+    },
+    "sidebar": {
+      "achievements": "Mafanikio",
+      "viewAllAchievements": "Tazama mafanikio yote",
+      "donationUnavailable": "Rekodi za michango hazipatikani kwa sasa",
+      "noPublicDonationsRecorded": "Bado hakuna michango ya umma iliyorekodiwa",
+      "supportedOrganizations": "Iliunga mkono {count} {count, plural, one {shirika} other {mashirika}}",
+      "noPublicDonationsReceived": "Bado hakuna michango ya umma iliyopokelewa",
+      "receivedDonations": "Ilipokea {count} {count, plural, one {mchango} other {michango}}",
+      "setupPublicProfile": "Sanidi wasifu wa umma wa Bumicerts",
+      "completedProfileDetails": "Imekamilisha {count} {count, plural, one {kipengele} other {vipengele}} vya wasifu",
+      "bumicertUnavailable": "Rekodi za Bumicert hazipatikani kwa sasa",
+      "publishedBumicerts": "Ilichapisha {count} {count, plural, one {Bumicert} other {Bumicerts}}",
+      "noBumicertsPublished": "Bado hakuna Bumicerts zilizochapishwa",
+      "profileReady": "Wasifu uko tayari",
+      "bumicertSteward": "Msimamizi wa Bumicert",
+      "creatorSeed": "Mbegu ya mtayarishi",
+      "communityBacked": "Inaungwa mkono na jamii",
+      "impactSupporter": "Msaidizi wa athari",
+      "inviteCollaborators": "Alika washirika",
+      "inviteCollaboratorsDescription": "Walete waungaji mkono na washirika kwenye kazi yako ya Bumicerts na kukuza athari endelevu pamoja.",
+      "inviteFriends": "Alika marafiki",
+      "inviteFriendsDescription": "Waalike marafiki zako kujiunga na Bumicerts na kuunda athari chanya pamoja.",
+      "shareOrganization": "Chunguza wasifu wa Bumicerts wa {displayName}: {pageUrl}",
+      "shareUser": "Jiunge nami kwenye Bumicerts na uunge mkono athari endelevu: {pageUrl}",
+      "totalBumicerts": "Jumla ya Bumicerts",
+      "donationsReceived": "Michango iliyopokelewa",
+      "totalDonations": "Jumla ya michango"
+    },
+    "hero": {
+      "coverImageAlt": "Picha ya jalada ya {displayName}",
+      "copyLink": "Nakili kiungo",
+      "copied": "Imenakiliwa!",
+      "share": "Shiriki",
+      "editProfile": "Hariri wasifu",
+      "edit": "Hariri",
+      "since": "Tangu {date}"
+    }
+  },
+  "sidebar": {
+    "sections": {
+      "explore": "CHUNGUZA",
+      "manage": "DHIBITI"
+    },
+    "items": {
+      "bumicerts": "Bumicerts",
+      "organizations": "Mashirika",
+      "leaderboard": "Bao la wanaoongoza",
+      "organization": "Shirika",
+      "sites": "Maeneo",
+      "audio": "Audio",
+      "trees": "Miti",
+      "profile": "Wasifu"
+    },
+    "createBumicert": "Unda Bumicert",
+    "prompts": {
+      "signInDescription": "Ingia ili kudhibiti akaunti na maudhui yako.",
+      "signInAction": "Ingia",
+      "accountError": "Haikuweza kupakia akaunti yako kwa sasa.",
+      "checkingAccount": "Inakagua akaunti yako...",
+      "onboardingDescription": "Kamilisha usajili ili kudhibiti akaunti yako.",
+      "onboardingAction": "Anza"
+    },
+    "social": {
+      "documentation": "Nyaraka",
+      "github": "GitHub",
+      "twitter": "X (Twitter)",
+      "gainforest": "GainForest"
+    }
+  }
+}

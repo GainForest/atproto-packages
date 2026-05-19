@@ -2,13 +2,17 @@ import { activitiesToBumicertDataArray } from "@/lib/adapters";
 import type { BumicertData } from "@/lib/types";
 import { ExploreShell } from "./_components/ExploreShell";
 import { requirePublicUrl } from "@/lib/url";
+import { getTranslations } from "next-intl/server";
 import { getIndexerCaller } from "@/lib/trpc/indexer/server";
 
-export const metadata = {
-  title: "Explore Bumicerts — Verified Regenerative Impact Projects",
-  description:
-    "Browse verified environmental impact certificates from nature stewards around the world. Filter by country, organization, and impact area.",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("marketplace.explore.metadata");
+
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 export default async function ExplorePage() {
   let bumicerts: BumicertData[] = [];
@@ -28,12 +32,12 @@ export default async function ExplorePage() {
     console.error("Failed to fetch bumicerts:", error);
   }
 
+  const t = await getTranslations("marketplace.explore.structuredData");
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "Explore Bumicerts",
-    description:
-      "Verified environmental impact certificates from nature stewards around the world.",
+    name: t("name"),
+    description: t("description"),
     numberOfItems: bumicerts.length,
     url: `${requirePublicUrl()}/explore`,
   };

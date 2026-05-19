@@ -5,9 +5,11 @@ import { useMobileNav } from "@/hooks/useMobileNav";
 import { links } from "@/lib/links";
 import { LeafIcon, PlusIcon, SparkleIcon } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 const BumicertCreationCard = () => {
   const closeMobileNav = useMobileNav((s) => s.setOpen);
+  const t = useTranslations("marketplace.sidebar");
 
   return (
     <div className="group flex flex-col w-full h-20 border border-border bg-background rounded-2xl p-1">
@@ -57,7 +59,7 @@ const BumicertCreationCard = () => {
           href={links.bumicert.create}
           onClick={() => closeMobileNav(false)}
         >
-          <PlusIcon /> Create a Bumicert
+          <PlusIcon /> {t("createBumicert")}
         </Link>
       </Button>
     </div>

@@ -8,6 +8,7 @@ import {
   Share2Icon,
   SproutIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import BumicertIcon from "@/icons/BumicertIcon";
 import { cn } from "@/lib/utils";
@@ -101,11 +102,13 @@ function AchievementsCard({
   achievements: AccountSidebarData["achievements"];
   achievementsHref: string;
 }) {
+  const t = useTranslations("marketplace.account.sidebar");
+
   return (
     <SidebarCard id="account-achievements" className="p-5">
       <div className="mb-5 flex items-center gap-3">
         <AwardIcon className="size-5 text-foreground/70" />
-        <h2 className="text-lg font-semibold text-foreground">Achievements</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t("achievements")}</h2>
       </div>
 
       <div className="space-y-4">
@@ -134,7 +137,7 @@ function AchievementsCard({
         href={achievementsHref}
         className="mt-6 block text-center text-sm font-medium text-primary transition-colors hover:text-primary/80"
       >
-        View all achievements
+        {t("viewAllAchievements")}
       </Link>
     </SidebarCard>
   );

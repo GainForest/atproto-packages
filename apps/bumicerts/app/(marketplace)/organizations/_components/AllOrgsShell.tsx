@@ -3,6 +3,7 @@
 import { useState, useMemo, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import {
   UsersIcon,
   SearchIcon,
@@ -143,30 +144,16 @@ function BioregionChips({
 
 // ── Sort options ───────────────────────────────────────────────────────────────
 
-const SORT_OPTIONS = [
-  { value: "bumicerts", label: "Most Bumicerts" },
-  { value: "alpha", label: "Alphabetical" },
-  { value: "newest", label: "Newest" },
-];
+const SORT_OPTIONS = ["bumicerts", "alpha", "newest"] as const;
 
 const containerVariants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
-function LeafAccent() {
-  return (
-    <span
-      aria-hidden="true"
-      className="absolute -right-2 -top-3 flex h-5 w-5 -rotate-12 items-center justify-center"
-    >
-      <span className="absolute h-3.5 w-2 rotate-45 rounded-[100%_0_100%_0] bg-primary/85 shadow-sm shadow-primary/20" />
-      <span className="absolute left-2.5 top-2 h-2.5 w-px rotate-45 bg-primary/70" />
-    </span>
-  );
-}
-
 function OrganizationsHero({ animate }: { animate: boolean }) {
+  const t = useTranslations("marketplace.organizations.hero");
+
   return (
     <motion.div
       initial={animate ? { opacity: 0, y: 16 } : false}
@@ -177,7 +164,7 @@ function OrganizationsHero({ animate }: { animate: boolean }) {
       <div className="absolute inset-0">
         <Image
           src="/assets/organizations/organizations-hero-light.png"
-          alt="Misty mountain forest at sunrise"
+          alt={t("imageAltLight")}
           fill
           priority
           sizes="(min-width: 1280px) 1152px, calc(100vw - 48px)"
@@ -185,7 +172,7 @@ function OrganizationsHero({ animate }: { animate: boolean }) {
         />
         <Image
           src="/assets/organizations/organizations-hero-dark.png"
-          alt="Misty mountain forest at dusk"
+          alt={t("imageAltDark")}
           fill
           priority
           sizes="(min-width: 1280px) 1152px, calc(100vw - 48px)"
@@ -200,16 +187,16 @@ function OrganizationsHero({ animate }: { animate: boolean }) {
         <div className="mb-5 flex items-center gap-2.5">
           <UsersIcon className="h-4 w-4 text-primary" />
           <span className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-            Organizations
+            {t("eyebrow")}
           </span>
         </div>
         <h1
-          aria-label="Nature Stewards"
+          aria-label={t("titleAriaLabel")}
           className="max-w-4xl text-4xl font-light leading-[0.98] tracking-[-0.035em] text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
           <span aria-hidden="true">
-            Nature{" "}
+            {t("titleFirst")} {" "}
             <span
               className="text-foreground/90"
               style={{
@@ -217,18 +204,12 @@ function OrganizationsHero({ animate }: { animate: boolean }) {
                 fontStyle: "italic",
               }}
             >
-              Stewa
-              <span className="relative inline-block">
-                r
-                <LeafAccent />
-              </span>
-              ds
+              {t("titleSecond")}
             </span>
           </span>
         </h1>
         <p className="mt-7 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
-          Discover organizations leading environmental stewardship and
-          community-driven change.
+          {t("description")}
         </p>
       </div>
     </motion.div>
@@ -261,6 +242,7 @@ export function AllOrgsShell({
   animate?: boolean;
   children?: React.ReactNode;
 }) {
+  const t = useTranslations("marketplace.organizations");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("bumicerts");
   const [countryFilter, setCountryFilter] = useState<string | null>(null);
@@ -316,7 +298,7 @@ export function AllOrgsShell({
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search organizations..."
+                placeholder={t("search.placeholder")}
               />
             </InputGroup>
 
@@ -331,7 +313,7 @@ export function AllOrgsShell({
               >
                 <ArrowUpDownIcon />
                 <span className="hidden sm:inline">
-                  {SORT_OPTIONS.find((o) => o.value === sort)?.label}
+                  {t(`sort.${sort}`)}
                 </span>
                 <ChevronDownIcon
                   className={cn(
@@ -350,19 +332,19 @@ export function AllOrgsShell({
                   >
                     {SORT_OPTIONS.map((option) => (
                       <button
-                        key={option.value}
+                        key={option}
                         onClick={() => {
-                          setSort(option.value);
+                          setSort(option);
                           setOpenDropdown(null);
                         }}
                         className={cn(
                           "w-full text-left px-3 py-2 text-sm transition-colors",
-                          sort === option.value
+                          sort === option
                             ? "text-primary bg-primary/5"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
                         )}
                       >
-                        {option.label}
+                        {t(`sort.${option}`)}
                       </button>
                     ))}
                   </motion.div>
@@ -422,7 +404,7 @@ export function AllOrgsShell({
                 className="text-2xl md:text-3xl font-light text-foreground mb-3"
                 style={{ fontFamily: "var(--font-garamond-var)" }}
               >
-                No organizations found
+                {t("empty.title")}
               </h3>
               <p
                 className="text-base text-foreground/80 max-w-md leading-relaxed"
@@ -431,7 +413,7 @@ export function AllOrgsShell({
                   fontStyle: "italic",
                 }}
               >
-                Try adjusting your search or filters.
+                {t("empty.description")}
               </p>
             </div>
           ) : (
