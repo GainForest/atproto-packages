@@ -10,8 +10,6 @@ import { useState, type ChangeEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { parseAtUri, toSerializableFile } from "@/lib/mutations-utils";
-import { formatError } from "@/lib/utils/trpc-errors";
-
 import FileInput from "@/components/ui/FileInput";
 import { Input } from "@/components/ui/input";
 import { ArrowLeftIcon, CheckIcon, Loader2Icon, PencilIcon } from "lucide-react";
@@ -100,6 +98,8 @@ function toTreeBoundaryCoordinate(
 
 type SiteEditorTranslator = ReturnType<typeof useTranslations<"modals.siteEditor">>;
 
+class LocalizedSiteEditorError extends Error {}
+
 function buildBoundaryEditBlockedMessage(options: {
   failures: ReturnType<typeof findTreeBoundaryFailures>;
   uncheckedCount: number;
@@ -186,7 +186,7 @@ export const SiteEditorModal = ({
     shapefile: File;
   }) => {
     if (!did) {
-      throw new Error(t("errors.unauthenticated"));
+      throw new LocalizedSiteEditorError(t("errors.unauthenticated"));
     }
 
     const shapefileData = await toSerializableFile(shapefile);
@@ -258,7 +258,7 @@ export const SiteEditorModal = ({
         linkedTreesQuery.data ?? (await linkedTreesQuery.refetch()).data;
 
       if (!linkedTrees) {
-        throw new Error(t("errors.verifyBoundary"));
+        throw new LocalizedSiteEditorError(t("errors.verifyBoundary"));
       }
 
       const boundary = await readGeoJsonFile(file);
@@ -273,7 +273,7 @@ export const SiteEditorModal = ({
       });
 
       if (uncheckedCount > 0 || failures.length > 0) {
-        throw new Error(
+        throw new LocalizedSiteEditorError(
           buildBoundaryEditBlockedMessage({ failures, uncheckedCount, t }),
         );
       }
@@ -288,7 +288,7 @@ export const SiteEditorModal = ({
     try {
       if (mode === "add") {
         if (!shapefile) {
-          throw new Error(t("errors.shapefileRequired"));
+          throw new LocalizedSiteEditorError(t("errors.shapefileRequired"));
         }
 
         await handleAdd({
@@ -297,7 +297,7 @@ export const SiteEditorModal = ({
         });
       } else {
         if (!rkey) {
-          throw new Error(t("errors.recordKeyRequired"));
+          throw new LocalizedSiteEditorError(t("errors.recordKeyRequired"));
         }
 
         if (hasShapefileInput && shapefile) {
@@ -311,14 +311,34 @@ export const SiteEditorModal = ({
         });
       }
     } catch (error) {
-      setSubmissionError(error instanceof Error ? error.message : String(error));
+      setSubmissionError(
+        error instanceof LocalizedSiteEditorError
+          ? error.message
+          : t("errors.unexpected"),
+      );
     }
   };
 
   const isPending = isAdding || isUpdating || isVerifyingBoundary;
   const disableSubmission =
     !did || !name.trim() || (mode === "add" && !hasShapefileInput) || isPending;
-  const error = addError || updateError;
+  const mutationError = addError
+    ? t("errors.addFailed")
+    : updateError
+      ? t("errors.updateFailed")
+      : null;
+  const fileInputLabels = {
+    pasteFromClipboard: t("fileInput.pasteFromClipboard"),
+    uploadFromDevice: t("fileInput.uploadFromDevice"),
+    remove: t("fileInput.remove"),
+    dropToReplaceImage: t("fileInput.dropToReplaceImage"),
+    dropToReplaceFile: t("fileInput.dropToReplaceFile"),
+    noImageInClipboard: t("fileInput.noImageInClipboard"),
+    clipboardReadFailed: t("fileInput.clipboardReadFailed"),
+    fileTooLarge: (maxSizeInMB: number) =>
+      t("fileInput.fileTooLarge", { maxSizeInMB }),
+    unsupportedFileType: t("fileInput.unsupportedFileType"),
+  };
 
   return (
     <ModalContent>
@@ -383,6 +403,7 @@ export const SiteEditorModal = ({
                   {mode === "edit" && (
                     <Button
                       variant={"ghost"}
+                      aria-label={t("back")}
                       onClick={() => setShowEditor(false)}
                     >
                       <ArrowLeftIcon />
@@ -397,6 +418,7 @@ export const SiteEditorModal = ({
                         value={shapefile ?? undefined}
                         supportedFileTypes={[".geojson", ".json"]}
                         maxSizeInMB={10}
+                        labels={fileInputLabels}
                         onFileChange={(file) => setShapefile(file)}
                       />
                     </div>
@@ -422,7 +444,7 @@ export const SiteEditorModal = ({
                               });
                               const file = new File(
                                 [blob],
-                                "drawn-polygon.geojson",
+                                t("drawnFileName"),
                                 {
                                   type: "application/geo+json",
                                 }
@@ -441,9 +463,9 @@ export const SiteEditorModal = ({
                 </div>
               </>
             )}
-            {submissionError || error ? (
+            {submissionError || mutationError ? (
               <div className="text-sm text-destructive mt-2">
-                {submissionError ?? formatError(error)}
+                {submissionError ?? mutationError}
               </div>
             ) : null}
           </motion.section>

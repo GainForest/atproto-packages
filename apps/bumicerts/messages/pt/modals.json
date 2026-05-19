@@ -336,7 +336,8 @@
     "cancel": "Cancelar",
     "errors": {
       "unsupported": "Somente imagens JPEG, PNG, WebP e HEIC são aceitas.",
-      "tooLarge": "O arquivo é grande demais. O tamanho máximo é 4,5 MB (recebido {size})."
+      "tooLarge": "O arquivo é grande demais. O tamanho máximo é 4,5 MB (recebido {size}).",
+      "uploadFailed": "Não conseguimos enviar esta foto. Tente novamente."
     },
     "parts": {
       "entireOrganism": "Organismo inteiro",
@@ -381,7 +382,23 @@
       "treeFallback": "Árvore {index}",
       "nearBoundary": "perto do limite",
       "outOfSite": "fora do site",
-      "invalidBoundary": "limite inválido"
-    }
+      "invalidBoundary": "limite inválido",
+      "addFailed": "Não conseguimos adicionar este site. Tente novamente.",
+      "updateFailed": "Não conseguimos salvar este site. Tente novamente.",
+      "unexpected": "Algo deu errado. Tente novamente."
+    },
+    "back": "Voltar para a prévia",
+    "fileInput": {
+      "pasteFromClipboard": "Colar da área de transferência",
+      "uploadFromDevice": "Enviar do dispositivo",
+      "remove": "Remover",
+      "dropToReplaceImage": "Solte para substituir a imagem",
+      "dropToReplaceFile": "Solte para substituir o arquivo",
+      "noImageInClipboard": "Nenhuma imagem encontrada na área de transferência",
+      "clipboardReadFailed": "Não foi possível ler a área de transferência",
+      "fileTooLarge": "O tamanho do arquivo excede {maxSizeInMB} MB.",
+      "unsupportedFileType": "Tipo de arquivo não aceito."
+    },
+    "drawnFileName": "poligono-desenhado.geojson"
   }
 }

@@ -336,7 +336,8 @@
     "cancel": "Ghairi",
     "errors": {
       "unsupported": "Picha za JPEG, PNG, WebP na HEIC pekee ndizo zinazokubaliwa.",
-      "tooLarge": "Faili ni kubwa sana. Ukubwa wa juu ni 4.5 MB (imepokelewa {size})."
+      "tooLarge": "Faili ni kubwa sana. Ukubwa wa juu ni 4.5 MB (imepokelewa {size}).",
+      "uploadFailed": "Hatukuweza kupakia picha hii. Jaribu tena."
     },
     "parts": {
       "entireOrganism": "Kiumbe kizima",
@@ -381,7 +382,23 @@
       "treeFallback": "Mti {index}",
       "nearBoundary": "karibu na mpaka",
       "outOfSite": "nje ya eneo",
-      "invalidBoundary": "mpaka batili"
-    }
+      "invalidBoundary": "mpaka batili",
+      "addFailed": "Hatukuweza kuongeza eneo hili. Jaribu tena.",
+      "updateFailed": "Hatukuweza kuhifadhi eneo hili. Jaribu tena.",
+      "unexpected": "Hitilafu imetokea. Jaribu tena."
+    },
+    "back": "Rudi kwenye muhtasari",
+    "fileInput": {
+      "pasteFromClipboard": "Bandika kutoka ubaoni",
+      "uploadFromDevice": "Pakia kutoka kwenye kifaa",
+      "remove": "Ondoa",
+      "dropToReplaceImage": "Achilia ili kubadilisha picha",
+      "dropToReplaceFile": "Achilia ili kubadilisha faili",
+      "noImageInClipboard": "Hakuna picha iliyopatikana ubaoni",
+      "clipboardReadFailed": "Haikuweza kusoma kutoka ubaoni",
+      "fileTooLarge": "Ukubwa wa faili unazidi {maxSizeInMB} MB.",
+      "unsupportedFileType": "Aina ya faili haitumiki."
+    },
+    "drawnFileName": "poligoni-iliyochorwa.geojson"
   }
 }

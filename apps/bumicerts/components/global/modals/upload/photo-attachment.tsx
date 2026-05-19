@@ -192,9 +192,9 @@ export default function PhotoAttachModal({
         previewUrl: URL.createObjectURL(imageFile),
       });
       await handleClose();
-    } catch (err) {
+    } catch {
       setUploadState("error");
-      setUploadError(String(err));
+      setUploadError(t("errors.uploadFailed"));
     }
   };
 
