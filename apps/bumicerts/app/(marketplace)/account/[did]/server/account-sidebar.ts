@@ -2,6 +2,7 @@ import "server-only";
 
 import * as fundingReceiptsModule from "@/graphql/indexer/queries/fundingReceipts";
 import type { FundingReceiptItem } from "@/graphql/indexer/queries/fundingReceipts";
+import { getTranslations } from "next-intl/server";
 import { clientEnv } from "@/lib/env/client";
 import { links } from "@/lib/links";
 import {
@@ -52,10 +53,6 @@ function formatCount(value: number): string {
 
 function formatBumicertCount(count: number | null): string {
   return count === null ? "—" : formatCount(count);
-}
-
-function pluralize(value: number, singular: string, plural: string): string {
-  return value === 1 ? singular : plural;
 }
 
 function safeAmount(raw: string | null | undefined): number {
@@ -136,27 +133,33 @@ function deriveDonationMetrics(
 function buildDonationDescription(
   accountKind: "user" | "organization",
   metrics: DonationMetrics,
+  t: Awaited<ReturnType<typeof getSidebarTranslations>>,
 ): string {
   if (metrics.status === "unavailable") {
-    return "Donation records are not available right now";
+    return t("donationUnavailable");
   }
 
   if (accountKind === "user") {
     if (metrics.donationCount === 0) {
-      return "No public donations recorded yet";
+      return t("noPublicDonationsRecorded");
     }
 
-    return `Supported ${formatCount(metrics.organizationCount)} ${pluralize(metrics.organizationCount, "organization", "organizations")}`;
+    return t("supportedOrganizations", {
+      count: metrics.organizationCount,
+    });
   }
 
   if (metrics.donationCount === 0) {
-    return "No public donations received yet";
+    return t("noPublicDonationsReceived");
   }
 
-  return `Received ${formatCount(metrics.donationCount)} ${pluralize(metrics.donationCount, "donation", "donations")}`;
+  return t("receivedDonations", { count: metrics.donationCount });
 }
 
-function buildProfileDescription(routeData: Extract<AccountRouteData, { kind: "user" | "organization" }>): string {
+function buildProfileDescription(
+  routeData: Extract<AccountRouteData, { kind: "user" | "organization" }>,
+  t: Awaited<ReturnType<typeof getSidebarTranslations>>,
+): string {
   const details = [
     routeData.organization.shortDescription.trim().length > 0,
     routeData.organization.website !== null,
@@ -167,38 +170,39 @@ function buildProfileDescription(routeData: Extract<AccountRouteData, { kind: "u
   ].filter(Boolean).length;
 
   if (details === 0) {
-    return "Set up a public Bumicerts profile";
+    return t("setupPublicProfile");
   }
 
-  return `Completed ${formatCount(details)} profile ${pluralize(details, "detail", "details")}`;
+  return t("completedProfileDetails", { count: details });
 }
 
 function buildAchievements(
   routeData: Extract<AccountRouteData, { kind: "user" | "organization" }>,
   bumicertCount: number | null,
   metrics: DonationMetrics,
+  t: Awaited<ReturnType<typeof getSidebarTranslations>>,
 ): AccountSidebarData["achievements"] {
   const publishedDescription =
     bumicertCount === null
-      ? "Bumicert records are not available right now"
+      ? t("bumicertUnavailable")
       : bumicertCount > 0
-        ? `Published ${formatCount(bumicertCount)} ${pluralize(bumicertCount, "Bumicert", "Bumicerts")}`
-        : "No Bumicerts published yet";
+        ? t("publishedBumicerts", { count: bumicertCount })
+        : t("noBumicertsPublished");
 
   return [
     {
-      label: "Profile Ready",
-      description: buildProfileDescription(routeData),
+      label: t("profileReady"),
+      description: buildProfileDescription(routeData, t),
       icon: "profile",
     },
     {
-      label: routeData.kind === "organization" ? "Bumicert Steward" : "Creator Seed",
+      label: routeData.kind === "organization" ? t("bumicertSteward") : t("creatorSeed"),
       description: publishedDescription,
       icon: "bumicert",
     },
     {
-      label: routeData.kind === "organization" ? "Community Backed" : "Impact Supporter",
-      description: buildDonationDescription(routeData.kind, metrics),
+      label: routeData.kind === "organization" ? t("communityBacked") : t("impactSupporter"),
+      description: buildDonationDescription(routeData.kind, metrics, t),
       icon: "donation",
     },
   ];
@@ -206,6 +210,7 @@ function buildAchievements(
 
 function buildInviteCopy(
   routeData: Extract<AccountRouteData, { kind: "user" | "organization" }>,
+  t: Awaited<ReturnType<typeof getSidebarTranslations>>,
 ): Pick<
   AccountSidebarData,
   "inviteTitle" | "inviteDescription" | "inviteActionLabel" | "inviteHref"
@@ -214,31 +219,34 @@ function buildInviteCopy(
 
   if (routeData.kind === "organization") {
     return {
-      inviteTitle: "Invite collaborators",
-      inviteDescription:
-        "Bring supporters and collaborators into your Bumicerts work and grow your regenerative impact together.",
-      inviteActionLabel: "Invite collaborators",
+      inviteTitle: t("inviteCollaborators"),
+      inviteDescription: t("inviteCollaboratorsDescription"),
+      inviteActionLabel: t("inviteCollaborators"),
       inviteHref: links.external.share.x(
-        `Explore ${displayName}'s Bumicerts profile: ${routeData.pageUrl}`,
+        t("shareOrganization", { displayName, pageUrl: routeData.pageUrl }),
       ),
     };
   }
 
   return {
-    inviteTitle: "Invite friends",
-    inviteDescription:
-      "Invite your friends to join Bumicerts and create a positive impact together.",
-    inviteActionLabel: "Invite friends",
+    inviteTitle: t("inviteFriends"),
+    inviteDescription: t("inviteFriendsDescription"),
+    inviteActionLabel: t("inviteFriends"),
     inviteHref: links.external.share.x(
-      `Join me on Bumicerts and support regenerative impact: ${routeData.pageUrl}`,
+      t("shareUser", { pageUrl: routeData.pageUrl }),
     ),
   };
+}
+
+async function getSidebarTranslations() {
+  return getTranslations("marketplace.account.sidebar");
 }
 
 export async function buildAccountSidebarData(
   routeData: Extract<AccountRouteData, { kind: "user" | "organization" }>,
   options: SidebarOptions,
 ): Promise<AccountSidebarData> {
+  const t = await getSidebarTranslations();
   const receipts = await readFundingReceipts();
   const donationMetrics = deriveDonationMetrics(
     routeData.did,
@@ -253,20 +261,20 @@ export async function buildAccountSidebarData(
   return {
     accountKind: routeData.kind,
     displayName: routeData.organization.displayName,
-    ...buildInviteCopy(routeData),
+    ...buildInviteCopy(routeData, t),
     achievementsHref: `${links.account.bumicerts(routeData.did)}#account-achievements`,
     stats: [
       {
-        label: "Total Bumicerts",
+        label: t("totalBumicerts"),
         value: formatBumicertCount(options.bumicertCount),
         icon: "bumicert",
       },
       {
-        label: routeData.kind === "organization" ? "Donations Received" : "Total Donations",
+        label: routeData.kind === "organization" ? t("donationsReceived") : t("totalDonations"),
         value: donationValue,
         icon: "donation",
       },
     ],
-    achievements: buildAchievements(routeData, options.bumicertCount, donationMetrics),
+    achievements: buildAchievements(routeData, options.bumicertCount, donationMetrics, t),
   };
 }

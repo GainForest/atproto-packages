@@ -17,6 +17,7 @@ import {
 } from "../server/account-route";
 import { buildAccountSidebarData } from "../server/account-sidebar";
 import type { AccountRouteData } from "../server/account-route";
+import { getTranslations } from "next-intl/server";
 
 function withCreatorDisplayFallbacks(
   bumicerts: BumicertData[],
@@ -34,7 +35,7 @@ function withCreatorDisplayFallbacks(
         normalizedOrganizationName.length > 0 &&
           normalizedOrganizationName.toLowerCase() !== "unknown"
           ? bumicert.organizationName
-          : (options?.organizationName ?? "Unknown"),
+          : (options?.organizationName ?? bumicert.organizationName),
       logoUrl: bumicert.logoUrl ?? options?.logoUrl ?? null,
     };
   });
@@ -49,7 +50,8 @@ export async function generateMetadata({
     const { did } = await readAccountRouteParams(params);
     return buildAccountBumicertsMetadata(await getAccountRouteData(did));
   } catch {
-    return { title: "Bumicerts — Bumicerts" };
+    const t = await getTranslations("marketplace.account.metadata");
+    return { title: t("bumicertsTitle") };
   }
 }
 
@@ -65,11 +67,12 @@ export default async function AccountBumicertsPage({
     routeData = await getAccountRouteData(did);
   } catch (error) {
     console.error("[AccountBumicertsPage] Failed to read account", did, error);
+    const t = await getTranslations("marketplace.account.errors");
     return (
       <Container className="pt-4">
         <ErrorPage
-          title="Couldn't load this account"
-          description="We had trouble fetching this account's data. Please try again."
+          title={t("loadAccountTitle")}
+          description={t("loadAccountDescription")}
           error={error}
         />
       </Container>
@@ -87,11 +90,12 @@ export default async function AccountBumicertsPage({
     bumicerts = activitiesToBumicertDataArray(activities);
   } catch (error) {
     console.error("[AccountBumicertsPage] Error fetching activities", did, error);
+    const t = await getTranslations("marketplace.account.errors");
     return (
       <Container className="pt-4">
         <ErrorPage
-          title="Couldn't load this account's Bumicerts"
-          description="We had trouble fetching this account's Bumicerts. Please try again."
+          title={t("loadBumicertsTitle")}
+          description={t("loadBumicertsDescription")}
           error={error}
         />
       </Container>
@@ -101,12 +105,13 @@ export default async function AccountBumicertsPage({
   const sidebarData = await buildAccountSidebarData(routeData, {
     bumicertCount: bumicerts.length,
   });
+  const t = await getTranslations("marketplace.account.bumicerts");
 
   return (
     <AccountContentColumns sidebar={<AccountSidebar data={sidebarData} />}>
       <OrgBumicertsGrid
         bumicerts={withCreatorDisplayFallbacks(bumicerts, {
-          organizationName: routeData.organization.displayName,
+          organizationName: routeData.organization.displayName || t("unknownCreator"),
           logoUrl: routeData.organization.logoUrl,
         })}
       />

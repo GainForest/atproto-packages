@@ -1,1 +1,336 @@
-{}
+{
+  "explore": {
+    "metadata": {
+      "title": "Explorar Bumicerts — Projetos de impacto regenerativo verificados",
+      "description": "Explore certificados verificados de impacto ambiental de guardiões da natureza em todo o mundo. Filtre por país, organização e área de impacto."
+    },
+    "structuredData": {
+      "name": "Explorar Bumicerts",
+      "description": "Certificados verificados de impacto ambiental de guardiões da natureza em todo o mundo."
+    },
+    "hero": {
+      "eyebrow": "Explorar projetos",
+      "titlePrefix": "Descobrir",
+      "titleEmphasis": "Impacto regenerativo",
+      "description": "Explore projetos de comunidades e organizações que restauram ecossistemas, fortalecem meios de vida e constroem um futuro mais resiliente."
+    },
+    "actions": {
+      "createBumicert": "Criar Bumicert",
+      "allProjects": "Todos os projetos",
+      "allFilters": "Todos os filtros",
+      "clearAll": "Limpar tudo",
+      "applyFilters": "Aplicar filtros",
+      "applyFiltersWithCount": "Aplicar filtros ({count})",
+      "clearCategory": "Limpar {category}"
+    },
+    "filters": {
+      "allTitle": "Todos os filtros",
+      "description": "Filtre projetos por organização, país ou área de impacto",
+      "organization": "Organização",
+      "bioregion": "Biorregião",
+      "country": "País",
+      "impactArea": "Área de impacto"
+    },
+    "sort": {
+      "newest": "Mais recentes",
+      "oldest": "Mais antigos"
+    },
+    "search": {
+      "ariaLabel": "Pesquisar projetos",
+      "placeholder": "Pesquisar projetos por nome, palavra-chave ou localização...",
+      "sortAriaLabel": "Ordenar projetos"
+    },
+    "empty": {
+      "eyebrow": "Sem resultados",
+      "title": "Nenhum projeto encontrado",
+      "description": "Tente ajustar sua pesquisa ou filtros para descobrir mais projetos de impacto regenerativo."
+    },
+    "resultsFound": "{count, plural, one {# projeto encontrado} other {# projetos encontrados}}"
+  },
+  "organizations": {
+    "metadata": {
+      "title": "Organizações — Bumicerts",
+      "description": "Explore todas as organizações guardiãs da natureza que criam impacto ambiental verificado no Bumicerts."
+    },
+    "hero": {
+      "imageAltLight": "Floresta de montanha enevoada ao nascer do sol",
+      "imageAltDark": "Floresta de montanha enevoada ao anoitecer",
+      "eyebrow": "Organizações",
+      "titleAriaLabel": "Guardiões da natureza",
+      "titleFirst": "Natureza",
+      "titleSecond": "Guardiões",
+      "description": "Descubra organizações que lideram a gestão ambiental e mudanças impulsionadas pela comunidade."
+    },
+    "search": {
+      "placeholder": "Pesquisar organizações..."
+    },
+    "sort": {
+      "bumicerts": "Mais Bumicerts",
+      "alpha": "Alfabética",
+      "newest": "Mais recentes"
+    },
+    "empty": {
+      "title": "Nenhuma organização encontrada",
+      "description": "Tente ajustar sua pesquisa ou filtros."
+    },
+    "error": {
+      "title": "Algo deu errado",
+      "description": "Não foi possível carregar as organizações. Tente atualizar a página."
+    }
+  },
+  "leaderboard": {
+    "metadata": {
+      "title": "Classificação — Bumicerts",
+      "description": "Veja os principais doadores que geram impacto no Bumicerts. Nossos Campeões de Impacto são classificados pelas contribuições totais de financiamento."
+    },
+    "hero": {
+      "eyebrow": "Classificação",
+      "titlePrefix": "Impacto",
+      "titleEmphasis": "Campeões",
+      "description": "Celebrando contribuintes generosos que impulsionam mudanças regenerativas para comunidades e para o planeta."
+    },
+    "periods": {
+      "all": "Todo o período",
+      "month": "Este mês",
+      "week": "Esta semana"
+    },
+    "donorFilters": {
+      "all": "Todos os doadores",
+      "anonymous": "Apenas anônimos",
+      "known": "Apenas identificados"
+    },
+    "sort": {
+      "label": "Ordenar por",
+      "totalRaised": "Total arrecadado",
+      "donationCount": "Número de doações",
+      "recentDonation": "Doação recente"
+    },
+    "stats": {
+      "totalRaised": "Total arrecadado",
+      "totalRaisedDetail": "Todo o período na plataforma",
+      "totalDonors": "Total de doadores",
+      "totalDonorsDetail": "Generosos campeões de impacto",
+      "projectsSupported": "Projetos apoiados",
+      "projectsSupportedDetail": "Restaurando ecossistemas e meios de vida"
+    },
+    "empty": {
+      "title": "Ainda não há doações",
+      "description": "Seja a primeira pessoa a gerar impacto."
+    },
+    "card": {
+      "rankAriaLabel": "Posição {rank}",
+      "anonymous": "Anônimo ({address})",
+      "donationSummary": "{count, plural, one {# doação} other {# doações}}",
+      "lastDonation": "Última doação {relativeTime}",
+      "topDonor": "Principal doador",
+      "natureChampion": "Campeão da natureza",
+      "consistentGiver": "Doador constante",
+      "risingSupporter": "Apoiador em ascensão",
+      "openWallet": "Abrir {wallet} no BaseScan",
+      "openAccount": "Abrir a conta do doador em uma nova aba"
+    }
+  },
+  "dashboard": {
+    "metadata": {
+      "title": "Painel de doações — Bumicerts",
+      "description": "Análises de doações de toda a plataforma: total arrecadado, doadores únicos, tendências de financiamento e transações recentes."
+    },
+    "hero": {
+      "eyebrow": "Análise da plataforma",
+      "title": "Painel de doações"
+    },
+    "periods": {
+      "all": "Todo o período",
+      "month": "Últimos 30 dias",
+      "week": "Últimos 7 dias"
+    },
+    "kpis": {
+      "totalRaised": "Total arrecadado",
+      "totalRaisedSub": "Todas as doações em USD",
+      "totalDonations": "Total de doações",
+      "totalDonationsSub": "Recibos registrados",
+      "uniqueDonors": "Doadores únicos",
+      "uniqueDonorsSub": "Por DID ou carteira",
+      "avgDonation": "Doação média",
+      "avgDonationSub": "Por transação",
+      "activeBumicerts": "Bumicerts ativos",
+      "activeBumicertsSub": "Receberam fundos"
+    },
+    "geo": {
+      "title": "Alcance geográfico",
+      "countriesRepresented": "Países representados",
+      "topCountries": "Principais países",
+      "empty": "Nenhum dado geográfico disponível.",
+      "organizationCount": "{count, plural, one {# organização} other {# organizações}}"
+    },
+    "chart": {
+      "title": "Volume de doações ao longo do tempo",
+      "raisedPer": "USD arrecadados por {granularity}",
+      "empty": "Nenhum dado de doação para este período.",
+      "donationCount": "{count, plural, one {# doação} other {# doações}}",
+      "granularities": {
+        "day": "Diário",
+        "week": "Semanal",
+        "month": "Mensal"
+      }
+    },
+    "tables": {
+      "topDonors": "Principais doadores",
+      "byOrganization": "Por organização",
+      "recentTransactions": "Transações recentes",
+      "noDonations": "Ainda não há doações.",
+      "noTransactions": "Ainda não há transações.",
+      "donor": "Doador",
+      "totalDonated": "Total doado",
+      "donations": "Doações",
+      "lastDonation": "Última doação",
+      "organization": "Organização",
+      "totalRaised": "Total arrecadado",
+      "bumicerts": "Bumicerts",
+      "donors": "Doadores",
+      "date": "Data",
+      "amount": "Valor",
+      "bumicert": "Bumicert",
+      "txHash": "Hash da tx",
+      "anonymous": "Anônimo",
+      "anonymousWallet": "Anônimo ({address})",
+      "allTimeDonations": "Todo o período · {count, plural, one {# doação} other {# doações}}",
+      "showingLatest": "mostrando as 50 mais recentes",
+      "viewBumicert": "Ver bumicert"
+    }
+  },
+  "account": {
+    "metadata": {
+      "accountTitle": "Conta — Bumicerts",
+      "bumicertsTitle": "Bumicerts — Bumicerts",
+      "donationsTitle": "Histórico de doações — Bumicerts",
+      "accountFallback": "Conta",
+      "profileDescription": "{displayName} no Bumicerts",
+      "organizationDescription": "{displayName} no Bumicerts.",
+      "bumicertsPageTitle": "Bumicerts de {displayName} — Bumicerts",
+      "bumicertsPageDescription": "Explore todos os Bumicerts criados por {displayName}.",
+      "donationsPageTitle": "Histórico de doações de {displayName} — Bumicerts",
+      "donationsPageDescription": "Explore o histórico público de doações de {displayName}."
+    },
+    "errors": {
+      "loadOwnTitle": "Não foi possível carregar sua conta",
+      "loadOwnDescription": "Tivemos problemas para buscar os dados da sua conta. Tente novamente.",
+      "loadAccountTitle": "Não foi possível carregar esta conta",
+      "loadAccountDescription": "Tivemos problemas para buscar os dados desta conta. Tente novamente.",
+      "loadBumicertsTitle": "Não foi possível carregar os Bumicerts desta conta",
+      "loadBumicertsDescription": "Tivemos problemas para buscar os Bumicerts desta conta. Tente novamente."
+    },
+    "onboarding": {
+      "title": "Integração necessária",
+      "description": "Você entrou, mas sua conta Bumicerts ainda não está configurada. Conclua a integração para continuar.",
+      "action": "Iniciar integração"
+    },
+    "tabs": {
+      "home": "Início",
+      "bumicerts": "Bumicerts",
+      "donationHistory": "Histórico de doações"
+    },
+    "setupPrompt": {
+      "title": "Configure sua organização",
+      "description": "Antes de enviar conteúdo, você precisa configurar o perfil da sua organização. Isso leva apenas alguns minutos.",
+      "action": "Configurar organização"
+    },
+    "wallet": {
+      "setUpDonations": "Configurar doações",
+      "signInDescription": "Entre para vincular sua carteira e receber doações.",
+      "enabled": "Doações ativadas ✓",
+      "walletLabel": "Carteira:",
+      "enabledDescription": "Doadores agora podem enviar USDC para sua organização pelo Bumicerts.",
+      "setupDescription": "Vincule uma carteira para receber doações em USDC de apoiadores.",
+      "stepConnect": "Passo 1: Conecte sua carteira",
+      "connectWallet": "Conectar carteira",
+      "stepSwitch": "Passo 2: Mude para a rede Base",
+      "switching": "Alterando...",
+      "switchToBase": "Mudar para Base",
+      "linkedSuccess": "✓ Carteira vinculada com sucesso!",
+      "linkedSuccessDescription": "O indexador pode levar alguns instantes para processar sua atestação.",
+      "refresh": "Atualizar",
+      "stepLink": "Passo 3: Vincule sua carteira",
+      "waitingSignature": "Aguardando assinatura…",
+      "writingAttestation": "Gravando atestação…",
+      "errorLinking": "Erro ao vincular carteira",
+      "signInWallet": "Assinar na carteira…",
+      "writingToAtproto": "Gravando no ATProto…",
+      "retry": "Tentar novamente",
+      "signAndLink": "Assinar e vincular carteira"
+    },
+    "bumicerts": {
+      "emptyEyebrow": "Sem Bumicerts",
+      "emptyDescription": "Esta conta ainda não publicou nenhum Bumicert.",
+      "unknownCreator": "Desconhecido"
+    },
+    "sidebar": {
+      "achievements": "Conquistas",
+      "viewAllAchievements": "Ver todas as conquistas",
+      "donationUnavailable": "Os registros de doações não estão disponíveis agora",
+      "noPublicDonationsRecorded": "Ainda não há doações públicas registradas",
+      "supportedOrganizations": "Apoiou {count} {count, plural, one {organização} other {organizações}}",
+      "noPublicDonationsReceived": "Ainda não foram recebidas doações públicas",
+      "receivedDonations": "Recebeu {count} {count, plural, one {doação} other {doações}}",
+      "setupPublicProfile": "Configure um perfil público no Bumicerts",
+      "completedProfileDetails": "Concluiu {count} {count, plural, one {detalhe} other {detalhes}} do perfil",
+      "bumicertUnavailable": "Os registros de Bumicert não estão disponíveis agora",
+      "publishedBumicerts": "Publicou {count} {count, plural, one {Bumicert} other {Bumicerts}}",
+      "noBumicertsPublished": "Ainda não há Bumicerts publicados",
+      "profileReady": "Perfil pronto",
+      "bumicertSteward": "Guardião de Bumicert",
+      "creatorSeed": "Semente criadora",
+      "communityBacked": "Apoiado pela comunidade",
+      "impactSupporter": "Apoiador de impacto",
+      "inviteCollaborators": "Convidar colaboradores",
+      "inviteCollaboratorsDescription": "Traga apoiadores e colaboradores para seu trabalho no Bumicerts e aumentem juntos seu impacto regenerativo.",
+      "inviteFriends": "Convidar amigos",
+      "inviteFriendsDescription": "Convide seus amigos para entrar no Bumicerts e criar impacto positivo juntos.",
+      "shareOrganization": "Explore o perfil Bumicerts de {displayName}: {pageUrl}",
+      "shareUser": "Junte-se a mim no Bumicerts e apoie o impacto regenerativo: {pageUrl}",
+      "totalBumicerts": "Total de Bumicerts",
+      "donationsReceived": "Doações recebidas",
+      "totalDonations": "Total de doações"
+    },
+    "hero": {
+      "coverImageAlt": "Imagem de capa de {displayName}",
+      "copyLink": "Copiar link",
+      "copied": "Copiado!",
+      "share": "Compartilhar",
+      "editProfile": "Editar perfil",
+      "edit": "Editar",
+      "since": "Desde {date}"
+    }
+  },
+  "sidebar": {
+    "sections": {
+      "explore": "EXPLORAR",
+      "manage": "GERENCIAR"
+    },
+    "items": {
+      "bumicerts": "Bumicerts",
+      "organizations": "Organizações",
+      "leaderboard": "Classificação",
+      "organization": "Organização",
+      "sites": "Áreas",
+      "audio": "Audio",
+      "trees": "Árvores",
+      "profile": "Perfil"
+    },
+    "createBumicert": "Criar um Bumicert",
+    "prompts": {
+      "signInDescription": "Entre para gerenciar sua conta e conteúdo.",
+      "signInAction": "Entrar",
+      "accountError": "Não foi possível carregar sua conta agora.",
+      "checkingAccount": "Verificando sua conta...",
+      "onboardingDescription": "Conclua a integração para gerenciar sua conta.",
+      "onboardingAction": "Iniciar"
+    },
+    "social": {
+      "documentation": "Documentação",
+      "github": "GitHub",
+      "twitter": "X (Twitter)",
+      "gainforest": "GainForest"
+    }
+  }
+}

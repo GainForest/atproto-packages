@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Building2Icon, MapPinIcon, MicIcon, TreePineIcon, UserIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Building2Icon, MapPinIcon, MicIcon, TreePineIcon, UserIcon } from "lucide-react";
 import BumicertIcon from "@/icons/BumicertIcon";
 import { NavLeaf } from "./NavLeaf";
 import { SignInPrompt } from "./SignInPrompt";

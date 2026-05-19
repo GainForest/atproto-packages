@@ -10,6 +10,7 @@ import {
   readAccountRouteParams,
 } from "./server/account-route";
 import type { AccountRouteData } from "./server/account-route";
+import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata({
   params,
@@ -20,7 +21,8 @@ export async function generateMetadata({
     const { did } = await readAccountRouteParams(params);
     return buildAccountPageMetadata(await getAccountRouteData(did));
   } catch {
-    return { title: "Account — Bumicerts" };
+    const t = await getTranslations("marketplace.account.metadata");
+    return { title: t("accountTitle") };
   }
 }
 
@@ -36,10 +38,11 @@ export default async function AccountByDidPage({
     routeData = await getAccountRouteData(did);
   } catch (error) {
     console.error("[AccountByDidPage] Failed to read account", did, error);
+    const t = await getTranslations("marketplace.account.errors");
     return (
       <ErrorPage
-        title="Couldn't load this account"
-        description="We had trouble fetching this account's data. Please try again."
+        title={t("loadAccountTitle")}
+        description={t("loadAccountDescription")}
         error={error}
       />
     );

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { BarChart3Icon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface DashboardShellProps {
   animate?: boolean;
@@ -15,6 +16,8 @@ export function DashboardShell({
   children,
   periodFilter,
 }: DashboardShellProps) {
+  const t = useTranslations("marketplace.dashboard.hero");
+
   return (
     <section className="pt-6 pb-20 md:pb-28 px-6">
       <div className="max-w-6xl mx-auto">
@@ -28,14 +31,14 @@ export function DashboardShell({
             <div className="flex items-center gap-2 mb-2">
               <BarChart3Icon className="h-4 w-4 text-primary" />
               <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-                Platform Analytics
+                {t("eyebrow")}
               </p>
             </div>
             <h1
               className="text-3xl md:text-4xl lg:text-5xl font-light tracking-[-0.02em] leading-[1.1] text-foreground"
               style={{ fontFamily: "var(--font-garamond-var)" }}
             >
-              Donations Dashboard
+              {t("title")}
             </h1>
           </div>
 

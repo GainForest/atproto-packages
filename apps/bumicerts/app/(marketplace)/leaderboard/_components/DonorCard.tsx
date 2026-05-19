@@ -2,20 +2,21 @@
 
 import { motion } from "framer-motion";
 import { ChevronRightIcon, CrownIcon, LeafIcon, SparklesIcon, UserRoundCheckIcon, WalletIcon } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { useLocale, useTranslations } from "next-intl";
 import type { LeaderboardEntry } from "@/lib/utils/leaderboard";
 import { UserChip } from "@/components/ui/user-chip";
 import { links } from "@/lib/links";
 import { cn } from "@/lib/utils";
 
 function RankBadge({ rank }: { rank: number }) {
+  const t = useTranslations("marketplace.leaderboard.card");
   if (rank <= 3) {
     const medals = ["", "🥇", "🥈", "🥉"];
     return (
       <span
         className="flex size-10 items-center justify-center rounded-full bg-gradient-to-b from-primary/10 to-background text-2xl shadow-sm ring-1 ring-foreground/5"
         role="img"
-        aria-label={`Rank ${rank}`}
+        aria-label={t("rankAriaLabel", { rank })}
       >
         {medals[rank]}
       </span>
@@ -29,28 +30,47 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-function formatWalletAddress(address: string): string {
+function formatWalletAddress(address: string, anonymousLabel: (address: string) => string): string {
   const truncated =
     address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address;
-  return `Anonymous (${truncated})`;
+  return anonymousLabel(truncated);
 }
 
-function donationSummary(entry: LeaderboardEntry, relativeTime: string | null): string {
-  const count = `${entry.donationCount} donation${entry.donationCount === 1 ? "" : "s"}`;
-  return relativeTime ? `${count} · Last donation ${relativeTime}` : count;
+function donationSummary(
+  entry: LeaderboardEntry,
+  relativeTime: string | null,
+  donationCountLabel: (count: number) => string,
+  lastDonationLabel: (relativeTime: string) => string,
+): string {
+  const count = donationCountLabel(entry.donationCount);
+  return relativeTime ? `${count} · ${lastDonationLabel(relativeTime)}` : count;
+}
+
+function formatRelativeTimeFromNow(date: Date, locale: string): string {
+  const diffInSeconds = Math.round((date.getTime() - Date.now()) / 1000);
+  const abs = Math.abs(diffInSeconds);
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+
+  if (abs < 60) return formatter.format(diffInSeconds, "second");
+  if (abs < 3600) return formatter.format(Math.round(diffInSeconds / 60), "minute");
+  if (abs < 86400) return formatter.format(Math.round(diffInSeconds / 3600), "hour");
+  if (abs < 2592000) return formatter.format(Math.round(diffInSeconds / 86400), "day");
+  if (abs < 31536000) return formatter.format(Math.round(diffInSeconds / 2592000), "month");
+  return formatter.format(Math.round(diffInSeconds / 31536000), "year");
 }
 
 function DonorBadges({ rank }: { rank: number }) {
+  const t = useTranslations("marketplace.leaderboard.card");
   if (rank === 1) {
     return (
       <div className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
         <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
           <CrownIcon className="size-3.5" />
-          Top Donor
+          {t("topDonor")}
         </span>
         <span className="hidden items-center gap-1 whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary sm:inline-flex">
           <LeafIcon className="size-3.5" />
-          Nature Champion
+          {t("natureChampion")}
         </span>
       </div>
     );
@@ -61,7 +81,7 @@ function DonorBadges({ rank }: { rank: number }) {
       <div className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
         <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
           <SparklesIcon className="size-3.5" />
-          Consistent Giver
+          {t("consistentGiver")}
         </span>
       </div>
     );
@@ -72,7 +92,7 @@ function DonorBadges({ rank }: { rank: number }) {
       <div className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
         <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
           <SparklesIcon className="size-3.5" />
-          Rising Supporter
+          {t("risingSupporter")}
         </span>
       </div>
     );
@@ -87,10 +107,13 @@ interface DonorCardProps {
 }
 
 export function DonorCard({ entry, index }: DonorCardProps) {
+  const t = useTranslations("marketplace.leaderboard.card");
+  const locale = useLocale();
+  const anonymousLabel = (address: string) => t("anonymous", { address });
   const relativeTime = entry.lastDonatedAt
     ? (() => {
         try {
-          return formatDistanceToNow(new Date(entry.lastDonatedAt), { addSuffix: true });
+          return formatRelativeTimeFromNow(new Date(entry.lastDonatedAt), locale);
         } catch {
           return null;
         }
@@ -101,9 +124,10 @@ export function DonorCard({ entry, index }: DonorCardProps) {
   const actionHref = isWallet
     ? links.external.basescanAddress(entry.donorId)
     : links.account.byDid(entry.donorId);
+  const walletLabel = formatWalletAddress(entry.donorId, anonymousLabel);
   const actionLabel = isWallet
-    ? `Open ${formatWalletAddress(entry.donorId)} on BaseScan`
-    : "Open donor account in a new tab";
+    ? t("openWallet", { wallet: walletLabel })
+    : t("openAccount");
 
   return (
     <motion.div
@@ -134,7 +158,7 @@ export function DonorCard({ entry, index }: DonorCardProps) {
         <div className="flex min-w-0 items-center gap-2">
           {isWallet ? (
             <span className="truncate text-sm font-semibold text-foreground sm:text-base" title={entry.donorId}>
-              {formatWalletAddress(entry.donorId)}
+              {walletLabel}
             </span>
           ) : (
             <UserChip
@@ -149,16 +173,23 @@ export function DonorCard({ entry, index }: DonorCardProps) {
           <DonorBadges rank={entry.rank} />
         </div>
         <p className="mt-1 truncate text-xs text-muted-foreground sm:text-sm">
-          {donationSummary(entry, relativeTime)}
+          {donationSummary(
+            entry,
+            relativeTime,
+            (count) => t("donationSummary", { count }),
+            (value) => t("lastDonation", { relativeTime: value }),
+          )}
         </p>
       </div>
 
       <div className="text-right">
         <div className="whitespace-nowrap text-base font-bold tabular-nums text-primary sm:text-lg">
-          ${entry.totalAmount.toLocaleString("en-US", {
+          {new Intl.NumberFormat(locale, {
+            style: "currency",
+            currency: "USD",
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
-          })}
+          }).format(entry.totalAmount)}
         </div>
       </div>
 

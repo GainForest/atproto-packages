@@ -1,9 +1,14 @@
+import { getTranslations } from "next-intl/server";
 import { LeaderboardClient } from "./_components/LeaderboardClient";
 
-export const metadata = {
-  title: "Leaderboard — Bumicerts",
-  description: "See the top donors making an impact on Bumicerts. Our Impact Champions are ranked by their total funding contributions.",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("marketplace.leaderboard.metadata");
+
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 export default function LeaderboardPage() {
   return <LeaderboardClient />;

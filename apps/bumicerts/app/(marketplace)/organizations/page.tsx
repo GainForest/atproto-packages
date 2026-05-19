@@ -2,14 +2,18 @@ import { AllOrgsShell } from "./_components/AllOrgsShell";
 import { listOrganizationData } from "@/lib/account/server";
 import ErrorPage from "@/components/error-page";
 import type { OrganizationData } from "@/lib/types";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Organizations — Bumicerts",
-  description:
-    "Browse all nature steward organizations creating verified environmental impact on Bumicerts.",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("marketplace.organizations.metadata");
+
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 export default async function AllOrganizationsPage() {
   let organizations: OrganizationData[] = [];
@@ -26,10 +30,12 @@ export default async function AllOrganizationsPage() {
   }
 
   if (fetchError) {
+    const t = await getTranslations("marketplace.organizations.error");
+
     return (
       <ErrorPage
-        title="Something went wrong"
-        description="We were unable to load the organizations. Please try refreshing the page."
+        title={t("title")}
+        description={t("description")}
         showRefreshButton
         showHomeButton={false}
       />

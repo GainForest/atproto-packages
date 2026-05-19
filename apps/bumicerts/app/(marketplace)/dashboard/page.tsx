@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { listOrganizationData } from "@/lib/account/server";
 import { DashboardClient } from "./_components/DashboardClient";
 
-export const metadata: Metadata = {
-  title: "Donations Dashboard — Bumicerts",
-  description:
-    "Platform-wide donations analytics: total raised, unique donors, funding trends, and recent transactions.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("marketplace.dashboard.metadata");
+
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 /**
  * Fetches every organization's DID → country code mapping server-side so the

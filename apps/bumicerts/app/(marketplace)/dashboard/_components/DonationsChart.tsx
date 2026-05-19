@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { TrendingUpIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { TimeGranularity, TimeSeriesPoint } from "../_utils/aggregations";
 
 interface DonationsChartProps {
@@ -18,21 +19,14 @@ interface DonationsChartProps {
   granularity: TimeGranularity;
 }
 
-const GRANULARITIES: { value: TimeGranularity; label: string }[] = [
-  { value: "day", label: "Daily" },
-  { value: "week", label: "Weekly" },
-  { value: "month", label: "Monthly" },
-];
+const GRANULARITIES: TimeGranularity[] = ["day", "week", "month"];
 
-function formatDate(date: string, granularity: TimeGranularity): string {
+function formatDate(date: string, granularity: TimeGranularity, locale: string): string {
   const d = new Date(date);
   if (granularity === "month") {
-    return d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+    return d.toLocaleDateString(locale, { month: "short", year: "2-digit" });
   }
-  if (granularity === "week") {
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  }
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return d.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
 interface ChartTooltipProps {
@@ -42,6 +36,8 @@ interface ChartTooltipProps {
 }
 
 function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
+  const t = useTranslations("marketplace.dashboard.chart");
+  const locale = useLocale();
   if (!active || !payload?.length) return null;
   const amount: number = payload[0]?.value ?? 0;
   const count: number = payload[0]?.payload?.count ?? 0;
@@ -49,10 +45,10 @@ function ChartTooltip({ active, payload, label }: ChartTooltipProps) {
     <div className="rounded-xl border border-border bg-background px-3 py-2 shadow-sm text-xs">
       <p className="font-medium text-foreground">{label}</p>
       <p className="text-muted-foreground mt-0.5">
-        {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)}
+        {new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(amount)}
       </p>
       <p className="text-muted-foreground">
-        {count} donation{count !== 1 ? "s" : ""}
+        {t("donationCount", { count })}
       </p>
     </div>
   );
@@ -63,9 +59,11 @@ export function DonationsChart({
   granularity,
   onGranularityChange,
 }: DonationsChartProps) {
+  const t = useTranslations("marketplace.dashboard.chart");
+  const locale = useLocale();
   const formatted = data.map((d) => ({
     ...d,
-    label: formatDate(d.date, granularity),
+    label: formatDate(d.date, granularity, locale),
   }));
 
   return (
@@ -76,22 +74,22 @@ export function DonationsChart({
           <div className="flex items-center gap-2">
             <TrendingUpIcon className="h-4 w-4 text-primary" />
             <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-              Donation Volume Over Time
+              {t("title")}
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
-            USD raised per {granularity}
+            {t("raisedPer", { granularity })}
           </p>
         </div>
         {/* Granularity toggle */}
         <div className="flex items-center gap-1 rounded-full border border-border bg-muted/30 p-1">
           {GRANULARITIES.map((g) => {
-            const active = granularity === g.value;
+            const active = granularity === g;
             return (
               <button
-                key={g.value}
+                key={g}
                 type="button"
-                onClick={() => onGranularityChange(g.value)}
+                onClick={() => onGranularityChange(g)}
                 className={[
                   "rounded-full px-3 py-1 text-xs font-medium transition-all duration-200",
                   active
@@ -99,7 +97,7 @@ export function DonationsChart({
                     : "text-muted-foreground hover:text-foreground",
                 ].join(" ")}
               >
-                {g.label}
+                {t(`granularities.${g}`)}
               </button>
             );
           })}
@@ -108,7 +106,7 @@ export function DonationsChart({
 
       {data.length === 0 ? (
         <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
-          No donation data for this period.
+          {t("empty")}
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={240}>
