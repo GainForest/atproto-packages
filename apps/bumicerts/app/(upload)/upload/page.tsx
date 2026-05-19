@@ -5,6 +5,7 @@ import { buildUploadAccountPageData } from "@/lib/account/server";
 import ErrorPage from "@/components/error-page";
 import { getIndexerCaller } from "@/lib/trpc/indexer/server";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { links } from "@/lib/links";
 import { shouldClearDashboardMode } from "./_components/uploadDashboardMode";
 
@@ -50,6 +51,7 @@ export default async function UploadPage({
 }: {
   searchParams: UploadPageSearchParams;
 }) {
+  const t = await getTranslations("upload.errors");
   const session = await auth.session.getSession();
 
   // Layout already guards against unauthenticated access, but we need the
@@ -68,8 +70,8 @@ export default async function UploadPage({
     console.error("[UploadPage] Failed to read account", session.did, error);
     return (
       <ErrorPage
-        title="Couldn't load your account"
-        description="We had trouble fetching your account data. Please try again."
+        title={t("accountTitle")}
+        description={t("accountDescription")}
         error={error}
       />
     );
@@ -89,11 +91,15 @@ export default async function UploadPage({
   try {
     initialData = await buildUploadAccountPageData(account);
   } catch (error) {
-    console.error("[UploadPage] Failed to build account page data", session.did, error);
+    console.error(
+      "[UploadPage] Failed to build account page data",
+      session.did,
+      error,
+    );
     return (
       <ErrorPage
-        title="Couldn't load your account"
-        description="We had trouble fetching your account data. Please try again."
+        title={t("accountTitle")}
+        description={t("accountDescription")}
         error={error}
       />
     );

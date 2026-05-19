@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { TREE_UPLOAD_EVENTS } from "@/lib/analytics/events";
 import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
@@ -13,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TARGET_FIELDS } from "@/lib/upload/types";
+import { getTargetFieldLabel, TARGET_FIELDS } from "@/lib/upload/types";
 import type { ColumnMapping } from "@/lib/upload/types";
 import { inferSubjectPartFromColumnName } from "@/lib/upload/column-mapper";
 import {
@@ -95,6 +96,8 @@ export default function ColumnMappingStep({
   onNext,
   onBack,
 }: ColumnMappingStepProps) {
+  const t = useTranslations("upload.trees.mapping");
+  const tTargetFields = useTranslations("upload.trees.targetFields");
   const koboDetection = useMemo(() => detectKoboFormat(headers), [headers]);
 
   // Detect duplicate target mappings: target -> list of source columns
@@ -187,21 +190,19 @@ export default function ColumnMappingStep({
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold">Map Your Columns</h2>
+        <h2 className="text-lg font-semibold">{t("title")}</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          {headers.length} column{headers.length !== 1 ? "s" : ""} found.
-          Match each source column to a Darwin Core field.
+          {t("description", { count: headers.length })}
         </p>
       </div>
 
       {/* Missing required fields warning */}
       {!allRequiredMapped && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive space-y-1">
-          <p className="font-medium">Required fields not yet mapped:</p>
+          <p className="font-medium">{t("requiredMissing")}</p>
           <ul className="list-disc list-inside space-y-0.5">
             {missingRequired.map((field) => {
-              const meta = TARGET_FIELDS.find((f) => f.field === field);
-              return <li key={field}>{meta?.label ?? field}</li>;
+              return <li key={field}>{getTargetFieldLabel(field, tTargetFields)}</li>;
             })}
           </ul>
         </div>
@@ -212,11 +213,9 @@ export default function ColumnMappingStep({
         <div className="flex items-start gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-300">
           <CircleAlertIcon className="h-4 w-4 mt-0.5 shrink-0" />
           <div className="space-y-1">
-            <p className="font-medium">Check unmapped columns before continuing.</p>
+            <p className="font-medium">{t("checkUnmapped")}</p>
             <p className="text-yellow-700/90 dark:text-yellow-300/90">
-              {skippedColumnCount} column{skippedColumnCount !== 1 ? "s" : ""} {skippedColumnCount !== 1 ? "are" : "is"} not mapped yet.
-              They will be skipped. This is OK if they are not needed. Please
-              check before you continue.
+              {t("unmappedCount", { count: skippedColumnCount })}
             </p>
           </div>
         </div>
@@ -227,13 +226,12 @@ export default function ColumnMappingStep({
           <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
           <div className="space-y-1">
             <p className="font-medium text-foreground">
-              Kobo metadata handled automatically.
+              {t("koboHandled")}
             </p>
             <p>
-              {expectedSkippedKoboColumnCount} Kobo metadata or private attachment
-              URL column{expectedSkippedKoboColumnCount !== 1 ? "s" : ""} will be
-              ignored intentionally. Filename photo columns and row UUID metadata
-              are still used behind the scenes to match images from the ZIP.
+              {t("koboHandledDescription", {
+                count: expectedSkippedKoboColumnCount,
+              })}
             </p>
           </div>
         </div>
@@ -243,9 +241,9 @@ export default function ColumnMappingStep({
       <div className="rounded-lg border overflow-hidden">
         {/* Table header */}
         <div className="grid grid-cols-[1fr_1fr_1fr] gap-0 bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          <span>Source Column</span>
-          <span>Sample Value</span>
-          <span>Map To</span>
+          <span>{t("sourceColumn")}</span>
+          <span>{t("sampleValue")}</span>
+          <span>{t("mapTo")}</span>
         </div>
 
         {/* Rows */}
@@ -312,7 +310,7 @@ export default function ColumnMappingStep({
                     onValueChange={(val) => handleSelectChange(header, val)}
                   >
                     <SelectTrigger className="h-8 text-xs flex-1">
-                      <SelectValue placeholder="Skip this column" />
+                      <SelectValue placeholder={t("skipColumn")} />
                     </SelectTrigger>
                     <SelectContent>
                       {/* Skip option — must use a non-empty sentinel; Radix throws on value="" */}
@@ -324,10 +322,10 @@ export default function ColumnMappingStep({
 
                       {/* Required Occurrence */}
                       <SelectGroup>
-                        <SelectLabel>Required Occurrence</SelectLabel>
+                        <SelectLabel>{t("requiredOccurrence")}</SelectLabel>
                         {OCCURRENCE_REQUIRED.map((f) => (
                           <SelectItem key={f.field} value={f.field}>
-                            {f.label}{" "}
+                            {getTargetFieldLabel(f.field, tTargetFields)}{" "}
                             <span className="text-destructive ml-1">*</span>
                           </SelectItem>
                         ))}
@@ -335,30 +333,30 @@ export default function ColumnMappingStep({
 
                       {/* Optional Occurrence */}
                       <SelectGroup>
-                        <SelectLabel>Optional Occurrence</SelectLabel>
+                        <SelectLabel>{t("optionalOccurrence")}</SelectLabel>
                         {OCCURRENCE_OPTIONAL.map((f) => (
                           <SelectItem key={f.field} value={f.field}>
-                            {f.label}
+                            {getTargetFieldLabel(f.field, tTargetFields)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
 
                       {/* Measurements */}
                       <SelectGroup>
-                        <SelectLabel>Measurements</SelectLabel>
+                        <SelectLabel>{t("measurements")}</SelectLabel>
                         {MEASUREMENTS.map((f) => (
                           <SelectItem key={f.field} value={f.field}>
-                            {f.label}
+                            {getTargetFieldLabel(f.field, tTargetFields)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
 
                       {/* Media */}
                       <SelectGroup>
-                        <SelectLabel>Media</SelectLabel>
+                        <SelectLabel>{t("media")}</SelectLabel>
                         {MEDIA.map((f) => (
                           <SelectItem key={f.field} value={f.field}>
-                            {f.label}
+                            {getTargetFieldLabel(f.field, tTargetFields)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -376,25 +374,25 @@ export default function ColumnMappingStep({
                   {isDuplicate ? (
                     <AlertTriangle
                       className="h-4 w-4 shrink-0 text-yellow-500"
-                      aria-label="Duplicate mapping — only the first source column will be used"
+                      aria-label={t("duplicateAria")}
                       role="img"
                     />
                   ) : isMapped ? (
                     <CheckCircle2
                       className="h-4 w-4 shrink-0 text-primary"
-                      aria-label="Mapped column"
+                      aria-label={t("mappedAria")}
                       role="img"
                     />
                   ) : isExpectedKoboSkip ? (
                     <CheckCircle2
                       className="h-4 w-4 shrink-0 text-muted-foreground/60"
-                      aria-label="Intentionally skipped Kobo metadata column"
+                      aria-label={t("expectedSkipAria")}
                       role="img"
                     />
                   ) : (
                     <CircleAlertIcon
                       className="h-4 w-4 shrink-0 text-yellow-500"
-                      aria-label="Skipped column — review before continuing"
+                      aria-label={t("skippedAria")}
                       role="img"
                     />
                   )}
@@ -410,10 +408,7 @@ export default function ColumnMappingStep({
         <div className="flex items-start gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-600 dark:text-yellow-400">
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
           <span>
-            Multiple source columns are mapped to the same target field. Only
-            the first mapping will be used; duplicates are highlighted.
-            (Photo URL columns are an exception — multiple columns can map to
-            Photo URL for multi-photo trees.)
+            {t("duplicateWarning")}
           </span>
         </div>
       )}
@@ -422,29 +417,29 @@ export default function ColumnMappingStep({
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-          Mapped
+          {t("mapped")}
         </span>
         <span className="flex items-center gap-1">
           <CircleAlertIcon className="h-3.5 w-3.5 text-yellow-500" />
-          Skipped — not uploaded
+          {t("skippedNotUploaded")}
         </span>
         <span className="flex items-center gap-1">
           <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />
-          Duplicate
+          {t("duplicate")}
         </span>
         <span className="flex items-center gap-1">
           <span className="text-destructive font-medium">*</span>
-          Required field
+          {t("requiredField")}
         </span>
       </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-2 border-t border-border">
         <Button variant="outline" onClick={onBack}>
-          Back
+          {t("back")}
         </Button>
         <Button onClick={handleNext} disabled={!allRequiredMapped}>
-          Continue to Preview
+          {t("continue")}
         </Button>
       </div>
     </div>

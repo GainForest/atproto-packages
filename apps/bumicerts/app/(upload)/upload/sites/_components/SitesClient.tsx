@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, CirclePlusIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,6 +35,9 @@ const generateSiteUrls = (did: string, rkey: string | null) => {
 };
 
 export function SitesClient({ did }: SitesClientProps) {
+  const t = useTranslations("upload.sites");
+  const tActions = useTranslations("upload.actions");
+  const tErrors = useTranslations("upload.errors");
   const queryClient = useQueryClient();
   const { pushModal, show } = useModal();
 
@@ -99,14 +103,14 @@ export function SitesClient({ did }: SitesClientProps) {
       <Container className="pt-4 pb-8">
         <div className="flex flex-col items-center justify-center h-40 gap-4 text-center">
           <p className="text-destructive text-sm">
-            Failed to load sites. Please try refreshing.
+            {tErrors("sitesInline")}
           </p>
           <Button
             variant="outline"
             size="sm"
             onClick={() => void queryClient.invalidateQueries()}
           >
-            Retry
+            {tActions("retry")}
           </Button>
         </div>
       </Container>
@@ -123,11 +127,11 @@ export function SitesClient({ did }: SitesClientProps) {
           className="text-2xl font-bold"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
-          Sites
+          {t("title")}
         </h1>
         <Button size="sm" className="rounded-full" onClick={handleAddSite}>
           <CirclePlusIcon />
-          Add site
+          {t("addSite")}
         </Button>
       </div>
 
@@ -180,14 +184,14 @@ export function SitesClient({ did }: SitesClientProps) {
             className="text-xl font-semibold text-muted-foreground"
             style={{ fontFamily: "var(--font-garamond-var)" }}
           >
-            No sites yet
+            {t("emptyTitle")}
           </p>
           <p className="text-sm text-muted-foreground">
-            Add your first site to get started.
+            {t("emptyDescription")}
           </p>
           <Button variant="outline" size="sm" onClick={handleAddSite}>
             <CirclePlusIcon />
-            Add a site
+            {t("addASite")}
           </Button>
         </motion.div>
       ) : (

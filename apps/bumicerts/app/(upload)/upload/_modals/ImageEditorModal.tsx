@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useModal } from "@/components/ui/modal/context";
 import {
   ModalContent,
@@ -20,6 +21,8 @@ interface ImageEditorModalProps {
 }
 
 export function ImageEditorModal({ target, onConfirm }: ImageEditorModalProps) {
+  const t = useTranslations("upload.modals");
+  const tActions = useTranslations("upload.actions");
   const { hide, popModal, stack } = useModal();
   const [file, setFile] = useState<File | null>(null);
 
@@ -38,11 +41,9 @@ export function ImageEditorModal({ target, onConfirm }: ImageEditorModalProps) {
     await handleClose();
   };
 
-  const title = target === "cover" ? "Change cover image" : "Change logo";
+  const title = target === "cover" ? t("imageCoverTitle") : t("imageLogoTitle");
   const description =
-    target === "cover"
-      ? "Upload a new cover photo. Recommended size: 1200 × 400 px."
-      : "Upload a new logo. Recommended size: 200 × 200 px.";
+    target === "cover" ? t("imageCoverDescription") : t("imageLogoDescription");
 
   return (
     <ModalContent>
@@ -57,16 +58,16 @@ export function ImageEditorModal({ target, onConfirm }: ImageEditorModalProps) {
           maxSizeInMB={5}
           value={file}
           onFileChange={setFile}
-          placeholder="Upload or drag and drop an image"
+          placeholder={t("imagePlaceholder")}
         />
       </div>
 
       <ModalFooter className="flex justify-end gap-2">
         <Button variant="outline" onClick={handleClose}>
-          Cancel
+          {tActions("cancel")}
         </Button>
         <Button onClick={handleConfirm} disabled={!file}>
-          Apply
+          {tActions("apply")}
         </Button>
       </ModalFooter>
     </ModalContent>
