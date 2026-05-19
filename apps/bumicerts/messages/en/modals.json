@@ -256,5 +256,97 @@
       "bumicertPlural": "Bumicerts",
       "shareText": "I just donated ${amount} to {count} {bumicertLabel}. Explore bumicerts on {shareUrl}"
     }
+  },
+  "auth": {
+    "title": "Sign in to Bumicerts",
+    "description": "Sign in with your username to access Bumicerts."
+  },
+  "accountSetupChoice": {
+    "titleSr": "Choose how you will use Bumicerts",
+    "descriptionSr": "Choose whether to continue onboarding as a funder or a nature steward.",
+    "title": "How will you use Bumicerts?",
+    "description": "Choose your role to get started...",
+    "funder": "Funder",
+    "funderDescription": "Explore and fund impactful regenerative projects",
+    "steward": "Nature Steward",
+    "stewardDescription": "Manage your organization, issue Bumicerts and upload supporting evidence"
+  },
+  "evidenceDelete": {
+    "title": "Remove Evidence",
+    "description": "Remove {title} from this bumicert’s timeline? This cannot be undone.",
+    "removing": "Removing…",
+    "remove": "Remove Evidence",
+    "cancel": "Cancel"
+  },
+  "drawPolygon": {
+    "title": "Draw Polygon",
+    "description": "Draw a polygon on the map",
+    "iframeTitle": "Draw Polygon",
+    "done": "Done"
+  },
+  "photoAttachment": {
+    "title": "Add Photo to {speciesName}",
+    "description": "Select the part of the tree shown in your photo and upload an image to attach it to this occurrence record.",
+    "subjectPart": "Subject Part",
+    "image": "Image",
+    "previewAlt": "Preview",
+    "replace": "Click or drag to replace",
+    "drop": "Drag & drop or click to select",
+    "requirements": "JPEG, PNG, WebP, HEIC — max 4.5 MB",
+    "caption": "Caption",
+    "optional": "optional",
+    "captionPlaceholder": "Describe the photo…",
+    "uploading": "Uploading…",
+    "upload": "Upload Photo",
+    "cancel": "Cancel",
+    "errors": {
+      "unsupported": "Only JPEG, PNG, WebP, and HEIC images are supported.",
+      "tooLarge": "File is too large. Maximum size is 4.5 MB (got {size})."
+    },
+    "parts": {
+      "entireOrganism": "Entire Organism",
+      "leaf": "Leaf",
+      "bark": "Bark",
+      "flower": "Flower",
+      "fruit": "Fruit",
+      "seed": "Seed",
+      "stem": "Stem",
+      "twig": "Twig",
+      "bud": "Bud",
+      "root": "Root"
+    }
+  },
+  "siteEditor": {
+    "titleEdit": "Edit Site",
+    "titleAdd": "Add Site",
+    "descriptionEdit": "Edit the site information.",
+    "descriptionAdd": "Add a new site to the organization.",
+    "nameLabel": "Enter a name for the site",
+    "namePlaceholder": "Grassroots Farm",
+    "previewTitle": "Site shapefile preview",
+    "edit": "Edit",
+    "uploadPlaceholder": "Upload a GeoJSON file",
+    "or": "or",
+    "drawSite": "Draw a site",
+    "successEdit": "Site updated successfully",
+    "successAdd": "Site added successfully",
+    "checking": "Checking boundary...",
+    "saving": "Saving...",
+    "save": "Save",
+    "adding": "Adding...",
+    "add": "Add",
+    "close": "Close",
+    "errors": {
+      "unauthenticated": "User is not authenticated",
+      "verifyBoundary": "Couldn’t verify existing linked trees against the new boundary. Try again before saving.",
+      "shapefileRequired": "Shapefile is required",
+      "recordKeyRequired": "Record key is required for editing",
+      "uncheckedTrees": "{count} linked {count, plural, one {tree} other {trees}} could not be checked because coordinates are missing. Keep the existing boundary or fix those tree records first.",
+      "boundaryBlocked": "This boundary would exclude {count} linked {count, plural, one {tree} other {trees}}. Keep those trees inside the site before saving. {sample}",
+      "treeFallback": "Tree {index}",
+      "nearBoundary": "near boundary",
+      "outOfSite": "out of site",
+      "invalidBoundary": "invalid boundary"
+    }
   }
 }

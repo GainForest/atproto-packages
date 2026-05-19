@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Building2Icon, HandHeartIcon } from "lucide-react";
 import { OnboardingRoleSelector } from "@/components/auth/OnboardingRoleSelector";
@@ -15,6 +16,7 @@ import { links } from "@/lib/links";
 export function AccountSetupChoiceModal() {
   const router = useRouter();
   const { hide, popModal, stack } = useModal();
+  const t = useTranslations("modals.accountSetupChoice");
 
   const handleOptionClick = useCallback(
     async (href: string) => {
@@ -32,29 +34,27 @@ export function AccountSetupChoiceModal() {
   return (
     <ModalContent>
       <ModalTitle className="sr-only">
-        Choose how you will use Bumicerts
+        {t("titleSr")}
       </ModalTitle>
       <ModalDescription className="sr-only">
-        Choose whether to continue onboarding as a funder or a nature steward.
+        {t("descriptionSr")}
       </ModalDescription>
       <OnboardingRoleSelector
-        title="How will you use Bumicerts?"
-        description="Choose your role to get started..."
+        title={t("title")}
+        description={t("description")}
         options={[
           {
             onClick: () => void handleOptionClick(links.manage.onboardUser),
             Icon: HandHeartIcon,
-            optionName: "Funder",
-            optionDescription:
-              "Explore and fund impactful regenerative projects",
+            optionName: t("funder"),
+            optionDescription: t("funderDescription"),
           },
           {
             onClick: () =>
               void handleOptionClick(links.manage.onboardOrganization),
             Icon: Building2Icon,
-            optionName: "Nature Steward",
-            optionDescription:
-              "Manage your organization, issue Bumicerts and upload supporting evidence",
+            optionName: t("steward"),
+            optionDescription: t("stewardDescription"),
           },
         ]}
       />

@@ -7,6 +7,7 @@ import {
   ModalTitle,
 } from "@/components/ui/modal/modal";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronLeftIcon, Loader2Icon } from "lucide-react";
 import { useModal } from "@/components/ui/modal/context";
 import { VisuallyHidden } from "radix-ui";
@@ -102,6 +103,7 @@ function processPolygonData(data: unknown): string | null {
 
 const DrawPolygonModal = ({ onSubmit }: DrawPolygonModalProps) => {
   const { popModal, stack, hide } = useModal();
+  const t = useTranslations("modals.drawPolygon");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [polygonData, setPolygonData] = useState<string | null>(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -148,8 +150,8 @@ const DrawPolygonModal = ({ onSubmit }: DrawPolygonModalProps) => {
     <ModalContent className="px-0 py-0" dismissible={false}>
       <VisuallyHidden.Root>
         <ModalHeader>
-          <ModalTitle>Draw Polygon</ModalTitle>
-          <ModalDescription>Draw a polygon on the map</ModalDescription>
+          <ModalTitle>{t("title")}</ModalTitle>
+          <ModalDescription>{t("description")}</ModalDescription>
         </ModalHeader>
       </VisuallyHidden.Root>
       <div className="w-full relative">
@@ -162,7 +164,7 @@ const DrawPolygonModal = ({ onSubmit }: DrawPolygonModalProps) => {
           ref={iframeRef}
           src={links.external.polygonsAppUrl({ mode: "draw" })}
           className="w-full h-[500px] overflow-hidden rounded-lg"
-          title="Draw Polygon"
+          title={t("iframeTitle")}
           onLoad={() => setIframeLoaded(true)}
         />
         {stack.length > 1 && (
@@ -180,7 +182,7 @@ const DrawPolygonModal = ({ onSubmit }: DrawPolygonModalProps) => {
       </div>
       <ModalFooter>
         <Button onClick={handleSubmit} disabled={!polygonData}>
-          Done
+          {t("done")}
         </Button>
       </ModalFooter>
     </ModalContent>

@@ -6,6 +6,7 @@
  */
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useModal } from "@/components/ui/modal/context";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +35,7 @@ export function EvidenceDeleteModal({
   onDeleted,
 }: EvidenceDeleteModalProps) {
   const { hide, clear } = useModal();
+  const t = useTranslations("modals.evidenceDelete");
   const indexerUtils = indexerTrpc.useUtils();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,10 +66,11 @@ export function EvidenceDeleteModal({
   return (
     <ModalContent dismissible={!isDeleting}>
       <ModalHeader>
-        <ModalTitle>Remove Evidence</ModalTitle>
+        <ModalTitle>{t("title")}</ModalTitle>
         <ModalDescription>
-          Remove <span className="font-medium text-foreground">{title}</span>{" "}
-          from this bumicert&apos;s timeline? This cannot be undone.
+          {t.rich("description", {
+            title: () => <span className="font-medium text-foreground">{title}</span>,
+          })}
         </ModalDescription>
       </ModalHeader>
 
@@ -79,7 +82,7 @@ export function EvidenceDeleteModal({
           onClick={handleDelete}
           disabled={isDeleting}
         >
-          {isDeleting ? "Removing…" : "Remove Evidence"}
+          {isDeleting ? t("removing") : t("remove")}
         </Button>
         <Button
           variant="outline"
@@ -87,7 +90,7 @@ export function EvidenceDeleteModal({
           onClick={handleCancel}
           disabled={isDeleting}
         >
-          Cancel
+          {t("cancel")}
         </Button>
       </ModalFooter>
     </ModalContent>
