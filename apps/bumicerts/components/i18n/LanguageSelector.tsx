@@ -16,9 +16,11 @@ import {
   getLanguageLabel,
   isSupportedLanguageCode,
 } from "@/lib/i18n/languages";
+import { getHomeCopy } from "@/lib/i18n/translations";
 
 export function LanguageSelector() {
   const { language, setLanguage } = useLanguage();
+  const copy = getHomeCopy(language).language;
 
   return (
     <DropdownMenu>
@@ -28,14 +30,14 @@ export function LanguageSelector() {
           variant="ghost"
           size="sm"
           className="h-8 rounded-lg px-2 text-muted-foreground hover:text-foreground"
-          aria-label={`Change language. Current language: ${getLanguageLabel(language)}`}
+          aria-label={`${copy.changeAria}. ${copy.currentLanguage}: ${getLanguageLabel(language)}`}
         >
           <Globe2Icon aria-hidden="true" />
           <span className="text-xs font-semibold uppercase">{language}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Language</DropdownMenuLabel>
+        <DropdownMenuLabel>{copy.label}</DropdownMenuLabel>
         <DropdownMenuRadioGroup
           value={language}
           onValueChange={(value) => {

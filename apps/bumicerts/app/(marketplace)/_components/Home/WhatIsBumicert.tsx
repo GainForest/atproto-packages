@@ -4,35 +4,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { LeafIcon } from "lucide-react";
 import { useState } from "react";
 import { BumicertCardVisual } from "@/components/bumicert/BumicertCard";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { getHomeCopy } from "@/lib/i18n/translations";
 
-const FAQ_ITEMS = [
-  {
-    id: "1",
-    question: "A digital certificate of impact",
-    answer:
-      "A Bumicert records a specific environmental action — giving it a permanent, verifiable identity on an open, decentralized network (the same technology that powers Bluesky).",
-  },
-  {
-    id: "2",
-    question: "Backed by real evidence",
-    answer:
-      "Photos, geolocation, timestamps, monitoring data. Every claim is verifiable. This isn't a promise of future impact — it's proof of work already done.",
-  },
-  {
-    id: "3",
-    question: "A direct line to communities",
-    answer:
-      "When you fund a Bumicert, your money reaches the exact people doing the restoration. No intermediaries skimming fees. No vague overhead.",
-  },
-  {
-    id: "4",
-    question: "Your claim to the story",
-    answer:
-      "Owning a Bumicert means you're part of that moment. A tree planted. A reef restored. An ecosystem revived. It's yours to share, hold, or gift.",
-  },
-];
-
-type FaqItem = (typeof FAQ_ITEMS)[number];
+type FaqItem = ReturnType<typeof getHomeCopy>["certificate"]["faqItems"][number];
 
 function AccordionItem({
   item,
@@ -87,6 +62,8 @@ function AccordionItem({
 
 export function WhatIsBumicert() {
   const [openItem, setOpenItem] = useState<string>("1");
+  const { language } = useLanguage();
+  const copy = getHomeCopy(language).certificate;
 
   return (
     <section className="px-6 pb-6 pt-4 sm:px-12 md:px-6 md:pb-10 md:pt-6">
@@ -101,20 +78,20 @@ export function WhatIsBumicert() {
             <div className="mb-4 flex items-center gap-2 text-primary">
               <LeafIcon className="size-4" />
               <span className="text-xs font-bold uppercase tracking-[0.15em]">
-                The Certificate
+                {copy.eyebrow}
               </span>
             </div>
 
             <h2 className="mb-5 font-garamond text-4xl font-light leading-[1.04] tracking-[-0.015em] text-foreground md:text-5xl">
-              What exactly is
+              {copy.titleLine1}
               <br />
               <span className="font-instrument italic text-foreground">
-                a Bumicert?
+                {copy.titleLine2}
               </span>
             </h2>
 
             <div>
-              {FAQ_ITEMS.map((item, index) => (
+              {copy.faqItems.map((item, index) => (
                 <AccordionItem
                   key={item.id}
                   item={item}
@@ -141,10 +118,10 @@ export function WhatIsBumicert() {
                 className="relative shadow-xl shadow-foreground/10 [&_h3]:text-xl [&_h3]:leading-tight [&_p]:text-sm [&_p]:leading-relaxed"
                 logoUrl="/assets/media/images/gainforest-logo.svg"
                 coverImage="/assets/media/images/landing/certificate-river.jpg"
-                title="Reforestation of Mount Halimun"
-                description="Community-led restoration of native forest in West Java, Indonesia. 5,000 trees planted across 12 hectares."
+                title={copy.previewTitle}
+                description={copy.previewDescription}
                 organizationName="Bumicerts"
-                objectives={["Reforestation", "Biodiversity"]}
+                objectives={copy.objectives}
               />
             </div>
           </motion.div>

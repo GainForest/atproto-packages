@@ -4,9 +4,14 @@ import { motion } from "framer-motion";
 import { CameraIcon, LeafIcon, MapPinIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { getHomeCopy } from "@/lib/i18n/translations";
 import { links } from "@/lib/links";
 
 export function Hero() {
+  const { language } = useLanguage();
+  const copy = getHomeCopy(language).hero;
+
   return (
     <section className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-background">
       <div className="absolute inset-y-0 right-0 w-full overflow-hidden">
@@ -18,7 +23,7 @@ export function Hero() {
         >
           <Image
             src="/assets/media/images/landing/hero-rainforest.jpg"
-            alt="Misty rainforest valley"
+            alt={copy.imageAlt}
             fill
             priority
             sizes="(min-width: 768px) 58vw, 100vw"
@@ -37,13 +42,13 @@ export function Hero() {
             className="max-w-[620px] flex flex-col items-center md:items-start text-center md:text-left"
           >
             <h1 className="font-garamond text-5xl font-medium leading-[1.08] tracking-[-0.02em] text-foreground md:text-7xl">
-              <span className="relative inline-block">Verified Impact</span>
+              <span className="relative inline-block">{copy.headingLine1}</span>
               <br />
-              <span className="relative inline-block">starts with</span>
+              <span className="relative inline-block">{copy.headingLine2}</span>
               <br />
               <span className="font-instrument italic text-primary dark:brightness-150">
                 <span className="relative inline-block">
-                  Real
+                  {copy.headingEmphasis1}
                   <svg
                     aria-hidden="true"
                     viewBox="0 0 178 16"
@@ -59,7 +64,7 @@ export function Hero() {
                     />
                   </svg>
                 </span>{" "}
-                Communities
+                {copy.headingEmphasis2}
               </span>
             </h1>
 
@@ -73,9 +78,7 @@ export function Hero() {
               }}
               className="mt-6 max-w-[500px] leading-relaxed text-foreground/80 md:mt-8 text-lg md:text-xl"
             >
-              Fund regenerative projects directly. Every Bumicert is a verified
-              record of real environmental work — backed by photos, locations,
-              and community stewards.
+              {copy.description}
             </motion.p>
 
             <motion.div
@@ -92,7 +95,7 @@ export function Hero() {
                 href={links.explore}
                 className="inline-flex h-12 shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
               >
-                Explore Projects
+                {copy.cta}
                 <motion.span
                   className="inline-block"
                   animate={{ x: [0, 3, 0] }}
@@ -119,17 +122,17 @@ export function Hero() {
             >
               <span className="inline-flex items-center gap-3">
                 <LeafIcon className="size-6 stroke-[1.5]" />
-                Community-led
+                {copy.proofPoints[0]}
               </span>
               <span className="hidden h-8 w-px bg-foreground/20 sm:block" />
               <span className="inline-flex items-center gap-3">
                 <CameraIcon className="size-6 stroke-[1.5]" />
-                Photo-verified
+                {copy.proofPoints[1]}
               </span>
               <span className="hidden h-8 w-px bg-foreground/20 sm:block" />
               <span className="inline-flex items-center gap-3">
                 <MapPinIcon className="size-6 stroke-[1.5]" />
-                Geolocated
+                {copy.proofPoints[2]}
               </span>
             </motion.div>
           </motion.div>

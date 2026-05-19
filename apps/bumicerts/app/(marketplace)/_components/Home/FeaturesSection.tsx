@@ -2,30 +2,14 @@
 
 import { motion } from "framer-motion";
 import { LeafIcon } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { getHomeCopy } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
-const FEATURES = [
-  {
-    number: "01",
-    title: "Verified environmental impact",
-    description:
-      "Every certificate is backed by photos, geolocation data, and community verification.",
-  },
-  {
-    number: "02",
-    title: "Direct community funding",
-    description:
-      "Your support goes straight to the stewards doing on-ground restoration work.",
-  },
-  {
-    number: "03",
-    title: "Decentralized & transparent",
-    description:
-      "Built on open, decentralized infrastructure. Every action is recorded, traceable, and permanent.",
-  },
-];
-
 export function FeaturesSection() {
+  const { language } = useLanguage();
+  const copy = getHomeCopy(language).features;
+
   return (
     <section className="px-6 pb-0 pt-3 sm:px-12 md:px-6 md:pb-6 md:pt-6">
       <div className="mx-auto max-w-6xl">
@@ -38,12 +22,12 @@ export function FeaturesSection() {
         >
           <LeafIcon className="size-4 text-primary" />
           <span className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            About Us
+            {copy.eyebrow}
           </span>
         </motion.div>
 
         <div className="grid grid-cols-1 gap-12 sm:grid-cols-3 sm:gap-8">
-          {FEATURES.map((feature, index) => (
+          {copy.items.map((feature, index) => (
             <motion.div
               key={feature.number}
               initial={{ opacity: 0, y: 22 }}
@@ -58,7 +42,7 @@ export function FeaturesSection() {
                 "sm:px-5",
                 index === 0 && "sm:pl-0",
                 index > 0 && "sm:border-l sm:border-border/80",
-                index === FEATURES.length - 1 && "sm:pr-0",
+                index === copy.items.length - 1 && "sm:pr-0",
               )}
             >
               <span className="block font-garamond text-5xl font-light leading-none tracking-tight text-primary/45">

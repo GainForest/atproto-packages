@@ -4,34 +4,29 @@ import { motion } from "framer-motion";
 import { ArrowUpRightIcon, LeafIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { getHomeCopy } from "@/lib/i18n/translations";
 import { links } from "@/lib/links";
 
-const OPTION_CARDS = [
+const OPTION_CARD_ASSETS = [
   {
     href: links.explore,
     image: "/assets/media/images/landing/supporter-river.jpg",
-    alt: "River winding through rainforest",
-    label: "For Funders",
-    title: "I want to support",
-    emphasis: "a project",
-    description:
-      "Browse verified certificates and fund the exact moment of restoration.",
-    cta: "Explore Bumicerts",
   },
   {
     href: links.bumicert.create,
     image: "/assets/media/images/landing/steward-waterfall.jpg",
-    alt: "Waterfall in a tropical forest",
-    label: "For Organizations",
-    title: "I am a nature",
-    emphasis: "steward",
-    description:
-      "Showcase your regenerative work and connect with funders who care.",
-    cta: "Create a Bumicert",
   },
-];
+] as const;
 
 export function UserOptionCards() {
+  const { language } = useLanguage();
+  const copy = getHomeCopy(language).paths;
+  const cards = [
+    { ...OPTION_CARD_ASSETS[0], ...copy.cards[0] },
+    { ...OPTION_CARD_ASSETS[1], ...copy.cards[1] },
+  ];
+
   return (
     <section className="px-6 pb-6 pt-0 sm:px-12 md:px-6 md:pb-10 md:pt-2">
       <div className="mx-auto max-w-6xl">
@@ -48,16 +43,15 @@ export function UserOptionCards() {
             <span className="h-px w-8 bg-border" />
           </div>
           <h2 className="font-garamond text-4xl font-light tracking-[-0.01em] text-foreground md:text-5xl">
-            Choose Your Path
+            {copy.title}
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-muted-foreground">
-            Whether you&apos;re here to fund impact or showcase your work, there&apos;s a
-            place for you.
+            {copy.description}
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          {OPTION_CARDS.map((card, index) => (
+          {cards.map((card, index) => (
             <motion.div
               key={card.href}
               initial={{ opacity: 0, y: 22 }}

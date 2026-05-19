@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -7,6 +9,8 @@ import {
   GlobeIcon,
   TwitterIcon,
 } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { getHomeCopy } from "@/lib/i18n/translations";
 import { links } from "@/lib/links";
 
 const FOOTER_LINKS = [
@@ -37,6 +41,14 @@ const FOOTER_LINKS = [
 ];
 
 export function HomeFooter() {
+  const { language } = useLanguage();
+  const copy = getHomeCopy(language).footer;
+  const footerLinks = FOOTER_LINKS.map((link) =>
+    link.href === links.external.docs
+      ? { ...link, label: copy.documentation }
+      : link,
+  );
+
   return (
     <footer className="max-w-7xl mx-auto px-6 py-16 border-t border-border">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
@@ -61,16 +73,16 @@ export function HomeFooter() {
               fontStyle: "italic",
             }}
           >
-            Connecting communities with funders.
+            {copy.tagline}
           </p>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            Open infrastructure. Built with GainForest.
+            {copy.infrastructure}
           </p>
         </div>
 
         {/* Links */}
         <nav className="flex flex-col gap-1">
-          {FOOTER_LINKS.map((link) => (
+          {footerLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -88,7 +100,7 @@ export function HomeFooter() {
       </div>
 
       <div className="mt-8 pt-4 border-t border-border text-xs text-muted-foreground/50">
-        © {new Date().getFullYear()} Bumicerts. Open source, community-powered.
+        © {new Date().getFullYear()} Bumicerts. {copy.copyright}
       </div>
     </footer>
   );
