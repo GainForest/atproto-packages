@@ -8,12 +8,14 @@ import { CartButton } from "@/components/cart/CartButton";
 import { LanguageSelector } from "@/components/i18n/LanguageSelector";
 import { MenuIcon } from "lucide-react";
 import { useMobileNav } from "@/hooks/useMobileNav";
+import { useTranslations } from "next-intl";
 
 export function Header() {
   const leftContent = useHeaderSlots((s) => s.leftContent);
   const rightContent = useHeaderSlots((s) => s.rightContent);
   const subHeaderContent = useHeaderSlots((s) => s.subHeaderContent);
   const setMobileNavOpen = useMobileNav((s) => s.setOpen);
+  const t = useTranslations("common.navigation");
 
   return (
     <div className="sticky top-0 z-30" data-header>
@@ -45,7 +47,7 @@ export function Header() {
             whileTap={{ scale: 0.88 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className="md:hidden shrink-0 flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-            aria-label="Open navigation"
+            aria-label={t("openNavigation")}
           >
             <MenuIcon className="h-5 w-5" />
           </motion.button>

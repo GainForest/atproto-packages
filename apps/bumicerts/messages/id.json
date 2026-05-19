@@ -11,11 +11,6 @@
       "close": "Tutup",
       "theme": "Tema"
     },
-    "language": {
-      "label": "Bahasa",
-      "changeAria": "Ubah bahasa",
-      "currentLanguage": "Bahasa saat ini"
-    },
     "hero": {
       "imageAlt": "Lembah hutan hujan berkabut",
       "headingLine1": "Dampak terverifikasi",

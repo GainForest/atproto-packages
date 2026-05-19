@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Building2Icon, MapPinIcon, MicIcon, TreePineIcon, UserIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import BumicertIcon from "@/icons/BumicertIcon";
 import { NavLeaf } from "./NavLeaf";
 import { SignInPrompt } from "./SignInPrompt";
@@ -30,7 +31,7 @@ function useManageItems(): NavLeafItem[] {
       {
         kind: "leaf",
         id: "profile",
-        text: "Profile",
+        labelKey: "items.profile",
         Icon: UserIcon,
         href: links.manage.home,
         pathCheck: { startsWith: links.manage.home },
@@ -38,7 +39,7 @@ function useManageItems(): NavLeafItem[] {
       {
         kind: "leaf",
         id: "bumicerts-manage",
-        text: "Bumicerts",
+        labelKey: "items.bumicerts",
         Icon: BumicertIcon,
         href: links.manage.bumicerts,
         pathCheck: { startsWith: links.manage.bumicerts },
@@ -50,7 +51,7 @@ function useManageItems(): NavLeafItem[] {
     {
       kind: "leaf",
       id: "organization",
-      text: "Organization",
+      labelKey: "items.organization",
       Icon: Building2Icon,
       href: links.manage.home,
       pathCheck: { equals: links.manage.home },
@@ -58,7 +59,7 @@ function useManageItems(): NavLeafItem[] {
     {
       kind: "leaf",
       id: "sites",
-      text: "Sites",
+      labelKey: "items.sites",
       Icon: MapPinIcon,
       href: links.manage.sites,
       pathCheck: { startsWith: links.manage.sites },
@@ -66,7 +67,7 @@ function useManageItems(): NavLeafItem[] {
     {
       kind: "leaf",
       id: "audio",
-      text: "Audio",
+      labelKey: "items.audio",
       Icon: MicIcon,
       href: links.manage.audio,
       pathCheck: { startsWith: links.manage.audio },
@@ -74,7 +75,7 @@ function useManageItems(): NavLeafItem[] {
     {
       kind: "leaf",
       id: "bumicerts-manage",
-      text: "Bumicerts",
+      labelKey: "items.bumicerts",
       Icon: BumicertIcon,
       href: links.manage.bumicerts,
       pathCheck: { startsWith: links.manage.bumicerts },
@@ -82,7 +83,7 @@ function useManageItems(): NavLeafItem[] {
     {
       kind: "leaf",
       id: "trees",
-      text: "Trees",
+      labelKey: "items.trees",
       Icon: TreePineIcon,
       href: links.manage.trees,
       pathCheck: { startsWith: links.manage.trees },
@@ -95,6 +96,7 @@ export function ManageSection() {
   const { query, kind } = useAccount();
   const items = useManageItems();
   const hasAccountError = query.isError || kind === null;
+  const t = useTranslations("common.sidebar");
 
   return (
     <div className="flex flex-col gap-2">
@@ -109,7 +111,7 @@ export function ManageSection() {
         className="px-3 py-1"
       >
         <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/60">
-          MANAGE
+          {t("sections.manage")}
         </span>
       </motion.div>
 

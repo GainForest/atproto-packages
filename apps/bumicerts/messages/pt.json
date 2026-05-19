@@ -11,11 +11,6 @@
       "close": "Fechar",
       "theme": "Tema"
     },
-    "language": {
-      "label": "Idioma",
-      "changeAria": "Alterar idioma",
-      "currentLanguage": "Idioma atual"
-    },
     "hero": {
       "imageAlt": "Vale de floresta tropical com neblina",
       "headingLine1": "Impacto verificado",

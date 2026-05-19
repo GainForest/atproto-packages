@@ -11,11 +11,6 @@
       "close": "Funga",
       "theme": "Mandhari"
     },
-    "language": {
-      "label": "Lugha",
-      "changeAria": "Badilisha lugha",
-      "currentLanguage": "Lugha ya sasa"
-    },
     "hero": {
       "imageAlt": "Bonde la msitu wa mvua lenye ukungu",
       "headingLine1": "Athari iliyothibitishwa",
