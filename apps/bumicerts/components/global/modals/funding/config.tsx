@@ -58,14 +58,19 @@ function isWalletTrusted(
   return pa.toLowerCase() === facilitatorAddress.toLowerCase();
 }
 
-function walletLabel(
-  link: EvmLink,
-  facilitatorAddress: string | undefined,
-): string {
+function walletLabel({
+  link,
+  facilitatorAddress,
+  untrustedLabel,
+}: {
+  link: EvmLink;
+  facilitatorAddress: string | undefined;
+  untrustedLabel: string;
+}): string {
   const addr = formatAddress(link.record?.address);
   const name = link.record?.name;
   const trusted = isWalletTrusted(link, facilitatorAddress);
-  const warning = !trusted ? " · Not verified" : "";
+  const warning = !trusted ? ` · ${untrustedLabel}` : "";
   return name ? `${addr} (${name})${warning}` : `${addr}${warning}`;
 }
 
@@ -286,7 +291,11 @@ export function FundingConfigModal({
 
   const walletOptions = evmLinks.map((link) => ({
     value: link.metadata?.uri ?? "",
-    label: walletLabel(link, facilitatorAddress),
+    label: walletLabel({
+      link,
+      facilitatorAddress,
+      untrustedLabel: t("notVerified"),
+    }),
   }));
 
   return (
