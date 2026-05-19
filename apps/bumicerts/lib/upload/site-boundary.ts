@@ -56,7 +56,7 @@ function assertUsableSiteBoundary(
 
   if (classification.kind === "invalid-boundary") {
     throw new Error(
-      `Selected site boundary must contain valid polygon GeoJSON. ${classification.reason}`,
+      `Selected site boundary must contain valid polygon GeoJSON. Redraw or re-upload the boundary GeoJSON before uploading tree data. ${classification.reason}`,
     );
   }
 
@@ -69,14 +69,16 @@ export async function fetchUploadSiteBoundary(
   const boundaryUrl = extractSiteLocationUrl(site.location);
 
   if (!boundaryUrl) {
-    throw new Error("Selected site does not include a GeoJSON boundary.");
+    throw new Error(
+      "Selected site does not include a GeoJSON boundary. Select another site or create, redraw, or re-upload a site boundary before uploading tree data.",
+    );
   }
 
   const response = await fetch(boundaryUrl, { credentials: "same-origin" });
 
   if (!response.ok) {
     throw new Error(
-      `Failed to load selected site boundary: HTTP ${response.status}`,
+      `Failed to load selected site boundary: HTTP ${response.status}. Select another site or redraw/re-upload the boundary GeoJSON before uploading tree data.`,
     );
   }
 
@@ -88,8 +90,24 @@ export async function readGeoJsonFile(
   file: File,
 ): Promise<SiteBoundaryGeoJson> {
   const text = await file.text();
-  const payload: unknown = JSON.parse(text);
-  return assertUsableSiteBoundary(validateGeojsonOrThrow(payload));
+  let payload: unknown;
+
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    throw new Error(
+      "Boundary file must be valid GeoJSON JSON. Redraw or re-upload polygon GeoJSON before saving this site boundary.",
+    );
+  }
+
+  try {
+    return assertUsableSiteBoundary(validateGeojsonOrThrow(payload));
+  } catch (error) {
+    const detail = error instanceof Error ? ` ${error.message}` : "";
+    throw new Error(
+      `Boundary file must contain valid polygon GeoJSON. Redraw or re-upload polygon GeoJSON before saving this site boundary.${detail}`,
+    );
+  }
 }
 
 export function getTreeBoundaryFailure(options: {
@@ -170,7 +188,7 @@ export function checkUploadRowsAgainstSelectedSite(options: {
         row,
         rowIndex,
         message:
-          "This row no longer matches the selected site and was skipped before upload.",
+          "This row no longer matches the one selected site boundary for this upload. Go back and choose the correct site boundary, or restart the upload for the intended site; this row was skipped before upload.",
       });
       continue;
     }
@@ -196,7 +214,7 @@ export function checkUploadRowsAgainstSelectedSite(options: {
         rowsToUpload: [],
         skippedRows: [],
         fatalError:
-          "The selected site boundary can no longer be used for tree validation. Please return to site selection and choose a valid GeoJSON boundary.",
+          "The selected site boundary can no longer be used because it is not valid polygon GeoJSON. Return to site selection and choose another site boundary, or redraw/re-upload/create a valid site boundary before uploading trees.",
       };
     }
 
@@ -205,8 +223,8 @@ export function checkUploadRowsAgainstSelectedSite(options: {
       rowIndex,
       message:
         failure.kind === "near-boundary"
-          ? `Near boundary: this tree is ${formatBoundaryDistance(failure.distanceMeters)} outside the selected site and was skipped before upload.`
-          : "Out of site: this tree is outside the selected site boundary and was skipped before upload.",
+          ? `Near boundary: this tree is ${formatBoundaryDistance(failure.distanceMeters)} outside the selected site polygon. Fix the coordinates so the tree is inside the selected boundary, or go back and choose/create the correct site boundary; this row was skipped before upload.`
+          : "Out of site: this tree is outside the selected site polygon. Fix the coordinates so the tree is inside the selected boundary, or go back and choose/create the correct site boundary; this row was skipped before upload.",
     });
   }
 

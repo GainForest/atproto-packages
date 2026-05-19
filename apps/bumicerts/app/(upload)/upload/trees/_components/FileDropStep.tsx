@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Archive, FileSpreadsheet, Upload, X } from "lucide-react";
+import { Archive, CirclePlus, FileSpreadsheet, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +17,11 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
+import { useModal } from "@/components/ui/modal/context";
+import {
+  SiteEditorModal,
+  SiteEditorModalId,
+} from "@/components/global/modals/upload/site/editor";
 import { useCsvParser } from "@/lib/upload/use-csv-parser";
 import { PARTNER_ESTABLISHMENT_MEANS_OPTIONS } from "@/lib/upload/establishment-means";
 import { detectKoboFormat } from "@/lib/upload/kobo-mapper";
@@ -42,9 +47,12 @@ import type {
   UploadDatasetSelection,
 } from "@/lib/upload/upload-dataset-selection";
 import {
+  getBoundaryCapableUploadSites,
   resolveUploadSiteSelection,
+  shouldOfferCreateUploadSiteBoundary,
   toUploadSiteSelection,
   uploadSiteHasBoundary,
+  uploadSiteHasTransientBoundary,
   type UploadSiteSelection,
 } from "@/lib/upload/site-selection";
 import {
@@ -161,6 +169,7 @@ export default function FileDropStep({
 }: FileDropStepProps) {
   const { parsedData, headers, rowCount, error, isParsing, parseFile, reset } =
     useCsvParser();
+  const { pushModal, show } = useModal();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedMediaZipFile, setSelectedMediaZipFile] = useState<File | null>(
@@ -231,6 +240,10 @@ export default function FileDropStep({
     }),
     [sitesQuery.data],
   );
+  const sitesWithBoundary = useMemo(
+    () => getBoundaryCapableUploadSites(uploadSites),
+    [uploadSites],
+  );
   const selectedSite = useMemo(
     () =>
       resolveUploadSiteSelection({
@@ -243,6 +256,24 @@ export default function FileDropStep({
   const selectedSiteHasBoundary = selectedSite
     ? uploadSiteHasBoundary(selectedSite)
     : false;
+  const selectedSiteBoundarySyncing = selectedSite
+    ? uploadSiteHasTransientBoundary(selectedSite)
+    : false;
+  const siteBoundaryQueries = useQueries({
+    queries: sitesWithBoundary.map((site) => ({
+      queryKey: uploadSiteBoundaryQueryKey(site.uri),
+      queryFn: () => fetchUploadSiteBoundary(site),
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+  const boundaryCandidateChecksDone =
+    sitesWithBoundary.length > 0 &&
+    siteBoundaryQueries.every((query) => query.isSuccess || query.isError);
+  const hasValidatedBoundaryCandidate = siteBoundaryQueries.some(
+    (query) => query.isSuccess,
+  );
+  const allBoundaryCandidatesFailed =
+    boundaryCandidateChecksDone && !hasValidatedBoundaryCandidate;
   const siteBoundaryQuery = useQuery({
     queryKey: uploadSiteBoundaryQueryKey(selectedSite?.uri),
     queryFn: () => {
@@ -257,6 +288,32 @@ export default function FileDropStep({
   });
   const selectedSiteBoundaryReady =
     selectedSiteHasBoundary && siteBoundaryQuery.isSuccess;
+  const selectedSiteBoundaryFailed =
+    selectedSiteHasBoundary && siteBoundaryQuery.isError;
+  const showCreateSiteBoundaryAction =
+    !selectedSiteBoundarySyncing &&
+    shouldOfferCreateUploadSiteBoundary({
+      sitesWithBoundary,
+      selectedSite,
+      selectedSiteBoundaryFailed,
+      allBoundaryCandidatesFailed,
+    });
+
+  const handleCreateSiteBoundary = useCallback(() => {
+    pushModal(
+      {
+        id: SiteEditorModalId,
+        content: (
+          <SiteEditorModal
+            initialData={null}
+            onCreated={(site) => setSelectedSiteUri(site.uri)}
+          />
+        ),
+      },
+      true,
+    );
+    show();
+  }, [pushModal, show]);
 
   const handleFile = useCallback(
     (file: File) => {
@@ -508,6 +565,24 @@ export default function FileDropStep({
     !sitesQuery.isLoading &&
     !sitesQuery.error &&
     selectedSite === null;
+  const createSiteBoundaryAction = showCreateSiteBoundaryAction ? (
+    <div className="space-y-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">
+          No usable site boundary is available for this upload.
+        </p>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Create a site boundary now and it will be selected for this upload.
+          The next step stays disabled until the new boundary GeoJSON can be
+          loaded and used for tree coordinate validation.
+        </p>
+      </div>
+      <Button type="button" variant="outline" onClick={handleCreateSiteBoundary}>
+        <CirclePlus />
+        Create site boundary
+      </Button>
+    </div>
+  ) : null;
 
   return (
     <div className="space-y-5">
@@ -694,8 +769,8 @@ export default function FileDropStep({
             Site boundary
           </label>
           <p className="text-xs text-muted-foreground">
-            Choose the project site this tree upload belongs to. Rows outside
-            this selected site will be skipped during preview.
+            Choose the single project site boundary this tree upload belongs to.
+            Rows outside the selected polygon will be skipped during preview.
           </p>
         </div>
 
@@ -725,14 +800,17 @@ export default function FileDropStep({
             uploading tree data.
           </p>
         ) : uploadSites.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Add a site boundary before uploading tree data. Tree uploads must be
-            assigned to a site.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Add a site boundary before uploading tree data. Tree uploads must
+              be assigned to one selected polygon.
+            </p>
+            {createSiteBoundaryAction}
+          </div>
         ) : (
           <>
             <Select
-              value={selectedSite?.uri}
+              value={selectedSite?.uri ?? ""}
               onValueChange={setSelectedSiteUri}
             >
               <SelectTrigger id="site-boundary-select">
@@ -742,6 +820,7 @@ export default function FileDropStep({
                 {uploadSites.map((site) => {
                   const isDefault = defaultSiteQuery.data === site.uri;
                   const hasBoundary = uploadSiteHasBoundary(site);
+                  const isSyncingBoundary = uploadSiteHasTransientBoundary(site);
 
                   return (
                     <SelectItem
@@ -751,7 +830,11 @@ export default function FileDropStep({
                     >
                       {site.name}
                       {isDefault ? " (default)" : ""}
-                      {!hasBoundary ? " — no boundary" : ""}
+                      {isSyncingBoundary
+                        ? " — syncing boundary"
+                        : !hasBoundary
+                          ? " — no boundary"
+                          : ""}
                     </SelectItem>
                   );
                 })}
@@ -768,6 +851,14 @@ export default function FileDropStep({
               </div>
             ) : null}
 
+            {selectedSiteBoundarySyncing ? (
+              <p className="text-sm text-muted-foreground">
+                This newly created site boundary is still syncing. You can
+                continue once the durable GeoJSON boundary has been indexed and
+                validated.
+              </p>
+            ) : null}
+
             {selectedSite && selectedSiteHasBoundary && siteBoundaryQuery.isLoading ? (
               <p className="text-sm text-muted-foreground">
                 Checking that this GeoJSON boundary can be loaded…
@@ -776,8 +867,10 @@ export default function FileDropStep({
 
             {selectedSite && selectedSiteHasBoundary && siteBoundaryQuery.error ? (
               <p className="text-sm text-destructive">
-                This site boundary could not be loaded as valid GeoJSON. Choose
-                another site or edit this site before uploading trees.
+                This site boundary could not be loaded as valid polygon GeoJSON.
+                Choose another site boundary, redraw or re-upload this site&apos;s
+                boundary GeoJSON, or create a new site boundary before uploading
+                trees.
               </p>
             ) : null}
 
@@ -788,12 +881,15 @@ export default function FileDropStep({
               </p>
             ) : null}
 
-            {selectedSite && !selectedSiteHasBoundary ? (
+            {selectedSite && !selectedSiteHasBoundary && !selectedSiteBoundarySyncing ? (
               <p className="text-sm text-destructive">
-                This site does not have a GeoJSON boundary. Choose another site
-                or edit this site before uploading trees.
+                This site does not have a GeoJSON boundary. Choose a site with a
+                boundary, redraw or re-upload this site&apos;s boundary GeoJSON, or
+                create a new site boundary before uploading trees.
               </p>
             ) : null}
+
+            {createSiteBoundaryAction}
           </>
         )}
       </div>

@@ -155,20 +155,21 @@ function getBoundaryIssue(
   if (failure.kind === "near-boundary") {
     return {
       path: "siteBoundary",
-      message: `Near boundary: this tree is ${formatBoundaryDistance(failure.distanceMeters)} outside the selected site and will be skipped.`,
+      message: `Near boundary: this tree is ${formatBoundaryDistance(failure.distanceMeters)} outside the selected site polygon. Fix the coordinates so the tree is inside the selected boundary, or go back and choose/create the correct site boundary; this row will be skipped.`,
     };
   }
 
   if (failure.kind === "invalid-boundary") {
     return {
       path: "siteBoundary",
-      message: `Invalid selected site boundary: ${failure.reason ?? "the boundary could not be used for tree validation."}`,
+      message: `Invalid selected site boundary: ${failure.reason ?? "the boundary could not be used for tree validation."} Redraw or re-upload valid polygon GeoJSON, or select/create another site boundary before uploading trees.`,
     };
   }
 
   return {
     path: "siteBoundary",
-    message: `Out of site: this tree is outside the selected site boundary and will be skipped.`,
+    message:
+      "Out of site: this tree is outside the selected site polygon. Fix the coordinates so the tree is inside the selected boundary, or go back and choose/create the correct site boundary; this row will be skipped.",
   };
 }
 
