@@ -121,17 +121,25 @@ export function SuccessModal({
           </div>
           <div className="grid grid-cols-4 gap-1">
             <Button variant={"outline"} className="shadow-none" asChild>
-              <Link href={shareXUrl} target="_blank">
+              <Link href={shareXUrl} target="_blank" aria-label={t("shareOnX")}>
                 <XIcon className="text-black dark:text-white" />
               </Link>
             </Button>
             <Button variant={"outline"} className="shadow-none" asChild>
-              <Link href={shareBlueskyUrl} target="_blank">
+              <Link
+                href={shareBlueskyUrl}
+                target="_blank"
+                aria-label={t("shareOnBluesky")}
+              >
                 <BlueskyIcon className="text-blue-600" />
               </Link>
             </Button>
             <Button variant={"outline"} className="shadow-none" asChild>
-              <Link href={shareTelegramUrl} target="_blank">
+              <Link
+                href={shareTelegramUrl}
+                target="_blank"
+                aria-label={t("shareOnTelegram")}
+              >
                 <TelegramIcon className="text-blue-500" />
               </Link>
             </Button>
@@ -139,6 +147,7 @@ export function SuccessModal({
               variant={"outline"}
               className="shadow-none"
               onClick={() => copy(shareText)}
+              aria-label={t("copyShareText")}
             >
               {isCopied ? <CheckIcon /> : <CopyIcon />}
             </Button>

@@ -13,11 +13,12 @@
     "recipientMismatch": "Pochi ya mpokeaji hailingani na shirika hili.",
     "onchainFailed": "Uhamisho wa on-chain umeshindwa.",
     "authorizationFacilitatorMismatch": "Idhini lazima itumwe kwa pochi ya mwezeshaji.",
-    "amountMismatch": "Kiasi kilichoidhinishwa hakilingani na jumla ya checkout.",
-    "itemAmountsMismatch": "Kiasi cha vipengee lazima kijumuishe jumla ya checkout.",
+    "amountMismatch": "Kiasi kilichoidhinishwa hakilingani na jumla ya malipo.",
+    "itemAmountsMismatch": "Kiasi cha vipengee lazima kijumuishe jumla ya malipo.",
     "missingOrgWallets": "Mashirika mengine hayana pochi zilizounganishwa.",
     "fundsReceiveFailed": "Hatukuweza kupokea fedha kutoka kwenye pochi yako.",
-    "activityCidFailed": "Hatukuweza kuthibitisha baadhi ya rekodi za michango."
+    "activityCidFailed": "Hatukuweza kuthibitisha baadhi ya rekodi za michango.",
+    "nonceGenerationFailed": "Hatukuweza kuandaa idhini ya pochi. Jaribu tena."
   },
   "cart": {
     "title": "Kikapu chako",
@@ -28,8 +29,8 @@
     "emptyTitle": "Kikapu chako kiko tupu",
     "emptyDescription": "Ongeza bumicerts unazotaka kuchangia baadaye.",
     "exploreBumicerts": "Chunguza Bumicerts",
-    "checkout": "Checkout",
-    "checkoutWithCount": "Checkout ({count, plural, one {# kipengee} other {# vipengee}})",
+    "checkout": "Kamilisha mchango",
+    "checkoutWithCount": "Kamilisha mchango ({count, plural, one {# kipengee} other {# vipengee}})",
     "cancel": "Ghairi",
     "close": "Funga",
     "noLongerAccepting": "Hazipokei michango tena"
@@ -108,7 +109,11 @@
       "seeLeaderboard": "Tazama Ubao wa Viongozi",
       "exploreMore": "Chunguza Bumicerts zaidi",
       "done": "Imekamilika",
-      "shareText": "Nimechangia ${amount} kwa bumicert hii: {shareUrl}"
+      "shareText": "Nimechangia ${amount} kwa bumicert hii: {shareUrl}",
+      "shareOnX": "Shiriki kwenye X (Twitter)",
+      "shareOnBluesky": "Shiriki kwenye Bluesky",
+      "shareOnTelegram": "Shiriki kwenye Telegram",
+      "copyShareText": "Nakili maandishi ya kushiriki"
     }
   },
   "fundingConfig": {
@@ -139,7 +144,8 @@
     "saveError": "Imeshindikana kuhifadhi mipangilio ya michango. Jaribu tena.",
     "saving": "Inahifadhi…",
     "save": "Hifadhi",
-    "cancel": "Ghairi"
+    "cancel": "Ghairi",
+    "notVerifiedSuffix": "Haijathibitishwa"
   },
   "wallet": {
     "add": {
@@ -188,7 +194,7 @@
     }
   },
   "checkout": {
-    "title": "Checkout",
+    "title": "Kamilisha mchango",
     "subtitle": "Weka kiasi cha mchango kwa kila bumicert",
     "emptyTitle": "Kikapu chako kiko tupu",
     "emptyDescription": "Ongeza bumicerts unazotaka kusaidia",
@@ -254,7 +260,17 @@
       "exploreMore": "Chunguza Bumicerts zaidi",
       "bumicertSingular": "Bumicert",
       "bumicertPlural": "Bumicerts",
-      "shareText": "Nimechangia ${amount} kwa {count} {bumicertLabel}. Chunguza bumicerts kwenye {shareUrl}"
+      "shareText": "Nimechangia ${amount} kwa {count} {bumicertLabel}. Chunguza bumicerts kwenye {shareUrl}",
+      "shareOnX": "Shiriki kwenye X (Twitter)",
+      "shareOnBluesky": "Shiriki kwenye Bluesky",
+      "shareOnTelegram": "Shiriki kwenye Telegram",
+      "copyShareText": "Nakili maandishi ya kushiriki",
+      "copyTransactionHash": "Nakili hashi ya muamala",
+      "viewReceipt": "Tazama risiti"
+    },
+    "metadata": {
+      "title": "Kamilisha mchango — Bumicerts",
+      "description": "Kamilisha mchango wako kwa bumicerts kadhaa kwa muamala mmoja."
     }
   },
   "auth": {

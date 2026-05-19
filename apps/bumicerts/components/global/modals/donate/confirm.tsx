@@ -45,13 +45,13 @@ function isHexBytes32(value: string): value is HexAddress {
   return /^0x[a-fA-F0-9]{64}$/.test(value);
 }
 
-function createNonce(): HexAddress {
+function createNonce(errorMessage: string): HexAddress {
   const nonce = `0x${Array.from(crypto.getRandomValues(new Uint8Array(32)))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("")}`;
 
   if (!isHexBytes32(nonce)) {
-    throw new Error("Failed to create a valid nonce");
+    throw new Error(errorMessage);
   }
 
   return nonce;
@@ -61,9 +61,10 @@ function buildTypedData(params: {
   senderWallet: HexAddress;
   recipientWallet: HexAddress;
   usdcAmount: bigint;
+  nonceErrorMessage: string;
 }) {
   const now = Math.floor(Date.now() / 1000);
-  const nonce = createNonce();
+  const nonce = createNonce(params.nonceErrorMessage);
 
   return {
     domain: {
@@ -161,11 +162,23 @@ export function ConfirmModal({
       return;
     }
 
-    const { domain, types, message, authorization } = buildTypedData({
-      senderWallet: address,
-      recipientWallet,
-      usdcAmount,
-    });
+    let typedData: ReturnType<typeof buildTypedData>;
+    try {
+      typedData = buildTypedData({
+        senderWallet: address,
+        recipientWallet,
+        usdcAmount,
+        nonceErrorMessage: tErrors("nonceGenerationFailed"),
+      });
+    } catch (err) {
+      setErrorMsg(
+        err instanceof Error ? err.message : tErrors("paymentFailed"),
+      );
+      setTxState("rejected");
+      return;
+    }
+
+    const { domain, types, message, authorization } = typedData;
 
     setTxState("waiting-signature");
     setErrorMsg(null);
@@ -237,7 +250,9 @@ export function ConfirmModal({
       });
     } catch (err) {
       console.error("[ConfirmModal] Payment failed:", err);
-      setErrorMsg(err instanceof Error ? err.message : tErrors("paymentFailed"));
+      setErrorMsg(
+        err instanceof Error ? err.message : tErrors("paymentFailed"),
+      );
       setTxState("rejected");
     }
   };
