@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { cookies } from "next/headers";
 import {
   Geist,
   Geist_Mono,
@@ -7,6 +8,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { resolveSupportedLanguage, LANGUAGE_COOKIE_NAME } from "@/lib/i18n/languages";
 import { requirePublicUrl } from "@/lib/url";
 
 const geistSans = Geist({
@@ -99,17 +101,22 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const language = resolveSupportedLanguage(
+    cookieStore.get(LANGUAGE_COOKIE_NAME)?.value,
+  );
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={language} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cormorantGaramond.variable} ${instrumentSerif.variable} antialiased`}
       >
-        <Providers>{children}</Providers>
+        <Providers initialLanguage={language}>{children}</Providers>
       </body>
     </html>
   );

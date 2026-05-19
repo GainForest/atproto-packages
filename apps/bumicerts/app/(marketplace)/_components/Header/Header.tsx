@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { CartButton } from "@/components/cart/CartButton";
+import { LanguageSelector } from "@/components/i18n/LanguageSelector";
 import { MenuIcon } from "lucide-react";
 import { useMobileNav } from "@/hooks/useMobileNav";
 
@@ -82,6 +83,7 @@ export function Header() {
                 </motion.div>
               ) : null}
             </AnimatePresence>
+            <LanguageSelector />
             <CartButton />
             <AuthButton />
           </div>

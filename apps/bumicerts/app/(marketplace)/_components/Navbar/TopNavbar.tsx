@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useState, useId } from "react";
+import { LanguageSelector } from "@/components/i18n/LanguageSelector";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Drawer } from "vaul";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
@@ -65,8 +66,10 @@ export function TopNavbar() {
           </span>
         </Link>
 
-        {/* Right: Launch App + Menu trigger */}
+        {/* Right: Language, Launch App + Menu trigger */}
         <div className="flex items-center gap-3">
+          <LanguageSelector />
+
           {/* Launch App button */}
           <motion.div
             whileHover={{ scale: 1.02 }}
