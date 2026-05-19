@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronRightIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
 import { useMobileNav } from "@/hooks/useMobileNav";
 
 export function OnboardingPrompt() {
   const closeMobileNav = useMobileNav((state) => state.setOpen);
+  const t = useTranslations("common.sidebar.prompts");
 
   return (
     <motion.div
@@ -18,11 +20,11 @@ export function OnboardingPrompt() {
       className="mx-1 p-3 rounded-lg bg-muted/40 border border-border/50"
     >
       <p className="text-xs text-muted-foreground text-center mb-2">
-        Complete onboarding to manage your account.
+        {t("onboardingDescription")}
       </p>
       <Button variant="ghost" size="sm" className="w-full" asChild>
         <Link href={links.manage.home} onClick={() => closeMobileNav(false)}>
-          Onboard
+          {t("onboard")}
           <ChevronRightIcon />
         </Link>
       </Button>

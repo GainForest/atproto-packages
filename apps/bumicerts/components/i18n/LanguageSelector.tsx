@@ -29,7 +29,7 @@ function persistLocale(locale: SupportedLanguageCode) {
 
 export function LanguageSelector() {
   const locale = resolveSupportedLanguage(useLocale());
-  const t = useTranslations("landing.language");
+  const t = useTranslations("common.language");
 
   return (
     <DropdownMenu>

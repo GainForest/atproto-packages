@@ -11,11 +11,6 @@
       "close": "Close",
       "theme": "Theme"
     },
-    "language": {
-      "label": "Language",
-      "changeAria": "Change language",
-      "currentLanguage": "Current language"
-    },
     "hero": {
       "imageAlt": "Misty rainforest valley",
       "headingLine1": "Verified Impact",

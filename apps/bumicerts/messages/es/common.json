@@ -1,1 +1,68 @@
-{}
+{
+  "language": {
+    "label": "Idioma",
+    "changeAria": "Cambiar idioma",
+    "currentLanguage": "Idioma actual"
+  },
+  "navigation": {
+    "navigation": "Navegación",
+    "openNavigation": "Abrir navegación"
+  },
+  "theme": {
+    "toggle": "Cambiar tema"
+  },
+  "cart": {
+    "aria": "Carrito",
+    "ariaWithCount": "Carrito ({count, plural, one {# artículo} other {# artículos}})"
+  },
+  "auth": {
+    "getStarted": "Empezar",
+    "unknown": "Desconocido",
+    "completeOnboarding": "Completar incorporación",
+    "organizationAccount": "Cuenta de organización",
+    "userAccount": "Cuenta de usuario",
+    "myAccount": "Mi cuenta",
+    "signOut": "Cerrar sesión"
+  },
+  "errorPage": {
+    "title": "Algo salió mal.",
+    "description": "Lo sentimos, ocurrió un error al procesar tu solicitud.",
+    "tryAgain": "Intentar de nuevo",
+    "home": "Inicio"
+  },
+  "notFound": {
+    "description": "Esta página no existe. Tal vez se movió, o tal vez nunca existió.",
+    "backHome": "Volver al inicio"
+  },
+  "sidebar": {
+    "sections": {
+      "explore": "EXPLORAR",
+      "manage": "GESTIONAR"
+    },
+    "items": {
+      "bumicerts": "Bumicerts",
+      "organizations": "Organizaciones",
+      "leaderboard": "Clasificación",
+      "organization": "Organización",
+      "sites": "Sitios",
+      "audio": "Audio",
+      "trees": "Árboles",
+      "profile": "Perfil"
+    },
+    "prompts": {
+      "signInDescription": "Inicia sesión para gestionar tu cuenta y contenido.",
+      "signIn": "Iniciar sesión",
+      "onboardingDescription": "Completa la incorporación para gestionar tu cuenta.",
+      "onboard": "Incorporarse",
+      "accountLoadError": "No pudimos cargar tu cuenta en este momento.",
+      "checkingAccount": "Comprobando tu cuenta..."
+    },
+    "creationCard": {
+      "createBumicert": "Crear un Bumicert"
+    }
+  },
+  "bumicertCard": {
+    "missingImage": "Imagen del Bumicert no disponible",
+    "additionalObjectives": "{count, plural, one {# objetivo adicional} other {# objetivos adicionales}}"
+  }
+}

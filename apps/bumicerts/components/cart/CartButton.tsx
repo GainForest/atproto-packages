@@ -5,10 +5,12 @@ import { useModal } from "@/components/ui/modal/context";
 import { CartModal } from "@/components/global/modals/cart/index";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import { ShoppingCartIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export function CartButton() {
   const count = useCartStore((s) => s.items.length);
   const { pushModal, show } = useModal();
+  const t = useTranslations("common.cart");
 
   const handleOpen = () => {
     pushModal({ id: MODAL_IDS.CART, content: <CartModal /> }, true);
@@ -19,7 +21,11 @@ export function CartButton() {
     <button
       type="button"
       onClick={handleOpen}
-      aria-label={`Cart${count > 0 ? ` (${count} item${count === 1 ? "" : "s"})` : ""}`}
+      aria-label={
+        count > 0
+          ? t("ariaWithCount", { count })
+          : t("aria")
+      }
       className="relative flex items-center justify-center size-9 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
     >
       <ShoppingCartIcon className="size-[18px]" />

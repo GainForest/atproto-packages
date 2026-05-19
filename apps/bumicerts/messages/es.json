@@ -11,11 +11,6 @@
       "close": "Cerrar",
       "theme": "Tema"
     },
-    "language": {
-      "label": "Idioma",
-      "changeAria": "Cambiar idioma",
-      "currentLanguage": "Idioma actual"
-    },
     "hero": {
       "imageAlt": "Valle de selva tropical con neblina",
       "headingLine1": "Impacto verificado",
