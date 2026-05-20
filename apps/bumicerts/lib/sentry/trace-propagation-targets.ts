@@ -35,6 +35,6 @@ export function buildTracePropagationTargets(
   );
 
   return normalizedOrigins.map(
-    (origin) => new RegExp(`^${escapeRegExp(origin)}(?:/|$)`),
+    (origin) => new RegExp(`^${escapeRegExp(origin)}(?:[/?#]|$)`),
   );
 }

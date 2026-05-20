@@ -6,8 +6,11 @@ describe("buildTracePropagationTargets", () => {
     const [target] = buildTracePropagationTargets("app.example.com/path");
 
     expect(target?.test("https://app.example.com/api/example")).toBe(true);
+    expect(target?.test("https://app.example.com?x=1")).toBe(true);
+    expect(target?.test("https://app.example.com#section")).toBe(true);
     expect(target?.test("/api/example")).toBe(false);
     expect(target?.test("https://other.example.com/api/example")).toBe(false);
+    expect(target?.test("https://app.example.com.evil.test/api/example")).toBe(false);
   });
 
   test("deduplicates empty and equivalent origins", () => {
