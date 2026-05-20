@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { auth } from "@/lib/auth";
+import { getCurrentSession } from "@/lib/current-session";
 import { ManageLayoutClient } from "./_components/UploadLayoutClient";
 import { SignInPrompt } from "./_components/SignInPrompt";
 import { ModalProvider } from "@/components/ui/modal/context";
@@ -19,7 +19,7 @@ export default async function ManageLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.session.getSession();
+  const session = await getCurrentSession();
 
   if (!session.isLoggedIn) {
     // Unauthenticated: show sign-in prompt (needs ModalProvider for the auth modal)

@@ -4,6 +4,7 @@
   "workspaces": [
     "packages/*",
     "apps/bumicerts",
+    "apps/auth",
     "apps/indexer",
     "GENERATED"
   ],
@@ -26,6 +27,12 @@
     "indexer:docker:down": "bun run --cwd apps/indexer docker:down",
     "indexer:docker:reset": "bun run --cwd apps/indexer docker:reset",
     "indexer:typecheck": "bun run --cwd apps/indexer typecheck",
+    "auth:dev": "cd apps/auth && bun run dev",
+    "auth:build": "cd apps/auth && bun run build",
+    "auth:start": "cd apps/auth && bun run start",
+    "auth:typecheck": "cd apps/auth && bun run typecheck",
+    "auth:deploy:prod": "cd apps/auth && bun run deploy:prod",
+    "auth:deploy:dev": "cd apps/auth && bun run deploy:dev",
     "bumicerts:dev": "bun run --cwd apps/bumicerts dev",
     "bumicerts:build": "bun run --cwd apps/bumicerts build",
     "bumicerts:vercel-build": "bun run gen:types && bun run build && bun run --cwd apps/bumicerts build",

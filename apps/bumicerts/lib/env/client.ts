@@ -33,6 +33,10 @@ export const clientEnv = createEnv({
     // Base URL override (ngrok, custom domains, etc.)
     NEXT_PUBLIC_BASE_URL: z.string().url().optional(),
 
+    // Central auth service URL. When unset, the app uses its local OAuth flow.
+    NEXT_PUBLIC_AUTH_BASE_URL: z.string().url().optional(),
+    NEXT_PUBLIC_AUTH_PROVIDER: z.string().min(1).optional(),
+
     // Green Globe public app URL
     NEXT_PUBLIC_GREEN_GLOBE_URL: z.string().url().optional(),
 
@@ -76,6 +80,8 @@ export const clientEnv = createEnv({
     NEXT_PUBLIC_EPDS_URL: process.env.NEXT_PUBLIC_EPDS_URL,
     NEXT_PUBLIC_IMAGE_PROXY_URL: process.env.NEXT_PUBLIC_IMAGE_PROXY_URL,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+    NEXT_PUBLIC_AUTH_BASE_URL: process.env.NEXT_PUBLIC_AUTH_BASE_URL,
+    NEXT_PUBLIC_AUTH_PROVIDER: process.env.NEXT_PUBLIC_AUTH_PROVIDER,
     NEXT_PUBLIC_GREEN_GLOBE_URL: process.env.NEXT_PUBLIC_GREEN_GLOBE_URL,
     NEXT_PUBLIC_VERCEL_ENV: process.env.NEXT_PUBLIC_VERCEL_ENV,
     NEXT_PUBLIC_VERCEL_URL: process.env.NEXT_PUBLIC_VERCEL_URL,

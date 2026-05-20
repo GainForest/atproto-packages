@@ -1,0 +1,25 @@
+{
+  "name": "@gainforest/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsc && node --env-file=.env.local dist/server.js",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "deploy:prod": "bunx wrangler deploy --env \"\"",
+    "deploy:dev": "bunx wrangler deploy --env dev"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.17",
+    "@gainforest/atproto-auth-next": "workspace:*",
+    "@supabase/supabase-js": "2.97.0",
+    "iron-session": "^8.0.4",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "typescript": "^5"
+  }
+}

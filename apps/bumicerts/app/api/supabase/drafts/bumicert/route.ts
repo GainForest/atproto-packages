@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "../../client";
-import { auth } from "@/lib/auth";
+import { getCurrentSession } from "@/lib/current-session";
 import type { Json } from "../../types";
 import {
   draftBumicertDataSchemaV0,
@@ -29,16 +29,13 @@ function parseDraftData(version: number, data: unknown) {
 }
 
 /**
- * Helper function to get the authenticated user's DID from the OAuth session.
+ * Helper function to get the authenticated user's DID.
  * Returns null if the user is not authenticated.
  */
 async function getAuthenticatedUserDid(): Promise<string | null> {
   try {
-    const session = await auth.session.getSession();
-    if (session.isLoggedIn) {
-      return session.did;
-    }
-    return null;
+    const session = await getCurrentSession();
+    return session.did;
   } catch (error) {
     console.error("Failed to get session:", error);
     return null;

@@ -26,6 +26,12 @@
       "import": "./dist/stores.js",
       "require": "./dist/stores.cjs"
     },
+    "./oauth": {
+      "source": "./src/oauth.ts",
+      "types": "./dist/oauth.d.ts",
+      "import": "./dist/oauth.js",
+      "require": "./dist/oauth.cjs"
+    },
     "./client": {
       "source": "./src/client.ts",
       "types": "./dist/client.d.ts",
@@ -37,6 +43,7 @@
     "*": {
       "server": ["dist/server.d.ts"],
       "stores": ["dist/stores.d.ts"],
+      "oauth": ["dist/oauth.d.ts"],
       "client": ["dist/client.d.ts"]
     }
   },

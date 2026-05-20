@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { getCurrentSession } from "@/lib/current-session";
 import { TreeUploadContentsquareProvider } from "./_components/TreeUploadContentsquareProvider";
 import { TreesPageClient } from "./_components/TreesPageClient";
 
@@ -9,8 +9,8 @@ import { TreesPageClient } from "./_components/TreesPageClient";
  * auth, render nothing — the layout's SignInPrompt covers this case.
  */
 export default async function TreesPage() {
-  const session = await auth.session.getSession();
-  if (!session.isLoggedIn) return null;
+  const session = await getCurrentSession();
+  if (!session.isLoggedIn || !session.did) return null;
   return (
     <TreeUploadContentsquareProvider>
       <TreesPageClient did={session.did} />

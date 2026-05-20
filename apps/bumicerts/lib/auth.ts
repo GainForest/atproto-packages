@@ -56,11 +56,15 @@ function getAuth() {
     ? env.VERCEL_AUTOMATION_BYPASS_SECRET
     : undefined;
 
+  if (env.AUTH_BASE_URL && !env.AUTH_APP_ID) {
+    throw new Error("AUTH_APP_ID is required when AUTH_BASE_URL is configured");
+  }
+
   _auth = createAuthSetup({
     privateKeyJwk: env.ATPROTO_JWK_PRIVATE,
     cookieSecret: env.COOKIE_SECRET,
     supabase,
-    appId: "bumicerts",
+    appId: env.AUTH_APP_ID ?? "bumicerts",
     clientName: "Bumicerts",
     cookieName: "bumicerts_session",
     cookieSecure: env.NODE_ENV === "production",

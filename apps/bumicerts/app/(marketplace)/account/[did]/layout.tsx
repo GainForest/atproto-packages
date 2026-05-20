@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { getCurrentSession } from "@/lib/current-session";
 import { OrgHero } from "@/components/account/OrgHero";
 import { OrgTabBar } from "./_components/OrgTabBar";
 import ErrorPage from "@/components/error-page";
@@ -20,12 +20,12 @@ export default async function AccountLayout({
   params: Promise<{ did: string }>;
 }) {
   const { did } = await readAccountRouteParams(params);
-  let session: Awaited<ReturnType<typeof auth.session.getSession>>;
+  let session: Awaited<ReturnType<typeof getCurrentSession>>;
   let routeData: AccountRouteData;
 
   try {
     [session, routeData] = await Promise.all([
-      auth.session.getSession(),
+      getCurrentSession(),
       getAccountRouteData(did),
     ]);
   } catch (error) {
@@ -42,7 +42,7 @@ export default async function AccountLayout({
     );
   }
 
-  const isOwner = session.isLoggedIn && session.did === did;
+  const isOwner = session.did === did;
 
   if (routeData.kind === "unknown") {
     if (!isOwner) {

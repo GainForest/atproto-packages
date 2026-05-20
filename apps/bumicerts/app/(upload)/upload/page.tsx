@@ -1,5 +1,5 @@
-import { auth } from "@/lib/auth";
 import type { AuthenticatedAccountState } from "@/lib/account";
+import { getCurrentSession } from "@/lib/current-session";
 import { ManageDashboardClient } from "./_components/UploadDashboardClient";
 import { buildUploadAccountPageData } from "@/lib/account/server";
 import ErrorPage from "@/components/error-page";
@@ -52,12 +52,12 @@ export default async function UploadPage({
   searchParams: UploadPageSearchParams;
 }) {
   const t = await getTranslations("upload.errors");
-  const session = await auth.session.getSession();
+  const session = await getCurrentSession();
 
   // Layout already guards against unauthenticated access, but we need the
   // session data here. If somehow reached without auth, render nothing —
   // the layout's SignInPrompt covers this case.
-  if (!session.isLoggedIn) return null;
+  if (!session.isLoggedIn || !session.did) return null;
 
   const resolvedSearchParams = await searchParams;
 

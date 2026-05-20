@@ -11,7 +11,7 @@ import type { FundingConfigData } from "@/lib/types";
 import { BumicertDetail } from "./_components/BumicertDetail";
 import ErrorPage from "@/components/error-page";
 import Container from "@/components/ui/container";
-import { auth } from "@/lib/auth";
+import { getCurrentSession } from "@/lib/current-session";
 import { getTranslations } from "next-intl/server";
 import { links } from "@/lib/links";
 import {
@@ -105,7 +105,7 @@ export default async function BumicertDetailPage({
   // Fetch activity data and session in parallel
   const [{ data, error }, session] = await Promise.all([
     getActivityData(did),
-    auth.session.getSession(),
+    getCurrentSession(),
   ]);
 
   const t = await getTranslations("bumicert.detail");
@@ -130,7 +130,7 @@ export default async function BumicertDetailPage({
   const pageUrl = await getLocalizedAbsoluteUrl(links.bumicert.view(did, rkey));
 
   // ── Ownership check ─────────────────────────────────────────────────────────
-  const isOwner = session.isLoggedIn && session.did === bumicert.organizationDid;
+  const isOwner = session.did === bumicert.organizationDid;
 
   // ── Extract funding config from the joined activity data ────────────────────
   // The indexer joins funding.config onto the activity via shared rkey.

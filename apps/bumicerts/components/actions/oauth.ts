@@ -27,6 +27,7 @@
  */
 
 import { auth } from "@/lib/auth";
+import { getCentralSession } from "@/lib/central-auth";
 import type { ProfileData, ProfileAuthError } from "@gainforest/atproto-auth-next/client";
 
 /**
@@ -147,5 +148,28 @@ export async function checkSessionAndGetProfile(): Promise<{
   handle?: string;
   profile?: ProfileData;
 }> {
+  const centralSession = await getCentralSession();
+  if (centralSession) {
+    if (!centralSession.isLoggedIn || !centralSession.did) {
+      return { isLoggedIn: false };
+    }
+
+    return {
+      isLoggedIn: true,
+      did: centralSession.did,
+      handle: centralSession.handle,
+      profile: centralSession.profile
+        ? {
+            handle:
+              centralSession.profile.handle ??
+              centralSession.handle ??
+              centralSession.did,
+            displayName: centralSession.profile.displayName,
+            avatar: centralSession.profile.avatar,
+          }
+        : undefined,
+    };
+  }
+
   return auth.actions.checkSessionAndGetProfile();
 }

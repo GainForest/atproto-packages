@@ -1,0 +1,39 @@
+name = "gainforest-auth"
+main = "src/worker.ts"
+compatibility_date = "2026-05-20"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+
+routes = [
+  { pattern = "auth.gainforest.app", custom_domain = true }
+]
+
+[vars]
+NODE_ENV = "production"
+AUTH_BASE_URL = "https://auth.gainforest.app"
+AUTH_APP_ID = "gainforest-auth"
+# Shared cookie scope lets satellite apps on *.gainforest.app send the central auth cookie to this service.
+AUTH_COOKIE_DOMAIN = ".gainforest.app"
+AUTH_ALLOWED_RETURN_ORIGINS = "https://certs.gainforest.app"
+AUTH_DEFAULT_EPDS_URL = "https://climateai.org"
+DEFAULT_PDS_DOMAIN = "gainforest.id"
+AUTH_EPDS_PROVIDERS = "bumicerts:https://climateai.org"
+
+[env.dev]
+name = "gainforest-auth-dev"
+workers_dev = false
+routes = [
+  { pattern = "dev-auth.gainforest.app", custom_domain = true }
+]
+
+[env.dev.vars]
+NODE_ENV = "production"
+AUTH_BASE_URL = "https://dev-auth.gainforest.app"
+AUTH_APP_ID = "gainforest-auth-dev"
+# Shared cookie scope lets satellite apps on *.gainforest.app send the central auth cookie to this service.
+AUTH_COOKIE_DOMAIN = ".gainforest.app"
+# Dev supports wildcard loopback ports. Production must stay explicitly allowlisted.
+AUTH_ALLOWED_RETURN_ORIGINS = "https://certs.gainforest.app,http://127.0.0.1:*,http://localhost:*"
+AUTH_DEFAULT_EPDS_URL = "https://climateai.org"
+DEFAULT_PDS_DOMAIN = "gainforest.id"
+AUTH_EPDS_PROVIDERS = "bumicerts:https://climateai.org"
