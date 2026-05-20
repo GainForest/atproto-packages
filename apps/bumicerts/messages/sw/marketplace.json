@@ -133,7 +133,8 @@
   "dashboard": {
     "metadata": {
       "title": "Dashibodi ya michango — Bumicerts",
-      "description": "Takwimu za michango katika jukwaa lote: jumla iliyokusanywa, wachangiaji wa kipekee, mwenendo wa ufadhili na miamala ya karibuni."
+      "description": "Takwimu za michango katika jukwaa lote: jumla iliyokusanywa, wachangiaji wa kipekee, mwenendo wa ufadhili na miamala ya karibuni.",
+      "measurementTechnique": "Risiti za michango zilizoorodheshwa kutoka rekodi za org.hypercerts.funding.receipt."
     },
     "hero": {
       "eyebrow": "Takwimu za jukwaa",

@@ -4,7 +4,11 @@ import { ExploreShell } from "./_components/ExploreShell";
 import { getTranslations } from "next-intl/server";
 import { getIndexerCaller } from "@/lib/trpc/indexer/server";
 import { links } from "@/lib/links";
-import { buildPublicPageMetadata, getLocalizedAbsoluteUrl, jsonLd } from "@/lib/seo-metadata";
+import {
+  buildPublicPageMetadata,
+  getLocalizedAbsoluteUrl,
+  jsonLd,
+} from "@/lib/seo-metadata";
 
 export async function generateMetadata() {
   const t = await getTranslations("marketplace.explore.metadata");
@@ -38,6 +42,16 @@ export default async function ExplorePage() {
 
   const t = await getTranslations("marketplace.explore.structuredData");
   const pageUrl = await getLocalizedAbsoluteUrl(links.explore);
+  const itemListElement = await Promise.all(
+    bumicerts.slice(0, 20).map(async (bumicert, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: bumicert.title,
+      url: await getLocalizedAbsoluteUrl(
+        links.bumicert.view(bumicert.organizationDid, bumicert.rkey),
+      ),
+    })),
+  );
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -48,12 +62,7 @@ export default async function ExplorePage() {
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: bumicerts.length,
-      itemListElement: bumicerts.slice(0, 20).map((bumicert, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        name: bumicert.title,
-        url: pageUrl,
-      })),
+      itemListElement,
     },
   };
 

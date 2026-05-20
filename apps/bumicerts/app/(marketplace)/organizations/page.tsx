@@ -46,12 +46,12 @@ export default async function AllOrganizationsPage() {
   }
 
   const pageUrl = await getLocalizedAbsoluteUrl(links.allOrganizations);
+  const metadataT = await getTranslations("marketplace.organizations.metadata");
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "Bumicerts organizations",
-    description:
-      "Nature steward organizations creating verified environmental impact on Bumicerts.",
+    name: metadataT("title"),
+    description: metadataT("description"),
     url: pageUrl,
     mainEntity: {
       "@type": "ItemList",

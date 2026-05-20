@@ -15,16 +15,16 @@ export async function generateMetadata() {
 
 export default async function LeaderboardPage() {
   const pageUrl = await getLocalizedAbsoluteUrl(links.leaderboard);
+  const metadataT = await getTranslations("marketplace.leaderboard.metadata");
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "Bumicerts leaderboard",
-    description:
-      "A ranked public leaderboard of donors funding verified regenerative impact through Bumicerts.",
+    name: metadataT("title"),
+    description: metadataT("description"),
     url: pageUrl,
     about: {
       "@type": "Thing",
-      name: "Regenerative impact funding leaderboard",
+      name: metadataT("title"),
     },
   };
 

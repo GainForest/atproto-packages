@@ -58,6 +58,7 @@ export default async function AccountByDidPage({
   }
 
   const structuredData = buildAccountStructuredData(routeData);
+  const organizationsT = await getTranslations("marketplace.organizations.metadata");
   const breadcrumbStructuredData = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -65,7 +66,7 @@ export default async function AccountByDidPage({
       {
         "@type": "ListItem",
         position: 1,
-        name: "Organizations",
+        name: organizationsT("title"),
         item: await getLocalizedAbsoluteUrl(links.allOrganizations),
       },
       {

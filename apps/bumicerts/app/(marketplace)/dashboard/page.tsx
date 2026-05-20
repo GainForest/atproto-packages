@@ -43,20 +43,19 @@ async function fetchOrgCountryMap(): Promise<Record<string, string>> {
 export default async function DashboardPage() {
   const orgCountryMap = await fetchOrgCountryMap();
   const pageUrl = await getLocalizedAbsoluteUrl(links.dashboard);
+  const metadataT = await getTranslations("marketplace.dashboard.metadata");
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    name: "Bumicerts donation analytics",
-    description:
-      "Platform-wide donation metrics for Bumicerts, including total raised, unique donors, funding trends, and recent transactions.",
+    name: metadataT("title"),
+    description: metadataT("description"),
     url: pageUrl,
     creator: {
       "@type": "Organization",
       name: "GainForest",
       url: "https://gainforest.earth",
     },
-    measurementTechnique:
-      "Donation receipts indexed from org.hypercerts.funding.receipt records.",
+    measurementTechnique: metadataT("measurementTechnique"),
   };
 
   return (

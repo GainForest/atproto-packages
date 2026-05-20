@@ -108,16 +108,18 @@ export default async function AccountBumicertsPage({
     bumicertCount: bumicerts.length,
   });
   const t = await getTranslations("marketplace.account.bumicerts");
+  const metadataT = await getTranslations("marketplace.account.metadata");
+  const displayName = routeData.organization.displayName || t("unknownCreator");
   const displayBumicerts = withCreatorDisplayFallbacks(bumicerts, {
-    organizationName: routeData.organization.displayName || t("unknownCreator"),
+    organizationName: displayName,
     logoUrl: routeData.organization.logoUrl,
   });
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": await getLocalizedAbsoluteUrl(links.account.bumicerts(routeData.did)),
-    name: `${routeData.organization.displayName} Bumicerts`,
-    description: `Browse all Bumicerts created by ${routeData.organization.displayName}.`,
+    name: metadataT("bumicertsPageTitle", { displayName }),
+    description: metadataT("bumicertsPageDescription", { displayName }),
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: displayBumicerts.length,
