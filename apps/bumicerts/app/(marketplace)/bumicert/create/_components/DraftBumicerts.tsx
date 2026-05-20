@@ -8,12 +8,14 @@ import {
   ClockIcon,
   FilePenLineIcon,
   Loader2Icon,
+  Trash2Icon,
 } from "lucide-react";
 
 import CircularProgressBar from "@/components/circular-progressbar";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { Button } from "@/components/ui/button";
 import TimeText from "@/components/time-text";
+import { useModal } from "@/components/ui/modal/context";
 import { useQuery } from "@tanstack/react-query";
 import { links } from "@/lib/links";
 import { queryKeys } from "@/lib/query-keys";
@@ -22,6 +24,9 @@ import type {
   DraftBumicertResponse,
   GetDraftBumicertResponse,
 } from "@/app/api/supabase/drafts/bumicert/type";
+import DeleteDraftModal, {
+  DeleteDraftModalId,
+} from "../[draftId]/_components/DeleteDraftModal";
 
 async function fetchDrafts(): Promise<DraftBumicertResponse[]> {
   const res = await fetch(links.api.drafts.bumicert.get(), {
@@ -105,6 +110,7 @@ const DraftStatus = ({
 
 const DraftBumicerts = () => {
   const auth = useAtprotoStore((state) => state.auth);
+  const { pushModal, show, hide, popModal } = useModal();
 
   const {
     data: drafts,
@@ -159,6 +165,26 @@ const DraftBumicerts = () => {
     );
   }
 
+  const handleDeleteDraft = (draft: (typeof draftsWithProgress)[number]) => {
+    pushModal(
+      {
+        id: DeleteDraftModalId,
+        content: (
+          <DeleteDraftModal
+            draftId={draft.id}
+            draftTitle={draft.title}
+            onSuccess={async () => {
+              await hide();
+              popModal();
+            }}
+          />
+        ),
+      },
+      true,
+    );
+    show();
+  };
+
   if (draftsWithProgress.length === 0) {
     return (
       <DraftStatus
@@ -186,16 +212,28 @@ const DraftBumicerts = () => {
               <TimeText date={new Date(draft.updated_at)} />
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="rounded-full"
-            asChild
-          >
-            <Link href={links.bumicert.createWithDraftId(draft.id.toString())}>
-              <ArrowRightIcon />
-            </Link>
-          </Button>
+          <div className="ml-2 flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full text-destructive hover:text-destructive"
+              aria-label={`Delete ${draft.title}`}
+              onClick={() => handleDeleteDraft(draft)}
+            >
+              <Trash2Icon />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className="rounded-full"
+              asChild
+            >
+              <Link href={links.bumicert.createWithDraftId(draft.id.toString())}>
+                <ArrowRightIcon />
+              </Link>
+            </Button>
+          </div>
         </div>
       ))}
     </div>

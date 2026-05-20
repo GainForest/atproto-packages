@@ -23,6 +23,7 @@ If yes, update the docs.
 | If the change affected... | Update or create... |
 |---|---|
 | Cross-cutting workflow, precedence, completion protocol, or global invariant | `../AGENTS.md` |
+| Agentic docs read mode, session default behavior, or first-response disclosure | `../AGENTS.md` and `README.md` in this folder |
 | Doc routing or “which doc to read next” behavior | `README.md` in this folder |
 | Canonical ownership, placement, renamed sources, shims, or legacy redirects | `ACTIVE_PATHS.md` |
 | Check selection, test workflow, test commands, or source-of-truth test locations | `TESTING.md` |
@@ -76,6 +77,7 @@ Before claiming completion on a substantial task, ask:
 7. Did we approve an exception that is likely to recur?
 8. Did a pattern become worth copying as an example?
 9. Did a recurring complex execution workflow become worth capturing as a skill?
+10. Did the `must-read-agentic-docs` behavior, default, persistence, or first-response disclosure change?
 
 If any answer is yes, propose the relevant doc update before completion.
 

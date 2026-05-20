@@ -4,7 +4,7 @@ import {
   ExternalLinkIcon,
   FileTextIcon,
   GithubIcon,
-  LeafIcon,
+  GlobeIcon,
   TwitterIcon,
 } from "lucide-react";
 import { links } from "@/lib/links";
@@ -13,7 +13,7 @@ const FOOTER_LINKS = [
   {
     href: links.external.gainforest,
     label: "GainForest",
-    Icon: LeafIcon,
+    Icon: GlobeIcon,
     external: true,
   },
   {
@@ -38,48 +38,56 @@ const FOOTER_LINKS = [
 
 export function HomeFooter() {
   return (
-    <footer className="mx-auto max-w-6xl border-t border-border px-6 py-8 sm:px-12 md:px-6 md:py-10">
-      <div className="flex flex-col items-start justify-between gap-10 md:flex-row md:items-center">
-        <div className="flex max-w-md flex-col gap-3">
-          <div className="flex items-center gap-3">
+    <footer className="max-w-7xl mx-auto px-6 py-16 border-t border-border">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+        {/* Brand */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2.5">
             <Image
               src="/assets/media/images/app-icon.png"
               alt="Bumicerts"
-              width={36}
-              height={36}
+              width={28}
+              height={28}
               className="drop-shadow-md"
             />
-            <span className="font-garamond text-2xl font-bold tracking-tight">
+            <span className="font-serif text-xl font-bold tracking-tight">
               Bumicerts
             </span>
           </div>
-          <p className="font-instrument text-base italic text-muted-foreground">
+          <p
+            className="text-muted-foreground text-sm"
+            style={{
+              fontFamily: "var(--font-instrument-serif-var)",
+              fontStyle: "italic",
+            }}
+          >
             Connecting communities with funders.
           </p>
-          <p className="text-sm text-muted-foreground/70">
+          <p className="text-xs text-muted-foreground/60 mt-1">
             Open infrastructure. Built with GainForest.
           </p>
         </div>
 
-        <nav className="grid w-full grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4 md:w-auto md:gap-x-8">
+        {/* Links */}
+        <nav className="flex flex-col gap-1">
           {FOOTER_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               target={link.external ? "_blank" : undefined}
-              className="flex items-center gap-2 py-1 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150 py-0.5"
             >
-              <link.Icon className="h-4 w-4" />
+              <link.Icon className="h-3.5 w-3.5" />
               <span>{link.label}</span>
               {link.external && (
-                <ExternalLinkIcon className="h-3.5 w-3.5 opacity-50" />
+                <ExternalLinkIcon className="h-3 w-3 opacity-50" />
               )}
             </Link>
           ))}
         </nav>
       </div>
 
-      <div className="mt-8 border-t border-border pt-5 text-sm text-muted-foreground/60">
+      <div className="mt-8 pt-4 border-t border-border text-xs text-muted-foreground/50">
         © {new Date().getFullYear()} Bumicerts. Open source, community-powered.
       </div>
     </footer>

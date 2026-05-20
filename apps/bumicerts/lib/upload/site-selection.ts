@@ -60,8 +60,51 @@ export function toUploadSiteSelection(
   };
 }
 
+function isTransientBoundaryUrl(url: string): boolean {
+  return url.startsWith("blob:");
+}
+
+export function uploadSiteHasTransientBoundary(
+  site: UploadSiteSelection,
+): boolean {
+  const boundaryUrl = extractSiteLocationUrl(site.location);
+  return boundaryUrl !== null && isTransientBoundaryUrl(boundaryUrl);
+}
+
 export function uploadSiteHasBoundary(site: UploadSiteSelection): boolean {
-  return extractSiteLocationUrl(site.location) !== null;
+  const boundaryUrl = extractSiteLocationUrl(site.location);
+  return boundaryUrl !== null && !isTransientBoundaryUrl(boundaryUrl);
+}
+
+export function getBoundaryCapableUploadSites(
+  sites: UploadSiteSelection[],
+): UploadSiteSelection[] {
+  return sites.filter(uploadSiteHasBoundary);
+}
+
+export function shouldOfferCreateUploadSiteBoundary(options: {
+  sitesWithBoundary: UploadSiteSelection[];
+  selectedSite: UploadSiteSelection | null;
+  selectedSiteBoundaryFailed: boolean;
+  allBoundaryCandidatesFailed?: boolean;
+}): boolean {
+  if (options.sitesWithBoundary.length === 0) {
+    return true;
+  }
+
+  if (options.allBoundaryCandidatesFailed) {
+    return true;
+  }
+
+  if (
+    options.sitesWithBoundary.length !== 1 ||
+    !options.selectedSiteBoundaryFailed ||
+    !options.selectedSite
+  ) {
+    return false;
+  }
+
+  return options.sitesWithBoundary[0]?.uri === options.selectedSite.uri;
 }
 
 export function resolveUploadSiteSelection(options: {

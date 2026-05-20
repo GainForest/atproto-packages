@@ -11,7 +11,7 @@ import {
   getOccurrenceDatasetRef,
   isMeasuredTreeOccurrence,
 } from "../../../shared/occurrenceEvidenceClassification";
-import { parseAtUri } from "./atUri";
+import { parseAtUri, type ParsedAtUri } from "./atUri";
 import {
   buildResolvedReference,
   type ResolvedAttachmentReference,
@@ -21,21 +21,91 @@ import {
   chunkReferenceLookupInputs,
 } from "./referenceBatches";
 
-export function useResolvedAttachmentReferences(content: unknown): {
-  references: ResolvedAttachmentReference[];
+export type AttachmentReferenceRequest = {
+  key: string;
+  content: unknown;
+};
+
+type ParsedUriLookup = {
+  uri: string;
+  parsed: ParsedAtUri | null;
+};
+
+function getAtUrisFromContent(content: unknown): string[] {
+  const seenUris = new Set<string>();
+  const uris: string[] = [];
+
+  for (const item of parseAttachmentContent(content)) {
+    if (item.kind !== "uri" || item.uriKind !== "at-uri") {
+      continue;
+    }
+
+    if (seenUris.has(item.uri)) {
+      continue;
+    }
+
+    seenUris.add(item.uri);
+    uris.push(item.uri);
+  }
+
+  return uris;
+}
+
+function getReferencesByUri(args: {
+  parsedUris: ParsedUriLookup[];
+  audioByUri: Map<string, AudioRecordingItem>;
+  occurrenceByUri: Map<string, OccurrenceItem>;
+  datasetByUri: Map<string, DatasetItem>;
+  occurrencesByDatasetUri: Map<string, OccurrenceItem[]>;
+  locationByUri: Map<string, CertifiedLocation>;
+}): Map<string, ResolvedAttachmentReference> {
+  const referencesByUri = new Map<string, ResolvedAttachmentReference>();
+
+  for (const { uri, parsed } of args.parsedUris) {
+    referencesByUri.set(
+      uri,
+      buildResolvedReference({
+        uri,
+        parsed,
+        audio: args.audioByUri.get(uri),
+        occurrence: args.occurrenceByUri.get(uri),
+        dataset: args.datasetByUri.get(uri),
+        datasetOccurrences: args.occurrencesByDatasetUri.get(uri),
+        location: args.locationByUri.get(uri),
+      }),
+    );
+  }
+
+  return referencesByUri;
+}
+
+export function useResolvedAttachmentReferenceMap(
+  requests: AttachmentReferenceRequest[],
+): {
+  referencesByKey: Map<string, ResolvedAttachmentReference[]>;
   isLoading: boolean;
 } {
-  const atUris = useMemo(() => {
-    const parsedItems = parseAttachmentContent(content);
-    const uris = parsedItems.flatMap((item) =>
-      item.kind === "uri" && item.uriKind === "at-uri" ? [item.uri] : [],
-    );
-    return Array.from(new Set(uris));
-  }, [content]);
+  const lookupInput = useMemo(() => {
+    const urisByKey = new Map<string, string[]>();
+    const uniqueUris = new Set<string>();
+
+    for (const request of requests) {
+      const uris = getAtUrisFromContent(request.content);
+      urisByKey.set(request.key, uris);
+      for (const uri of uris) {
+        uniqueUris.add(uri);
+      }
+    }
+
+    return {
+      urisByKey,
+      atUris: Array.from(uniqueUris),
+    };
+  }, [requests]);
 
   const parsedUris = useMemo(
-    () => atUris.map((uri) => ({ uri, parsed: parseAtUri(uri) })),
-    [atUris],
+    () => lookupInput.atUris.map((uri) => ({ uri, parsed: parseAtUri(uri) })),
+    [lookupInput.atUris],
   );
 
   const audioUris = useMemo(
@@ -80,15 +150,18 @@ export function useResolvedAttachmentReferences(content: unknown): {
     }));
   }, [parsedUris]);
 
-  const locationRefs = useMemo(
-    () =>
-      parsedUris.flatMap(({ uri, parsed }) =>
-        parsed?.collection === "app.certified.location"
-          ? [{ uri, did: parsed.did, rkey: parsed.rkey }]
-          : [],
-      ),
-    [parsedUris],
-  );
+  const locationRefs = useMemo(() => {
+    const refsByUri = new Map<string, { uri: string; did: string; rkey: string }>();
+    for (const { uri, parsed } of parsedUris) {
+      if (parsed?.collection !== "app.certified.location") {
+        continue;
+      }
+
+      refsByUri.set(uri, { uri, did: parsed.did, rkey: parsed.rkey });
+    }
+
+    return Array.from(refsByUri.values());
+  }, [parsedUris]);
 
   const audioUriBatches = useMemo(
     () => chunkReferenceLookupInputs(audioUris),
@@ -199,19 +272,37 @@ export function useResolvedAttachmentReferences(content: unknown): {
     return map;
   }, [locationQueries, locationRefs]);
 
-  const references = useMemo<ResolvedAttachmentReference[]>(() => {
-    return parsedUris.map(({ uri, parsed }) => {
-      return buildResolvedReference({
-        uri,
-        parsed,
-        audio: audioByUri.get(uri),
-        occurrence: occurrenceByUri.get(uri),
-        dataset: datasetByUri.get(uri),
-        datasetOccurrences: occurrencesByDatasetUri.get(uri),
-        location: locationByUri.get(uri),
-      });
+  const referencesByKey = useMemo(() => {
+    const referencesByUri = getReferencesByUri({
+      parsedUris,
+      audioByUri,
+      occurrenceByUri,
+      datasetByUri,
+      occurrencesByDatasetUri,
+      locationByUri,
     });
-  }, [audioByUri, datasetByUri, locationByUri, occurrenceByUri, occurrencesByDatasetUri, parsedUris]);
+    const map = new Map<string, ResolvedAttachmentReference[]>();
+
+    for (const [key, uris] of lookupInput.urisByKey.entries()) {
+      map.set(
+        key,
+        uris.flatMap((uri) => {
+          const reference = referencesByUri.get(uri);
+          return reference ? [reference] : [];
+        }),
+      );
+    }
+
+    return map;
+  }, [
+    audioByUri,
+    datasetByUri,
+    locationByUri,
+    lookupInput.urisByKey,
+    occurrenceByUri,
+    occurrencesByDatasetUri,
+    parsedUris,
+  ]);
 
   const isLoading =
     audioQueries.some((query) => query.isLoading) ||
@@ -220,5 +311,27 @@ export function useResolvedAttachmentReferences(content: unknown): {
     datasetOccurrenceQueries.some((query) => query.isLoading) ||
     locationQueries.some((query) => query.isLoading);
 
-  return { references, isLoading };
+  return { referencesByKey, isLoading };
+}
+
+export function useResolvedAttachmentReferences(content: unknown): {
+  references: ResolvedAttachmentReference[];
+  isLoading: boolean;
+} {
+  const requests = useMemo(
+    () => [
+      {
+        key: "attachment",
+        content,
+      },
+    ],
+    [content],
+  );
+  const { referencesByKey, isLoading } =
+    useResolvedAttachmentReferenceMap(requests);
+
+  return {
+    references: referencesByKey.get("attachment") ?? [],
+    isLoading,
+  };
 }

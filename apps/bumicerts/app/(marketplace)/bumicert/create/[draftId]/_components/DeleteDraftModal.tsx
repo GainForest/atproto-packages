@@ -21,11 +21,13 @@ export const DeleteDraftModalId = "bumicert/delete-draft";
 
 type DeleteDraftModalProps = {
   draftId?: number;
+  draftTitle?: string;
   onSuccess?: () => void;
 };
 
 const DeleteDraftModal = ({
   draftId: propDraftId,
+  draftTitle: propDraftTitle,
   onSuccess,
 }: DeleteDraftModalProps) => {
   const { stack, popModal, hide } = useModal();
@@ -36,9 +38,10 @@ const DeleteDraftModal = ({
   const auth = useAtprotoStore((state) => state.auth);
 
   const draftTitle =
-    formValues[0].projectName.trim() === ""
+    propDraftTitle ??
+    (formValues[0].projectName.trim() === ""
       ? "Untitled Draft"
-      : formValues[0].projectName;
+      : formValues[0].projectName);
 
   // Extract draftId from URL if not provided as prop
   const draftIdMatch = pathname.match(/\/create\/(\d+)$/);
