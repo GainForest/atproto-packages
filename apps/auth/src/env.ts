@@ -18,27 +18,40 @@ const envSchema = z.object({
   SKIP_ENV_VALIDATION: z.string().optional(),
 });
 
-const fallbackEnv = envSchema.partial().parse(process.env);
+export type AuthEnv = z.output<typeof envSchema>;
 
-export const env = process.env.SKIP_ENV_VALIDATION
-  ? {
-      NODE_ENV: fallbackEnv.NODE_ENV ?? "development",
-      PORT: fallbackEnv.PORT ?? 3002,
-      AUTH_BASE_URL: fallbackEnv.AUTH_BASE_URL ?? "http://localhost:3002",
-      AUTH_APP_ID: fallbackEnv.AUTH_APP_ID ?? "gainforest-auth",
-      AUTH_COOKIE_DOMAIN: fallbackEnv.AUTH_COOKIE_DOMAIN,
-      AUTH_ALLOWED_RETURN_ORIGINS: fallbackEnv.AUTH_ALLOWED_RETURN_ORIGINS,
-      AUTH_EPDS_PROVIDERS: fallbackEnv.AUTH_EPDS_PROVIDERS,
-      ATPROTO_JWK_PRIVATE: fallbackEnv.ATPROTO_JWK_PRIVATE ?? "{}",
-      COOKIE_SECRET:
-        fallbackEnv.COOKIE_SECRET ?? "development-cookie-secret-placeholder-32",
-      SUPABASE_URL: fallbackEnv.SUPABASE_URL ?? "http://localhost:54321",
-      SUPABASE_SERVICE_ROLE_KEY: fallbackEnv.SUPABASE_SERVICE_ROLE_KEY ?? "placeholder",
-      NEXT_PUBLIC_EPDS_URL: fallbackEnv.NEXT_PUBLIC_EPDS_URL,
-      DEFAULT_PDS_DOMAIN: fallbackEnv.DEFAULT_PDS_DOMAIN,
-      DEBUG: fallbackEnv.DEBUG,
-    }
-  : envSchema.parse(process.env);
+function parseEnv(source: Record<string, string | undefined>): AuthEnv {
+  const fallbackEnv = envSchema.partial().parse(source);
 
-export const isProduction = env.NODE_ENV === "production";
-export const authBaseUrl = env.AUTH_BASE_URL.replace(/\/$/, "");
+  return source.SKIP_ENV_VALIDATION
+    ? {
+        NODE_ENV: fallbackEnv.NODE_ENV ?? "development",
+        PORT: fallbackEnv.PORT ?? 3002,
+        AUTH_BASE_URL: fallbackEnv.AUTH_BASE_URL ?? "http://localhost:3002",
+        AUTH_APP_ID: fallbackEnv.AUTH_APP_ID ?? "gainforest-auth",
+        AUTH_COOKIE_DOMAIN: fallbackEnv.AUTH_COOKIE_DOMAIN,
+        AUTH_ALLOWED_RETURN_ORIGINS: fallbackEnv.AUTH_ALLOWED_RETURN_ORIGINS,
+        AUTH_EPDS_PROVIDERS: fallbackEnv.AUTH_EPDS_PROVIDERS,
+        ATPROTO_JWK_PRIVATE: fallbackEnv.ATPROTO_JWK_PRIVATE ?? "{}",
+        COOKIE_SECRET:
+          fallbackEnv.COOKIE_SECRET ?? "development-cookie-secret-placeholder-32",
+        SUPABASE_URL: fallbackEnv.SUPABASE_URL ?? "http://localhost:54321",
+        SUPABASE_SERVICE_ROLE_KEY: fallbackEnv.SUPABASE_SERVICE_ROLE_KEY ?? "placeholder",
+        NEXT_PUBLIC_EPDS_URL: fallbackEnv.NEXT_PUBLIC_EPDS_URL,
+        DEFAULT_PDS_DOMAIN: fallbackEnv.DEFAULT_PDS_DOMAIN,
+        DEBUG: fallbackEnv.DEBUG,
+        SKIP_ENV_VALIDATION: fallbackEnv.SKIP_ENV_VALIDATION,
+      }
+    : envSchema.parse(source);
+}
+
+export let env = parseEnv({ SKIP_ENV_VALIDATION: "true" });
+export let isProduction = env.NODE_ENV === "production";
+export let authBaseUrl = env.AUTH_BASE_URL.replace(/\/$/, "");
+
+export function configureEnv(source: Record<string, string | undefined>): AuthEnv {
+  env = parseEnv(source);
+  isProduction = env.NODE_ENV === "production";
+  authBaseUrl = env.AUTH_BASE_URL.replace(/\/$/, "");
+  return env;
+}

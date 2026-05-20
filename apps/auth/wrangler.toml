@@ -1,0 +1,36 @@
+name = "gainforest-auth"
+main = "src/worker.ts"
+compatibility_date = "2026-05-20"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+
+routes = [
+  { pattern = "auth.gainforest.app", custom_domain = true }
+]
+
+[vars]
+NODE_ENV = "production"
+AUTH_BASE_URL = "https://auth.gainforest.app"
+AUTH_APP_ID = "gainforest-auth"
+AUTH_COOKIE_DOMAIN = ".gainforest.app"
+AUTH_ALLOWED_RETURN_ORIGINS = "https://certs.gainforest.app"
+NEXT_PUBLIC_EPDS_URL = "https://climateai.org"
+DEFAULT_PDS_DOMAIN = "gainforest.id"
+AUTH_EPDS_PROVIDERS = "bumicerts:https://climateai.org"
+
+[env.dev]
+name = "gainforest-auth-dev"
+workers_dev = false
+routes = [
+  { pattern = "dev-auth.gainforest.app", custom_domain = true }
+]
+
+[env.dev.vars]
+NODE_ENV = "production"
+AUTH_BASE_URL = "https://dev-auth.gainforest.app"
+AUTH_APP_ID = "gainforest-auth-dev"
+AUTH_COOKIE_DOMAIN = ".gainforest.app"
+AUTH_ALLOWED_RETURN_ORIGINS = "https://certs.gainforest.app,http://127.0.0.1:3001,http://localhost:3001"
+NEXT_PUBLIC_EPDS_URL = "https://climateai.org"
+DEFAULT_PDS_DOMAIN = "gainforest.id"
+AUTH_EPDS_PROVIDERS = "bumicerts:https://climateai.org"
