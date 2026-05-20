@@ -133,7 +133,8 @@
   "dashboard": {
     "metadata": {
       "title": "Donations Dashboard — Bumicerts",
-      "description": "Platform-wide donations analytics: total raised, unique donors, funding trends, and recent transactions."
+      "description": "Platform-wide donations analytics: total raised, unique donors, funding trends, and recent transactions.",
+      "measurementTechnique": "Donation receipts indexed from org.hypercerts.funding.receipt records."
     },
     "hero": {
       "eyebrow": "Platform Analytics",

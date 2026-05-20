@@ -4,7 +4,15 @@ import { getProxyBlockResult } from "@/lib/proxy-guards";
 import {
   LANGUAGE_COOKIE_NAME,
   resolvePreferredLanguageFromHeader,
+  resolveSupportedLanguage,
 } from "@/lib/i18n/languages";
+import {
+  LOCALE_REQUEST_HEADER_NAME,
+  getLocalizedPathnames,
+  getPathLocale,
+  stripLocaleFromPathname,
+  withLocalePrefix,
+} from "@/lib/i18n/routing";
 
 function appendRequestCookie(
   existingCookieHeader: string | null,
@@ -15,6 +23,28 @@ function appendRequestCookie(
   return existingCookieHeader
     ? `${existingCookieHeader}; ${encodedCookie}`
     : encodedCookie;
+}
+
+function isLocaleRoutedPath(pathname: string): boolean {
+  return !(
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/.well-known/") ||
+    pathname === "/client-metadata.json"
+  );
+}
+
+function getSeoLinkHeader(request: NextRequest, pathname: string): string {
+  const canonicalUrl = new URL(pathname, request.url);
+  const alternateLinks = Object.entries(getLocalizedPathnames(pathname)).map(
+    ([locale, localizedPathname]) => {
+      const url = new URL(localizedPathname, request.url);
+      return `<${url.toString()}>; rel="alternate"; hreflang="${locale}"`;
+    },
+  );
+
+  return [`<${canonicalUrl.toString()}>; rel="canonical"`, ...alternateLinks].join(
+    ", ",
+  );
 }
 
 export function proxy(request: NextRequest) {
@@ -42,33 +72,59 @@ export function proxy(request: NextRequest) {
     return new NextResponse(null, { status: 404 });
   }
 
+  const pathnameLocale = getPathLocale(request.nextUrl.pathname);
   const savedLocale = request.cookies.get(LANGUAGE_COOKIE_NAME)?.value;
-  if (savedLocale) return NextResponse.next();
-
   const detectedLocale = resolvePreferredLanguageFromHeader(
     request.headers.get("accept-language"),
   );
+  const resolvedLocale =
+    pathnameLocale ??
+    (savedLocale ? resolveSupportedLanguage(savedLocale) : detectedLocale);
+
+  if (!isLocaleRoutedPath(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
+  if (!pathnameLocale) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = withLocalePrefix(
+      request.nextUrl.pathname,
+      resolvedLocale,
+    );
+    const response = NextResponse.redirect(redirectUrl, { status: 307 });
+    response.headers.set("Link", getSeoLinkHeader(request, redirectUrl.pathname));
+    return response;
+  }
+
   const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(LOCALE_REQUEST_HEADER_NAME, pathnameLocale);
   requestHeaders.set(
     "cookie",
     appendRequestCookie(
       request.headers.get("cookie"),
       LANGUAGE_COOKIE_NAME,
-      detectedLocale,
+      pathnameLocale,
     ),
   );
 
-  const response = NextResponse.next({
+  const rewriteUrl = request.nextUrl.clone();
+  rewriteUrl.pathname = stripLocaleFromPathname(request.nextUrl.pathname);
+
+  const response = NextResponse.rewrite(rewriteUrl, {
     request: {
       headers: requestHeaders,
     },
   });
-  response.cookies.set(LANGUAGE_COOKIE_NAME, detectedLocale, {
+  response.cookies.set(LANGUAGE_COOKIE_NAME, pathnameLocale, {
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
     sameSite: "lax",
     secure: request.nextUrl.protocol === "https:",
   });
+  response.headers.set(
+    "Link",
+    getSeoLinkHeader(request, request.nextUrl.pathname),
+  );
 
   return response;
 }

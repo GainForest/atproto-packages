@@ -4,6 +4,7 @@ import { OrgAbout } from "@/components/account/OrgAbout";
 import ErrorPage from "@/components/error-page";
 import { links } from "@/lib/links";
 import {
+  DEFAULT_ACCOUNT_METADATA,
   buildAccountPageMetadata,
   buildAccountStructuredData,
   getAccountRouteData,
@@ -11,6 +12,7 @@ import {
 } from "./server/account-route";
 import type { AccountRouteData } from "./server/account-route";
 import { getTranslations } from "next-intl/server";
+import { getLocalizedAbsoluteUrl, jsonLd } from "@/lib/seo-metadata";
 
 export async function generateMetadata({
   params,
@@ -21,8 +23,7 @@ export async function generateMetadata({
     const { did } = await readAccountRouteParams(params);
     return buildAccountPageMetadata(await getAccountRouteData(did));
   } catch {
-    const t = await getTranslations("marketplace.account.metadata");
-    return { title: t("accountTitle") };
+    return DEFAULT_ACCOUNT_METADATA;
   }
 }
 
@@ -57,15 +58,35 @@ export default async function AccountByDidPage({
   }
 
   const structuredData = buildAccountStructuredData(routeData);
+  const organizationsT = await getTranslations("marketplace.organizations.metadata");
+  const breadcrumbStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: organizationsT("title"),
+        item: await getLocalizedAbsoluteUrl(links.allOrganizations),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: routeData.organization.displayName,
+        item: routeData.pageUrl,
+      },
+    ],
+  };
+  const jsonLdData = structuredData
+    ? [structuredData, breadcrumbStructuredData]
+    : [breadcrumbStructuredData];
 
   return (
     <>
-      {structuredData && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
-      )}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(jsonLdData) }}
+      />
       <OrgAbout organization={routeData.organization} />
     </>
   );

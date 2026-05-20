@@ -133,7 +133,8 @@
   "dashboard": {
     "metadata": {
       "title": "Dasbor donasi — Bumicerts",
-      "description": "Analitik donasi seluruh platform: total terkumpul, donatur unik, tren pendanaan, dan transaksi terbaru."
+      "description": "Analitik donasi seluruh platform: total terkumpul, donatur unik, tren pendanaan, dan transaksi terbaru.",
+      "measurementTechnique": "Tanda terima donasi yang diindeks dari catatan org.hypercerts.funding.receipt."
     },
     "hero": {
       "eyebrow": "Analitik platform",

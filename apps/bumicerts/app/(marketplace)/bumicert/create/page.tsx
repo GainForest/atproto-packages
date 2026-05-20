@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ExternalLinkIcon, HelpCircleIcon, LeafIcon } from "lucide-react";
@@ -7,6 +8,15 @@ import GetStartedButton from "./_components/GetStartedButton";
 import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
 import { getTranslations } from "next-intl/server";
+import { noIndexMetadata } from "@/lib/seo-metadata";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("bumicert.create.landing.hero");
+  return {
+    ...noIndexMetadata("Create a Bumicert"),
+    description: t("description"),
+  };
+}
 
 type CreatePageTranslations = Awaited<ReturnType<typeof getCreatePageTranslations>>;
 

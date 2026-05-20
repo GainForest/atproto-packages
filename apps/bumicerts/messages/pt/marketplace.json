@@ -133,7 +133,8 @@
   "dashboard": {
     "metadata": {
       "title": "Painel de doações — Bumicerts",
-      "description": "Análises de doações de toda a plataforma: total arrecadado, doadores únicos, tendências de financiamento e transações recentes."
+      "description": "Análises de doações de toda a plataforma: total arrecadado, doadores únicos, tendências de financiamento e transações recentes.",
+      "measurementTechnique": "Recibos de doação indexados a partir de registros org.hypercerts.funding.receipt."
     },
     "hero": {
       "eyebrow": "Análise da plataforma",

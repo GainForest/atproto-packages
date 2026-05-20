@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { links } from "@/lib/links";
@@ -5,6 +6,9 @@ import { AccountOnboardingRequired } from "./_components/AccountOnboardingRequir
 import ErrorPage from "@/components/error-page";
 import { getTranslations } from "next-intl/server";
 import { getIndexerCaller } from "@/lib/trpc/indexer/server";
+import { noIndexMetadata } from "@/lib/seo-metadata";
+
+export const metadata: Metadata = noIndexMetadata();
 
 export default async function AccountPage() {
   const session = await auth.session.getSession();
