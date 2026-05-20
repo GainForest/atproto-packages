@@ -1,4 +1,4 @@
-import { getPublicUrlClient } from "./url";
+import { links } from "./links";
 
 /**
  * Build a GainForest geo-viewer URL for a shapefile/GeoJSON.
@@ -9,5 +9,5 @@ import { getPublicUrlClient } from "./url";
  * @param uri - A fully-resolved URL to a GeoJSON / shapefile blob.
  */
 export function getShapefilePreviewUrl(uri: string): string {
-  return `${getPublicUrlClient()}/geo/view?source-value=${encodeURIComponent(uri)}`;
+  return links.external.greenGlobeGeoView(uri);
 }
