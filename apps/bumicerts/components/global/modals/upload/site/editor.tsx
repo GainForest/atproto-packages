@@ -247,10 +247,20 @@ export const SiteEditorModal = ({
     _updateMutation({ rkey, data: { name }, newShapefile });
   };
 
+  const readBoundaryFileForEditor = async (file: File) => {
+    try {
+      return await readGeoJsonFile(file);
+    } catch (error) {
+      throw new LocalizedSiteEditorError(
+        error instanceof Error ? error.message : t("errors.unexpected"),
+      );
+    }
+  };
+
   const verifyNewBoundary = async (file: File) => {
     setIsVerifyingBoundary(true);
     try {
-      await readGeoJsonFile(file);
+      await readBoundaryFileForEditor(file);
     } finally {
       setIsVerifyingBoundary(false);
     }
@@ -270,7 +280,7 @@ export const SiteEditorModal = ({
         throw new LocalizedSiteEditorError(t("errors.verifyBoundary"));
       }
 
-      const boundary = await readGeoJsonFile(file);
+      const boundary = await readBoundaryFileForEditor(file);
       const treeCoordinates = linkedTrees.flatMap((occurrence, index) => {
         const coordinate = toTreeBoundaryCoordinate(occurrence, index);
         return coordinate ? [coordinate] : [];

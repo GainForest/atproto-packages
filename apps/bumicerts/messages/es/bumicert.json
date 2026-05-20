@@ -81,6 +81,8 @@
       "siteContextIncomplete": "Some trees are missing site context",
       "siteContextUnresolved": "Site record could not be resolved",
       "siteContextUnavailable": "Site context unavailable",
+      "incompleteBumicertReference": "Cannot link evidence because the bumicert reference is incomplete. Refresh the page and try again.",
+      "partialLinkSuccess": "{createdCount, plural, =1 {1 attachment} other {# attachments}} linked, but not all {totalCount, plural, =1 {1 group} other {# groups}} completed. {error}",
       "emptyLabels": {
         "audio": "grabaciones de audio",
         "trees": "conjuntos de datos de árboles",
