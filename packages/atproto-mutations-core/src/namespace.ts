@@ -57,6 +57,13 @@ import { upsertAudioRecording } from "./mutations/ac.audio/upsert";
 import { deleteAudioRecording } from "./mutations/ac.audio/delete";
 
 // ---------------------------------------------------------------------------
+// ac.deployment
+// ---------------------------------------------------------------------------
+import { createAcDeployment } from "./mutations/ac.deployment/create";
+import { updateAcDeployment } from "./mutations/ac.deployment/update";
+import { deleteAcDeployment } from "./mutations/ac.deployment/delete";
+
+// ---------------------------------------------------------------------------
 // claim.activity
 // ---------------------------------------------------------------------------
 import { createClaimActivity } from "./mutations/claim.activity/create";
@@ -123,6 +130,13 @@ import { createDwcOccurrence } from "./mutations/dwc.occurrence/create";
 import { updateDwcOccurrence } from "./mutations/dwc.occurrence/update";
 import { deleteDwcOccurrence } from "./mutations/dwc.occurrence/delete";
 import { deleteDwcOccurrenceCascade } from "./mutations/dwc.occurrence/deleteCascade";
+
+// ---------------------------------------------------------------------------
+// dwc.event
+// ---------------------------------------------------------------------------
+import { createDwcEvent } from "./mutations/dwc.event/create";
+import { updateDwcEvent } from "./mutations/dwc.event/update";
+import { deleteDwcEvent } from "./mutations/dwc.event/delete";
 
 // ---------------------------------------------------------------------------
 // context.attachment
@@ -224,6 +238,11 @@ export const mutations = {
       upsert: upsertAudioRecording,
       delete: deleteAudioRecording,
     },
+    deployment: {
+      create: createAcDeployment,
+      update: updateAcDeployment,
+      delete: deleteAcDeployment,
+    },
     multimedia: {
       create: createAcMultimedia,
       update: updateAcMultimedia,
@@ -251,6 +270,11 @@ export const mutations = {
       update: updateDwcOccurrence,
       delete: deleteDwcOccurrence,
       deleteCascade: deleteDwcOccurrenceCascade,
+    },
+    event: {
+      create: createDwcEvent,
+      update: updateDwcEvent,
+      delete: deleteDwcEvent,
     },
     measurement: {
       create: createDwcMeasurement,

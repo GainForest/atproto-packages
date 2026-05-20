@@ -53,7 +53,19 @@ export const createAudioRecording = (
   AtprotoAgent
 > =>
   Effect.gen(function* () {
-    const { audioFile, name, description, metadata, rkey } = input;
+    const {
+      audioFile,
+      name,
+      description,
+      metadata,
+      rkey,
+      license,
+      recordedBy,
+      tags,
+      occurrenceRef,
+      deploymentRef,
+      siteRef,
+    } = input;
 
     // 1. Validate file size and MIME type.
     if (audioFile.size > MAX_AUDIO_BYTES) {
@@ -104,12 +116,26 @@ export const createAudioRecording = (
       },
       metadata: {
         $type: "app.gainforest.ac.audio#metadata",
-        codec: metadata.codec,
+        ...(metadata.codec !== undefined && { codec: metadata.codec }),
         channels: metadata.channels,
         duration: metadata.duration,
         sampleRate: metadata.sampleRate,
         recordedAt: metadata.recordedAt,
+        ...(metadata.bitDepth !== undefined && { bitDepth: metadata.bitDepth }),
+        ...(metadata.fileFormat !== undefined && { fileFormat: metadata.fileFormat }),
+        ...(metadata.fileSizeBytes !== undefined && { fileSizeBytes: metadata.fileSizeBytes }),
+        ...(metadata.minFrequencyHz !== undefined && { minFrequencyHz: metadata.minFrequencyHz }),
+        ...(metadata.maxFrequencyHz !== undefined && { maxFrequencyHz: metadata.maxFrequencyHz }),
+        ...(metadata.filterHighPassHz !== undefined && { filterHighPassHz: metadata.filterHighPassHz }),
+        ...(metadata.filterLowPassHz !== undefined && { filterLowPassHz: metadata.filterLowPassHz }),
+        ...(metadata.signalToNoiseRatio !== undefined && { signalToNoiseRatio: metadata.signalToNoiseRatio }),
       },
+      ...(license !== undefined && { license }),
+      ...(recordedBy !== undefined && { recordedBy }),
+      ...(tags !== undefined && { tags }),
+      ...(occurrenceRef !== undefined && { occurrenceRef }),
+      ...(deploymentRef !== undefined && { deploymentRef }),
+      ...(siteRef !== undefined && { siteRef }),
       createdAt,
     };
 

@@ -179,6 +179,19 @@ export {
   AudioRecordingPdsError,
 } from "@gainforest/atproto-mutations-core";
 
+// ac.deployment types — safe everywhere
+export type {
+  AcDeploymentRecord,
+  AcDeploymentMutationResult,
+  CreateAcDeploymentInput,
+  UpdateAcDeploymentInput,
+} from "@gainforest/atproto-mutations-core";
+export {
+  AcDeploymentValidationError,
+  AcDeploymentNotFoundError,
+  AcDeploymentPdsError,
+} from "@gainforest/atproto-mutations-core";
+
 // dwc.occurrence types — safe everywhere
 export type {
   CreateDwcOccurrenceInput,
@@ -190,6 +203,19 @@ export {
   DwcOccurrenceValidationError,
   DwcOccurrenceNotFoundError,
   DwcOccurrencePdsError,
+} from "@gainforest/atproto-mutations-core";
+
+// dwc.event types — safe everywhere
+export type {
+  CreateDwcEventInput,
+  UpdateDwcEventInput,
+  DwcEventMutationResult,
+  DwcEventRecord,
+} from "@gainforest/atproto-mutations-core";
+export {
+  DwcEventValidationError,
+  DwcEventNotFoundError,
+  DwcEventPdsError,
 } from "@gainforest/atproto-mutations-core";
 
 // dwc.dataset types — safe everywhere

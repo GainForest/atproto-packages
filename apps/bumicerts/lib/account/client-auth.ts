@@ -16,6 +16,19 @@ function isValidatedAuthenticated(
   return auth.status === "AUTHENTICATED";
 }
 
+function isAccountSummary(value: AccountSummary | undefined): value is AccountSummary {
+  return (
+    value !== undefined &&
+    typeof value === "object" &&
+    value !== null &&
+    "kind" in value &&
+    (value.kind === "unauthenticated" ||
+      value.kind === "unknown" ||
+      value.kind === "user" ||
+      value.kind === "organization")
+  );
+}
+
 export function shouldShowUserMenuSkeleton(auth: ValidatedAuthState): boolean {
   return auth.status === "RESUMING";
 }
@@ -28,7 +41,7 @@ export function resolveValidatedUserMenuAccount(options: {
     return null;
   }
 
-  if (options.account && options.account.kind !== "unauthenticated") {
+  if (isAccountSummary(options.account) && options.account.kind !== "unauthenticated") {
     return options.account;
   }
 

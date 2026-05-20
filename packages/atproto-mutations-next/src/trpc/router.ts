@@ -41,6 +41,11 @@ export const appRouter = router({
   }),
   ac: router({
     audio: entityRouter(mutations.ac.audio),
+    deployment: router({
+      create: effectMutation(mutations.ac.deployment.create),
+      update: effectMutation(mutations.ac.deployment.update),
+      delete: effectMutation(mutations.ac.deployment.delete),
+    }),
     multimedia: router({
       create: effectMutation(mutations.ac.multimedia.create),
       update: effectMutation(mutations.ac.multimedia.update),
@@ -62,6 +67,11 @@ export const appRouter = router({
       update: effectMutation(mutations.dwc.occurrence.update),
       delete: effectMutation(mutations.dwc.occurrence.delete),
       deleteCascade: effectMutation(mutations.dwc.occurrence.deleteCascade),
+    }),
+    event: router({
+      create: effectMutation(mutations.dwc.event.create),
+      update: effectMutation(mutations.dwc.event.update),
+      delete: effectMutation(mutations.dwc.event.delete),
     }),
     measurement: router({
       create: effectMutation(mutations.dwc.measurement.create),
