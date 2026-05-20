@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { AttachmentItem } from "@/graphql/indexer/queries/attachments";
 import { cn } from "@/lib/utils";
 import {
@@ -19,7 +20,6 @@ import {
 } from "./shared/timelineMapLayers";
 import { TimelineViewerStoreProvider } from "./shared/timelineViewerStore";
 import { useResolvedAttachmentReferenceMap } from "./shared/referenceResolution/useResolvedAttachmentReferences";
-import { useLocale, useTranslations } from "next-intl";
 
 interface TimelinePanelProps {
   entries: AttachmentItem[];
@@ -161,11 +161,14 @@ export function TimelinePanel({
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="text-2xl tracking-tight text-foreground">
-                {t("title")}
+                {t("linkedTitle")}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {t("itemCount", { count: entries.length })}
+                {t("linkedItemCount", { count: entries.length })}
                 {linkedWindow ? ` · ${t("linked", { window: linkedWindow })}` : ""}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("linkedDescription")}
               </p>
             </div>
             {linkedWindow ? (

@@ -21,7 +21,14 @@
         "audio": "Áudio",
         "biodiversity": "Biodiversidade",
         "document": "Documento"
-      }
+      },
+      "ownerTools": "Ferramentas do proprietário",
+      "linkEvidenceTitle": "Vincular evidências",
+      "linkEvidenceDescription": "Anexe registros ou arquivos existentes a {title}. Os itens vinculados aparecem na linha do tempo pública de evidências abaixo.",
+      "notTimelineYet": "Ainda não faz parte da linha do tempo",
+      "linkedTitle": "Linha do tempo de evidências vinculadas",
+      "linkedItemCount": "{count, plural, =0 {0 itens vinculados a esta atividade do bumicert} =1 {1 item vinculado a esta atividade do bumicert} other {# itens vinculados a esta atividade do bumicert}}",
+      "linkedDescription": "Revise os registros, arquivos e camadas do mapa que já fazem parte da linha do tempo pública de evidências."
     },
     "evidenceAdder": {
       "title": "Adicionar evidência",
@@ -92,7 +99,14 @@
         "audio": "Gravações de áudio",
         "trees": "Conjunto de dados de árvores",
         "biodiversity": "Observações de biodiversidade"
-      }
+      },
+      "chooseEvidenceType": "Escolha o tipo de evidência",
+      "selectSourceToLink": "Selecione uma fonte para vincular evidências existentes a esta linha do tempo.",
+      "linkType": "Vincular {type}",
+      "selectRecordsToLink": "Selecione registros de evidência para vincular a esta linha do tempo.",
+      "alreadyLinkedDataset": "Já vinculado a esta linha do tempo",
+      "checkingExistingLinks": "Verificando vínculos existentes da linha do tempo…",
+      "unableToVerifyExistingLinks": "Não foi possível verificar os vínculos existentes da linha do tempo. Atualize para vincular conjuntos de dados de árvores."
     },
     "metadata": {
       "notFound": "Bumicert não encontrado"
@@ -142,7 +156,20 @@
         "removing": "Removendo… Relatório",
         "remove": "Remover",
         "cancel": "Cancelar"
-      }
+      },
+      "activeHiddenLayerSummary": "{activeCount} ativas · {hiddenCount} ocultas",
+      "activeHiddenLayerSummaryWithHint": "{activeCount} ativas · {hiddenCount} ocultas — use Mostrar camada nos cartões de conjuntos de dados de árvores para pré-visualizar camadas aqui.",
+      "showLayerHint": "Use Mostrar camada nos cartões de conjuntos de dados de árvores para pré-visualizar camadas aqui.",
+      "activeLayerBadge": "{count, plural, =1 {1 ativa} other {# ativas}}",
+      "hiddenLayerBadge": "{count, plural, =1 {1 oculta} other {# ocultas}}",
+      "activeLayersInPreview": "Camadas ativas na pré-visualização",
+      "hiddenLayerPrefix": "Oculta: {title}",
+      "activeOnMap": "Ativa no mapa",
+      "hiddenFromMap": "Oculta do mapa",
+      "visibleLayerDescription": "Esta camada do conjunto de dados está visível na pré-visualização do Green Globe.",
+      "hiddenLayerDescription": "Esta camada do conjunto de dados está disponível, mas está oculta no momento.",
+      "showLayer": "Mostrar camada",
+      "hideLayer": "Ocultar camada"
     },
     "reference": {
       "linkedRecord": "Registro vinculado",

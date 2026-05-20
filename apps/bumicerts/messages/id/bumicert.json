@@ -21,7 +21,14 @@
         "audio": "Audio",
         "biodiversity": "Keanekaragaman Hayati",
         "document": "Dokumen"
-      }
+      },
+      "ownerTools": "Alat pemilik",
+      "linkEvidenceTitle": "Tautkan bukti",
+      "linkEvidenceDescription": "Lampirkan catatan atau file yang sudah ada ke {title}. Item yang ditautkan akan muncul di linimasa bukti publik di bawah.",
+      "notTimelineYet": "Belum menjadi bagian dari linimasa",
+      "linkedTitle": "Linimasa bukti tertaut",
+      "linkedItemCount": "{count, plural, =0 {0 item tertaut ke aktivitas bumicert ini} =1 {1 item tertaut ke aktivitas bumicert ini} other {# item tertaut ke aktivitas bumicert ini}}",
+      "linkedDescription": "Tinjau catatan, file, dan lapisan peta yang sudah menjadi bagian dari linimasa bukti publik."
     },
     "evidenceAdder": {
       "title": "Tambahkan Bukti",
@@ -92,7 +99,14 @@
         "audio": "Rekaman audio",
         "trees": "Dataset pohon",
         "biodiversity": "Observasi keanekaragaman hayati"
-      }
+      },
+      "chooseEvidenceType": "Pilih jenis bukti",
+      "selectSourceToLink": "Pilih sumber untuk menautkan bukti yang sudah ada ke linimasa ini.",
+      "linkType": "Tautkan {type}",
+      "selectRecordsToLink": "Pilih catatan bukti untuk ditautkan ke linimasa ini.",
+      "alreadyLinkedDataset": "Sudah ditautkan ke linimasa ini",
+      "checkingExistingLinks": "Memeriksa tautan linimasa yang sudah ada…",
+      "unableToVerifyExistingLinks": "Tidak dapat memverifikasi tautan linimasa yang sudah ada. Muat ulang untuk menautkan set data pohon."
     },
     "metadata": {
       "notFound": "Bumicert Tidak Ditemukan"
@@ -142,7 +156,20 @@
         "removing": "Menghapus… Laporan",
         "remove": "Hapus",
         "cancel": "Batalkan"
-      }
+      },
+      "activeHiddenLayerSummary": "{activeCount} aktif · {hiddenCount} tersembunyi",
+      "activeHiddenLayerSummaryWithHint": "{activeCount} aktif · {hiddenCount} tersembunyi — gunakan Tampilkan lapisan pada kartu set data pohon untuk melihat pratinjau lapisan di sini.",
+      "showLayerHint": "Gunakan Tampilkan lapisan pada kartu set data pohon untuk melihat pratinjau lapisan di sini.",
+      "activeLayerBadge": "{count} aktif",
+      "hiddenLayerBadge": "{count} tersembunyi",
+      "activeLayersInPreview": "Lapisan aktif dalam pratinjau",
+      "hiddenLayerPrefix": "Tersembunyi: {title}",
+      "activeOnMap": "Aktif di peta",
+      "hiddenFromMap": "Tersembunyi dari peta",
+      "visibleLayerDescription": "Lapisan set data ini terlihat di pratinjau Green Globe.",
+      "hiddenLayerDescription": "Lapisan set data ini tersedia tetapi saat ini tersembunyi.",
+      "showLayer": "Tampilkan lapisan",
+      "hideLayer": "Sembunyikan lapisan"
     },
     "reference": {
       "linkedRecord": "Catatan tertaut",
