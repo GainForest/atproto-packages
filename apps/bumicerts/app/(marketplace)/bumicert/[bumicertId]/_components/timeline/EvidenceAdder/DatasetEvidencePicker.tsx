@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type {
   CertifiedLocation,
   DatasetItem,
@@ -17,12 +18,18 @@ import {
   groupDatasetUrisBySite,
   type DatasetSiteContext,
 } from "./shared/datasetSiteContext";
+import {
+  ALREADY_LINKED_DATASET_MESSAGE,
+  CHECKING_LINKED_DATASETS_MESSAGE,
+  UNABLE_TO_VERIFY_LINKED_DATASETS_MESSAGE,
+  buildSelectableTreeDatasetUris,
+  getTreeDatasetSelectionState,
+} from "./shared/datasetEvidenceSelection";
 import { buildDatasetEvidenceStatsByUri } from "../shared/datasetStats";
 import {
   getOccurrenceDatasetRef,
   isTreeDatasetOccurrence,
 } from "../shared/occurrenceEvidenceClassification";
-import { useTranslations } from "next-intl";
 
 function hasTreeDatasetMetadata(item: DatasetItem): boolean {
   return (
@@ -35,10 +42,16 @@ const DatasetEvidencePicker = ({
   datasets,
   occurrences,
   locations,
+  linkedDatasetUris,
+  timelineAttachmentsLoading,
+  timelineAttachmentsUnavailable,
 }: {
   datasets: DatasetItem[];
   occurrences: OccurrenceItem[];
   locations: CertifiedLocation[];
+  linkedDatasetUris: ReadonlySet<string>;
+  timelineAttachmentsLoading: boolean;
+  timelineAttachmentsUnavailable: boolean;
 }) => {
   const t = useTranslations("bumicert.detail.evidenceAdder");
   const tabConfig = getManagedEvidenceTabConfig("trees");
@@ -78,12 +91,13 @@ const DatasetEvidencePicker = ({
       const uri = dataset.metadata?.uri;
       return uri ? [{ item: dataset, uri }] : [];
     });
-  const selectableUris = new Set(
-    rows.flatMap(({ uri }) => {
-      const context = getDatasetSiteContext(siteContextsByDataset, uri);
-      return context.status === "ready" ? [uri] : [];
-    }),
-  );
+  const selectableUris = buildSelectableTreeDatasetUris({
+    rows,
+    siteContextsByDataset,
+    linkedDatasetUris,
+    timelineAttachmentsLoading,
+    timelineAttachmentsUnavailable,
+  });
   const { selectedUris, selectedContents, toggleUri, resetSelection } =
     useUriSelection(selectableUris);
   const groupedSelections = groupDatasetUrisBySite({
@@ -130,6 +144,24 @@ const DatasetEvidencePicker = ({
     return t("siteContextUnavailable");
   };
 
+  const getSelectionDisabledReasonLabel = (
+    reason: string | null,
+  ): string | null => {
+    if (reason === ALREADY_LINKED_DATASET_MESSAGE) {
+      return t("alreadyLinkedDataset");
+    }
+
+    if (reason === CHECKING_LINKED_DATASETS_MESSAGE) {
+      return t("checkingExistingLinks");
+    }
+
+    if (reason === UNABLE_TO_VERIFY_LINKED_DATASETS_MESSAGE) {
+      return t("unableToVerifyExistingLinks");
+    }
+
+    return reason;
+  };
+
   return (
     <>
       <ListLayout>
@@ -139,7 +171,17 @@ const DatasetEvidencePicker = ({
           const speciesCount = stats?.speciesCount ?? 0;
           const dateRange = stats?.recordedDateRange;
           const siteContext = getDatasetSiteContext(siteContextsByDataset, uri);
-          const canSelect = siteContext.status === "ready";
+          const selectionState = getTreeDatasetSelectionState({
+            uri,
+            siteContext,
+            linkedDatasetUris,
+            timelineAttachmentsLoading,
+            timelineAttachmentsUnavailable,
+          });
+          const canSelect = selectionState.canSelect;
+          const disabledReasonLabel = getSelectionDisabledReasonLabel(
+            selectionState.disabledReason,
+          );
           const secondary = [
             t("treeCount", { count: treeCount }),
             speciesCount > 0 ? t("speciesCount", { count: speciesCount }) : null,
@@ -160,6 +202,7 @@ const DatasetEvidencePicker = ({
               icon={tabConfig.icon}
               primary={item.record?.name ?? t("unnamedTreeDataset")}
               secondary={secondary}
+              status={disabledReasonLabel ?? undefined}
               disabled={isSubmitting || !canSelect}
             />
           );

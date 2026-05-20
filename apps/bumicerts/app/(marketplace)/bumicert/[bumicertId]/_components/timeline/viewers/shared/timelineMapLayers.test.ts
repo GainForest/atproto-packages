@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { AttachmentItem } from "@/graphql/indexer/queries/attachments";
 import type { ResolvedAttachmentReference } from "./referenceResolution/referenceViewModel";
-import { buildTimelineMapLayers } from "./timelineMapLayers";
+import { getTimelineMapLayerState } from "./timelineMapLayerState";
+import { buildTimelineMapLayers, type TimelineMapLayer } from "./timelineMapLayers";
 
 const activitySubject = {
   uri: "at://did:plc:org/org.hypercerts.claim.activity/activity-1",
@@ -83,5 +84,32 @@ describe("timeline map layers", () => {
         },
       ]),
     ).toHaveLength(1);
+  });
+
+  test("summarizes active and hidden map layer state", () => {
+    const activeUri = "at://did:plc:org/app.gainforest.dwc.dataset/active";
+    const hiddenUri = "at://did:plc:org/app.gainforest.dwc.dataset/hidden";
+    const layers: TimelineMapLayer[] = [
+      {
+        datasetUri: activeUri,
+        title: "Active trees",
+        siteRef: null,
+      },
+      {
+        datasetUri: hiddenUri,
+        title: "Hidden trees",
+        siteRef: null,
+      },
+    ];
+
+    const state = getTimelineMapLayerState(layers, { [activeUri]: true });
+
+    expect(state.summaryLabel).toBe("1 active · 1 hidden");
+    expect(state.activeLayers.map((layer) => layer.datasetUri)).toEqual([
+      activeUri,
+    ]);
+    expect(state.hiddenLayers.map((layer) => layer.datasetUri)).toEqual([
+      hiddenUri,
+    ]);
   });
 });
