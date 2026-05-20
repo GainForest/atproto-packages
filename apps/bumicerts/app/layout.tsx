@@ -6,10 +6,11 @@ import {
   Instrument_Serif,
 } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import "./globals.css";
 import { Providers } from "./providers";
 import { requirePublicUrl } from "@/lib/url";
+import { resolveSupportedLanguage } from "@/lib/i18n/languages";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,16 +36,17 @@ const instrumentSerif = Instrument_Serif({
   style: ["normal", "italic"],
 });
 
-const TITLE = "Bumicerts — Fund Regenerative Impact";
-const DESCRIPTION =
-  "Bumicerts connects funders with nature stewards doing on-ground regenerative work. Fund verified environmental impact directly.";
-
-export function generateMetadata(): Metadata {
+export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = requirePublicUrl();
+  const locale = resolveSupportedLanguage(await getLocale());
+  const t = await getTranslations("common.seo");
+  const title = t("title");
+  const description = t("description");
+
   return {
     metadataBase: new URL(baseUrl),
-    title: TITLE,
-    description: DESCRIPTION,
+    title,
+    description,
     applicationName: "Bumicerts",
     authors: [{ name: "GainForest", url: "https://gainforest.earth" }],
     keywords: [
@@ -78,19 +80,19 @@ export function generateMetadata(): Metadata {
     ],
     robots: "noindex, nofollow",
     openGraph: {
-      title: TITLE,
+      title,
       siteName: "Bumicerts",
-      description: DESCRIPTION,
+      description,
       type: "website",
-      url: baseUrl,
-      images: [{ url: "/opengraph-image.png", alt: TITLE }],
+      locale,
+      images: [{ url: "/opengraph-image.png", alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       site: "@GainForestNow",
-      title: TITLE,
-      description: DESCRIPTION,
-      images: [{ url: "/opengraph-image.png", alt: TITLE }],
+      title,
+      description,
+      images: [{ url: "/opengraph-image.png", alt: title }],
     },
   };
 }

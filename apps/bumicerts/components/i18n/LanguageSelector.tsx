@@ -2,6 +2,7 @@
 
 import { Globe2Icon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,6 +20,7 @@ import {
   resolveSupportedLanguage,
   type SupportedLanguageCode,
 } from "@/lib/i18n/languages";
+import { withLocalePrefix } from "@/lib/i18n/routing";
 
 function persistLocale(locale: SupportedLanguageCode) {
   const maxAge = 60 * 60 * 24 * 365;
@@ -29,6 +31,7 @@ function persistLocale(locale: SupportedLanguageCode) {
 
 export function LanguageSelector() {
   const locale = resolveSupportedLanguage(useLocale());
+  const pathname = usePathname();
   const t = useTranslations("common.language");
 
   return (
@@ -52,7 +55,7 @@ export function LanguageSelector() {
           onValueChange={(value) => {
             if (isSupportedLanguageCode(value)) {
               persistLocale(value);
-              window.location.reload();
+              window.location.href = withLocalePrefix(pathname, value);
             }
           }}
         >
