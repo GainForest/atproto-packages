@@ -6,6 +6,7 @@ import {
   resolveRequestPublicUrl,
   VERCEL_PROTECTION_BYPASS_QUERY_PARAM,
   withVercelProtectionBypass,
+  withVercelProtectionBypassForOrigins,
 } from "../url";
 
 describe("resolvePublicUrl", () => {
@@ -48,6 +49,40 @@ describe("withVercelProtectionBypass", () => {
     expect(parsed.searchParams.get(VERCEL_PROTECTION_BYPASS_QUERY_PARAM)).toBe(
       "staging-secret",
     );
+  });
+});
+
+describe("withVercelProtectionBypassForOrigins", () => {
+  it("adds the bypass query parameter for allowed origins", () => {
+    expect(
+      withVercelProtectionBypassForOrigins(
+        "https://preview.example.com/assets/logo.png",
+        ["https://preview.example.com"],
+        "preview secret",
+      ),
+    ).toBe(
+      "https://preview.example.com/assets/logo.png?x-vercel-protection-bypass=preview+secret",
+    );
+  });
+
+  it("leaves external origins unchanged", () => {
+    expect(
+      withVercelProtectionBypassForOrigins(
+        "https://cdn.example.com/assets/logo.png",
+        ["https://preview.example.com"],
+        "preview secret",
+      ),
+    ).toBe("https://cdn.example.com/assets/logo.png");
+  });
+
+  it("leaves invalid URLs unchanged", () => {
+    expect(
+      withVercelProtectionBypassForOrigins(
+        "/assets/logo.png",
+        ["https://preview.example.com"],
+        "preview secret",
+      ),
+    ).toBe("/assets/logo.png");
   });
 });
 

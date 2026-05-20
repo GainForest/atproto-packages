@@ -4,6 +4,7 @@ import {
   isLoopback,
   resolveRequestPublicUrl,
   withVercelProtectionBypass,
+  withVercelProtectionBypassForOrigins,
 } from "../utils/url";
 
 export type EpdsHandleMode = "picker-with-random" | "picker" | "random";
@@ -66,6 +67,21 @@ export function createClientMetadataHandler(
       `${url}/.well-known/jwks.json`,
       endpointBypassSecret,
     );
+    const appResourceOrigins = [url, publicUrl];
+    const logoUri = options.logoUri
+      ? withVercelProtectionBypassForOrigins(
+          options.logoUri,
+          appResourceOrigins,
+          endpointBypassSecret,
+        )
+      : undefined;
+    const emailTemplateUri = options.emailTemplateUri
+      ? withVercelProtectionBypassForOrigins(
+          options.emailTemplateUri,
+          appResourceOrigins,
+          endpointBypassSecret,
+        )
+      : undefined;
 
     const redirectUris = [
       `${url}/api/oauth/callback`,
@@ -89,10 +105,10 @@ export function createClientMetadataHandler(
 
     // Optional branding fields (these can stay as the setup-time publicUrl —
     // they don't affect OAuth correctness, only consent screen appearance)
-    if (options.logoUri) commonFields.logo_uri = options.logoUri;
+    if (logoUri) commonFields.logo_uri = logoUri;
     if (options.brandColor) commonFields.brand_color = options.brandColor;
     if (options.backgroundColor) commonFields.background_color = options.backgroundColor;
-    if (options.emailTemplateUri) commonFields.email_template_uri = options.emailTemplateUri;
+    if (emailTemplateUri) commonFields.email_template_uri = emailTemplateUri;
     if (options.emailSubjectTemplate) commonFields.email_subject_template = options.emailSubjectTemplate;
     if (options.tosUri) commonFields.tos_uri = options.tosUri;
     if (options.policyUri) commonFields.policy_uri = options.policyUri;

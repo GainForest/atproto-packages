@@ -35,6 +35,11 @@ describe("createClientMetadataHandler", () => {
   it("includes Vercel protection bypass on server-fetched web metadata endpoints", async () => {
     const handler = createClientMetadataHandler("https://preview.example.com", {
       clientName: "Test App",
+      logoUri: "https://preview.example.com/assets/logo.png?size=36",
+      emailTemplateUri:
+        "https://preview.example.com/assets/email/otp-template.html",
+      tosUri: "https://preview.example.com/terms",
+      policyUri: "https://preview.example.com/privacy",
       vercelProtectionBypassSecret: "preview secret",
     });
 
@@ -48,7 +53,32 @@ describe("createClientMetadataHandler", () => {
         "https://preview.example.com/client-metadata.json?x-vercel-protection-bypass=preview+secret",
       jwks_uri:
         "https://preview.example.com/.well-known/jwks.json?x-vercel-protection-bypass=preview+secret",
+      logo_uri:
+        "https://preview.example.com/assets/logo.png?size=36&x-vercel-protection-bypass=preview+secret",
+      email_template_uri:
+        "https://preview.example.com/assets/email/otp-template.html?x-vercel-protection-bypass=preview+secret",
+      tos_uri: "https://preview.example.com/terms",
+      policy_uri: "https://preview.example.com/privacy",
       redirect_uris: ["https://preview.example.com/api/oauth/callback"],
+    });
+  });
+
+  it("leaves external metadata resource URLs unchanged", async () => {
+    const handler = createClientMetadataHandler("https://preview.example.com", {
+      clientName: "Test App",
+      logoUri: "https://cdn.example.com/assets/logo.png",
+      emailTemplateUri: "https://templates.example.com/otp-template.html",
+      vercelProtectionBypassSecret: "preview secret",
+    });
+
+    const response = handler(
+      new NextRequest("https://preview.example.com/client-metadata.json"),
+    );
+    const metadata: unknown = await response.json();
+
+    expect(metadata).toMatchObject({
+      logo_uri: "https://cdn.example.com/assets/logo.png",
+      email_template_uri: "https://templates.example.com/otp-template.html",
     });
   });
 
