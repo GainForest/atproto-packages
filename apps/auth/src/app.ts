@@ -60,6 +60,21 @@ function escapeHtml(value: string): string {
     .replaceAll(">", "&gt;");
 }
 
+function appendAuthError(returnTo: string, error: string): string {
+  const url = new URL(returnTo);
+  url.searchParams.set("auth_error", error);
+  return url.toString();
+}
+
+function authErrorRedirect(request: Request, error: string): Response {
+  const returnTo = parseSafeReturnTo(readCookie(request, returnToCookieName));
+  if (returnTo && returnTo !== fallbackReturnTo()) {
+    return redirectResponse(appendAuthError(returnTo, error));
+  }
+
+  return redirectResponse(`/login?error=${encodeURIComponent(error)}`);
+}
+
 async function login(request: Request, url: URL): Promise<Response> {
   if (request.method !== "GET") {
     return methodNotAllowed();
@@ -72,6 +87,11 @@ async function login(request: Request, url: URL): Promise<Response> {
   const email = url.searchParams.get("email")?.trim();
   const handle = url.searchParams.get("handle")?.trim();
   const provider = url.searchParams.get("provider")?.trim();
+  const error = url.searchParams.get("error")?.trim();
+
+  if (error && returnTo !== fallbackReturnTo()) {
+    return redirectResponse(appendAuthError(returnTo, error));
+  }
 
   if (email) {
     const redirectUrl = new URL("/api/oauth/epds/login", authBaseUrl);
@@ -96,15 +116,13 @@ async function login(request: Request, url: URL): Promise<Response> {
       setReturnToCookie(response, returnTo);
       return response;
     } catch {
-      const response = redirectResponse(
-        `/login?returnTo=${encodeURIComponent(returnTo)}&error=auth_failed`,
-      );
+      const response = redirectResponse(appendAuthError(returnTo, "auth_failed"));
       setReturnToCookie(response, returnTo);
       return response;
     }
   }
 
-  const response = loginForm(returnTo, url.searchParams.get("error"));
+  const response = loginForm(returnTo, error ?? null);
   setReturnToCookie(response, returnTo);
   return response;
 }
@@ -114,12 +132,12 @@ async function epdsLogin(request: Request, url: URL): Promise<Response> {
     return methodNotAllowed();
   }
   if (!hasEpdsProviders()) {
-    return redirectResponse("/login?error=epds_not_configured");
+    return authErrorRedirect(request, "epds_not_configured");
   }
 
   const epdsUrl = resolveEpdsProvider(url.searchParams.get("provider")?.trim() ?? null);
   if (!epdsUrl) {
-    return redirectResponse("/login?error=unknown_epds_provider");
+    return authErrorRedirect(request, "unknown_epds_provider");
   }
 
   try {
@@ -134,7 +152,7 @@ async function epdsLogin(request: Request, url: URL): Promise<Response> {
     }
     return redirectResponse(redirectUrl.toString());
   } catch {
-    return redirectResponse("/login?error=auth_failed");
+    return authErrorRedirect(request, "auth_failed");
   }
 }
 
@@ -157,7 +175,7 @@ async function oauthCallback(request: Request, url: URL): Promise<Response> {
     clearReturnToCookie(response);
     return response;
   } catch {
-    return redirectResponse("/login?error=auth_failed");
+    return authErrorRedirect(request, "auth_failed");
   }
 }
 
