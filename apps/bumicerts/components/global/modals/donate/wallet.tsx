@@ -18,6 +18,7 @@ import { MODAL_IDS } from "@/components/global/modals/ids";
 import { CHAIN_ID } from "@/lib/facilitator/usdc";
 import { useRecipientVerify } from "./hooks/useRecipientVerify";
 import { ConfirmModal } from "./confirm";
+import { useTranslations } from "next-intl";
 
 interface WalletModalProps {
   bumicert: BumicertData;
@@ -26,6 +27,7 @@ interface WalletModalProps {
 }
 
 export function WalletModal({ bumicert, amount, donorChoseAnonymous }: WalletModalProps) {
+  const t = useTranslations("modals.donate.wallet");
   const { pushModal, popModal, hide, clear } = useModal();
   const { address, chainId, isConnected } = useAccount();
   const { openConnectModal } = useConnectModal();
@@ -76,22 +78,22 @@ export function WalletModal({ bumicert, amount, donorChoseAnonymous }: WalletMod
     return (
       <ModalContent dismissible={false}>
         <ModalHeader backAction={handleBack}>
-          <ModalTitle>Connect Wallet</ModalTitle>
+          <ModalTitle>{t("connectTitle")}</ModalTitle>
           <ModalDescription>
-            Connect your wallet to donate USDC on Base.
+            {t("connectDescription")}
           </ModalDescription>
         </ModalHeader>
         <div className="flex flex-col items-center gap-4 py-4">
           <Button className="w-full" onClick={openConnectModal}>
-            Connect Wallet
+            {t("connectWallet")}
           </Button>
           <p className="text-xs text-muted-foreground text-center">
-            USDC on Base network required
+            {t("baseRequired")}
           </p>
         </div>
         <ModalFooter>
           <Button variant="outline" onClick={handleCancel} className="w-full">
-            Cancel
+            {t("cancel")}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -103,16 +105,17 @@ export function WalletModal({ bumicert, amount, donorChoseAnonymous }: WalletMod
     return (
       <ModalContent dismissible={false}>
         <ModalHeader backAction={isSwitching ? undefined : handleBack}>
-          <ModalTitle>Switch to Base</ModalTitle>
+          <ModalTitle>{t("switchTitle")}</ModalTitle>
           <ModalDescription>
-            You need to be on Base network to donate USDC.
+            {t("switchDescription")}
           </ModalDescription>
         </ModalHeader>
         <div className="flex flex-col items-center gap-4 py-6 text-center">
           <span className="text-2xl">⚠️</span>
           <p className="text-sm text-muted-foreground">
-            You&apos;re on the wrong network. Switch to <strong>Base</strong> to
-            complete your donation.
+            {t.rich("wrongNetwork", {
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
         </div>
         <ModalFooter className="flex flex-col gap-2">
@@ -121,10 +124,10 @@ export function WalletModal({ bumicert, amount, donorChoseAnonymous }: WalletMod
             onClick={() => switchChain({ chainId: base.id })}
             disabled={isSwitching}
           >
-            {isSwitching ? "Switching…" : "Switch to Base"}
+            {isSwitching ? t("switching") : t("switchToBase")}
           </Button>
           <Button variant="outline" onClick={handleCancel} className="w-full" disabled={isSwitching}>
-            Cancel
+            {t("cancel")}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -136,14 +139,14 @@ export function WalletModal({ bumicert, amount, donorChoseAnonymous }: WalletMod
     return (
       <ModalContent dismissible={false}>
         <ModalHeader backAction={handleBack}>
-          <ModalTitle>Verifying Recipient</ModalTitle>
+          <ModalTitle>{t("verifyingTitle")}</ModalTitle>
           <ModalDescription>
-            Checking if this organization can receive donations.
+            {t("verifyingDescription")}
           </ModalDescription>
         </ModalHeader>
         <div className="flex flex-col items-center gap-3 py-8">
           <div className="h-8 w-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-          <p className="text-sm text-muted-foreground">Checking recipient setup…</p>
+          <p className="text-sm text-muted-foreground">{t("checkingRecipient")}</p>
         </div>
       </ModalContent>
     );
@@ -154,21 +157,23 @@ export function WalletModal({ bumicert, amount, donorChoseAnonymous }: WalletMod
     return (
       <ModalContent dismissible={false}>
         <ModalHeader backAction={handleBack}>
-          <ModalTitle>Donations Not Set Up</ModalTitle>
+          <ModalTitle>{t("notSetupTitle")}</ModalTitle>
           <ModalDescription>
-            This organization hasn&apos;t set up donations yet.
+            {t("notSetupDescription")}
           </ModalDescription>
         </ModalHeader>
         <div className="flex flex-col items-center gap-4 py-4 text-center">
           <span className="text-3xl">⚠️</span>
           <p className="text-sm text-muted-foreground max-w-xs">
-            <strong>{bumicert.organizationName}</strong> hasn&apos;t linked a wallet
-            to receive donations yet.
+            {t.rich("organizationNoWallet", {
+              organizationName: bumicert.organizationName,
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
         </div>
         <ModalFooter>
           <Button variant="outline" className="w-full" onClick={handleBack}>
-            Close
+            {t("close")}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -194,9 +199,9 @@ export function WalletModal({ bumicert, amount, donorChoseAnonymous }: WalletMod
   return (
     <ModalContent dismissible={false}>
       <ModalHeader backAction={handleBack}>
-        <ModalTitle>Wallet Connected</ModalTitle>
+        <ModalTitle>{t("connectedTitle")}</ModalTitle>
         <ModalDescription>
-          Your wallet is connected and ready to donate.
+          {t("connectedDescription")}
         </ModalDescription>
       </ModalHeader>
       <div className="flex flex-col items-center gap-3 py-6 text-center">
@@ -209,10 +214,10 @@ export function WalletModal({ bumicert, amount, donorChoseAnonymous }: WalletMod
       </div>
       <ModalFooter className="flex flex-col gap-2">
         <Button className="w-full" onClick={handleContinue}>
-          Continue to Confirm
+          {t("continueToConfirm")}
         </Button>
         <Button variant="outline" onClick={handleCancel} className="w-full">
-          Cancel
+          {t("cancel")}
         </Button>
       </ModalFooter>
     </ModalContent>

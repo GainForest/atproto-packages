@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { ManageLayoutClient } from "./_components/UploadLayoutClient";
 import { SignInPrompt } from "./_components/SignInPrompt";
 import { ModalProvider } from "@/components/ui/modal/context";
+import { noIndexMetadata } from "@/lib/seo-metadata";
+
+export const metadata: Metadata = noIndexMetadata();
 
 /**
  * (MANAGE) layout

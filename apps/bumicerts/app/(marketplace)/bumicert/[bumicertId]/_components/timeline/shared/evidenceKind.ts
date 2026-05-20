@@ -5,13 +5,12 @@ export type TimelineEvidenceKind = Exclude<TimelineEvidenceFilter, "all"> | "sit
 
 export const TIMELINE_EVIDENCE_FILTERS: Array<{
   id: TimelineEvidenceFilter;
-  label: string;
 }> = [
-  { id: "all", label: "All" },
-  { id: "tree", label: "Tree" },
-  { id: "audio", label: "Audio" },
-  { id: "biodiversity", label: "Biodiversity" },
-  { id: "document", label: "Document" },
+  { id: "all" },
+  { id: "tree" },
+  { id: "audio" },
+  { id: "biodiversity" },
+  { id: "document" },
 ];
 
 function contentHasCollection(content: unknown, collection: string): boolean {
@@ -55,15 +54,6 @@ export function getTimelineEvidenceKind(
   }
 
   return "document";
-}
-
-export function getTimelineEvidenceKindLabel(kind: TimelineEvidenceKind): string {
-  if (kind === "tree") return "Tree dataset";
-  if (kind === "audio") return "Acoustic data";
-  if (kind === "biodiversity") return "Biodiversity observations";
-  if (kind === "document") return "Document";
-  if (kind === "site") return "Site";
-  return "Evidence";
 }
 
 export function matchesTimelineFilter(

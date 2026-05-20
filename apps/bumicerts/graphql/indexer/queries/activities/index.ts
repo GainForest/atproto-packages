@@ -224,7 +224,21 @@ const byDidDocument = graphql(`
               }
             }
           }
-          workScope
+          workScope {
+            __typename
+            ... on OrgHypercertsClaimActivityWorkScopeString {
+              scope
+            }
+            ... on OrgHypercertsWorkscopeCel {
+              createdAt
+              expression
+              usedTags {
+                uri
+                cid
+              }
+              version
+            }
+          }
           contributors {
             contributionWeight
             contributorIdentity {
@@ -388,7 +402,21 @@ const activityByUriDocument = graphql(`
           }
         }
       }
-      workScope
+      workScope {
+        __typename
+        ... on OrgHypercertsClaimActivityWorkScopeString {
+          scope
+        }
+        ... on OrgHypercertsWorkscopeCel {
+          createdAt
+          expression
+          usedTags {
+            uri
+            cid
+          }
+          version
+        }
+      }
       contributors {
         contributionWeight
         contributorIdentity {

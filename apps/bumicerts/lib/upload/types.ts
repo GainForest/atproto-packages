@@ -85,6 +85,53 @@ export type TargetField = {
   category: "occurrence" | "measurement" | "media";
 };
 
+export type TargetFieldTranslator = (
+  key:
+    | "scientificName"
+    | "eventDate"
+    | "decimalLatitude"
+    | "decimalLongitude"
+    | "vernacularName"
+    | "recordedBy"
+    | "locality"
+    | "country"
+    | "occurrenceRemarks"
+    | "habitat"
+    | "height"
+    | "dbh"
+    | "diameter"
+    | "canopyCoverPercent"
+    | "photoUrl",
+) => string;
+
+export function getTargetFieldLabel(
+  field: string,
+  t?: TargetFieldTranslator,
+): string {
+  if (t) {
+    switch (field) {
+      case "scientificName":
+      case "eventDate":
+      case "decimalLatitude":
+      case "decimalLongitude":
+      case "vernacularName":
+      case "recordedBy":
+      case "locality":
+      case "country":
+      case "occurrenceRemarks":
+      case "habitat":
+      case "height":
+      case "dbh":
+      case "diameter":
+      case "canopyCoverPercent":
+      case "photoUrl":
+        return t(field);
+    }
+  }
+
+  return TARGET_FIELDS.find((item) => item.field === field)?.label ?? field;
+}
+
 export const TARGET_FIELDS: TargetField[] = [
   // Required occurrence (4)
   { field: "scientificName", label: "Scientific Name", required: true, category: "occurrence" },

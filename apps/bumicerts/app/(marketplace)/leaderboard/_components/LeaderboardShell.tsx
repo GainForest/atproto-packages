@@ -11,6 +11,7 @@ import {
   UserRoundXIcon,
   UsersRoundIcon,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -25,27 +26,18 @@ import type {
   Period as LeaderboardPeriod,
 } from "@/lib/utils/leaderboard";
 
-const PERIODS: { value: LeaderboardPeriod; label: string }[] = [
-  { value: "all", label: "All Time" },
-  { value: "month", label: "This Month" },
-  { value: "week", label: "This Week" },
-];
+const PERIODS: LeaderboardPeriod[] = ["all", "month", "week"];
 
 const DONOR_FILTERS: {
   value: LeaderboardDonorFilter;
-  label: string;
   Icon: typeof UsersRoundIcon;
 }[] = [
-  { value: "all", label: "All Donors", Icon: UsersRoundIcon },
-  { value: "anonymous", label: "Anonymous Only", Icon: UserRoundXIcon },
-  { value: "known", label: "Known Only", Icon: UserRoundCheckIcon },
+  { value: "all", Icon: UsersRoundIcon },
+  { value: "anonymous", Icon: UserRoundXIcon },
+  { value: "known", Icon: UserRoundCheckIcon },
 ];
 
-const SORT_OPTIONS: { value: LeaderboardSort; label: string }[] = [
-  { value: "total-raised", label: "Total Raised" },
-  { value: "donation-count", label: "Donation Count" },
-  { value: "recent-donation", label: "Recent Donation" },
-];
+const SORT_OPTIONS: LeaderboardSort[] = ["total-raised", "donation-count", "recent-donation"];
 
 function PeriodChips({
   period,
@@ -54,17 +46,19 @@ function PeriodChips({
   period: LeaderboardPeriod;
   onPeriodChange?: (period: LeaderboardPeriod) => void;
 }) {
+  const t = useTranslations("marketplace.leaderboard.periods");
+
   return (
     <div className="grid grid-cols-3 rounded-full bg-muted/55 p-1 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur">
       {PERIODS.map((option) => {
-        const isSelected = period === option.value;
+        const isSelected = period === option;
         return (
           <button
-            key={option.value}
+            key={option}
             type="button"
             aria-pressed={isSelected}
             disabled={!onPeriodChange}
-            onClick={() => onPeriodChange?.(option.value)}
+            onClick={() => onPeriodChange?.(option)}
             className={cn(
               "whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 disabled:pointer-events-none",
               isSelected
@@ -72,7 +66,7 @@ function PeriodChips({
                 : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
             )}
           >
-            {option.label}
+            {t(option)}
           </button>
         );
       })}
@@ -87,9 +81,11 @@ function DonorTypeTabs({
   donorFilter: LeaderboardDonorFilter;
   onDonorFilterChange?: (donorFilter: LeaderboardDonorFilter) => void;
 }) {
+  const t = useTranslations("marketplace.leaderboard.donorFilters");
+
   return (
     <div className="grid grid-cols-1 rounded-full bg-muted/55 p-1 shadow-sm shadow-primary/5 ring-1 ring-foreground/5 backdrop-blur sm:grid-cols-3">
-      {DONOR_FILTERS.map(({ value, label, Icon }) => {
+      {DONOR_FILTERS.map(({ value, Icon }) => {
         const isSelected = donorFilter === value;
         return (
           <button
@@ -106,7 +102,7 @@ function DonorTypeTabs({
             )}
           >
             <Icon className="size-4" />
-            {label}
+            {t(value)}
           </button>
         );
       })}
@@ -121,6 +117,7 @@ function SortControl({
   sortBy: LeaderboardSort;
   onSortChange?: (sortBy: LeaderboardSort) => void;
 }) {
+  const t = useTranslations("marketplace.leaderboard.sort");
   const handleSortChange = (value: string) => {
     if (!onSortChange) return;
 
@@ -144,7 +141,7 @@ function SortControl({
         className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-xs font-medium text-muted-foreground"
       >
         <ArrowDownWideNarrowIcon className="size-4" />
-        Sort by
+        {t("label")}
       </span>
       <Select value={sortBy} onValueChange={handleSortChange} disabled={!onSortChange}>
         <SelectTrigger
@@ -155,8 +152,8 @@ function SortControl({
         </SelectTrigger>
         <SelectContent align="end" className="rounded-xl">
           {SORT_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
+            <SelectItem key={option} value={option}>
+              {t(option === "total-raised" ? "totalRaised" : option === "donation-count" ? "donationCount" : "recentDonation")}
             </SelectItem>
           ))}
         </SelectContent>
@@ -240,33 +237,33 @@ function StatsSummary({
   totalRaised: number;
   totalProjectsSupported: number;
 }) {
+  const t = useTranslations("marketplace.leaderboard.stats");
+  const locale = useLocale();
+
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       <StatCard
-        label="Total Raised"
-        value={
-          <>
-            ${totalRaised.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}{" "}
-
-          </>
-        }
-        detail="All time across the platform"
+        label={t("totalRaised")}
+        value={new Intl.NumberFormat(locale, {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(totalRaised)}
+        detail={t("totalRaisedDetail")}
         icon={<LeafIcon className="size-8" />}
         accent
       />
       <StatCard
-        label="Total Donors"
-        value={totalDonors.toLocaleString("en-US")}
-        detail="Generous impact champions"
+        label={t("totalDonors")}
+        value={totalDonors.toLocaleString(locale)}
+        detail={t("totalDonorsDetail")}
         icon={<UsersRoundIcon className="size-8" />}
       />
       <StatCard
-        label="Projects Supported"
-        value={totalProjectsSupported.toLocaleString("en-US")}
-        detail="Restoring ecosystems & livelihoods"
+        label={t("projectsSupported")}
+        value={totalProjectsSupported.toLocaleString(locale)}
+        detail={t("projectsSupportedDetail")}
         icon={<SproutIcon className="size-8" />}
         accent
       />
@@ -301,6 +298,8 @@ export function LeaderboardShell({
   totalProjectsSupported = 0,
   children,
 }: LeaderboardShellProps) {
+  const t = useTranslations("marketplace.leaderboard.hero");
+
   return (
     <section className="relative -mt-14 overflow-hidden pb-20 pt-0 md:pb-28">
       <div className="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-primary/[0.08] via-transparent to-transparent dark:from-primary/[0.12]" />
@@ -316,16 +315,15 @@ export function LeaderboardShell({
           <div className="mb-5 flex items-center gap-2.5">
             <TrophyIcon className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-              Leaderboard
+              {t("eyebrow")}
             </span>
           </div>
           <h1 className="max-w-4xl text-4xl font-light leading-[0.98] tracking-[-0.035em] text-foreground sm:text-5xl md:text-6xl lg:text-7xl font-garamond">
-            Impact{" "}
-            <span className="font-instrument italic text-foreground/85">Champions</span>
+            {t("titlePrefix")} {" "}
+            <span className="font-instrument italic text-foreground/85">{t("titleEmphasis")}</span>
           </h1>
           <p className="mt-7 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
-            Celebrating the generous contributors driving regenerative change for
-            communities and the planet.
+            {t("description")}
           </p>
         </motion.header>
 

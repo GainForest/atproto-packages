@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, type ChangeEvent } from "react";
+import { useTranslations } from "next-intl";
 import { CheckIcon, Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,11 +51,11 @@ async function extractAudioDuration(file: File): Promise<string> {
 }
 
 /** Clean a filename stem into a human-friendly name. */
-function cleanFilename(filename: string): string {
+function cleanFilename(filename: string, fallbackName: string): string {
   const lastDot = filename.lastIndexOf(".");
   let stem = lastDot > 0 ? filename.slice(0, lastDot) : filename;
   stem = stem.replace(/[_\-.]/g, " ").trim();
-  if (!stem) return "Untitled";
+  if (!stem) return fallbackName;
   return stem.charAt(0).toUpperCase() + stem.slice(1);
 }
 
@@ -69,6 +70,8 @@ interface AudioEditorProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
+  const t = useTranslations("upload.audio");
+  const tActions = useTranslations("upload.actions");
   const indexerUtils = indexerTrpc.useUtils();
 
   const rkey = initialData?.metadata?.rkey;
@@ -200,7 +203,7 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
           <CheckIcon className="size-6 text-white" />
         </div>
         <span className="text-lg font-medium mt-2">
-          {mode === "add" ? "Recording uploaded" : "Recording updated"} successfully
+          {mode === "add" ? t("uploadSuccess") : t("updateSuccess")}
         </span>
         <div className="w-full max-w-xs h-1 bg-muted rounded-full overflow-hidden mt-4">
           <div
@@ -223,36 +226,34 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
     <div className="mt-4">
       <h3 className="font-medium text-lg mb-4">
         {mode === "edit"
-          ? `Edit: ${initRecord?.name ?? "Untitled"}`
-          : "Add a Recording"}
+          ? t("editTitle", { name: initRecord?.name ?? t("untitledShort") })
+          : t("addTitle")}
       </h3>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: File input */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-muted-foreground">
-            {mode === "edit"
-              ? "Replace audio file (optional)"
-              : "Audio file"}
+            {mode === "edit" ? t("replaceFile") : t("audioFile")}
             {mode === "add" && (
               <span className="text-destructive ml-0.5">*</span>
             )}
           </label>
           <FileInput
-            placeholder="Drop or click to upload audio"
+            placeholder={t("dropPlaceholder")}
             value={audioFile ?? undefined}
             supportedFileTypes={AUDIO_MIME_TYPES}
             maxSizeInMB={100}
             onFileChange={(file) => {
               setAudioFile(file ?? null);
               if (file && mode === "add" && !name.trim()) {
-                setName(cleanFilename(file.name));
+                setName(cleanFilename(file.name, t("untitledShort")));
               }
             }}
             className="min-h-[120px]"
           />
           <span className="text-xs text-muted-foreground">
-            WAV, MP3, M4A, AAC, FLAC, OGG, WebM, AIFF (max 100 MB)
+            {t("fileRequirements")}
           </span>
         </div>
 
@@ -260,10 +261,10 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label className="text-sm text-muted-foreground">
-              Name <span className="text-destructive">*</span>
+              {t("name")} <span className="text-destructive">*</span>
             </label>
             <Input
-              placeholder="Morning bird calls"
+              placeholder={t("namePlaceholder")}
               value={name}
               onChange={(e: ChangeEvent<HTMLInputElement>) =>
                 setName(e.target.value)
@@ -273,10 +274,10 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
 
           <div className="flex flex-col gap-1">
             <label className="text-sm text-muted-foreground">
-              Description (optional)
+              {t("descriptionOptional")}
             </label>
             <Textarea
-              placeholder="Recorded at the main observation site"
+              placeholder={t("descriptionPlaceholder")}
               value={description}
               onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
                 setDescription(e.target.value)
@@ -286,7 +287,9 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-muted-foreground">Recorded at</label>
+            <label className="text-sm text-muted-foreground">
+              {t("recordedAt")}
+            </label>
             <Input
               type="datetime-local"
               value={recordedAt}
@@ -306,7 +309,7 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
 
       <div className="flex justify-end gap-2 mt-6">
         <Button variant="outline" onClick={onClose} disabled={isPending}>
-          Cancel
+          {tActions("cancel")}
         </Button>
         <Button
           onClick={() => void handleSubmit()}
@@ -317,11 +320,11 @@ export function AudioEditor({ mode, initialData, onClose }: AudioEditorProps) {
           ) : null}
           {mode === "edit"
             ? isPending
-              ? "Saving…"
-              : "Save"
+              ? tActions("saving")
+              : tActions("save")
             : isPending
-              ? "Uploading…"
-              : "Upload"}
+              ? tActions("uploading")
+              : tActions("upload")}
         </Button>
       </div>
     </div>

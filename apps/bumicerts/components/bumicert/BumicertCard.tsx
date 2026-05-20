@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { getProxiedImageUrl } from "@/lib/images";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +70,7 @@ export function BumicertCardVisual({
   className,
 }: BumicertCardVisualProps) {
   const imageSrc = coverImage ? resolveImageSrc(coverImage) : null;
+  const t = useTranslations("common.bumicertCard");
   const normalizedObjectives = objectives.filter(
     (objective): objective is string =>
       typeof objective === "string" && objective.trim().length > 0,
@@ -99,7 +101,7 @@ export function BumicertCardVisual({
             className="object-cover scale-110 group-hover:scale-100 transition-all duration-300"
           />
         ) : (
-          <div className="absolute inset-0 bg-muted" />
+          <div className="absolute inset-0 bg-muted" aria-label={t("missingImage")} />
         )}
       </div>
       <div className="relative px-4 py-3 -mt-6 z-1 flex-1 flex flex-col justify-between">
@@ -124,6 +126,13 @@ export function BumicertCardVisual({
                     "text-sm text-muted-foreground bg-muted rounded-full px-2.5 py-1 font-medium",
                     obj.startsWith("+") && "text-foreground",
                   )}
+                  aria-label={
+                    obj.startsWith("+")
+                      ? t("additionalObjectives", {
+                          count: normalizedObjectives.length - 1,
+                        })
+                      : undefined
+                  }
                 >
                   {obj}
                 </span>

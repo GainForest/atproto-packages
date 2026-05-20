@@ -1,15 +1,18 @@
 import { GlobeIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { GeoStats } from "../_utils/geo-aggregations";
 
 interface GeographicReachProps {
   stats: GeoStats;
 }
 
-function formatCount(value: number): string {
-  return new Intl.NumberFormat("en-US").format(value);
+function formatCount(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale).format(value);
 }
 
 export function GeographicReach({ stats }: GeographicReachProps) {
+  const t = useTranslations("marketplace.dashboard.geo");
+  const locale = useLocale();
   return (
     <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4">
       {/* Countries stat card */}
@@ -17,17 +20,17 @@ export function GeographicReach({ stats }: GeographicReachProps) {
         <div className="flex items-center gap-2">
           <GlobeIcon className="h-4 w-4 text-primary" />
           <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-            Geographic Reach
+            {t("title")}
           </span>
         </div>
         <p
           className="text-3xl md:text-4xl font-light tracking-[-0.02em] leading-none text-foreground"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
-          {formatCount(stats.countriesRepresented)}
+          {formatCount(stats.countriesRepresented, locale)}
         </p>
         <p className="text-xs text-muted-foreground">
-          Countries represented
+          {t("countriesRepresented")}
         </p>
       </div>
 
@@ -36,13 +39,13 @@ export function GeographicReach({ stats }: GeographicReachProps) {
         <div className="px-5 pt-5 pb-3 flex items-center gap-2">
           <GlobeIcon className="h-4 w-4 text-primary" />
           <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-            Top Countries
+            {t("topCountries")}
           </span>
         </div>
 
         {stats.topCountries.length === 0 ? (
           <p className="px-5 pb-5 text-sm text-muted-foreground">
-            No geographic data available.
+            {t("empty")}
           </p>
         ) : (
           <ul className="px-5 pb-5 space-y-2">
@@ -59,7 +62,7 @@ export function GeographicReach({ stats }: GeographicReachProps) {
                   <span>{country.name}</span>
                 </span>
                 <span className="font-medium text-foreground tabular-nums">
-                  {country.orgCount} organization{country.orgCount === 1 ? "" : "s"}
+                  {t("organizationCount", { count: country.orgCount })}
                 </span>
               </li>
             ))}

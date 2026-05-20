@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ChevronDownIcon, LogOutIcon, UserIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { AuthenticatedAccountState } from "@/lib/account";
@@ -17,6 +18,7 @@ import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { logout } from "@/components/actions/oauth";
 import { useModal } from "@/components/ui/modal/context";
+import { MODAL_IDS } from "@/components/global/modals/ids";
 import { useAccount } from "@/components/providers/AccountProvider";
 
 const AuthModal = dynamic(
@@ -51,9 +53,10 @@ function getDisplayLabel(
   account: AuthenticatedAccountState,
   fallbackDisplayName: string | undefined,
   fallbackHandle: string | undefined,
+  unknownLabel: string,
 ): string {
   if (account.kind === "unknown") {
-    return "Unknown";
+    return unknownLabel;
   }
 
   return (
@@ -67,16 +70,23 @@ function getDisplayLabel(
 function getSecondaryLabel(
   account: AuthenticatedAccountState,
   fallbackHandle: string | undefined,
+  labels: {
+    completeOnboarding: string;
+    organizationAccount: string;
+    userAccount: string;
+  },
 ): string | null {
   if (account.kind === "unknown") {
-    return "Complete onboarding";
+    return labels.completeOnboarding;
   }
 
   if (fallbackHandle) {
     return `@${fallbackHandle}`;
   }
 
-  return account.kind === "organization" ? "Organization account" : "User account";
+  return account.kind === "organization"
+    ? labels.organizationAccount
+    : labels.userAccount;
 }
 
 function getAccountHref(account: AuthenticatedAccountState): string {
@@ -98,11 +108,12 @@ function AuthSkeleton() {
 
 function UnauthenticatedButtons() {
   const { pushModal, show } = useModal();
+  const t = useTranslations("common.auth");
 
   const openAuth = () => {
     pushModal(
       {
-        id: "auth",
+        id: MODAL_IDS.AUTH,
         content: <AuthModal />,
       },
       true,
@@ -118,7 +129,7 @@ function UnauthenticatedButtons() {
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className="text-sm font-medium bg-primary text-primary-foreground rounded-full px-3.5 py-1.5 hover:bg-primary/90 transition-colors cursor-pointer"
     >
-      Get started
+      {t("getStarted")}
     </motion.button>
   );
 }
@@ -140,12 +151,18 @@ function AuthenticatedMenu({
   const { setAuth } = useAtprotoStore();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const t = useTranslations("common.auth");
   const displayLabel = getDisplayLabel(
     account,
     fallbackDisplayName,
     fallbackHandle,
+    t("unknown"),
   );
-  const secondaryLabel = getSecondaryLabel(account, fallbackHandle);
+  const secondaryLabel = getSecondaryLabel(account, fallbackHandle, {
+    completeOnboarding: t("completeOnboarding"),
+    organizationAccount: t("organizationAccount"),
+    userAccount: t("userAccount"),
+  });
   const avatarUrl = getResolvedAvatarUrl(account, fallbackAvatar);
   const accountHref = getAccountHref(account);
 
@@ -222,7 +239,7 @@ function AuthenticatedMenu({
                 className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted/60 transition-colors w-full text-left"
               >
                 <UserIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                My Account
+                {t("myAccount")}
               </Link>
 
               <div className="h-px bg-border/60 my-1" />
@@ -232,7 +249,7 @@ function AuthenticatedMenu({
                 className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors w-full text-left cursor-pointer"
               >
                 <LogOutIcon className="h-3.5 w-3.5 shrink-0" />
-                Sign out
+                {t("signOut")}
               </button>
             </div>
           </motion.div>

@@ -17,13 +17,15 @@
  *   client_id and redirect_uris. These must be stable across all requests — they
  *   cannot be derived per-request. The URL must therefore be known at init time.
  *
- * Server-only: this file imports serverEnv which must never be bundled into the
- * browser. Only import from server components, API routes, server actions, and
- * other server-only modules (e.g. lib/auth.ts).
+ * This module is shared by server and client code. Server-only URL resolution
+ * reads Vercel's non-public environment variables directly from `process.env`;
+ * client code should use `getPublicUrlClient()` or explicit resolver helpers.
  */
 
-import { serverEnv } from "@/lib/env/server";
-import { clientEnv } from "@/lib/env/client";
+import { clientEnv } from "./env/client";
+
+const PRODUCTION_GREEN_GLOBE_PREVIEW_BASE_URL = "https://gainforest.app";
+const LOCAL_GREEN_GLOBE_PREVIEW_BASE_URL = "http://localhost:8910";
 
 /**
  * Returns the app's canonical public base URL, or `undefined` if none can be
@@ -33,7 +35,7 @@ import { clientEnv } from "@/lib/env/client";
  */
 export function getPublicUrl(): string | undefined {
   // 1. Branch-specific URLs for preview deployments
-  const deploymentBranch = serverEnv.VERCEL_GIT_COMMIT_REF;
+  const deploymentBranch = process.env.VERCEL_GIT_COMMIT_REF;
   if (deploymentBranch) {
     if (
       clientEnv.NEXT_PUBLIC_PRODUCTION_BRANCH_NAME &&
@@ -52,8 +54,8 @@ export function getPublicUrl(): string | undefined {
     }
 
     // For any other branch preview, use the raw Vercel URL
-    if (serverEnv.VERCEL_URL) {
-      return `https://${serverEnv.VERCEL_URL.trim()}`;
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL.trim()}`;
     }
   }
 
@@ -64,11 +66,11 @@ export function getPublicUrl(): string | undefined {
 
   // 3. Production: prefer the shortest custom domain, fall back to raw alias.
   const raw =
-    (serverEnv.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${serverEnv.VERCEL_PROJECT_PRODUCTION_URL.trim()}`
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.trim()}`
       : undefined) ??
-    (serverEnv.VERCEL_URL
-      ? `https://${serverEnv.VERCEL_URL.trim()}`
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL.trim()}`
       : undefined);
 
   return raw?.replace(/\/$/, "");
@@ -93,6 +95,27 @@ export function requirePublicUrl(): string {
     );
   }
   return url;
+}
+
+/**
+ * Returns the public Green Globe preview base URL for embedded timeline maps.
+ *
+ * Uses the configured URL when provided, production Green Globe only for Vercel
+ * production, and localhost for local/preview environments while Green Globe
+ * multi-dataset preview support is rolling out.
+ */
+export function resolveGreenGlobePreviewBaseUrl(options: {
+  configuredUrl?: string | null;
+  vercelEnv?: "development" | "preview" | "production" | null;
+}): string {
+  const configuredUrl = options.configuredUrl?.trim().replace(/\/$/, "");
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  return options.vercelEnv === "production"
+    ? PRODUCTION_GREEN_GLOBE_PREVIEW_BASE_URL
+    : LOCAL_GREEN_GLOBE_PREVIEW_BASE_URL;
 }
 
 /**
@@ -121,16 +144,24 @@ export function getPublicUrlClient(): string {
     return `https://${clientEnv.NEXT_PUBLIC_VERCEL_URL.trim()}`;
   }
 
-  // 3. Production: use NEXT_PUBLIC_VERCEL_URL if available
+  // 3. Production custom domain configured through branch mapping.
+  if (
+    clientEnv.NEXT_PUBLIC_VERCEL_ENV === "production" &&
+    clientEnv.NEXT_PUBLIC_PRODUCTION_URL
+  ) {
+    return clientEnv.NEXT_PUBLIC_PRODUCTION_URL.trim().replace(/\/$/, "");
+  }
+
+  // 4. Production: use NEXT_PUBLIC_VERCEL_URL if available
   if (clientEnv.NEXT_PUBLIC_VERCEL_URL) {
     return `https://${clientEnv.NEXT_PUBLIC_VERCEL_URL.trim()}`;
   }
 
-  // 4. Fallback to window.location.origin (local dev without env vars)
+  // 5. Fallback to window.location.origin (local dev without env vars)
   if (typeof window !== "undefined") {
     return window.location.origin;
   }
 
-  // 5. Last resort: empty string (SSR without env vars — should not happen)
+  // 6. Last resort: empty string (SSR without env vars — should not happen)
   return "";
 }

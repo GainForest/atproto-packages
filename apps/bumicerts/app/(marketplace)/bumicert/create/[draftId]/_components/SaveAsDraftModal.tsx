@@ -19,6 +19,7 @@ import CircularProgressBar from "@/components/circular-progressbar";
 import { cheapHash } from "@/lib/cheapHash";
 import { DraftBumicertResponse } from "@/app/api/supabase/drafts/bumicert/type";
 import { trackDraftSaved } from "@/lib/analytics/hotjar";
+import { useTranslations } from "next-intl";
 
 export const SaveAsDraftModalId = "bumicert/save-as-draft";
 
@@ -41,6 +42,7 @@ const uploadImageToS3 = async (file: File): Promise<string> => {
 };
 
 const SaveAsDraftModal = () => {
+  const t = useTranslations("bumicert.create.draft.modals.saveDraft");
   const { stack, popModal, hide } = useModal();
   const formValues = useFormStore((state) => state.formValues);
   const draftCoverImageHash = useFormStore(
@@ -201,11 +203,11 @@ const SaveAsDraftModal = () => {
               }
         }
       >
-        <ModalTitle>Save as Draft</ModalTitle>
+        <ModalTitle>{t("title")}</ModalTitle>
         <ModalDescription>
           {success
-            ? "Your draft has been saved successfully."
-            : "Save your current progress as a draft."}
+            ? t("successDescription")
+            : t("description")}
         </ModalDescription>
       </ModalHeader>
       <AnimatePresence>
@@ -217,10 +219,10 @@ const SaveAsDraftModal = () => {
             <div className="p-4 w-full bg-muted rounded-xl flex flex-col items-center justify-center">
               <CircularProgressBar value={stepPercentages} size={34} />
               <span className="text-center text-pretty text-muted-foreground mt-2">
-                Save your progress for <br />
+                {t("saveProgressFor")} <br />
                 <strong className="font-medium text-foreground">
                   {formValues[0].projectName.trim() === ""
-                    ? "Untitled Draft"
+                    ? t("untitledDraft")
                     : formValues[0].projectName}
                 </strong>
               </span>
@@ -239,11 +241,11 @@ const SaveAsDraftModal = () => {
                 {isPending ? (
                   <>
                     <Loader2Icon className="mr-2 animate-spin" />
-                    Saving...
+                    {t("saving")}
                   </>
                 ) : (
                   <>
-                    Save Draft
+                    {t("saveAction")}
                     <ArrowRightIcon />
                   </>
                 )}
@@ -263,11 +265,11 @@ const SaveAsDraftModal = () => {
               <CircleCheckIcon className="size-20 text-primary" />
             </div>
             <p className="text-center text-muted-foreground font-medium text-pretty">
-              Your draft has been saved. You can continue working on it later.
+              {t("savedBody")}
             </p>
             <ModalFooter className="w-full">
               <Button onClick={handleClose} className="w-full">
-                Close
+                {t("close")}
               </Button>
             </ModalFooter>
           </motion.div>

@@ -37,7 +37,7 @@ function required(name: string): string {
 
 export function getE2EEnv(): E2EEnv {
   return {
-    appUrl: process.env.E2E_BASE_URL ?? "http://127.0.0.1:3001",
+    appUrl: process.env.E2E_BASE_URL ?? process.env.E2E_APP_URL ?? "http://127.0.0.1:3101",
     testHandle: required("E2E_TEST_HANDLE"),
     testPassword: required("E2E_TEST_PASSWORD"),
     testPdsDomain: process.env.E2E_TEST_PDS_DOMAIN?.trim() || null,

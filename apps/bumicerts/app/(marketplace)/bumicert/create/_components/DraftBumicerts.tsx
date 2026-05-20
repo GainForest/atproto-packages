@@ -8,12 +8,14 @@ import {
   ClockIcon,
   FilePenLineIcon,
   Loader2Icon,
+  Trash2Icon,
 } from "lucide-react";
 
 import CircularProgressBar from "@/components/circular-progressbar";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { Button } from "@/components/ui/button";
 import TimeText from "@/components/time-text";
+import { useModal } from "@/components/ui/modal/context";
 import { useQuery } from "@tanstack/react-query";
 import { links } from "@/lib/links";
 import { queryKeys } from "@/lib/query-keys";
@@ -22,6 +24,10 @@ import type {
   DraftBumicertResponse,
   GetDraftBumicertResponse,
 } from "@/app/api/supabase/drafts/bumicert/type";
+import DeleteDraftModal, {
+  DeleteDraftModalId,
+} from "../[draftId]/_components/DeleteDraftModal";
+import { useTranslations } from "next-intl";
 
 async function fetchDrafts(): Promise<DraftBumicertResponse[]> {
   const res = await fetch(links.api.drafts.bumicert.get(), {
@@ -104,7 +110,9 @@ const DraftStatus = ({
 };
 
 const DraftBumicerts = () => {
+  const t = useTranslations("bumicert.create.drafts");
   const auth = useAtprotoStore((state) => state.auth);
+  const { pushModal, show, hide, popModal } = useModal();
 
   const {
     data: drafts,
@@ -120,17 +128,17 @@ const DraftBumicerts = () => {
     if (!drafts) return [];
     return drafts.map((draft) => ({
       ...draft,
-      title: draft.data.title || "Untitled Draft",
+      title: draft.data.title || t("untitledDraft"),
       progress: calculateProgress(draft.data),
     }));
-  }, [drafts]);
+  }, [drafts, t]);
 
   if (!auth.authenticated) {
     return (
       <DraftStatus
         icon={<AlertCircleIcon className="size-8" />}
-        title="Sign in to view drafts"
-        description="Draft Bumicerts are saved to your account so you can continue your work later."
+        title={t("signedOutTitle")}
+        description={t("signedOutDescription")}
       />
     );
   }
@@ -139,8 +147,8 @@ const DraftBumicerts = () => {
     return (
       <DraftStatus
         icon={<Loader2Icon className="size-8 animate-spin" />}
-        title="Loading drafts"
-        description="We are checking for saved Bumicert applications."
+        title={t("loadingTitle")}
+        description={t("loadingDescription")}
       />
     );
   }
@@ -149,22 +157,38 @@ const DraftBumicerts = () => {
     return (
       <DraftStatus
         icon={<AlertCircleIcon className="size-8" />}
-        title="Couldn't load drafts"
-        description={
-          error instanceof Error
-            ? error.message
-            : "Failed to load drafts. Please try again."
-        }
+        title={t("errorTitle")}
+        description={error instanceof Error ? error.message : t("errorFallback")}
       />
     );
   }
+
+  const handleDeleteDraft = (draft: (typeof draftsWithProgress)[number]) => {
+    pushModal(
+      {
+        id: DeleteDraftModalId,
+        content: (
+          <DeleteDraftModal
+            draftId={draft.id}
+            draftTitle={draft.title}
+            onSuccess={async () => {
+              await hide();
+              popModal();
+            }}
+          />
+        ),
+      },
+      true,
+    );
+    show();
+  };
 
   if (draftsWithProgress.length === 0) {
     return (
       <DraftStatus
         icon={<FilePenLineIcon className="size-8" />}
-        title="No drafts yet"
-        description="Start a new Bumicert and save it as a draft when you want to return later."
+        title={t("emptyTitle")}
+        description={t("emptyDescription")}
       />
     );
   }
@@ -186,16 +210,28 @@ const DraftBumicerts = () => {
               <TimeText date={new Date(draft.updated_at)} />
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="rounded-full"
-            asChild
-          >
-            <Link href={links.bumicert.createWithDraftId(draft.id.toString())}>
-              <ArrowRightIcon />
-            </Link>
-          </Button>
+          <div className="ml-2 flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full text-destructive hover:text-destructive"
+              aria-label={t("deleteAria", { title: draft.title })}
+              onClick={() => handleDeleteDraft(draft)}
+            >
+              <Trash2Icon />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className="rounded-full"
+              asChild
+            >
+              <Link href={links.bumicert.createWithDraftId(draft.id.toString())}>
+                <ArrowRightIcon />
+              </Link>
+            </Button>
+          </div>
         </div>
       ))}
     </div>

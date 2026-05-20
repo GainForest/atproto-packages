@@ -43,40 +43,59 @@ function isValidDate(value: string): boolean {
   return DATE_PATTERNS.some((pattern) => pattern.test(value));
 }
 
-export const OccurrenceRowSchema = z.object({
-  scientificName: z.string().min(1, "Scientific name is required"),
-  eventDate: z
-    .string()
-    .min(1, "Event date is required")
-    .refine(isValidDate, {
-      message:
-        "Date must be in ISO 8601 or common format (YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY, YYYY)",
-    }),
-  decimalLatitude: z.coerce.number().min(-90).max(90),
-  decimalLongitude: z.coerce.number().min(-180).max(180),
-  basisOfRecord: z.enum(BASIS_OF_RECORD_VALUES).optional().default("HumanObservation"),
-  vernacularName: z.string().optional(),
-  recordedBy: z.string().optional(),
-  locality: z.string().optional(),
-  country: z.string().optional(),
-  countryCode: z.string().optional(),
-  occurrenceRemarks: z.string().optional(),
-  habitat: z.string().optional(),
-  samplingProtocol: z.string().optional(),
-  kingdom: z.string().optional(),
-});
+type SchemaTranslator = (
+  key:
+    | "scientificNameRequired"
+    | "eventDateRequired"
+    | "dateInvalid"
+    | "measurementPositive"
+    | "nearBoundary"
+    | "invalidBoundary"
+    | "invalidBoundaryFallback"
+    | "outOfSite",
+) => string;
 
-const MeasurementFields = {
-  height: z.coerce.number().positive().optional(),
-  totalHeight: z.coerce.number().positive().optional(),
-  dbh: z.coerce.number().positive().optional(),
-  diameter: z.coerce.number().positive().optional(),
-  canopyCoverPercent: z.coerce.number().min(0).max(100).optional(),
-  canopyCover: z.coerce.number().min(0).max(100).optional(),
-};
+function createOccurrenceRowSchema(t?: SchemaTranslator) {
+  return z.object({
+    scientificName: z.string().min(1, t ? t("scientificNameRequired") : "Scientific name is required"),
+    eventDate: z
+      .string()
+      .min(1, t ? t("eventDateRequired") : "Event date is required")
+      .refine(isValidDate, {
+        message: t
+          ? t("dateInvalid")
+          : "Date must be in ISO 8601 or common format (YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY, YYYY)",
+      }),
+    decimalLatitude: z.coerce.number().min(-90).max(90),
+    decimalLongitude: z.coerce.number().min(-180).max(180),
+    basisOfRecord: z.enum(BASIS_OF_RECORD_VALUES).optional().default("HumanObservation"),
+    vernacularName: z.string().optional(),
+    recordedBy: z.string().optional(),
+    locality: z.string().optional(),
+    country: z.string().optional(),
+    countryCode: z.string().optional(),
+    occurrenceRemarks: z.string().optional(),
+    habitat: z.string().optional(),
+    samplingProtocol: z.string().optional(),
+    kingdom: z.string().optional(),
+  });
+}
+
+function createMeasurementFields(t?: SchemaTranslator) {
+  return {
+    height: z.coerce.number().positive(t ? t("measurementPositive") : undefined).optional(),
+    totalHeight: z.coerce.number().positive(t ? t("measurementPositive") : undefined).optional(),
+    dbh: z.coerce.number().positive(t ? t("measurementPositive") : undefined).optional(),
+    diameter: z.coerce.number().positive(t ? t("measurementPositive") : undefined).optional(),
+    canopyCoverPercent: z.coerce.number().min(0).max(100).optional(),
+    canopyCover: z.coerce.number().min(0).max(100).optional(),
+  };
+}
+
+export const OccurrenceRowSchema = createOccurrenceRowSchema();
 
 export const TreeRowSchema = OccurrenceRowSchema.merge(
-  z.object(MeasurementFields)
+  z.object(createMeasurementFields())
 );
 
 type TreeRowOutput = z.output<typeof TreeRowSchema>;
@@ -136,6 +155,7 @@ function getBoundaryIssue(
   row: TreeRowOutput,
   index: number,
   boundary: SiteBoundaryGeoJson,
+  t?: SchemaTranslator,
 ): { path: string; message: string } | null {
   const failure = getTreeBoundaryFailure({
     tree: {
@@ -155,20 +175,26 @@ function getBoundaryIssue(
   if (failure.kind === "near-boundary") {
     return {
       path: "siteBoundary",
-      message: `Near boundary: this tree is ${formatBoundaryDistance(failure.distanceMeters)} outside the selected site and will be skipped.`,
+      message: t
+        ? t("nearBoundary")
+        : `Near boundary: this tree is ${formatBoundaryDistance(failure.distanceMeters)} outside the selected site polygon. Fix the coordinates so the tree is inside the selected boundary, or go back and choose/create the correct site boundary; this row will be skipped.`,
     };
   }
 
   if (failure.kind === "invalid-boundary") {
     return {
       path: "siteBoundary",
-      message: `Invalid selected site boundary: ${failure.reason ?? "the boundary could not be used for tree validation."}`,
+      message: t
+        ? t("invalidBoundary")
+        : `Invalid selected site boundary: ${failure.reason ?? "the boundary could not be used for tree validation."} Redraw or re-upload valid polygon GeoJSON, or select/create another site boundary before uploading trees.`,
     };
   }
 
   return {
     path: "siteBoundary",
-    message: `Out of site: this tree is outside the selected site boundary and will be skipped.`,
+    message: t
+      ? t("outOfSite")
+      : "Out of site: this tree is outside the selected site polygon. Fix the coordinates so the tree is inside the selected boundary, or go back and choose/create the correct site boundary; this row will be skipped.",
   };
 }
 
@@ -289,6 +315,7 @@ export function parseAndValidateRows(
       geoJson: SiteBoundaryGeoJson;
       siteRef: string;
     } | null;
+    t?: SchemaTranslator;
   },
 ): ValidationResult {
   const valid: ValidatedRow[] = [];
@@ -302,13 +329,19 @@ export function parseAndValidateRows(
       subjectPart: inferSubjectPartFromColumnName(m.sourceColumn),
     }));
 
+  const rowSchema = options?.t
+    ? createOccurrenceRowSchema(options.t).merge(
+        z.object(createMeasurementFields(options.t)),
+      )
+    : TreeRowSchema;
+
   for (let index = 0; index < rows.length; index++) {
     const row = rows[index] as unknown;
-    const result = TreeRowSchema.safeParse(row);
+    const result = rowSchema.safeParse(row);
 
     if (result.success) {
       const boundaryIssue = options?.siteBoundary
-        ? getBoundaryIssue(result.data, index, options.siteBoundary.geoJson)
+        ? getBoundaryIssue(result.data, index, options.siteBoundary.geoJson, options.t)
         : null;
 
       if (boundaryIssue) {

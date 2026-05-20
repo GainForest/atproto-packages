@@ -13,6 +13,7 @@
 
 import { Drawer } from "vaul";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
+import { useTranslations } from "next-intl";
 import { useMobileNav } from "@/hooks/useMobileNav";
 
 interface MobileNavDrawerProps {
@@ -20,6 +21,7 @@ interface MobileNavDrawerProps {
 }
 
 export function MobileNavDrawer({ children }: MobileNavDrawerProps) {
+  const t = useTranslations("common.navigation");
   const open = useMobileNav((s) => s.open);
   const setOpen = useMobileNav((s) => s.setOpen);
 
@@ -36,10 +38,10 @@ export function MobileNavDrawer({ children }: MobileNavDrawerProps) {
         />
         <Drawer.Content
           className="fixed top-0 left-0 bottom-0 z-50 md:hidden focus:outline-none bg-background"
-          aria-label="Navigation"
+          aria-label={t("navigation")}
         >
           <VisuallyHidden.Root>
-            <Drawer.Title>Navigation</Drawer.Title>
+            <Drawer.Title>{t("navigation")}</Drawer.Title>
           </VisuallyHidden.Root>
           {/* Render the full sidebar — identical to desktop */}
           {children}

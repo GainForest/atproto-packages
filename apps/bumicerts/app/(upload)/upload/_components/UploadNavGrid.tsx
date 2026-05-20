@@ -15,6 +15,7 @@
  */
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
   ArrowRightIcon,
@@ -32,8 +33,12 @@ import type { AccountKind } from "@/lib/account";
 
 interface NavCard {
   id: string;
-  label: string;
-  description: string;
+  labelKey: "sites" | "audio" | "trees" | "bumicerts";
+  descriptionKey:
+    | "sitesDescription"
+    | "audioDescription"
+    | "treesDescription"
+    | "bumicertsDescription";
   href: string;
   Icon: LucideIcon | ComponentType<{ className?: string }>;
 }
@@ -41,31 +46,29 @@ interface NavCard {
 const ORG_NAV_CARDS: NavCard[] = [
   {
     id: "sites",
-    label: "Sites",
-    description:
-      "Manage your conservation sites, boundaries, and location data.",
+    labelKey: "sites",
+    descriptionKey: "sitesDescription",
     href: links.manage.sites,
     Icon: MapPinIcon,
   },
   {
     id: "audio",
-    label: "Audio",
-    description: "Manage biodiversity audio recordings tied to your sites.",
+    labelKey: "audio",
+    descriptionKey: "audioDescription",
     href: links.manage.audio,
     Icon: MicIcon,
   },
   {
     id: "trees",
-    label: "Trees",
-    description: "Manage tree records, and linked photos.",
+    labelKey: "trees",
+    descriptionKey: "treesDescription",
     href: links.manage.trees,
     Icon: TreesIcon,
   },
   {
     id: "bumicerts",
-    label: "Bumicerts",
-    description:
-      "Create and manage verified impact certificates for your work.",
+    labelKey: "bumicerts",
+    descriptionKey: "bumicertsDescription",
     href: links.manage.bumicerts,
     Icon: BumicertIcon,
   },
@@ -76,15 +79,19 @@ export function ManageNavGrid({
 }: {
   accountKind?: AccountKind;
 }) {
+  const t = useTranslations("upload.navigation");
+  const tCards = useTranslations("upload.navigation.cards");
   const cards = accountKind === "organization" ? ORG_NAV_CARDS : []; // No cards for other kinds.
   if (cards.length === 0) return null;
 
   return (
     <div className="pb-2">
       <h1 className="text-2xl font-medium">
-        Manage{" "}
+        {t("manage")}{" "}
         {accountKind === "organization" && (
-          <span className="text-muted-foreground">your organization data</span>
+          <span className="text-muted-foreground">
+            {t("yourOrganizationData")}
+          </span>
         )}
       </h1>
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -115,9 +122,11 @@ export function ManageNavGrid({
                 {/* Text */}
                 <div>
                   <p className="text-lg font-medium text-foreground group-hover:text-primary transition-all duration-300 mb-1">
-                    {card.label}
+                    {t(card.labelKey)}
                   </p>
-                  <p className="text-muted-foreground">{card.description}</p>
+                  <p className="text-muted-foreground">
+                    {tCards(card.descriptionKey)}
+                  </p>
                 </div>
               </Link>
             </motion.div>

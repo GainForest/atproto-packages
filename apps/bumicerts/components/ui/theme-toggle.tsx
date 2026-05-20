@@ -4,6 +4,7 @@ import { useTheme } from "next-themes";
 import { AnimatePresence, motion } from "framer-motion";
 import { SunIcon, MoonIcon } from "lucide-react";
 import type { MouseEvent } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 const RIPPLE_DURATION_MS = 1200;
@@ -71,6 +72,7 @@ function runThemeTransition(origin: { originX: number; originY: number }, update
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+  const t = useTranslations("common.theme");
 
   function handleToggleTheme(event: MouseEvent<HTMLButtonElement>) {
     const targetTheme: ThemeName = isDark ? "light" : "dark";
@@ -87,7 +89,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         "h-8 w-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground",
         className,
       )}
-      aria-label="Toggle theme"
+      aria-label={t("toggle")}
       suppressHydrationWarning
     >
       <AnimatePresence mode="wait" initial={false}>

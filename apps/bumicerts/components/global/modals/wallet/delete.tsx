@@ -16,10 +16,10 @@ import {
   ModalFooter,
 } from "@/components/ui/modal/modal";
 import { trpc } from "@/lib/trpc/client";
-import { formatError } from "@/lib/utils/trpc-errors";
 import { ChevronRight, Trash2Icon } from "lucide-react";
 import Image from "next/image";
 import { blo } from "blo";
+import { useTranslations } from "next-intl";
 
 interface DeleteWalletModalProps {
   rkey: string;
@@ -40,15 +40,12 @@ export function DeleteWalletModal({
   onBack,
   onDeleted,
 }: DeleteWalletModalProps) {
+  const t = useTranslations("modals.wallet.delete");
   const { stack, hide, popModal } = useModal();
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const deleteEvm = trpc.link.evm.delete.useMutation();
-
-  const label = name
-    ? `${name} (${formatAddress(address)})`
-    : formatAddress(address);
 
   const handleBack = () => {
     if (stack.length === 1) {
@@ -65,7 +62,8 @@ export function DeleteWalletModal({
       await deleteEvm.mutateAsync({ rkey });
       onDeleted();
     } catch (e) {
-      setError(formatError(e));
+      console.error("[DeleteWalletModal] Failed to remove wallet:", e);
+      setError(t("removeError"));
     } finally {
       setIsDeleting(false);
     }
@@ -74,16 +72,17 @@ export function DeleteWalletModal({
   return (
     <ModalContent dismissible={false}>
       <ModalHeader backAction={isDeleting ? undefined : handleBack}>
-        <ModalTitle>Remove Wallet</ModalTitle>
-        <ModalDescription>Confirm your choice</ModalDescription>
+        <ModalTitle>{t("title")}</ModalTitle>
+        <ModalDescription>{t("description")}</ModalDescription>
       </ModalHeader>
 
       <p className="mt-6 text-center text-pretty">
-        You are about to remove{" "}
-        <span className="font-medium text-foreground">
-          &quot;{name ?? "Untitled"}&quot;
-        </span>{" "}
-        from your linked wallets.
+        {t.rich("confirmRemove", {
+          name: name ?? t("untitled"),
+          nameText: (chunks) => (
+            <span className="font-medium text-foreground">&quot;{chunks}&quot;</span>
+          ),
+        })}
       </p>
       <div className="bg-muted/50 rounded-2xl p-4 mt-4 grid grid-cols-[1fr_2rem_1fr] overflow-hidden">
         <div className="flex flex-col items-center justify-center">
@@ -119,7 +118,7 @@ export function DeleteWalletModal({
           onClick={handleDelete}
           disabled={isDeleting}
         >
-          {isDeleting ? "Removing…" : "Remove Wallet"}
+          {isDeleting ? t("removing") : t("removeWallet")}
         </Button>
         <Button
           variant="outline"
@@ -127,7 +126,7 @@ export function DeleteWalletModal({
           onClick={handleBack}
           disabled={isDeleting}
         >
-          Cancel
+          {t("cancel")}
         </Button>
       </ModalFooter>
     </ModalContent>

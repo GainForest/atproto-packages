@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFormatter, useTranslations } from "next-intl";
 import {
   AlertTriangle,
   Camera,
@@ -454,6 +455,14 @@ function EmptyState() {
 }
 
 export function TreesManageClient({ did }: TreesManageClientProps) {
+  const t = useTranslations("upload.trees.manager");
+  const tValidation = useTranslations("upload.trees.validation");
+  const tEstablishmentMeans = useTranslations("upload.trees.establishmentMeans");
+  const format = useFormatter();
+  const formatTreeDate = useCallback(
+    (date: Date) => format.dateTime(date, { dateStyle: "medium" }),
+    [format],
+  );
   const isDesktop = useMediaQuery("(min-width: 64rem)");
   const { pushModal, show } = useModal();
   const indexerUtils = indexerTrpc.useUtils();
@@ -527,8 +536,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     () =>
       getSelectableEstablishmentMeansOptions(
         occurrenceDraft.establishmentMeans,
+        tEstablishmentMeans,
       ),
-    [occurrenceDraft.establishmentMeans],
+    [occurrenceDraft.establishmentMeans, tEstablishmentMeans],
   );
   const selectedEstablishmentMeansOption = useMemo(
     () =>
@@ -1068,10 +1078,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
   );
 
   const occurrenceValidationError = occurrenceHasChanges
-    ? validateOccurrenceDraft(occurrenceDraft)
+    ? validateOccurrenceDraft(occurrenceDraft, tValidation)
     : null;
   const measurementValidationError = measurementHasChanges
-    ? validateMeasurementDraft(measurementDraft)
+    ? validateMeasurementDraft(measurementDraft, tValidation)
     : null;
 
   const invalidateTreeQueries = useCallback(async () => {
@@ -1219,14 +1229,14 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     async (occurrenceRkeys: string[], dataset: DatasetItem) => {
       const datasetIdentity = getDatasetIdentity(dataset);
       if (!datasetIdentity) {
-        throw new Error("Choose a valid dataset before continuing.");
+        throw new Error(t("chooseValidDataset"));
       }
 
       const uniqueRkeys = Array.from(
         new Set(occurrenceRkeys.filter((rkey) => rkey.length > 0)),
       );
       if (uniqueRkeys.length === 0) {
-        throw new Error("No ungrouped trees are available to add.");
+        throw new Error(t("noUngroupedTrees"));
       }
 
       let attachedCount = 0;
@@ -1265,7 +1275,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
         if (!response.datasetCountUpdated) {
           datasetCountWarning =
             response.datasetCountError ??
-            "The trees were added, but the dataset tree count could not be updated yet.";
+            t("datasetCountUpdateFailed");
         }
 
         const successfulRkeys: string[] = [];
@@ -1386,7 +1396,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     (items: TreeManagerItem[]) => {
       if (attachableDatasets.length === 0) {
         setDatasetAttachFeedback(
-          "Create a dataset during tree upload before adding ungrouped trees to it.",
+          t("createDatasetFirst"),
         );
         return;
       }
@@ -1401,7 +1411,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
       });
 
       if (occurrenceRkeys.length === 0) {
-        setDatasetAttachFeedback("No ungrouped trees are available to add.");
+        setDatasetAttachFeedback(t("noUngroupedTrees"));
         return;
       }
 
@@ -1462,7 +1472,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     }
     const occurrenceRkey = metadata.rkey;
 
-    const validationError = validateOccurrenceDraft(occurrenceDraft);
+    const validationError = validateOccurrenceDraft(occurrenceDraft, tValidation);
     if (validationError) {
       setOccurrenceError(validationError);
       return;
@@ -1501,7 +1511,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     });
 
     if (Object.keys(data).length === 0 && unset.length === 0) {
-      setOccurrenceFeedback("No changes to save.");
+      setOccurrenceFeedback(t("noChanges"));
       return;
     }
 
@@ -1539,7 +1549,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
       setInitialOccurrenceDraft(normalizedCurrent);
       setOccurrenceDraft(normalizedCurrent);
-      setOccurrenceFeedback("Tree details saved.");
+      setOccurrenceFeedback(t("detailsSaved"));
       setOccurrenceError(null);
       await invalidateTreeQueries();
     } catch (error) {
@@ -1567,7 +1577,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
       return;
     }
 
-    const validationError = validateMeasurementDraft(measurementDraft);
+    const validationError = validateMeasurementDraft(measurementDraft, tValidation);
     if (validationError) {
       setMeasurementError(validationError);
       return;
@@ -1581,7 +1591,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     ) as TreeMeasurementDraft;
 
     if (isDraftEqual(normalizedCurrent, initialMeasurementDraft)) {
-      setMeasurementFeedback("No changes to save.");
+      setMeasurementFeedback(t("noChanges"));
       return;
     }
 
@@ -1595,7 +1605,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
             ...current,
             [occurrenceUri]: [],
           }));
-          setMeasurementFeedback("Measurements removed.");
+          setMeasurementFeedback(t("measurementsRemoved"));
         } else {
           const result = await updateMeasurement.mutateAsync({
             rkey: measurementRkey,
@@ -1607,11 +1617,11 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
               createOptimisticMeasurementItem(did, occurrenceUri, result),
             ],
           }));
-          setMeasurementFeedback("Measurements saved.");
+          setMeasurementFeedback(t("measurementsSaved"));
         }
       } else {
         if (!floraPayload) {
-          setMeasurementError("Add at least one measurement value to save.");
+          setMeasurementError(t("measurementRequired"));
           return;
         }
 
@@ -1630,7 +1640,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
             createOptimisticMeasurementItem(did, occurrenceUri, result),
           ],
         }));
-        setMeasurementFeedback("Measurements added.");
+        setMeasurementFeedback(t("measurementsAdded"));
       }
 
       setInitialMeasurementDraft(normalizedCurrent);
@@ -1793,9 +1803,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
         id: `upload/trees/manage/delete-photo/${photoRkey}`,
         content: (
           <ManageConfirmModal
-            title="Delete photo?"
-            description="This removes the selected tree photo from the GainForest network. This action cannot be undone."
-            confirmLabel="Delete photo"
+            title={t("deletePhotoTitle")}
+            description={t("deletePhotoDescription")}
+            confirmLabel={t("deletePhotoAction")}
             onConfirm={async () => {
               await deleteMultimedia.mutateAsync({ rkey: photoRkey });
               setOptimisticAddedPhotos((current) => {
@@ -1858,9 +1868,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
         id: MODAL_IDS.MANAGE_TREE_DELETE,
         content: (
           <ManageConfirmModal
-            title="Delete tree record?"
+            title={t("deleteTreeTitle")}
             description={formatDeletionImpact(target)}
-            confirmLabel="Delete tree"
+            confirmLabel={t("deleteTree")}
             onConfirm={async () => {
               const result = await deleteTree
                 .mutateAsync({ rkey: target.occurrenceRkey })
@@ -1956,14 +1966,14 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
     deleteMeasurement.isPending ||
     deleteMultimedia.isPending;
   const searchPlaceholder = showDatasetLanding
-    ? "Search by dataset, location, or status"
+    ? t("searchDatasets")
     : isPendingDatasetFilter
-      ? "Dataset is still indexing"
-      : "Search by species, locality, recorder, or date";
+      ? t("datasetStillIndexing")
+      : t("searchTrees");
   const searchQueryTrimmed = searchQuery.trim();
   const activeSearchQuery = showDatasetLanding ? datasetSearchQuery : searchQuery;
   const counterLabel = isPendingDatasetFilter
-    ? "Dataset still indexing"
+    ? t("datasetStillIndexingShort")
     : showDatasetLanding
       ? `${filteredDatasetCards.length} of ${datasetCards.length} dataset${datasetCards.length === 1 ? "" : "s"}`
       : `${filteredTrees.length} of ${datasetScopedTrees.length} tree record${datasetScopedTrees.length === 1 ? "" : "s"}`;
@@ -1971,7 +1981,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
   const addSelectedUngroupedTreesLabel =
     selectedUngroupedTreeCount > 1
       ? `Add ${selectedUngroupedTreeCount} to a dataset`
-      : "Add to a dataset";
+      : t("addToDataset");
 
   if (isLoading) {
     return <TreesManageSkeleton />;
@@ -2023,7 +2033,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
 
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
-            <Link href={links.manage.home}>Back to upload</Link>
+            <Link href={links.manage.home}>{t("backToUpload")}</Link>
           </Button>
           <Button asChild>
             <Link href={links.manage.treesUpload}>
@@ -2073,7 +2083,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
               <SelectTrigger className="w-full lg:w-56 shrink-0">
                 <div className="flex items-center gap-1.5 truncate">
                   <DatabaseIcon className="size-3.5 shrink-0 text-muted-foreground" />
-                  <SelectValue placeholder="All datasets" />
+                  <SelectValue placeholder={t("allDatasets")} />
                 </div>
               </SelectTrigger>
               <SelectContent>
@@ -2171,17 +2181,17 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
             style={{ fontFamily: "var(--font-garamond-var)" }}
           >
             {isPendingDatasetFilter
-              ? "Dataset is still indexing"
+              ? t("datasetStillIndexing")
               : searchQueryTrimmed
-                ? "No trees match your search"
-                : "No trees in this dataset yet"}
+                ? t("noTreesSearch")
+                : t("noTreesDataset")}
           </p>
           <p className="text-sm text-muted-foreground">
             {isPendingDatasetFilter
-              ? "We’re keeping this dataset view open while the indexer catches up. Try refreshing in a few seconds."
+              ? t("indexingDescription")
               : searchQueryTrimmed
-                ? "Try a different species name, locality, or recorder."
-                : "This dataset is ready, but there are no tree records to review yet."}
+                ? t("searchEmptyDescription")
+                : t("datasetEmptyDescription")}
           </p>
           {isPendingDatasetFilter ? (
             <div className="flex flex-wrap justify-center gap-2">
@@ -2216,8 +2226,8 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {isViewingUngroupedDataset
-                      ? "Select trees to add them to a dataset, or open a record to review details."
-                      : "Select a record to review its details, measurements, and photos."}
+                      ? t("selectUngroupedHint")
+                      : t("selectRecordHint")}
                   </p>
                 </div>
 
@@ -2228,9 +2238,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                         checked={selectAllUngroupedChecked}
                         onCheckedChange={handleToggleAllFilteredUngroupedTrees}
                         disabled={!hasFilteredUngroupedTrees}
-                        aria-label="Select all filtered ungrouped trees"
+                        aria-label={t("selectAllFiltered")}
                       />
-                      <span>Select all</span>
+                      <span>{t("selectAll")}</span>
                       {selectedUngroupedTreeCount > 0 ? (
                         <span className="font-medium text-foreground">
                           {selectedUngroupedTreeLabel}
@@ -2303,7 +2313,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                               className="text-lg leading-none truncate"
                               style={{ fontFamily: "var(--font-garamond-var)" }}
                             >
-                              {record.scientificName ?? "Untitled tree"}
+                              {record.scientificName ?? t("untitledTree")}
                             </p>
                             {record.vernacularName ? (
                               <p className="text-xs italic text-muted-foreground truncate">
@@ -2312,10 +2322,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                             ) : null}
                             <p className="flex items-center gap-1 text-xs text-muted-foreground truncate">
                               <MapPin className="size-3" />
-                              {formatTreeSubtitle(item)}
+                              {formatTreeSubtitle(item, tValidation)}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {formatEventDate(record.eventDate)}
+                              {formatEventDate(record.eventDate, tValidation, formatTreeDate)}
                             </p>
                           </div>
 
@@ -2392,7 +2402,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                         style={{ fontFamily: "var(--font-garamond-var)" }}
                       >
                         {activeTree.occurrence.record?.scientificName ??
-                          "Untitled tree"}
+                          t("untitledTree")}
                       </h2>
                       {activeTree.occurrence.record?.vernacularName ? (
                         <p className="text-sm italic text-muted-foreground">
@@ -2404,11 +2414,13 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1">
                         <MapPin className="size-3" />
-                        {formatTreeSubtitle(activeTree)}
+                        {formatTreeSubtitle(activeTree, tValidation)}
                       </span>
                       <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1">
                         {formatEventDate(
                           activeTree.occurrence.record?.eventDate,
+                          tValidation,
+                          formatTreeDate,
                         )}
                       </span>
                       {(() => {
@@ -2477,18 +2489,18 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                 {measurementEditingBlocked ? (
                   <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-300">
                     {activeTree.hasDuplicateBundledMeasurements
-                      ? "This tree has multiple bundled measurement records. Clean them up manually before editing measurements here."
-                      : "Measurements for this tree are still using a legacy or unsupported shape. Run the measurement migration before editing them here."}
+                      ? t("multipleMeasurementsReadonly")
+                      : t("migrationReadonly")}
                   </div>
                 ) : null}
               </section>
 
               <SectionCard
-                title="Tree details"
-                description="Update the core Darwin Core occurrence fields for this tree."
+                title={t("treeDetails")}
+                description={t("treeDetailsDescription")}
               >
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="Scientific name" required>
+                  <Field label={t("scientificName")} required>
                     <Input
                       value={occurrenceDraft.scientificName}
                       onChange={(event) =>
@@ -2499,7 +2511,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       }
                     />
                   </Field>
-                  <Field label="Common or local name">
+                  <Field label={t("commonName")}>
                     <Input
                       value={occurrenceDraft.vernacularName}
                       onChange={(event) =>
@@ -2510,7 +2522,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       }
                     />
                   </Field>
-                  <Field label="Event date" required>
+                  <Field label={t("eventDate")} required>
                     <Input
                       value={occurrenceDraft.eventDate}
                       onChange={(event) =>
@@ -2522,7 +2534,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       placeholder="YYYY-MM-DD"
                     />
                   </Field>
-                  <Field label="Recorded by">
+                  <Field label={t("recordedBy")}>
                     <Input
                       value={occurrenceDraft.recordedBy}
                       onChange={(event) =>
@@ -2533,7 +2545,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       }
                     />
                   </Field>
-                  <Field label="Latitude" required>
+                  <Field label={t("latitude")} required>
                     <Input
                       value={occurrenceDraft.decimalLatitude}
                       onChange={(event) =>
@@ -2544,7 +2556,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       }
                     />
                   </Field>
-                  <Field label="Longitude" required>
+                  <Field label={t("longitude")} required>
                     <Input
                       value={occurrenceDraft.decimalLongitude}
                       onChange={(event) =>
@@ -2555,7 +2567,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       }
                     />
                   </Field>
-                  <Field label="Country">
+                  <Field label={t("country")}>
                     <Input
                       value={occurrenceDraft.country}
                       onChange={(event) =>
@@ -2566,7 +2578,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       }
                     />
                   </Field>
-                  <Field label="Locality">
+                  <Field label={t("locality")}>
                     <Input
                       value={occurrenceDraft.locality}
                       onChange={(event) =>
@@ -2577,7 +2589,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       }
                     />
                   </Field>
-                  <Field label="Habitat">
+                  <Field label={t("habitat")}>
                     <Textarea
                       value={occurrenceDraft.habitat}
                       onChange={(event) =>
@@ -2590,7 +2602,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                     />
                   </Field>
                   <Field
-                    label="Establishment means"
+                    label={t("establishmentMeans")}
                     labelInfo={
                       <Popover>
                         <PopoverTrigger asChild>
@@ -2625,9 +2637,9 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Not specified">
+                        <SelectValue placeholder={t("notSpecified")}>
                           {selectedEstablishmentMeansOption?.label ??
-                            "Not specified"}
+                            t("notSpecified")}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -2649,7 +2661,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                       </SelectContent>
                     </Select>
                   </Field>
-                  <Field label="Occurrence remarks">
+                  <Field label={t("occurrenceRemarks")}>
                     <Textarea
                       value={occurrenceDraft.occurrenceRemarks}
                       onChange={(event) =>
@@ -2692,8 +2704,8 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
               </SectionCard>
 
               <SectionCard
-                title="Tree measurements"
-                description="Manage the migrated bundled flora measurements linked to this occurrence."
+                title={t("treeMeasurements")}
+                description={t("treeMeasurementsDescription")}
               >
                 {measurementEditingBlocked ? (
                   <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-300">
@@ -2704,7 +2716,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                 ) : (
                   <>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <Field label="DBH (cm)">
+                      <Field label={t("dbhCm")}>
                         <Input
                           value={measurementDraft.dbh}
                           onChange={(event) =>
@@ -2715,7 +2727,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                           }
                         />
                       </Field>
-                      <Field label="Height (m)">
+                      <Field label={t("heightM")}>
                         <Input
                           value={measurementDraft.totalHeight}
                           onChange={(event) =>
@@ -2726,7 +2738,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                           }
                         />
                       </Field>
-                      <Field label="Basal diameter (cm)">
+                      <Field label={t("basalDiameterCm")}>
                         <Input
                           value={measurementDraft.diameter}
                           onChange={(event) =>
@@ -2737,7 +2749,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                           }
                         />
                       </Field>
-                      <Field label="Canopy cover (%)">
+                      <Field label={t("canopyCoverPercent")}>
                         <Input
                           type="number"
                           min={0}
@@ -2792,10 +2804,10 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                         ) : null}
                         {activeTree.preferredMeasurement &&
                         !hasAnyMeasurementValue(measurementDraft)
-                          ? "Remove measurements"
+                          ? t("removeMeasurements")
                           : activeTree.preferredMeasurement
-                            ? "Save measurements"
-                            : "Add measurements"}
+                            ? t("saveMeasurements")
+                            : t("addMeasurements")}
                       </Button>
                     </div>
                   </>
@@ -2803,8 +2815,8 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
               </SectionCard>
 
               <SectionCard
-                title="Photos"
-                description="View evidence already linked to this tree and attach more photos over time."
+                title={t("photos")}
+                description={t("photosDescription")}
               >
                 <div className="flex justify-end">
                   <Button onClick={openAddPhotoModal}>
@@ -2889,7 +2901,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                                   <div className="space-y-2">
                                     <Textarea
                                       id={captionEditorId}
-                                      aria-label="Photo caption"
+                                      aria-label={t("photoCaption")}
                                       aria-describedby={
                                         photoCaptionErrorMessage
                                           ? captionErrorId
@@ -2900,7 +2912,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                                         setPhotoCaptionDraft(event.target.value);
                                         setPhotoCaptionError(null);
                                       }}
-                                      placeholder="Describe the photo…"
+                                      placeholder={t("photoPlaceholder")}
                                       disabled={isSavingCaption}
                                       rows={3}
                                       className="resize-none text-sm"
@@ -2968,8 +2980,8 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                                     >
                                       <Pencil />
                                       {photo.record.caption
-                                        ? "Edit caption"
-                                        : "Add caption"}
+                                        ? t("editCaption")
+                                        : t("addCaption")}
                                     </Button>
                                   </div>
                                 )}
@@ -2979,7 +2991,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                                 variant="ghost"
                                 size="icon-sm"
                                 className="text-muted-foreground hover:text-destructive"
-                                aria-label="Delete photo"
+                                aria-label={t("deletePhotoAction")}
                                 onClick={() =>
                                   openDeletePhotoModal(metadata.rkey)
                                 }
@@ -2989,7 +3001,7 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
                             </div>
 
                             <p className="text-xs text-muted-foreground">
-                              Added {formatEventDate(metadata.createdAt)}
+                              Added {formatEventDate(metadata.createdAt, tValidation, formatTreeDate)}
                             </p>
                           </div>
                         </article>
@@ -3000,8 +3012,8 @@ export function TreesManageClient({ did }: TreesManageClientProps) {
               </SectionCard>
 
               <SectionCard
-                title="Danger zone"
-                description="Delete this tree record and any linked measurements or photos."
+                title={t("dangerZone")}
+                description={t("dangerZoneDescription")}
                 className="border-destructive/20"
               >
                 <div className="flex flex-col gap-3 rounded-xl border border-destructive/20 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">

@@ -18,6 +18,7 @@ import { MODAL_IDS } from "@/components/global/modals/ids";
 import { WalletModal } from "./wallet";
 import { useUSDCBalance } from "./hooks/useUSDCBalance";
 import { WalletIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 const DEFAULT_PRESETS = [5, 10, 25, 50, 100];
 const DEFAULT_AMOUNT = 25;
@@ -59,6 +60,7 @@ interface AmountModalProps {
 }
 
 export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
+  const t = useTranslations("modals.donate.amount");
   const { pushModal, hide, clear } = useModal();
   const auth = useAtprotoStore((state) => state.auth);
   const isAuthenticated = auth.status === "AUTHENTICATED";
@@ -113,7 +115,7 @@ export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
   return (
     <ModalContent dismissible={false}>
       <ModalHeader>
-        <ModalTitle>Support Bumicert</ModalTitle>
+        <ModalTitle>{t("title")}</ModalTitle>
         <ModalDescription>
           {bumicert.title}
           {bumicert.organizationName ? ` · ${bumicert.organizationName}` : ""}
@@ -122,14 +124,14 @@ export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium">How much would you like to donate?</label>
+          <label className="text-sm font-medium">{t("question")}</label>
           {isConnected && (
             <span className="text-xs text-muted-foreground">
               {isBalanceLoading
-                ? "Loading balance…"
+                ? t("balanceLoading")
                 : balance !== null
-                  ? `Balance: ${balance} USDC`
-                  : "Balance unavailable"}
+                  ? t("balance", { balance })
+                  : t("balanceUnavailable")}
             </span>
           )}
         </div>
@@ -170,9 +172,9 @@ export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
               onCheckedChange={(checked) => setDonorChoseAnonymous(checked === true)}
             />
           <div className="flex-1">
-            <span className="text-sm font-medium">Donate anonymously</span>
+            <span className="text-sm font-medium">{t("anonymousLabel")}</span>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Your wallet address will be recorded, but not your identity.
+              {t("anonymousDescription")}
             </p>
           </div>
         </label>
@@ -181,14 +183,10 @@ export function AmountModal({ bumicert, fundingConfig }: AmountModalProps) {
       <ModalFooter className="flex flex-col gap-2 pt-2">
         <Button onClick={handleContinue} disabled={!isValid} className="w-full">
           <WalletIcon className="size-4" />
-          Continue with Wallet
+          {t("continueWithWallet")}
         </Button>
-        {/* <Button variant="outline" disabled className="w-full opacity-60 cursor-not-allowed">
-          Continue with Card
-          <span className="text-xs bg-muted-foreground text-muted px-1 rounded-xs uppercase font-mono">Coming soon</span>
-        </Button> */}
         <Button variant="outline" onClick={handleCancel} className="w-full">
-          Cancel
+          {t("cancel")}
         </Button>
       </ModalFooter>
     </ModalContent>

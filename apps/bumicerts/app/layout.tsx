@@ -5,9 +5,13 @@ import {
   Cormorant_Garamond,
   Instrument_Serif,
 } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import "./globals.css";
 import { Providers } from "./providers";
 import { requirePublicUrl } from "@/lib/url";
+import { resolveSupportedLanguage } from "@/lib/i18n/languages";
+import { jsonLd } from "@/lib/seo-metadata";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,16 +37,20 @@ const instrumentSerif = Instrument_Serif({
   style: ["normal", "italic"],
 });
 
-const TITLE = "Bumicerts — Fund Regenerative Impact";
-const DESCRIPTION =
-  "Bumicerts connects funders with nature stewards doing on-ground regenerative work. Fund verified environmental impact directly.";
-
-export function generateMetadata(): Metadata {
+export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = requirePublicUrl();
+  const locale = resolveSupportedLanguage(await getLocale());
+  const t = await getTranslations("common.seo");
+  const title = t("title");
+  const description = t("description");
+
   return {
     metadataBase: new URL(baseUrl),
-    title: TITLE,
-    description: DESCRIPTION,
+    title: {
+      default: title,
+      template: "%s — Bumicerts",
+    },
+    description,
     applicationName: "Bumicerts",
     authors: [{ name: "GainForest", url: "https://gainforest.earth" }],
     keywords: [
@@ -74,21 +82,24 @@ export function generateMetadata(): Metadata {
       },
       { rel: "apple-touch-icon", url: "/apple-touch-icon.png" },
     ],
-    robots: "noindex, nofollow",
+    robots: {
+      index: true,
+      follow: true,
+    },
     openGraph: {
-      title: TITLE,
+      title,
       siteName: "Bumicerts",
-      description: DESCRIPTION,
+      description,
       type: "website",
-      url: baseUrl,
-      images: [{ url: "/opengraph-image.png", alt: TITLE }],
+      locale,
+      images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       site: "@GainForestNow",
-      title: TITLE,
-      description: DESCRIPTION,
-      images: [{ url: "/opengraph-image.png", alt: TITLE }],
+      title,
+      description,
+      images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: title }],
     },
   };
 }
@@ -99,17 +110,64 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-export default function RootLayout({
+function buildRootStructuredData(description: string): Record<string, unknown>[] {
+  const baseUrl = requirePublicUrl();
+
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": `${baseUrl}#website`,
+      name: "Bumicerts",
+      url: baseUrl,
+      description,
+      publisher: {
+        "@id": `${baseUrl}#organization`,
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": `${baseUrl}#organization`,
+      name: "GainForest",
+      url: "https://gainforest.earth",
+      logo: {
+        "@type": "ImageObject",
+        url: `${baseUrl}/apple-touch-icon.png`,
+        width: 180,
+        height: 180,
+      },
+      sameAs: [
+        "https://gainforest.earth",
+        "https://github.com/GainForest",
+        "https://x.com/GainForestNow",
+      ],
+    },
+  ];
+};
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+  const t = await getTranslations("common.seo");
+  const structuredData = buildRootStructuredData(t("description"));
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cormorantGaramond.variable} ${instrumentSerif.variable} antialiased`}
       >
-        <Providers>{children}</Providers>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
+        />
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

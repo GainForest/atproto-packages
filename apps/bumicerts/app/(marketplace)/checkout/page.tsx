@@ -1,9 +1,15 @@
+import { getTranslations } from "next-intl/server";
 import { CheckoutClient } from "./_components/CheckoutClient";
+import { noIndexMetadata } from "@/lib/seo-metadata";
 
-export const metadata = {
-  title: "Checkout — Bumicerts",
-  description: "Complete your donation to multiple bumicerts in one transaction.",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("modals.checkout.metadata");
+
+  return {
+    ...noIndexMetadata(t("title")),
+    description: t("description"),
+  };
+}
 
 export default function CheckoutPage() {
   return <CheckoutClient />;

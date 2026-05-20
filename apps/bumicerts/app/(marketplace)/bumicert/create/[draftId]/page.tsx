@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import AuthWrapper from "./_components/AuthWrapper";
 import StepFooter from "./_components/StepFooter";
@@ -8,6 +9,9 @@ import StepBody from "./_components/StepBody";
 import { links } from "@/lib/links";
 import { requirePublicUrl } from "@/lib/url";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { noIndexMetadata } from "@/lib/seo-metadata";
+
+export const metadata: Metadata = noIndexMetadata("Resume Bumicert Draft");
 
 const trackDraftResumed = (draftId: number, updatedAt: string) => {
   const msSinceLastUpdate = Date.now() - new Date(updatedAt).getTime();

@@ -1,8 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Archive, FileSpreadsheet, Upload, X } from "lucide-react";
+import { Archive, CirclePlus, FileSpreadsheet, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,8 +18,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
+import { useModal } from "@/components/ui/modal/context";
+import {
+  SiteEditorModal,
+  SiteEditorModalId,
+} from "@/components/global/modals/upload/site/editor";
 import { useCsvParser } from "@/lib/upload/use-csv-parser";
-import { PARTNER_ESTABLISHMENT_MEANS_OPTIONS } from "@/lib/upload/establishment-means";
+import { getPartnerEstablishmentMeansOptions } from "@/lib/upload/establishment-means";
 import { detectKoboFormat } from "@/lib/upload/kobo-mapper";
 import { autoDetectMappings } from "@/lib/upload/column-mapper";
 import {
@@ -26,7 +32,6 @@ import {
   type UploadTreeDatasetItem,
   uploadTreeDatasetsQueryKey,
 } from "@/lib/upload/tree-upload-datasets";
-import { links } from "@/lib/links";
 import { TREE_UPLOAD_EVENTS } from "@/lib/analytics/events";
 import { getFileExtension, getFileSizeBucket } from "@/lib/analytics/tree-upload";
 import { trackTreeUploadEvent } from "@/lib/analytics/hotjar";
@@ -42,9 +47,12 @@ import type {
   UploadDatasetSelection,
 } from "@/lib/upload/upload-dataset-selection";
 import {
+  getBoundaryCapableUploadSites,
   resolveUploadSiteSelection,
+  shouldOfferCreateUploadSiteBoundary,
   toUploadSiteSelection,
   uploadSiteHasBoundary,
+  uploadSiteHasTransientBoundary,
   type UploadSiteSelection,
 } from "@/lib/upload/site-selection";
 import {
@@ -82,24 +90,12 @@ const ACCEPTED_MEDIA_ZIP_MIME_TYPES = [
 ];
 const DATASET_MODE_OPTIONS: Array<{
   mode: UploadDatasetSelection["mode"];
-  title: string;
-  description: string;
+  titleKey: "noneTitle" | "newTitle" | "existingTitle";
+  descriptionKey: "noneDescription" | "newDescription" | "existingDescription";
 }> = [
-  {
-    mode: "none",
-    title: "No dataset",
-    description: "Upload these trees without grouping them into a dataset.",
-  },
-  {
-    mode: "new",
-    title: "Create new dataset",
-    description: "Start a new dataset for this upload so it is easy to find later.",
-  },
-  {
-    mode: "existing",
-    title: "Add to existing dataset",
-    description: "Append these trees to a dataset that already exists in Tree Manager.",
-  },
+  { mode: "none", titleKey: "noneTitle", descriptionKey: "noneDescription" },
+  { mode: "new", titleKey: "newTitle", descriptionKey: "newDescription" },
+  { mode: "existing", titleKey: "existingTitle", descriptionKey: "existingDescription" },
 ];
 
 function formatBytes(bytes: number): string {
@@ -122,21 +118,21 @@ function isAcceptedMediaZipFile(file: File): boolean {
   return hasValidExtension || (file.type !== "" && hasValidMime);
 }
 
-function formatDatasetDate(value: string | null | undefined): string {
+function formatDatasetDate(
+  value: string | null | undefined,
+  unavailableLabel: string,
+  formatDate: (date: Date) => string,
+): string {
   if (!value) {
-    return "Date unavailable";
+    return unavailableLabel;
   }
 
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    return "Date unavailable";
+    return unavailableLabel;
   }
 
-  return parsed.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatDate(parsed);
 }
 
 function toExistingUploadDatasetSelection(
@@ -159,8 +155,13 @@ export default function FileDropStep({
   initialSiteSelection,
   onFileAndMappings,
 }: FileDropStepProps) {
+  const t = useTranslations("upload.trees.fileDrop");
+  const tCommon = useTranslations("upload.trees.common");
+  const tEstablishmentMeans = useTranslations("upload.trees.establishmentMeans");
+  const format = useFormatter();
   const { parsedData, headers, rowCount, error, isParsing, parseFile, reset } =
     useCsvParser();
+  const { pushModal, show } = useModal();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedMediaZipFile, setSelectedMediaZipFile] = useState<File | null>(
@@ -217,6 +218,10 @@ export default function FileDropStep({
     () => existingDatasetsQuery.data ?? [],
     [existingDatasetsQuery.data],
   );
+  const establishmentMeansOptions = useMemo(
+    () => getPartnerEstablishmentMeansOptions(tEstablishmentMeans),
+    [tEstablishmentMeans],
+  );
   const selectedExistingDataset = useMemo(() => {
     const match = existingDatasets.find(
       (dataset) => dataset.uri === selectedExistingDatasetUri,
@@ -231,6 +236,10 @@ export default function FileDropStep({
     }),
     [sitesQuery.data],
   );
+  const sitesWithBoundary = useMemo(
+    () => getBoundaryCapableUploadSites(uploadSites),
+    [uploadSites],
+  );
   const selectedSite = useMemo(
     () =>
       resolveUploadSiteSelection({
@@ -243,11 +252,29 @@ export default function FileDropStep({
   const selectedSiteHasBoundary = selectedSite
     ? uploadSiteHasBoundary(selectedSite)
     : false;
+  const selectedSiteBoundarySyncing = selectedSite
+    ? uploadSiteHasTransientBoundary(selectedSite)
+    : false;
+  const siteBoundaryQueries = useQueries({
+    queries: sitesWithBoundary.map((site) => ({
+      queryKey: uploadSiteBoundaryQueryKey(site.uri),
+      queryFn: () => fetchUploadSiteBoundary(site),
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+  const boundaryCandidateChecksDone =
+    sitesWithBoundary.length > 0 &&
+    siteBoundaryQueries.every((query) => query.isSuccess || query.isError);
+  const hasValidatedBoundaryCandidate = siteBoundaryQueries.some(
+    (query) => query.isSuccess,
+  );
+  const allBoundaryCandidatesFailed =
+    boundaryCandidateChecksDone && !hasValidatedBoundaryCandidate;
   const siteBoundaryQuery = useQuery({
     queryKey: uploadSiteBoundaryQueryKey(selectedSite?.uri),
     queryFn: () => {
       if (!selectedSite) {
-        throw new Error("Select a site before uploading tree data.");
+        throw new Error(t("selectSiteBeforeUpload"));
       }
 
       return fetchUploadSiteBoundary(selectedSite);
@@ -257,6 +284,32 @@ export default function FileDropStep({
   });
   const selectedSiteBoundaryReady =
     selectedSiteHasBoundary && siteBoundaryQuery.isSuccess;
+  const selectedSiteBoundaryFailed =
+    selectedSiteHasBoundary && siteBoundaryQuery.isError;
+  const showCreateSiteBoundaryAction =
+    !selectedSiteBoundarySyncing &&
+    shouldOfferCreateUploadSiteBoundary({
+      sitesWithBoundary,
+      selectedSite,
+      selectedSiteBoundaryFailed,
+      allBoundaryCandidatesFailed,
+    });
+
+  const handleCreateSiteBoundary = useCallback(() => {
+    pushModal(
+      {
+        id: SiteEditorModalId,
+        content: (
+          <SiteEditorModal
+            initialData={null}
+            onCreated={(site) => setSelectedSiteUri(site.uri)}
+          />
+        ),
+      },
+      true,
+    );
+    show();
+  }, [pushModal, show]);
 
   const handleFile = useCallback(
     (file: File) => {
@@ -269,7 +322,7 @@ export default function FileDropStep({
           fileSizeBucket: getFileSizeBucket(file.size),
           failureReason: "unsupported_file_type",
         });
-        setFileError("Only .csv and .tsv files are supported.");
+        setFileError(t("csvOnly"));
         return;
       }
 
@@ -280,7 +333,7 @@ export default function FileDropStep({
           fileSizeBucket: getFileSizeBucket(file.size),
           failureReason: "file_too_large",
         });
-        setFileError(`File is too large. Maximum size is 10 MB (got ${formatBytes(file.size)}).`);
+        setFileError(t("fileTooLarge", { size: formatBytes(file.size) }));
         return;
       }
 
@@ -294,7 +347,7 @@ export default function FileDropStep({
       setSelectedFile(file);
       parseFile(file);
     },
-    [parseFile, reset, uploadId]
+    [parseFile, reset, t, uploadId]
   );
 
   const handleMediaZipFile = useCallback(async (file: File) => {
@@ -312,7 +365,7 @@ export default function FileDropStep({
         mediaZipSizeBucket: getFileSizeBucket(file.size),
         failureReason: "unsupported_media_zip_type",
       });
-      setMediaZipError("Only Kobo Media Attachments .zip files are supported.");
+      setMediaZipError(t("zipOnly"));
       return;
     }
 
@@ -323,9 +376,7 @@ export default function FileDropStep({
         mediaZipSizeBucket: getFileSizeBucket(file.size),
         failureReason: "media_zip_too_large",
       });
-      setMediaZipError(
-        `ZIP file is too large. Maximum size is 200 MB (got ${formatBytes(file.size)}).`,
-      );
+      setMediaZipError(t("zipTooLarge", { size: formatBytes(file.size) }));
       return;
     }
 
@@ -345,9 +396,7 @@ export default function FileDropStep({
           mediaZipSubmissionCount: index.submissionCount,
           failureReason: "media_zip_no_supported_images",
         });
-        setMediaZipError(
-          "No supported image attachments were found in this ZIP. Make sure you selected KoboToolbox's Media Attachments export.",
-        );
+        setMediaZipError(t("zipNoImages"));
         return;
       }
 
@@ -371,15 +420,13 @@ export default function FileDropStep({
         mediaZipSizeBucket: getFileSizeBucket(file.size),
         failureReason: "media_zip_read_failed",
       });
-      setMediaZipError(
-        "Couldn't read this ZIP file. Please export Media Attachments (ZIP) from KoboToolbox and try again.",
-      );
+      setMediaZipError(t("zipReadError"));
     } finally {
       if (mediaZipParseRequestRef.current === requestId) {
         setIsMediaZipParsing(false);
       }
     }
-  }, [uploadId]);
+  }, [t, uploadId]);
 
   useEffect(() => {
     if (!error || lastTrackedParseErrorRef.current === error) {
@@ -508,6 +555,22 @@ export default function FileDropStep({
     !sitesQuery.isLoading &&
     !sitesQuery.error &&
     selectedSite === null;
+  const createSiteBoundaryAction = showCreateSiteBoundaryAction ? (
+    <div className="space-y-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">
+          {t("createSiteBoundaryUnavailableTitle")}
+        </p>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {t("createSiteBoundaryUnavailableDescription")}
+        </p>
+      </div>
+      <Button type="button" variant="outline" onClick={handleCreateSiteBoundary}>
+        <CirclePlus />
+        {t("createSiteBoundary")}
+      </Button>
+    </div>
+  ) : null;
 
   return (
     <div className="space-y-5">
@@ -518,10 +581,9 @@ export default function FileDropStep({
 
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold">Upload Your File</h2>
+        <h2 className="text-lg font-semibold">{t("uploadFileTitle")}</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Drop a CSV or TSV file to get started. KoboToolbox photo attachments
-          can be added with the optional Media Attachments ZIP below.
+          {t("uploadFileDescription")}
         </p>
       </div>
 
@@ -541,7 +603,7 @@ export default function FileDropStep({
           {isParsing ? (
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <span className="text-sm">Parsing file…</span>
+              <span className="text-sm">{t("parsingFile")}</span>
             </div>
           ) : hasFile && isParsed ? (
             <div className="flex flex-col items-center gap-2">
@@ -557,9 +619,9 @@ export default function FileDropStep({
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
               <Upload className="h-10 w-10" />
               <span className="text-sm font-medium">
-                Drag &amp; drop or click to select
+                {t("dragDrop")}
               </span>
-              <span className="text-xs">Accepts .csv and .tsv files</span>
+              <span className="text-xs">{t("acceptedCsv")}</span>
             </div>
           )}
         </CardContent>
@@ -577,12 +639,9 @@ export default function FileDropStep({
       {/* Optional Kobo media ZIP input */}
       <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-4">
         <div className="space-y-1">
-          <h3 className="text-sm font-medium">KoboToolbox photos ZIP</h3>
+          <h3 className="text-sm font-medium">{t("koboZipTitle")}</h3>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Optional, but recommended for Kobo exports with photo questions. Add
-            the matching <span className="font-medium">Media Attachments (ZIP)</span>{" "}
-            export so Whole Tree, Leaf, and Bark photos can be uploaded to your
-            PDS even when Kobo photo URLs are private.
+            {t("koboZipDescription")}
           </p>
         </div>
 
@@ -594,7 +653,7 @@ export default function FileDropStep({
             {isMediaZipParsing ? (
               <div className="flex items-center gap-3 text-muted-foreground">
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                <span className="text-sm">Reading media ZIP…</span>
+                <span className="text-sm">{t("readingZip")}</span>
               </div>
             ) : selectedMediaZipFile && mediaZipIndex ? (
               <div className="flex min-w-0 items-center gap-3">
@@ -604,10 +663,10 @@ export default function FileDropStep({
                     {selectedMediaZipFile.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {mediaZipIndex.entries.length.toLocaleString()} image
-                    {mediaZipIndex.entries.length === 1 ? "" : "s"} across{" "}
-                    {mediaZipIndex.submissionCount.toLocaleString()} submission
-                    {mediaZipIndex.submissionCount === 1 ? "" : "s"}
+                    {t("imageSubmissionCount", {
+                      images: mediaZipIndex.entries.length,
+                      submissions: mediaZipIndex.submissionCount,
+                    })}
                   </p>
                 </div>
               </div>
@@ -615,8 +674,8 @@ export default function FileDropStep({
               <div className="flex items-center gap-3 text-muted-foreground">
                 <Archive className="h-5 w-5 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">Click to select ZIP</p>
-                  <p className="text-xs">Accepts .zip files up to 200 MB</p>
+                  <p className="text-sm font-medium">{t("clickSelectZip")}</p>
+                  <p className="text-xs">{t("acceptedZip")}</p>
                 </div>
               </div>
             )}
@@ -632,7 +691,7 @@ export default function FileDropStep({
                 }}
               >
                 <X />
-                {selectedMediaZipFile ? "Remove" : "Clear"}
+                {selectedMediaZipFile ? tCommon("remove") : tCommon("clear")}
               </Button>
             ) : null}
           </CardContent>
@@ -658,7 +717,9 @@ export default function FileDropStep({
 
       {/* Parse error */}
       {error && (
-        <p className="text-sm text-destructive">Parse error: {error}</p>
+        <p className="text-sm text-destructive">
+          {t("parseError", { error })}
+        </p>
       )}
 
       {/* File info card */}
@@ -670,18 +731,20 @@ export default function FileDropStep({
           </div>
           <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
             <div>
-              <span className="block font-medium text-foreground">{rowCount.toLocaleString()}</span>
-              <span>rows</span>
+              <span className="block font-medium text-foreground">
+                {format.number(rowCount)}
+              </span>
+              <span>{tCommon("rows")}</span>
             </div>
             <div>
               <span className="block font-medium text-foreground">{headers.length}</span>
-              <span>columns</span>
+              <span>{tCommon("columns")}</span>
             </div>
             <div>
               <span className="block font-medium text-foreground">
-                {detectedFormat?.isKobo ? "Auto-mapped CSV" : "Generic CSV"}
+                {detectedFormat?.isKobo ? t("autoMappedCsv") : t("genericCsv")}
               </span>
-              <span>format</span>
+              <span>{tCommon("format")}</span>
             </div>
           </div>
         </div>
@@ -691,11 +754,10 @@ export default function FileDropStep({
       <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
         <div className="space-y-1.5">
           <label htmlFor="site-boundary-select" className="text-sm font-medium">
-            Site boundary
+            {t("siteBoundary")}
           </label>
           <p className="text-xs text-muted-foreground">
-            Choose the project site this tree upload belongs to. Rows outside
-            this selected site will be skipped during preview.
+            {t("siteBoundaryDescription")}
           </p>
         </div>
 
@@ -704,16 +766,16 @@ export default function FileDropStep({
             className="space-y-3 rounded-lg border border-border bg-background/80 p-4"
             role="status"
             aria-live="polite"
-            aria-label="Loading your sites"
+            aria-label={t("loadingSitesAria")}
           >
             <div className="flex items-center gap-3">
               <div className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <div className="space-y-1">
                 <p className="text-sm font-medium text-foreground">
-                  Loading your sites…
+                  {t("loadingSites")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Finding site boundaries available for this upload.
+                  {t("loadingSitesDescription")}
                 </p>
               </div>
             </div>
@@ -721,27 +783,29 @@ export default function FileDropStep({
           </div>
         ) : sitesQuery.error ? (
           <p className="text-sm text-destructive">
-            Couldn&apos;t load your sites right now. Refresh and try again before
-            uploading tree data.
+            {t("sitesLoadError")}
           </p>
         ) : uploadSites.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Add a site boundary before uploading tree data. Tree uploads must be
-            assigned to a site.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {t("noSites")}
+            </p>
+            {createSiteBoundaryAction}
+          </div>
         ) : (
           <>
             <Select
-              value={selectedSite?.uri}
+              value={selectedSite?.uri ?? ""}
               onValueChange={setSelectedSiteUri}
             >
               <SelectTrigger id="site-boundary-select">
-                <SelectValue placeholder="Select a site" />
+                <SelectValue placeholder={t("selectSite")} />
               </SelectTrigger>
               <SelectContent>
                 {uploadSites.map((site) => {
                   const isDefault = defaultSiteQuery.data === site.uri;
                   const hasBoundary = uploadSiteHasBoundary(site);
+                  const isSyncingBoundary = uploadSiteHasTransientBoundary(site);
 
                   return (
                     <SelectItem
@@ -750,8 +814,12 @@ export default function FileDropStep({
                       disabled={!hasBoundary}
                     >
                       {site.name}
-                      {isDefault ? " (default)" : ""}
-                      {!hasBoundary ? " — no boundary" : ""}
+                      {isDefault ? ` (${tCommon("default")})` : ""}
+                      {isSyncingBoundary
+                        ? ` — ${t("syncingBoundary")}`
+                        : !hasBoundary
+                          ? ` — ${tCommon("noBoundary")}`
+                          : ""}
                     </SelectItem>
                   );
                 })}
@@ -762,38 +830,42 @@ export default function FileDropStep({
               <div className="rounded-lg border border-border bg-background p-3 text-sm">
                 <p className="font-medium text-foreground">{selectedSite.name}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Validation will use only this site boundary, even if other
-                  site boundaries overlap.
+                  {t("boundaryOnly")}
                 </p>
               </div>
             ) : null}
 
+            {selectedSiteBoundarySyncing ? (
+              <p className="text-sm text-muted-foreground">
+                {t("siteBoundarySyncing")}
+              </p>
+            ) : null}
+
             {selectedSite && selectedSiteHasBoundary && siteBoundaryQuery.isLoading ? (
               <p className="text-sm text-muted-foreground">
-                Checking that this GeoJSON boundary can be loaded…
+                {t("checkingBoundary")}
               </p>
             ) : null}
 
             {selectedSite && selectedSiteHasBoundary && siteBoundaryQuery.error ? (
               <p className="text-sm text-destructive">
-                This site boundary could not be loaded as valid GeoJSON. Choose
-                another site or edit this site before uploading trees.
+                {t("boundaryLoadError")}
               </p>
             ) : null}
 
             {hasUnavailableSiteSelection ? (
               <p className="text-sm text-destructive">
-                The previously selected site is no longer available. Pick a
-                different site before continuing.
+                {t("siteUnavailable")}
               </p>
             ) : null}
 
-            {selectedSite && !selectedSiteHasBoundary ? (
+            {selectedSite && !selectedSiteHasBoundary && !selectedSiteBoundarySyncing ? (
               <p className="text-sm text-destructive">
-                This site does not have a GeoJSON boundary. Choose another site
-                or edit this site before uploading trees.
+                {t("siteNoBoundary")}
               </p>
             ) : null}
+
+            {createSiteBoundaryAction}
           </>
         )}
       </div>
@@ -801,10 +873,9 @@ export default function FileDropStep({
       {/* Dataset selection */}
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Where should this upload go?</label>
+          <label className="text-sm font-medium">{t("datasetQuestion")}</label>
           <p className="text-xs text-muted-foreground">
-            Leave the trees ungrouped, create a brand-new dataset, or append this
-            upload to one you already manage.
+            {t("datasetDescription")}
           </p>
         </div>
 
@@ -823,9 +894,11 @@ export default function FileDropStep({
                     : "border-border bg-background hover:bg-muted/30",
                 )}
               >
-                <p className="text-sm font-medium text-foreground">{option.title}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {t(`modes.${option.titleKey}`)}
+                </p>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  {option.description}
+                  {t(`modes.${option.descriptionKey}`)}
                 </p>
               </button>
             );
@@ -836,25 +909,30 @@ export default function FileDropStep({
           <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
             <div className="space-y-1.5">
               <label htmlFor="dataset-name" className="text-sm font-medium">
-                Dataset name{" "}
-                <span className="text-muted-foreground font-normal">(recommended)</span>
+                {t("datasetName")} {" "}
+                <span className="text-muted-foreground font-normal">
+                  ({tCommon("recommended")})
+                </span>
               </label>
               <Input
                 id="dataset-name"
                 value={datasetName}
                 onChange={(e) => setDatasetName(e.target.value)}
-                placeholder="e.g. March 2025 Danum Valley Survey"
+                placeholder={t("datasetNamePlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="dataset-description" className="text-sm font-medium">
-                Description <span className="text-muted-foreground font-normal">(optional)</span>
+                {t("datasetDescriptionLabel")} {" "}
+                <span className="text-muted-foreground font-normal">
+                  ({tCommon("optional")})
+                </span>
               </label>
               <Textarea
                 id="dataset-description"
                 value={datasetDescription}
                 onChange={(e) => setDatasetDescription(e.target.value)}
-                placeholder="Describe the dataset contents, methodology, or purpose..."
+                placeholder={t("datasetDescriptionPlaceholder")}
                 rows={2}
               />
             </div>
@@ -864,10 +942,9 @@ export default function FileDropStep({
         {datasetMode === "existing" ? (
           <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Choose a dataset</label>
+              <label className="text-sm font-medium">{t("chooseDataset")}</label>
               <p className="text-xs text-muted-foreground">
-                New trees will be added to the selected dataset and appear alongside
-                its existing records in Tree Manager.
+                {t("chooseDatasetDescription")}
               </p>
             </div>
 
@@ -876,16 +953,16 @@ export default function FileDropStep({
                 className="space-y-4 rounded-lg border border-border bg-background/80 p-4"
                 role="status"
                 aria-live="polite"
-                aria-label="Loading your datasets"
+                aria-label={t("loadingDatasetsAria")}
               >
                 <div className="flex items-center gap-3">
                   <div className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-foreground">
-                      Loading your datasets…
+                      {t("loadingDatasets")}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Finding datasets you can append this upload to.
+                      {t("loadingDatasetsDescription")}
                     </p>
                   </div>
                 </div>
@@ -896,13 +973,11 @@ export default function FileDropStep({
               </div>
             ) : existingDatasetsQuery.error ? (
               <p className="text-sm text-destructive">
-                Couldn&apos;t load your existing datasets right now. You can still
-                create a new dataset or continue without one.
+                {t("datasetsLoadError")}
               </p>
             ) : existingDatasets.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                You do not have any datasets yet. Create a new one for this upload
-                or continue without grouping.
+                {t("noDatasets")}
               </p>
             ) : (
               <>
@@ -911,16 +986,20 @@ export default function FileDropStep({
                   onValueChange={setSelectedExistingDatasetUri}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a dataset" />
+                    <SelectValue placeholder={t("selectDataset")} />
                   </SelectTrigger>
                   <SelectContent>
                     {existingDatasets.map((dataset) => {
                       const count = dataset.recordCount ?? 0;
-                      const createdAt = formatDatasetDate(dataset.createdAt);
+                      const createdAt = formatDatasetDate(
+                        dataset.createdAt,
+                        tCommon("dateUnavailable"),
+                        (date) => format.dateTime(date, { dateStyle: "medium" }),
+                      );
 
                       return (
                         <SelectItem key={dataset.uri} value={dataset.uri}>
-                          {`${dataset.name} (${count} tree${count === 1 ? "" : "s"} - ${createdAt})`}
+                          {`${dataset.name} (${count} ${count === 1 ? tCommon("tree") : tCommon("trees")} - ${createdAt})`}
                         </SelectItem>
                       );
                     })}
@@ -934,8 +1013,10 @@ export default function FileDropStep({
                         {selectedExistingDataset.name}
                       </p>
                       <span className="text-muted-foreground">
-                        {selectedExistingDataset.recordCount ?? 0} tree
-                        {(selectedExistingDataset.recordCount ?? 0) === 1 ? "" : "s"}
+                        {format.number(selectedExistingDataset.recordCount ?? 0)} {" "}
+                        {(selectedExistingDataset.recordCount ?? 0) === 1
+                          ? tCommon("tree")
+                          : tCommon("trees")}
                       </span>
                     </div>
                     {selectedExistingDataset.description ? (
@@ -944,7 +1025,7 @@ export default function FileDropStep({
                       </p>
                     ) : (
                       <p className="mt-2 text-muted-foreground">
-                        No description added yet.
+                        {t("noDescription")}
                       </p>
                     )}
                   </div>
@@ -952,8 +1033,7 @@ export default function FileDropStep({
 
                 {hasUnavailableExistingSelection ? (
                   <p className="text-sm text-destructive">
-                    The previously selected dataset is no longer available. Pick a
-                    different dataset before continuing.
+                    {t("datasetUnavailable")}
                   </p>
                 ) : null}
               </>
@@ -966,16 +1046,17 @@ export default function FileDropStep({
       <div className="space-y-3">
         <div className="space-y-1">
           <label className="text-sm font-medium">
-            How were these trees established?{" "}
-            <span className="text-muted-foreground font-normal">(optional)</span>
+            {t("establishmentQuestion")} {" "}
+            <span className="text-muted-foreground font-normal">
+              ({tCommon("optional")})
+            </span>
           </label>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Uses GBIF standards. Your data will be published on the GBIF
-            platform.
+            {t("gbifDescription")}
           </p>
         </div>
         <div className="overflow-hidden rounded-xl border border-border">
-          {PARTNER_ESTABLISHMENT_MEANS_OPTIONS.map((option) => {
+          {establishmentMeansOptions.map((option) => {
             const isSelected = establishmentMeans === option.value;
             return (
               <button
@@ -1023,32 +1104,13 @@ export default function FileDropStep({
 
       {/* GBIF disclaimer */}
       <p className="text-xs text-muted-foreground leading-relaxed">
-        By uploading, you agree that your tree data will be published publicly on{" "}
-        <a
-          href={links.external.gbifPublisher}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-foreground transition-colors"
-        >
-          GBIF
-        </a>{" "}
-        (Global Biodiversity Information Facility) and GainForest&apos;s Green
-        Globe. You remain the data owner. GainForest is the{" "}
-        <a
-          href={links.external.gbifPublisher}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-foreground transition-colors"
-        >
-          publisher
-        </a>
-        .
+        {t("gbifDisclaimer")}
       </p>
 
       {/* Footer */}
       <div className="flex items-center justify-end pt-2 border-t border-border">
         <Button onClick={handleContinue} disabled={!canContinue}>
-          Continue to Column Mapping
+          {t("continueToMapping")}
         </Button>
       </div>
     </div>

@@ -10,34 +10,39 @@ import { formatError } from "@/lib/utils/trpc-errors";
 import { buildTimelineFeedTiles } from "../shared/timelineFeedViewModel";
 import {
   getTimelineEvidenceKind,
-  getTimelineEvidenceKindLabel,
   type TimelineEvidenceKind,
 } from "../shared/evidenceKind";
 import { formatEvidenceDateRangeFromValues } from "../shared/datasetStats";
-import { useResolvedAttachmentReferences } from "./shared/referenceResolution/useResolvedAttachmentReferences";
 import type { ResolvedAttachmentReference } from "./shared/referenceResolution/referenceViewModel";
 import { TimelineDeleteConfirm } from "./shared/TimelineDeleteConfirm";
 import {
   TimelineOptionalNote,
   hasTimelineOptionalNote,
 } from "./shared/TimelineOptionalNote";
+import { TimelineDatasetMapLayerCards } from "./shared/TimelineDatasetMapLayerCards";
 import { TimelinePreviewPanel } from "./shared/TimelinePreviewPanel";
 import { TimelineTileRow } from "./shared/TimelineTileRow";
 import { useTimelineViewerStore } from "./shared/timelineViewerStore";
+import type { TimelineMapLayer } from "./shared/timelineMapLayers";
+import { useTranslations } from "next-intl";
 
 interface TimelineEntryProps {
   item: AttachmentItem;
   index: number;
+  entryId: string;
+  references: ResolvedAttachmentReference[];
+  referencesLoading: boolean;
+  mapLayers: TimelineMapLayer[];
 }
 
-function formatPublicDate(value: string | null | undefined): string {
+function formatPublicDate(value: string | null | undefined, fallback: string): string {
   const formatted = formatDate(value, {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 
-  return formatted.length > 0 ? formatted : "Not specified";
+  return formatted.length > 0 ? formatted : fallback;
 }
 
 function getExplicitTitle(item: AttachmentItem): string | null {
@@ -49,6 +54,8 @@ function getEntryTitle(
   item: AttachmentItem,
   kind: TimelineEvidenceKind,
   references: ResolvedAttachmentReference[],
+  fallbackLabel: string,
+  biodiversityLabel: string,
 ): string {
   const explicitTitle = getExplicitTitle(item);
   const firstDataset = references.find((reference) => reference.kind === "dataset");
@@ -58,15 +65,16 @@ function getEntryTitle(
   }
 
   if (kind === "biodiversity") {
-    return explicitTitle ?? "Biodiversity observations";
+    return explicitTitle ?? biodiversityLabel;
   }
 
-  return explicitTitle ?? getTimelineEvidenceKindLabel(kind);
+  return explicitTitle ?? fallbackLabel;
 }
 
 function getRecordedDateLabel(
   kind: TimelineEvidenceKind,
   references: ResolvedAttachmentReference[],
+  notSpecifiedLabel: string,
 ): string {
   const datasetReferences = references.filter((reference) => reference.kind === "dataset");
   if (datasetReferences.length > 0) {
@@ -88,16 +96,17 @@ function getRecordedDateLabel(
 
   if (kind === "audio") {
     const audioDate = references.find((reference) => reference.kind === "audio")?.recordedAt;
-    return formatPublicDate(audioDate);
+    return formatPublicDate(audioDate, notSpecifiedLabel);
   }
 
-  return "Not specified";
+  return notSpecifiedLabel;
 }
 
 function getMetricBadges(
   kind: TimelineEvidenceKind,
   references: ResolvedAttachmentReference[],
   tileCount: number,
+  t: (key: string, values?: Record<string, number>) => string,
 ): string[] {
   if (kind === "tree") {
     const datasetMetrics = references
@@ -121,8 +130,8 @@ function getMetricBadges(
     const resolvedSpeciesCount = speciesCount > 0 ? speciesCount : fallbackSpecies.size;
 
     return [
-      resolvedTreeCount > 0 ? `${resolvedTreeCount} tree${resolvedTreeCount === 1 ? "" : "s"}` : null,
-      resolvedSpeciesCount > 0 ? `${resolvedSpeciesCount} species` : null,
+      resolvedTreeCount > 0 ? t("treeCount", { count: resolvedTreeCount }) : null,
+      resolvedSpeciesCount > 0 ? t("speciesCount", { count: resolvedSpeciesCount }) : null,
     ].filter((value): value is string => typeof value === "string");
   }
 
@@ -135,17 +144,17 @@ function getMetricBadges(
     );
 
     return [
-      `${occurrenceReferences.length} observation${occurrenceReferences.length === 1 ? "" : "s"}`,
-      species.size > 0 ? `${species.size} species` : null,
+      t("observationCount", { count: occurrenceReferences.length }),
+      species.size > 0 ? t("speciesCount", { count: species.size }) : null,
     ].filter((value): value is string => typeof value === "string");
   }
 
   if (kind === "audio") {
-    return [`${tileCount} recording${tileCount === 1 ? "" : "s"}`];
+    return [t("recordingCount", { count: tileCount })];
   }
 
   if (kind === "document") {
-    return [`${tileCount} item${tileCount === 1 ? "" : "s"}`];
+    return [t("itemCount", { count: tileCount })];
   }
 
   return [];
@@ -155,7 +164,15 @@ function getGreenGlobeHref(references: ResolvedAttachmentReference[]): string | 
   return references.find((reference) => reference.greenGlobeHref)?.greenGlobeHref ?? null;
 }
 
-export function TimelineEntry({ item, index }: TimelineEntryProps) {
+export function TimelineEntry({
+  item,
+  index,
+  entryId,
+  references,
+  referencesLoading,
+  mapLayers,
+}: TimelineEntryProps) {
+  const t = useTranslations("bumicert.detail.timelineEntry");
   const [expanded, setExpanded] = useState(index === 0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -163,9 +180,6 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
   const panelId = useId();
   const deleteConfirmId = useId();
   const isOwner = useTimelineViewerStore((state) => state.isOwner);
-  const { references, isLoading: referencesLoading } =
-    useResolvedAttachmentReferences(item.record?.content);
-  const entryId = item.metadata?.uri ?? `${item.metadata?.rkey ?? "entry"}-${index}`;
   const tiles = useMemo(
     () =>
       buildTimelineFeedTiles({
@@ -177,32 +191,32 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
   );
 
   const evidenceKind = getTimelineEvidenceKind(item.record?.contentType, item.record?.content);
-  const contentLabel = getTimelineEvidenceKindLabel(evidenceKind);
+  const contentLabel = t(`kind.${evidenceKind}`);
   const tileCount = tiles.length;
-  const entryTitle = getEntryTitle(item, evidenceKind, references);
+  const entryTitle = getEntryTitle(item, evidenceKind, references, contentLabel, t("kind.biodiversity"));
   const metricBadges = referencesLoading
     ? []
-    : getMetricBadges(evidenceKind, references, tileCount);
+    : getMetricBadges(evidenceKind, references, tileCount, t);
   const recordedDateLabel = referencesLoading
-    ? "Resolving evidence date…"
-    : getRecordedDateLabel(evidenceKind, references);
-  const linkedDateLabel = formatPublicDate(item.record?.createdAt ?? item.metadata?.createdAt);
+    ? t("resolvingDate")
+    : getRecordedDateLabel(evidenceKind, references, t("notSpecified"));
+  const linkedDateLabel = formatPublicDate(item.record?.createdAt ?? item.metadata?.createdAt, t("notSpecified"));
   const greenGlobeHref = getGreenGlobeHref(references);
-  const previewTiles = useMemo(
-    () =>
-      tiles.filter((tile) => {
-        if (!tile.preview) {
-          return false;
-        }
+  const previewTiles = tiles.filter((tile) => {
+    if (!tile.preview) {
+      return false;
+    }
 
-        if (evidenceKind === "biodiversity" && tile.preview.kind === "text") {
-          return false;
-        }
+    if (tile.preview.kind === "green-globe") {
+      return false;
+    }
 
-        return true;
-      }),
-    [evidenceKind, tiles],
-  );
+    if (evidenceKind === "biodiversity" && tile.preview.kind === "text") {
+      return false;
+    }
+
+    return true;
+  });
   const selectedTileId = useTimelineViewerStore(
     (state) => state.selectedPreviewTileByEntryId[entryId] ?? null,
   );
@@ -288,7 +302,7 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
           </h3>
           <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
             <span>{recordedDateLabel}</span>
-            <span>linked {linkedDateLabel}</span>
+            <span>{t("linked", { date: linkedDateLabel })}</span>
           </div>
         </button>
 
@@ -299,7 +313,7 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label="Open in Green Globe"
+              aria-label={t("openGreenGlobe")}
             >
               <ExternalLinkIcon className="h-4 w-4" />
             </a>
@@ -314,7 +328,7 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
               setDeleteError(null);
             }}
             className="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-            aria-label="Remove evidence"
+            aria-label={t("removeEvidence")}
           >
             <Trash2Icon className="h-4 w-4" />
           </button>
@@ -325,7 +339,7 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
             aria-controls={panelId}
             onClick={() => setExpanded((value) => !value)}
             className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label={expanded ? "Collapse evidence" : "Expand evidence"}
+            aria-label={expanded ? t("collapseEvidence") : t("expandEvidence")}
           >
             <ChevronDownIcon
               className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")}
@@ -338,7 +352,7 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
         <div id={panelId} className="space-y-3 border-t border-border/50 p-4 pt-3">
           {referencesLoading ? (
             <p className="text-xs text-muted-foreground">
-              Resolving linked evidence records…
+              {t("resolvingRecords")}
             </p>
           ) : null}
 
@@ -354,7 +368,7 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
           {evidenceKind === "biodiversity" && observationReferences.length > 0 ? (
             <div className="rounded-xl bg-muted/20 p-3">
               <p className="text-xs text-muted-foreground">
-                Selected observations
+                {t("selectedObservations")}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {observationReferences.slice(0, 8).map((reference) => (
@@ -367,12 +381,14 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
                 ))}
                 {observationReferences.length > 8 ? (
                   <span className="rounded-full bg-background px-2.5 py-1 text-xs text-muted-foreground shadow-xs">
-                    +{observationReferences.length - 8} more
+                    {t("more", { count: observationReferences.length - 8 })}
                   </span>
                 ) : null}
               </div>
             </div>
           ) : null}
+
+          <TimelineDatasetMapLayerCards layers={mapLayers} />
 
           <TimelinePreviewPanel preview={activeInlinePreview} />
 
@@ -393,7 +409,7 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-lg border border-border/50 px-3 py-2 text-sm text-foreground hover:bg-muted/30"
             >
-              View on Green Globe
+              {t("viewGreenGlobe")}
               <ExternalLinkIcon className="h-4 w-4" />
             </a>
           ) : null}
@@ -403,7 +419,7 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
       {showDeleteConfirm && rkey && (
         <TimelineDeleteConfirm
           id={deleteConfirmId}
-          title={item.record?.title ?? "Evidence item"}
+          title={item.record?.title ?? t("evidenceItem")}
           onConfirm={handleDelete}
           onCancel={() => {
             setShowDeleteConfirm(false);

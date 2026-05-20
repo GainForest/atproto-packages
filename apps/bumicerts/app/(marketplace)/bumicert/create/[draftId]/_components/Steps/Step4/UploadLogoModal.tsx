@@ -21,11 +21,12 @@ import {
   BUMICERT_COVER_IMAGE_MAX_SIZE_MB,
   BUMICERT_COVER_IMAGE_SUPPORTED_TYPES,
 } from "../../../constants";
-
+import { useTranslations } from "next-intl";
 
 export const UploadLogoModalId = "upload/organization/logo";
 
 export const UploadLogoModal = () => {
+  const t = useTranslations("bumicert.create.draft.modals.uploadLogo");
   const { stack, popModal, hide } = useModal();
   const [logo, setLogo] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -72,8 +73,8 @@ export const UploadLogoModal = () => {
   });
 
   const uploadLogo = async () => {
-    if (!auth.user?.did) throw new Error("User is not authenticated");
-    if (!logo) throw new Error("Logo is required");
+    if (!auth.user?.did) throw new Error(t("authRequired"));
+    if (!logo) throw new Error(t("logoRequired"));
     const logoFile = await toSerializableFile(logo);
     _updateMutation({
       data: {
@@ -95,13 +96,13 @@ export const UploadLogoModal = () => {
               }
         }
       >
-        <ModalTitle>Upload Logo</ModalTitle>
+        <ModalTitle>{t("title")}</ModalTitle>
         <ModalDescription>
-          Upload a logo for your account.
+          {t("description")}
         </ModalDescription>
       </ModalHeader>
       <FileInput
-        placeholder="Upload a logo for your account"
+        placeholder={t("placeholder")}
         supportedFileTypes={[...BUMICERT_COVER_IMAGE_SUPPORTED_TYPES]}
         maxSizeInMB={BUMICERT_COVER_IMAGE_MAX_SIZE_MB}
         value={logo}
@@ -130,7 +131,7 @@ export const UploadLogoModal = () => {
               }
             }}
           >
-            Done
+            {t("done")}
           </Button>
         ) : (
           <Button
@@ -142,7 +143,7 @@ export const UploadLogoModal = () => {
             ) : (
               <UploadIcon />
             )}
-            {isUploadingLogo ? "Uploading..." : "Upload"}
+            {isUploadingLogo ? t("uploading") : t("upload")}
           </Button>
         )}
       </ModalFooter>

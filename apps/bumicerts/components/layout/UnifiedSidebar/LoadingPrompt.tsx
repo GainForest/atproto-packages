@@ -2,8 +2,11 @@
 
 import { motion } from "framer-motion";
 import { Loader2Icon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export function LoadingPrompt() {
+  const t = useTranslations("common.sidebar.prompts");
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 4 }}
@@ -13,7 +16,7 @@ export function LoadingPrompt() {
     >
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <Loader2Icon className="size-3.5 animate-spin" />
-        Checking your account...
+        {t("checkingAccount")}
       </div>
     </motion.div>
   );

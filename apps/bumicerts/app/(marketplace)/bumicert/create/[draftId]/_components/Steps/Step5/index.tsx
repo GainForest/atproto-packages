@@ -47,9 +47,9 @@ import { BumicertCardVisual } from "@/components/bumicert/BumicertCard";
 import { useCurrentAccountIdentity } from "@/hooks/use-current-account-identity";
 import {
   BUMICERT_COVER_IMAGE_MAX_SIZE_BYTES,
-  BUMICERT_COVER_IMAGE_MAX_SIZE_MB,
   BUMICERT_COVER_IMAGE_SUPPORTED_TYPES,
 } from "../../../constants";
+import { useTranslations } from "next-intl";
 
 const FEEDBACK_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSfCTtRzKzfwmnpJoPFYyOeGokTlRcKkvpb-Urme84gpBrCCPA/viewform";
@@ -153,6 +153,8 @@ const ProgressItem = ({
 };
 
 const Step5 = () => {
+  const t = useTranslations("bumicert.create.draft.stepForms.submit");
+  const validationT = useTranslations("bumicert.create.draft.validation");
   const auth = useAtprotoStore((state) => state.auth);
   const pathname = usePathname();
   const router = useRouter();
@@ -286,13 +288,13 @@ const Step5 = () => {
     setCreateBumicertError(null);
 
     if (!step1FormValues.coverImage || step1FormValues.coverImage.size === 0) {
-      setCreateBumicertError("Cover image is required");
+      setCreateBumicertError(validationT("required"));
       return;
     }
 
     if (step1FormValues.coverImage.size > BUMICERT_COVER_IMAGE_MAX_SIZE_BYTES) {
       setCreateBumicertError(
-        `Cover image must be ${BUMICERT_COVER_IMAGE_MAX_SIZE_MB}MB or smaller`,
+        validationT("coverImageMaxSize"),
       );
       return;
     }
@@ -302,17 +304,17 @@ const Step5 = () => {
         (type) => type === step1FormValues.coverImage.type,
       )
     ) {
-      setCreateBumicertError("Cover image must be JPG, PNG, or WebP");
+      setCreateBumicertError(validationT("coverImageType"));
       return;
     }
 
     if (!auth.user?.did) {
-      setCreateBumicertError("You must be signed in to publish.");
+      setCreateBumicertError(t("signedInRequired"));
       return;
     }
 
     if (authStatus !== "success") {
-      setCreateBumicertError("You must be signed in to publish.");
+      setCreateBumicertError(t("signedInRequired"));
       return;
     }
 
@@ -377,7 +379,7 @@ const Step5 = () => {
       setCreateBumicertError(
         error instanceof Error
           ? error.message
-          : "Failed to prepare publish data.",
+          : t("prepareError"),
       );
     }
   };
@@ -422,11 +424,11 @@ const Step5 = () => {
               Error: ShieldXIcon,
               Success: ShieldCheckIcon,
             }}
-            title="Authenticated"
+            title={t("authenticatedTitle")}
             description={
               authStatus === "pending"
-                ? "We are checking if you are authenticated."
-                : "You are not signed in. Please sign in to continue."
+                ? t("checkingAuth")
+                : t("notSignedIn")
             }
             status={authStatus}
           />
@@ -439,17 +441,17 @@ const Step5 = () => {
               }}
               title={
                 createBumicertError
-                  ? "Failed to publish."
+                  ? t("failedTitle")
                   : createBumicertStatus === "pending"
-                    ? "Publishing your bumicert"
-                    : "Ready to publish your bumicert"
+                    ? t("publishingTitle")
+                    : t("readyTitle")
               }
               description={
                 createBumicertError
                   ? createBumicertError
                   : isBumicertCreationMutationInFlight
-                    ? "We are publishing your bumicert."
-                    : "Please click the button below to publish your bumicert."
+                    ? t("publishingDescription")
+                    : t("readyDescription")
               }
               status={createBumicertStatus}
               isLastStep={true}
@@ -459,7 +461,7 @@ const Step5 = () => {
                   onClick={handlePublishClick}
                   disabled={isBumicertCreationMutationInFlight}
                 >
-                  {createBumicertError ? "Retry" : "Publish Bumicert"}{" "}
+                  {createBumicertError ? t("retry") : t("publishAction")} {" "}
                   <ArrowRightIcon />
                 </Button>
                 {createBumicertError && (
@@ -467,7 +469,7 @@ const Step5 = () => {
                     variant="outline"
                     onClick={() => setCurrentStepIndex(3)}
                   >
-                    Edit details
+                    {t("editDetails")}
                   </Button>
                 )}
               </div>
@@ -511,7 +513,7 @@ const Step5 = () => {
                 <div className="absolute inset-0 bg-primary/50 blur-xl animate-pulse"></div>
               </div>
               <span className="text-center font-medium text-xl mt-6">
-                Your Bumicert was published successfully!
+                {t("successTitle")}
               </span>
 
               {/* Action buttons */}
@@ -524,7 +526,7 @@ const Step5 = () => {
                       "timeline",
                     )}
                   >
-                    Link evidence now <ArrowRightIcon />
+                    {t("linkEvidenceNow")} <ArrowRightIcon />
                   </Link>
                 </Button>
 
@@ -534,21 +536,21 @@ const Step5 = () => {
                       getBumicertIdFromUri(createdBumicertResponse.uri),
                     )}
                   >
-                    View Bumicert
+                    {t("viewBumicert")}
                   </Link>
                 </Button>
 
-                {/* Secondary: Set Up Donations */}
+                {/* Secondary: {t("setUpDonations")} */}
                 <Button
                   variant="secondary"
                   className="w-full md:w-fit"
                   onClick={handleOpenFundingConfig}
                 >
                   <SettingsIcon />
-                  Set Up Donations
+                  {t("setUpDonations")}
                 </Button>
 
-                {/* Tertiary: Share Feedback (external link) */}
+                {/* Tertiary: {t("shareFeedback")} (external link) */}
                 <Button variant="ghost" className="w-full md:w-fit" asChild>
                   <a
                     href={FEEDBACK_FORM_URL}
@@ -556,7 +558,7 @@ const Step5 = () => {
                     rel="noopener noreferrer"
                   >
                     <MessageSquareHeartIcon />
-                    Share Feedback
+                    {t("shareFeedback")}
                     <ArrowUpRightIcon className="ml-auto" />
                   </a>
                 </Button>
@@ -566,7 +568,7 @@ const Step5 = () => {
                   className="w-full md:w-fit"
                   onClick={handleCreateAnotherBumicert}
                 >
-                  Create another bumicert
+                  {t("createAnother")}
                 </Button>
               </div>
             </div>

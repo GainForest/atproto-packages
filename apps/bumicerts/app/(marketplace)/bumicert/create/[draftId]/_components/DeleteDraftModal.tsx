@@ -16,18 +16,22 @@ import { CircleCheckIcon, Loader2Icon, Trash2Icon } from "lucide-react";
 import { useFormStore } from "../form-store";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { queryKeys } from "@/lib/query-keys";
+import { useTranslations } from "next-intl";
 
 export const DeleteDraftModalId = "bumicert/delete-draft";
 
 type DeleteDraftModalProps = {
   draftId?: number;
+  draftTitle?: string;
   onSuccess?: () => void;
 };
 
 const DeleteDraftModal = ({
   draftId: propDraftId,
+  draftTitle: propDraftTitle,
   onSuccess,
 }: DeleteDraftModalProps) => {
+  const t = useTranslations("bumicert.create.draft.modals.deleteDraft");
   const { stack, popModal, hide } = useModal();
   const pathname = usePathname();
   const router = useRouter();
@@ -36,11 +40,11 @@ const DeleteDraftModal = ({
   const auth = useAtprotoStore((state) => state.auth);
 
   const draftTitle =
-    formValues[0].projectName.trim() === ""
-      ? "Untitled Draft"
-      : formValues[0].projectName;
+    propDraftTitle ??
+    (formValues[0].projectName.trim() === ""
+      ? t("untitledDraft")
+      : formValues[0].projectName);
 
-  // Extract draftId from URL if not provided as prop
   const draftIdMatch = pathname.match(/\/create\/(\d+)$/);
   const urlDraftId = draftIdMatch ? parseInt(draftIdMatch[1], 10) : null;
   const draftId = propDraftId ?? urlDraftId;
@@ -70,7 +74,6 @@ const DeleteDraftModal = ({
 
       const result = await response.json();
 
-      // Check if any drafts were actually deleted
       if (result.deletedCount === 0) {
         throw new Error(
           "No draft was deleted. The draft may not exist or you don't have permission to delete it."
@@ -80,18 +83,15 @@ const DeleteDraftModal = ({
       return result;
     },
     onSuccess: async () => {
-      // Invalidate drafts query to refresh the list
       if (auth.user?.did) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.drafts.byDid(auth.user.did),
         });
       }
 
-      // Call custom onSuccess handler if provided
       if (onSuccess) {
         onSuccess();
       } else {
-        // Default behavior: navigate to create page
         await hide();
         popModal();
         router.push(links.bumicert.create);
@@ -117,14 +117,12 @@ const DeleteDraftModal = ({
     return (
       <ModalContent>
         <ModalHeader>
-          <ModalTitle>Delete Draft</ModalTitle>
-          <ModalDescription>
-            Unable to determine which draft to delete.
-          </ModalDescription>
+          <ModalTitle>{t("title")}</ModalTitle>
+          <ModalDescription>{t("missingDraftDescription")}</ModalDescription>
         </ModalHeader>
         <ModalFooter>
           <Button onClick={handleClose} className="w-full">
-            Close
+            {t("close")}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -142,11 +140,9 @@ const DeleteDraftModal = ({
               }
         }
       >
-        <ModalTitle>Delete Draft</ModalTitle>
+        <ModalTitle>{t("title")}</ModalTitle>
         <ModalDescription>
-          {success
-            ? "Draft has been deleted successfully."
-            : "Confirm your selection to delete the draft."}
+          {success ? t("successDescription") : t("description")}
         </ModalDescription>
       </ModalHeader>
       <AnimatePresence>
@@ -156,13 +152,16 @@ const DeleteDraftModal = ({
             exit={{ opacity: 0, filter: "blur(10px)", scale: 0.5 }}
           >
             <p>
-              Are you sure that you want to{" "}
-              <span className="text-destructive">delete</span> the draft,{" "}
-              <strong className="font-medium text-foreground my-2">
-                {draftTitle}?
-              </strong>
-              <br />
-              This action cannot be undone.
+              {t.rich("confirmBody", {
+                destructive: (chunks) => <span className="text-destructive">{chunks}</span>,
+                strong: (chunks) => (
+                  <strong className="font-medium text-foreground my-2">
+                    {chunks}
+                  </strong>
+                ),
+                title: draftTitle,
+                br: () => <br />,
+              })}
             </p>
             {error && (
               <div className="text-red-500 w-full text-left text-sm">
@@ -176,7 +175,7 @@ const DeleteDraftModal = ({
                 disabled={isPending}
                 className="w-full"
               >
-                Cancel
+                {t("cancel")}
               </Button>
               <Button
                 variant="destructive"
@@ -187,12 +186,12 @@ const DeleteDraftModal = ({
                 {isPending ? (
                   <>
                     <Loader2Icon className="animate-spin" />
-                    Deleting...
+                    {t("deleting")}
                   </>
                 ) : (
                   <>
                     <Trash2Icon />
-                    Delete Draft
+                    {t("deleteAction")}
                   </>
                 )}
               </Button>
@@ -211,11 +210,11 @@ const DeleteDraftModal = ({
               <CircleCheckIcon className="size-20 text-primary" />
             </div>
             <p className="text-center text-muted-foreground font-medium text-pretty">
-              The draft has been deleted successfully.
+              {t("deletedBody")}
             </p>
             <ModalFooter className="w-full">
               <Button onClick={handleClose} className="w-full">
-                Close
+                {t("close")}
               </Button>
             </ModalFooter>
           </motion.div>

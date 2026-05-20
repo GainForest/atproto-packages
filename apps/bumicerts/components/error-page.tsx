@@ -1,7 +1,8 @@
 "use client";
 import React from "react";
-import { Button } from "./ui/button";
 import { CircleAlertIcon, HomeIcon, RefreshCcwIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Button } from "./ui/button";
 
 const ErrorPage = ({
   showRefreshButton = true,
@@ -18,6 +19,8 @@ const ErrorPage = ({
   error?: unknown;
   cta?: React.ReactNode;
 }) => {
+  const t = useTranslations("common.errorPage");
+
   error && console.error(error);
   return (
     <div className="flex flex-col items-center justify-center w-full py-16 px-6 gap-8">
@@ -36,11 +39,10 @@ const ErrorPage = ({
             className="text-4xl font-light tracking-[-0.02em] leading-[1.1] text-center"
             style={{ fontFamily: "var(--font-garamond-var)" }}
           >
-            {title ?? "Something went wrong."}
+            {title ?? t("title")}
           </h1>
           <p className="text-sm text-muted-foreground leading-relaxed text-center text-balance">
-            {description ??
-              "We're sorry, but an error occurred while processing your request."}
+            {description ?? t("description")}
           </p>
         </div>
 
@@ -51,7 +53,7 @@ const ErrorPage = ({
             {showRefreshButton && (
               <Button onClick={() => window.location.reload()}>
                 <RefreshCcwIcon />
-                Try again
+                {t("tryAgain")}
               </Button>
             )}
             {showHomeButton && (
@@ -60,7 +62,7 @@ const ErrorPage = ({
                 onClick={() => (window.location.href = "/")}
               >
                 <HomeIcon />
-                Home
+                {t("home")}
               </Button>
             )}
           </div>

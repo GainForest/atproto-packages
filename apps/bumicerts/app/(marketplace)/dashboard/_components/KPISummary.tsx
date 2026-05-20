@@ -1,4 +1,5 @@
 import { DollarSignIcon, HashIcon, UsersIcon, TrendingUpIcon, LayoutGridIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { DashboardKPIs } from "../_utils/aggregations";
 
 interface KPISummaryProps {
@@ -34,8 +35,8 @@ function StatCard({ icon, label, value, sub }: StatCardProps) {
   );
 }
 
-function formatUSD(value: number): string {
-  return new Intl.NumberFormat("en-US", {
+function formatUSD(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,
@@ -43,42 +44,44 @@ function formatUSD(value: number): string {
   }).format(value);
 }
 
-function formatCount(value: number): string {
-  return new Intl.NumberFormat("en-US").format(value);
+function formatCount(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale).format(value);
 }
 
 export function KPISummary({ kpis }: KPISummaryProps) {
+  const t = useTranslations("marketplace.dashboard.kpis");
+  const locale = useLocale();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <StatCard
         icon={<DollarSignIcon className="h-4 w-4" />}
-        label="Total Raised"
-        value={formatUSD(kpis.totalRaised)}
-        sub="All USD donations"
+        label={t("totalRaised")}
+        value={formatUSD(kpis.totalRaised, locale)}
+        sub={t("totalRaisedSub")}
       />
       <StatCard
         icon={<HashIcon className="h-4 w-4" />}
-        label="Total Donations"
-        value={formatCount(kpis.totalDonations)}
-        sub="Receipts recorded"
+        label={t("totalDonations")}
+        value={formatCount(kpis.totalDonations, locale)}
+        sub={t("totalDonationsSub")}
       />
       <StatCard
         icon={<UsersIcon className="h-4 w-4" />}
-        label="Unique Donors"
-        value={formatCount(kpis.uniqueDonors)}
-        sub="By DID or wallet"
+        label={t("uniqueDonors")}
+        value={formatCount(kpis.uniqueDonors, locale)}
+        sub={t("uniqueDonorsSub")}
       />
       <StatCard
         icon={<TrendingUpIcon className="h-4 w-4" />}
-        label="Avg Donation"
-        value={formatUSD(kpis.avgDonation)}
-        sub="Per transaction"
+        label={t("avgDonation")}
+        value={formatUSD(kpis.avgDonation, locale)}
+        sub={t("avgDonationSub")}
       />
       <StatCard
         icon={<LayoutGridIcon className="h-4 w-4" />}
-        label="Active Bumicerts"
-        value={formatCount(kpis.activeBumicerts)}
-        sub="Have received funds"
+        label={t("activeBumicerts")}
+        value={formatCount(kpis.activeBumicerts, locale)}
+        sub={t("activeBumicertsSub")}
       />
     </div>
   );

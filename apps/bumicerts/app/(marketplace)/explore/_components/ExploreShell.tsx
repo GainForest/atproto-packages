@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { LeafIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { BumicertData } from "@/lib/types";
 import { countryToRealm } from "@/lib/bioregions";
 import { BumicertGrid } from "./BumicertGrid";
@@ -46,6 +47,7 @@ export function ExploreShell({
   animate?: boolean;
   children?: ReactNode;
 }) {
+  const t = useTranslations("marketplace.explore");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("newest");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -118,14 +120,14 @@ export function ExploreShell({
           <div className="flex items-center gap-2.5 mb-5">
             <LeafIcon className="h-4 w-4 text-primary" />
             <span className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-              Explore Projects
+              {t("hero.eyebrow")}
             </span>
           </div>
           <h1
             className="max-w-4xl text-4xl font-light leading-[0.98] tracking-[-0.035em] text-foreground sm:text-5xl md:text-6xl lg:text-7xl"
             style={{ fontFamily: "var(--font-garamond-var)" }}
           >
-            Discover{" "}
+            {t("hero.titlePrefix")} {" "}
             <span
               className="whitespace-nowrap text-foreground/85"
               style={{
@@ -133,13 +135,11 @@ export function ExploreShell({
                 fontStyle: "italic",
               }}
             >
-              Regenerative Impact
+              {t("hero.titleEmphasis")}
             </span>
           </h1>
           <p className="mt-7 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
-            Browse projects from communities and organizations restoring
-            ecosystems, strengthening livelihoods, and building a more resilient
-            future.
+            {t("hero.description")}
           </p>
         </motion.div>
       </div>
@@ -164,7 +164,7 @@ export function ExploreShell({
         {!children ? (
           <p className="mt-8 text-sm text-muted-foreground">
             <span className="font-semibold text-primary">{filtered.length}</span>{" "}
-            projects found
+            {t("resultsFound", { count: filtered.length }).replace(String(filtered.length), "").trim()}
           </p>
         ) : null}
 

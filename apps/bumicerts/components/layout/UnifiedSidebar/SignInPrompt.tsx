@@ -2,12 +2,14 @@
 
 import { motion } from "framer-motion";
 import { ChevronRightIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useModal } from "@/components/ui/modal/context";
 import { AuthModal } from "@/components/global/modals/auth";
 
 export function SignInPrompt() {
   const { pushModal, show } = useModal();
+  const t = useTranslations("common.sidebar.prompts");
 
   const handleSignIn = () => {
     pushModal({
@@ -25,7 +27,7 @@ export function SignInPrompt() {
       className="mx-1 p-3 rounded-lg bg-muted/40 border border-border/50"
     >
       <p className="text-xs text-muted-foreground text-center mb-2">
-        Sign in to manage your account and content.
+        {t("signInDescription")}
       </p>
       <Button
         variant="ghost"
@@ -33,7 +35,7 @@ export function SignInPrompt() {
         className="w-full"
         onClick={handleSignIn}
       >
-        Sign In
+        {t("signIn")}
         <ChevronRightIcon />
       </Button>
     </motion.div>

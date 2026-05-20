@@ -6,16 +6,17 @@ import type { TransactionRow } from "../_utils/aggregations";
 import { UserChip } from "@/components/ui/user-chip";
 import { links } from "@/lib/links";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 
 interface RecentTransactionsTableProps {
   rows: TransactionRow[];
 }
 
-function formatWalletAddress(address: string): string {
+function formatWalletAddress(address: string, anonymousLabel: (address: string) => string): string {
   const truncated = address.length > 12
     ? `${address.slice(0, 6)}…${address.slice(-4)}`
     : address;
-  return `Anonymous (${truncated})`;
+  return anonymousLabel(truncated);
 }
 
 /**
@@ -29,6 +30,10 @@ function parseBumicertUri(uri: string): { did: string; rkey: string } | null {
 }
 
 export function RecentTransactionsTable({ rows }: RecentTransactionsTableProps) {
+  const t = useTranslations("marketplace.dashboard.tables");
+  const locale = useLocale();
+  const anonymousLabel = (address: string) => t("anonymousWallet", { address });
+
   return (
     <div className="rounded-2xl border border-border bg-background overflow-hidden">
       <div className="px-5 pt-5 pb-3 flex items-start justify-between gap-4">
@@ -36,39 +41,39 @@ export function RecentTransactionsTable({ rows }: RecentTransactionsTableProps) 
           <div className="flex items-center gap-2">
             <ClockIcon className="h-4 w-4 text-primary" />
             <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-              Recent Transactions
+              {t("recentTransactions")}
             </span>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            All time · {rows.length} donation{rows.length !== 1 ? "s" : ""}
+            {t("allTimeDonations", { count: rows.length })}
           </p>
         </div>
         <span className="text-[10px] text-muted-foreground/50 shrink-0 mt-1">
-          showing latest 50
+          {t("showingLatest")}
         </span>
       </div>
 
       {rows.length === 0 ? (
-        <p className="px-5 pb-5 text-sm text-muted-foreground">No transactions yet.</p>
+        <p className="px-5 pb-5 text-sm text-muted-foreground">{t("noTransactions")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-t border-border">
                 <th className="py-2 px-3 text-left text-xs uppercase tracking-[0.12em] text-muted-foreground font-medium">
-                  Date
+                  {t("date")}
                 </th>
                 <th className="py-2 px-3 text-left text-xs uppercase tracking-[0.12em] text-muted-foreground font-medium">
-                  Donor
+                  {t("donor")}
                 </th>
                 <th className="py-2 px-3 text-left text-xs uppercase tracking-[0.12em] text-muted-foreground font-medium">
-                  Amount
+                  {t("amount")}
                 </th>
                 <th className="py-2 px-3 text-left text-xs uppercase tracking-[0.12em] text-muted-foreground font-medium">
-                  Bumicert
+                  {t("bumicert")}
                 </th>
                 <th className="py-2 px-3 text-left text-xs uppercase tracking-[0.12em] text-muted-foreground font-medium">
-                  Tx Hash
+                  {t("txHash")}
                 </th>
               </tr>
             </thead>
@@ -80,7 +85,7 @@ export function RecentTransactionsTable({ rows }: RecentTransactionsTableProps) 
                 >
                   <td className="py-2.5 px-3 text-muted-foreground text-xs whitespace-nowrap">
                     {row.date
-                      ? new Date(row.date).toLocaleDateString("en-US", {
+                      ? new Date(row.date).toLocaleDateString(locale, {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
@@ -89,10 +94,10 @@ export function RecentTransactionsTable({ rows }: RecentTransactionsTableProps) 
                   </td>
                   <td className="py-2.5 px-3">
                     {!row.donorId ? (
-                      <span className="text-xs text-foreground">Anonymous</span>
+                      <span className="text-xs text-foreground">{t("anonymous")}</span>
                     ) : row.donorType === "wallet" ? (
                       <span className="text-xs text-foreground" title={row.donorId}>
-                        {formatWalletAddress(row.donorId)}
+                        {formatWalletAddress(row.donorId, anonymousLabel)}
                       </span>
                     ) : (
                       <UserChip 
@@ -105,7 +110,7 @@ export function RecentTransactionsTable({ rows }: RecentTransactionsTableProps) 
                     )}
                   </td>
                   <td className="py-2.5 px-3 text-foreground tabular-nums font-medium whitespace-nowrap">
-                    {new Intl.NumberFormat("en-US", {
+                    {new Intl.NumberFormat(locale, {
                       style: "currency",
                       currency: "USD",
                     }).format(row.amount)}
@@ -119,7 +124,7 @@ export function RecentTransactionsTable({ rows }: RecentTransactionsTableProps) 
                         <Link
                           href={links.bumicert.view(parsed.did, parsed.rkey)}
                           className="text-primary hover:underline"
-                          title="View bumicert"
+                          title={t("viewBumicert")}
                         >
                           {parsed.rkey}
                         </Link>

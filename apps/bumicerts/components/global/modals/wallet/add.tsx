@@ -35,6 +35,7 @@ import {
   WalletIcon,
   ArrowRightIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export interface AddWalletModalProps {
   /** Pre-fill the label field (e.g. when re-linking an existing wallet slot). */
@@ -50,6 +51,7 @@ export function AddWalletModal({
   onBack,
   onSuccess,
 }: AddWalletModalProps) {
+  const t = useTranslations("modals.wallet.add");
   const { stack, hide, popModal } = useModal();
   const { address, chainId, isConnected } = useAccount();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
@@ -84,10 +86,10 @@ export function AddWalletModal({
     : "ready";
 
   const title =
-    phase === "success"         ? "Wallet Linked"
-    : phase === "connect"       ? "Link Wallet"
-    : phase === "wrong-network" ? "Switch Network"
-    : "Link Wallet";
+    phase === "success"         ? t("walletLinkedTitle")
+    : phase === "connect"       ? t("linkWalletTitle")
+    : phase === "wrong-network" ? t("switchNetworkTitle")
+    : t("linkWalletTitle");
 
   return (
     <ModalContent dismissible={false}>
@@ -95,7 +97,7 @@ export function AddWalletModal({
         <ModalTitle>{title}</ModalTitle>
         {phase === "ready" && (
           <ModalDescription>
-            Sign with your wallet to prove ownership. A label helps you identify it later.
+            {t("readyDescription")}
           </ModalDescription>
         )}
       </ModalHeader>
@@ -109,14 +111,13 @@ export function AddWalletModal({
               <WalletIcon className="size-6 text-muted-foreground" />
             </div>
             <div className="text-center space-y-1">
-              <p className="text-sm font-medium text-foreground">Connect a wallet</p>
+              <p className="text-sm font-medium text-foreground">{t("connectHeading")}</p>
               <p className="text-xs text-muted-foreground">
-                We&apos;ll ask you to sign a message to prove ownership.
-                No transaction will be sent.
+                {t("connectDescription")}
               </p>
             </div>
             <Button className="w-full" onClick={() => openConnectModal?.()}>
-              Connect Wallet
+              {t("connectWallet")}
               <ArrowRightIcon className="size-3.5" />
             </Button>
           </div>
@@ -137,18 +138,18 @@ export function AddWalletModal({
                 onClick={() => disconnect()}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                Disconnect
+                {t("disconnect")}
               </button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Bumicerts requires Base network. Switch to continue.
+              {t("baseRequired")}
             </p>
             <Button
               onClick={() => switchChain({ chainId: base.id })}
               disabled={isSwitching}
               className="w-full"
             >
-              {isSwitching ? "Switching…" : "Switch to Base"}
+              {isSwitching ? t("switching") : t("switchToBase")}
             </Button>
           </div>
         )}
@@ -171,7 +172,7 @@ export function AddWalletModal({
                     onClick={openConnectModal}
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    Switch
+                    {t("switch")}
                   </button>
                 )}
                 <button
@@ -179,18 +180,18 @@ export function AddWalletModal({
                   onClick={() => disconnect()}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Disconnect
+                  {t("disconnect")}
                 </button>
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label>
-                Label{" "}
-                <span className="text-muted-foreground font-normal">(optional)</span>
+                {t("label")}{" "}
+                <span className="text-muted-foreground font-normal">{t("optional")}</span>
               </Label>
               <Input
-                placeholder="e.g. Personal Wallet"
+                placeholder={t("labelPlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value.slice(0, 100))}
                 onKeyDown={(e) => {
@@ -199,7 +200,7 @@ export function AddWalletModal({
               />
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-sm text-destructive">{t("linkError")}</p>}
 
             <Button
               onClick={() => linkWallet(name.trim() || undefined)}
@@ -207,12 +208,12 @@ export function AddWalletModal({
               className="w-full"
             >
               {status === "signing"
-                ? "Sign in wallet…"
+                ? t("signing")
                 : status === "writing"
-                ? "Saving…"
+                ? t("saving")
                 : status === "error"
-                ? "Try Again"
-                : "Sign & Link Wallet"}
+                ? t("tryAgain")
+                : t("signAndLink")}
             </Button>
           </div>
         )}
@@ -223,15 +224,15 @@ export function AddWalletModal({
             <div className="flex items-center gap-3 rounded-md bg-primary/5 border border-primary/20 px-4 py-3">
               <CheckCircle2Icon className="size-5 text-primary shrink-0" />
               <div>
-                <p className="text-sm font-medium text-foreground">Wallet linked successfully</p>
+                <p className="text-sm font-medium text-foreground">{t("linkedSuccessfully")}</p>
                 {name.trim() && (
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Saved as &ldquo;{name.trim()}&rdquo;
+                    {t("savedAs", { name: name.trim() })}
                   </p>
                 )}
               </div>
             </div>
-            <Button onClick={handleDone} className="w-full">Done</Button>
+            <Button onClick={handleDone} className="w-full">{t("done")}</Button>
           </div>
         )}
 

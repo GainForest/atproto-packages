@@ -34,6 +34,8 @@ import QuerySuspense from "@/components/query-suspense";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import type { CertifiedLocation } from "@/graphql/indexer/queries/locations";
 import { queryKeys } from "@/lib/query-keys";
+import { useTranslations } from "next-intl";
+import { localizeFormError } from "../../i18n";
 
 const SiteEditorModal = dynamic(
   () =>
@@ -50,6 +52,7 @@ const formatCoordinate = (coordinate: string) => {
 };
 
 const Step3 = () => {
+  const t = useTranslations("bumicert.create.draft");
   const { maxStepIndexReached, currentStepIndex } = useNewBumicertStore();
   const shouldShowValidationErrors = currentStepIndex < maxStepIndexReached;
 
@@ -133,17 +136,17 @@ const Step3 = () => {
   return (
     <div>
       <h1 className="text-2xl font-medium text-muted-foreground">
-        Share your contributors and sites.
+        {t("stepForms.site.heading")}
       </h1>
       <div className="mt-8 flex flex-col gap-2">
         <FormField
           Icon={UsersIcon}
-          label="List of Contributors"
-          description="Add everyone involved in this bumicert — including your own community or organization and any collaborators. Tip: Start by adding your own group first before listing your partners or supporters."
-          error={errors.contributors}
+          label={t("stepForms.site.contributors.label")}
+          description={t("stepForms.site.contributors.description")}
+          error={localizeFormError(errors.contributors, t)}
           showError={shouldShowValidationErrors}
           required
-          info={`List any individuals or organizations that contributed to this work.`}
+          info={t("stepForms.site.contributors.info")}
         >
           <div className="flex flex-col gap-1">
             <ContributorSelector
@@ -179,16 +182,16 @@ const Step3 = () => {
 
         <FormField
           Icon={MapIcon}
-          label="Site Boundaries"
-          description="Please upload your site boundary in GeoJSON format so we can visualize your bumicert on the map."
-          error={errors.siteBoundaries}
+          label={t("stepForms.site.boundaries.label")}
+          description={t("stepForms.site.boundaries.description")}
+          error={localizeFormError(errors.siteBoundaries, t)}
           showError={shouldShowValidationErrors}
           required
-          info="Add the boundaries that best represent where the work took place."
+          info={t("stepForms.site.boundaries.info")}
         >
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
-              Select the boundaries for this bumicert, or add new ones.
+              {t("stepForms.site.boundaries.selectHelp")}
             </span>
             {auth.user?.did && (
               <span className="text-sm text-muted-foreground">
@@ -196,7 +199,7 @@ const Step3 = () => {
                   href={links.manage.sites}
                   className="flex items-center text-primary hover:underline"
                 >
-                  Manage sites <ChevronRightIcon className="size-4" />
+                  {t("stepForms.site.boundaries.manageSites")} <ChevronRightIcon className="size-4" />
                 </Link>
               </span>
             )}
@@ -207,7 +210,7 @@ const Step3 = () => {
               <div className="w-full h-full flex flex-col items-center justify-center">
                 <Loader2Icon className="animate-spin text-muted-foreground size-4" />
                 <span className="text-sm text-muted-foreground">
-                  Loading your sites...
+                  {t("stepForms.site.boundaries.loading")}
                 </span>
               </div>
             )}
@@ -217,8 +220,8 @@ const Step3 = () => {
                   <div className="w-full h-full flex flex-col items-center justify-center">
                     <span className="text-sm text-muted-foreground">
                       {sitesFetchError
-                        ? "Unable to load sites."
-                        : "No site found."}
+                        ? t("stepForms.site.boundaries.loadError")
+                        : t("stepForms.site.boundaries.empty")}
                     </span>
                     <Button
                       variant="outline"
@@ -226,7 +229,7 @@ const Step3 = () => {
                       className="mt-2"
                       onClick={onAddSite}
                     >
-                      <PlusCircleIcon /> Add a site
+                      <PlusCircleIcon /> {t("stepForms.site.boundaries.addSite")}
                     </Button>
                   </div>
                 ) : (
@@ -236,7 +239,7 @@ const Step3 = () => {
                       className="h-auto px-4 pl-6 py-2 rounded-lg justify-start"
                       onClick={onAddSite}
                     >
-                      <PlusCircleIcon /> Add a site
+                      <PlusCircleIcon /> {t("stepForms.site.boundaries.addSite")}
                     </Button>
                     {sites.map((site) => {
                       const cid = site.metadata?.cid;
@@ -283,9 +286,9 @@ const Step3 = () => {
 
         <FormField
           Icon={ShieldCheckIcon}
-          label="Permissions"
+          label={t("stepForms.site.permissions.label")}
           className="text-sm"
-          error={errors.confirmPermissions || errors.agreeTnc}
+          error={localizeFormError(errors.confirmPermissions || errors.agreeTnc, t)}
           showError={shouldShowValidationErrors}
         >
           <div className="flex items-start gap-2 mt-2">
@@ -304,8 +307,7 @@ const Step3 = () => {
               className="inline-flex items-center gap-2"
               htmlFor="confirm-permissions"
             >
-              I confirm that all listed contributors gave their permission to
-              include their work in this Bumicert.
+              {t("stepForms.site.permissions.confirm")}
             </label>
           </div>
 
@@ -325,7 +327,7 @@ const Step3 = () => {
               className="inline-flex items-center gap-2"
               htmlFor="agree-tnc"
             >
-              I agree to the Terms & Conditions.
+              {t("stepForms.site.permissions.terms")}
             </label>
           </div>
         </FormField>
@@ -343,6 +345,7 @@ const SiteItem = ({
   isSelected: boolean;
   onSelectChange: (value: boolean) => void;
 }) => {
+  const t = useTranslations("bumicert.create.draft");
   const locationRef = site.record?.location;
   const locationType = site.record?.locationType;
 
@@ -443,7 +446,7 @@ const SiteItem = ({
       )}
       <div className="flex flex-col items-start justify-start">
         <span className="text-base font-medium">
-          {site.record?.name ?? "Unnamed Site"}
+          {site.record?.name ?? t("stepForms.site.boundaries.unnamedSite")}
         </span>
         <div className="flex items-center gap-1">
           {locationValidity.valid ? (
@@ -461,7 +464,7 @@ const SiteItem = ({
             </>
           ) : (
             <span className="text-sm text-muted-foreground">
-              Invalid location
+              {t("stepForms.site.boundaries.invalidLocation")}
             </span>
           )}
         </div>

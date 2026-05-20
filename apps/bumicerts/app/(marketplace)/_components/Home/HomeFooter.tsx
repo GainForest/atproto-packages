@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   ExternalLinkIcon,
   FileTextIcon,
@@ -37,6 +40,13 @@ const FOOTER_LINKS = [
 ];
 
 export function HomeFooter() {
+  const t = useTranslations("landing.footer");
+  const footerLinks = FOOTER_LINKS.map((link) =>
+    link.href === links.external.docs
+      ? { ...link, label: t("documentation") }
+      : link,
+  );
+
   return (
     <footer className="max-w-7xl mx-auto px-6 py-16 border-t border-border">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
@@ -61,16 +71,16 @@ export function HomeFooter() {
               fontStyle: "italic",
             }}
           >
-            Connecting communities with funders.
+            {t("tagline")}
           </p>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            Open infrastructure. Built with GainForest.
+            {t("infrastructure")}
           </p>
         </div>
 
         {/* Links */}
         <nav className="flex flex-col gap-1">
-          {FOOTER_LINKS.map((link) => (
+          {footerLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -88,7 +98,7 @@ export function HomeFooter() {
       </div>
 
       <div className="mt-8 pt-4 border-t border-border text-xs text-muted-foreground/50">
-        © {new Date().getFullYear()} Bumicerts. Open source, community-powered.
+        © {new Date().getFullYear()} Bumicerts. {t("copyright")}
       </div>
     </footer>
   );

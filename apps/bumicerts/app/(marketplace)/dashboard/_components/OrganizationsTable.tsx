@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronsUpDownIcon, ChevronUpIcon, ChevronDownIcon, ExternalLinkIcon, BuildingIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { links } from "@/lib/links";
 import type { OrgRow } from "../_utils/aggregations";
 
@@ -54,6 +55,8 @@ function SortableCol({ col, sortKey, sortDir, onSort, children }: ColProps) {
 }
 
 export function OrganizationsTable({ rows }: OrganizationsTableProps) {
+  const t = useTranslations("marketplace.dashboard.tables");
+  const locale = useLocale();
   const [sortKey, setSortKey] = useState<SortKey>("totalRaised");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -79,28 +82,28 @@ export function OrganizationsTable({ rows }: OrganizationsTableProps) {
       <div className="px-5 pt-5 pb-3 flex items-center gap-2">
         <BuildingIcon className="h-4 w-4 text-primary" />
         <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-          By Organization
+          {t("byOrganization")}
         </span>
       </div>
 
       {rows.length === 0 ? (
-        <p className="px-5 pb-5 text-sm text-muted-foreground">No donations yet.</p>
+        <p className="px-5 pb-5 text-sm text-muted-foreground">{t("noDonations")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-t border-border">
                 <th className="py-2 px-3 text-left text-xs uppercase tracking-[0.12em] text-muted-foreground font-medium">
-                  Organization
+                  {t("organization")}
                 </th>
                 <SortableCol col="totalRaised" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>
-                  Total Raised
+                  {t("totalRaised")}
                 </SortableCol>
                 <SortableCol col="bumicertCount" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>
-                  Bumicerts
+                  {t("bumicerts")}
                 </SortableCol>
                 <SortableCol col="donorCount" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>
-                  Donors
+                  {t("donors")}
                 </SortableCol>
               </tr>
             </thead>
@@ -121,7 +124,7 @@ export function OrganizationsTable({ rows }: OrganizationsTableProps) {
                     </a>
                   </td>
                   <td className="py-2.5 px-3 text-foreground tabular-nums">
-                    {new Intl.NumberFormat("en-US", {
+                    {new Intl.NumberFormat(locale, {
                       style: "currency",
                       currency: "USD",
                     }).format(row.totalRaised)}

@@ -14,6 +14,23 @@ export type EstablishmentMeansOption = {
   legacy?: boolean;
 };
 
+type EstablishmentMeansTranslator = (
+  key:
+    | "managedLabel"
+    | "managedDescription"
+    | "nativeLabel"
+    | "nativeDescription"
+    | "naturalisedLabel"
+    | "naturalisedDescription"
+    | "uncertainLabel"
+    | "uncertainDescription"
+    | "introducedLabel"
+    | "introducedDescription"
+    | "invasiveLabel"
+    | "invasiveDescription"
+    | "legacyDescription",
+) => string;
+
 export const PARTNER_ESTABLISHMENT_MEANS_OPTIONS = [
   {
     value: "managed",
@@ -74,6 +91,36 @@ function createUnknownLegacyOption(value: string): EstablishmentMeansOption {
   };
 }
 
+export function translateEstablishmentMeansOption(
+  option: EstablishmentMeansOption,
+  t: EstablishmentMeansTranslator,
+): EstablishmentMeansOption {
+  switch (option.value) {
+    case "managed":
+      return { ...option, label: t("managedLabel"), description: t("managedDescription") };
+    case "native":
+      return { ...option, label: t("nativeLabel"), description: t("nativeDescription") };
+    case "naturalised":
+      return { ...option, label: t("naturalisedLabel"), description: t("naturalisedDescription") };
+    case "uncertain":
+      return { ...option, label: t("uncertainLabel"), description: t("uncertainDescription") };
+    case "introduced":
+      return { ...option, label: t("introducedLabel"), description: t("introducedDescription") };
+    case "invasive":
+      return { ...option, label: t("invasiveLabel"), description: t("invasiveDescription") };
+    default:
+      return { ...option, description: t("legacyDescription") };
+  }
+}
+
+export function getPartnerEstablishmentMeansOptions(
+  t: EstablishmentMeansTranslator,
+): EstablishmentMeansOption[] {
+  return PARTNER_ESTABLISHMENT_MEANS_OPTIONS.map((option) =>
+    translateEstablishmentMeansOption(option, t),
+  );
+}
+
 export function getEstablishmentMeansOption(
   value: string | null | undefined
 ): EstablishmentMeansOption | null {
@@ -90,13 +137,16 @@ export function getEstablishmentMeansOption(
 }
 
 export function getSelectableEstablishmentMeansOptions(
-  currentValue: string | null | undefined
+  currentValue: string | null | undefined,
+  t?: EstablishmentMeansTranslator,
 ): EstablishmentMeansOption[] {
-  const options: EstablishmentMeansOption[] = [...PARTNER_ESTABLISHMENT_MEANS_OPTIONS];
+  const options: EstablishmentMeansOption[] = t
+    ? getPartnerEstablishmentMeansOptions(t)
+    : [...PARTNER_ESTABLISHMENT_MEANS_OPTIONS];
   const currentOption = getEstablishmentMeansOption(currentValue);
 
   if (currentOption?.legacy) {
-    options.push(currentOption);
+    options.push(t ? translateEstablishmentMeansOption(currentOption, t) : currentOption);
   }
 
   return options;

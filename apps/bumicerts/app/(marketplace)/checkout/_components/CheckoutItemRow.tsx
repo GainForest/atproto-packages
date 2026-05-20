@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface CheckoutItemRowProps {
   title: string;
@@ -22,6 +23,8 @@ export function CheckoutItemRow({
   onRemove,
   readOnly = false,
 }: CheckoutItemRowProps) {
+  const t = useTranslations("modals.checkout.itemRow");
+
   // Track raw input string to allow typing decimals (e.g., "0.")
   // We control this locally and only sync back to parent on valid changes
   const [prevAmount, setPrevAmount] = useState(amount);
@@ -58,7 +61,7 @@ export function CheckoutItemRow({
           className="text-base font-medium leading-tight truncate"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
-          {title || "Untitled"}
+          {title || t("untitled")}
         </p>
         <p className="text-xs text-muted-foreground truncate mt-1">
           {organizationName}
@@ -93,7 +96,7 @@ export function CheckoutItemRow({
         variant="ghost"
         className="size-8 text-muted-foreground hover:text-destructive transition-colors shrink-0"
         onClick={onRemove}
-        title="Remove from cart"
+        title={t("removeFromCart")}
       >
         <Trash2Icon />
       </Button>

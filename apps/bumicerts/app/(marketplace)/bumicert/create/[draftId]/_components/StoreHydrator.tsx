@@ -21,17 +21,18 @@ import { Button } from "@/components/ui/button";
 import { DraftBumicertResponse } from "@/app/api/supabase/drafts/bumicert/type";
 import { cheapHash } from "@/lib/cheapHash";
 import { AlertTriangleIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 const CreateBumicertHydrationErrorModalId = "create-bumicert-hydration-error";
 const CreateBumicertHydrationErrorModalContent = () => {
+  const t = useTranslations("bumicert.create.draft.hydration");
   const { stack, popModal, hide } = useModal();
   return (
     <ModalContent>
       <ModalHeader>
-        <ModalTitle>Error</ModalTitle>
+        <ModalTitle>{t("errorTitle")}</ModalTitle>
         <ModalDescription>
-          We were unable to load the data you saved. Please reach out to
-          support.
+          {t("errorDescription")}
         </ModalDescription>
       </ModalHeader>
       <ModalFooter>
@@ -46,7 +47,7 @@ const CreateBumicertHydrationErrorModalContent = () => {
               : popModal
           }
         >
-          {stack.length === 1 ? "Close" : "Back"}
+          {stack.length === 1 ? t("close") : t("back")}
         </Button>
       </ModalFooter>
     </ModalContent>
@@ -59,6 +60,8 @@ const CoverImageWarningBanner = ({
 }: {
   onDismiss: () => void;
 }) => {
+  const t = useTranslations("bumicert.create.draft.hydration");
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -74,10 +77,10 @@ const CoverImageWarningBanner = ({
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-amber-800 dark:text-amber-200">
-              Cover image couldn&apos;t be loaded
+              {t("coverImageTitle")}
             </h3>
             <p className="text-amber-700 dark:text-amber-300 mt-2">
-              Your draft data has been restored successfully, but the cover image couldn&apos;t be fetched. Please re-upload your cover image to continue.
+              {t("coverImageDescription")}
             </p>
           </div>
         </div>
@@ -86,7 +89,7 @@ const CoverImageWarningBanner = ({
             onClick={onDismiss}
             className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition-colors"
           >
-            Got it
+            {t("gotIt")}
           </button>
         </div>
       </div>

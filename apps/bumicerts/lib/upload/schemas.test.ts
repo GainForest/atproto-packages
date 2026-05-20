@@ -262,7 +262,13 @@ describe("parseAndValidateRows site boundary validation", () => {
     expect(result.valid[0]?.index).toBe(0);
     expect(result.errors).toHaveLength(2);
     expect(result.errors[0]?.issues[0]?.message).toContain("Near boundary");
+    expect(result.errors[0]?.issues[0]?.message).toContain(
+      "Fix the coordinates",
+    );
     expect(result.errors[1]?.issues[0]?.message).toContain("Out of site");
+    expect(result.errors[1]?.issues[0]?.message).toContain(
+      "choose/create the correct site boundary",
+    );
   });
 
   test("skips rows just outside the selected site as near boundary", () => {
@@ -330,6 +336,9 @@ describe("parseAndValidateRows site boundary validation", () => {
     expect(result.valid).toHaveLength(0);
     expect(result.errors[0]?.issues[0]?.message).toContain(
       "Invalid selected site boundary",
+    );
+    expect(result.errors[0]?.issues[0]?.message).toContain(
+      "Redraw or re-upload valid polygon GeoJSON",
     );
   });
 });

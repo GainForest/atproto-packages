@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { useFormatter, useTranslations } from "next-intl";
 import {
   ChevronLeftIcon,
   CirclePlusIcon,
@@ -32,6 +33,10 @@ interface AudioClientProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AudioClient({ did }: AudioClientProps) {
+  const t = useTranslations("upload.audio");
+  const tActions = useTranslations("upload.actions");
+  const format = useFormatter();
+
   // ── URL state ───────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useQueryState(
     "q",
@@ -101,10 +106,10 @@ export function AudioClient({ did }: AudioClientProps) {
             className="text-2xl font-bold"
             style={{ fontFamily: "var(--font-garamond-var)" }}
           >
-            Audio Recordings
+            {t("title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Upload and manage audio recordings for your organization.
+            {t("description")}
           </p>
         </div>
       )}
@@ -114,7 +119,7 @@ export function AudioClient({ did }: AudioClientProps) {
         <>
           <Button variant="ghost" onClick={handleBackToList} className="-ml-2">
             <ChevronLeftIcon />
-            Back
+            {tActions("back")}
           </Button>
           <AudioEditor
             mode={viewMode as "add" | "edit"}
@@ -131,7 +136,7 @@ export function AudioClient({ did }: AudioClientProps) {
           <div className="relative flex-1 sm:max-w-xs">
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search recordings…"
+              placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => void setSearchQuery(e.target.value || null)}
               className="pl-9"
@@ -166,7 +171,7 @@ export function AudioClient({ did }: AudioClientProps) {
             onClick={() => void setViewMode("add")}
           >
             <CirclePlusIcon />
-            Add
+            {tActions("add")}
           </Button>
         </div>
       )}
@@ -188,10 +193,10 @@ export function AudioClient({ did }: AudioClientProps) {
                       className="text-xl font-semibold text-muted-foreground"
                       style={{ fontFamily: "var(--font-garamond-var)" }}
                     >
-                      No recordings yet
+                      {t("emptyTitle")}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Upload your first audio recording to get started.
+                      {t("emptyDescription")}
                     </p>
                     <Button
                       variant="outline"
@@ -199,12 +204,12 @@ export function AudioClient({ did }: AudioClientProps) {
                       onClick={() => void setViewMode("add")}
                     >
                       <CirclePlusIcon />
-                      Add recording
+                      {t("addRecording")}
                     </Button>
                   </>
                 ) : (
                   <p className="text-muted-foreground text-sm">
-                    No recordings match your search.
+                    {t("noSearchResults")}
                   </p>
                 )}
               </motion.div>
@@ -227,7 +232,7 @@ export function AudioClient({ did }: AudioClientProps) {
               )}
             >
               {filteredRecordings.map((r) => {
-                const name = r.record?.name ?? "Untitled Recording";
+                const name = r.record?.name ?? t("untitled");
                 const rkey = r.metadata?.rkey;
                 const meta = r.record?.metadata as
                   | Record<string, unknown>
@@ -248,7 +253,9 @@ export function AudioClient({ did }: AudioClientProps) {
                       </p>
                       {recordedAt && (
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {new Date(recordedAt).toLocaleDateString()}
+                          {format.dateTime(new Date(recordedAt), {
+                            dateStyle: "medium",
+                          })}
                         </p>
                       )}
                     </div>
@@ -260,7 +267,7 @@ export function AudioClient({ did }: AudioClientProps) {
                       }}
                       disabled={!rkey}
                     >
-                      Edit
+                      {tActions("edit")}
                     </Button>
                   </div>
                 );

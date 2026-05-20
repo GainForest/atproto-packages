@@ -38,11 +38,12 @@ If the task prompt conflicts with a higher-priority local rule, stop and report 
 ## Agentic Docs Read Mode
 
 - At the start of every session, `must-read-agentic-docs` defaults to `false`.
+- On the first assistant response of every session, read this file and `agents/README.md` once, even when `must-read-agentic-docs` is `false`.
+- On the first assistant response of every session, include one concise line informing the user that startup agentic docs were read once, that per-prompt agentic docs reading is off by default, and that it can be enabled with `--must-read-agentic-docs true`.
 - The user may include `--must-read-agentic-docs true` or `--must-read-agentic-docs false` in any prompt.
 - When the flag appears, update the session-local value before deciding which agentic docs to read for that prompt.
 - The value persists for the rest of the session until the user changes it again.
-- On the first assistant response of every session, include one concise line informing the user that agentic docs reading is off by default and can be enabled with `--must-read-agentic-docs true`.
-- When `must-read-agentic-docs` is `false`, do not read or re-read agentic docs solely because this file or the router says to read them.
+- After the first assistant response of a session, when `must-read-agentic-docs` is `false`, do not read or re-read agentic docs solely because this file or the router says to read them.
 - When `must-read-agentic-docs` is `true`, follow the normal agentic documentation workflow in this file and `agents/README.md`.
 - A direct user request to inspect, summarize, propose, or edit agentic docs overrides `must-read-agentic-docs=false` only for the files needed to satisfy that explicit docs request.
 - Non-agentic source files, implementation files, and files directly required for the requested task may still be read normally.
@@ -152,7 +153,8 @@ Read the applicable docs before changing these areas.
 
 ### Mandatory first router
 
-- When `must-read-agentic-docs` is `true`: after `AGENTS.md` → `agents/README.md`
+- First assistant response of every session: `AGENTS.md` → `agents/README.md`
+- When `must-read-agentic-docs` is `true` after the first response: after `AGENTS.md` → `agents/README.md`
 
 ### Mandatory playbooks when applicable
 

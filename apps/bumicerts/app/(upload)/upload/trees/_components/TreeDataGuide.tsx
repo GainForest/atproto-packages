@@ -163,10 +163,11 @@ export default function TreeDataGuide() {
               GBIF Darwin Core standards
             </span>
             . Use the XLSForm templates below to create a field data collection
-            project. The question names match the fields this uploader expects,
-            so CSV/TSV exports can be uploaded here with minimal mapping. You
-            may add extra fields for your own use&nbsp;&mdash; leave them unmapped
-            before uploading.
+            project. The basic form captures required species/date/location
+            fields plus height, DBH, diameter, and one whole-tree photo. The
+            question names match the fields this uploader expects, so CSV/TSV
+            exports can be uploaded here with minimal mapping. You may add extra
+            fields for your own use&nbsp;&mdash; leave them unmapped before uploading.
           </p>
 
           {/* Download templates */}

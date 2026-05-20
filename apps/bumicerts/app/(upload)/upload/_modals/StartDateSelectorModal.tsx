@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useModal } from "@/components/ui/modal/context";
 import {
   ModalContent,
@@ -22,6 +23,8 @@ export function StartDateSelectorModal({
   currentDate,
   onConfirm,
 }: StartDateSelectorModalProps) {
+  const t = useTranslations("upload.modals");
+  const tActions = useTranslations("upload.actions");
   const { hide, popModal, stack } = useModal();
   const parsedCurrentDate = parseOrganizationDate(currentDate);
   const [selected, setSelected] = useState<Date | undefined>(
@@ -48,10 +51,8 @@ export function StartDateSelectorModal({
   return (
     <ModalContent>
       <ModalHeader backAction={stack.length > 1 ? handleClose : undefined}>
-        <ModalTitle>Founding Date</ModalTitle>
-        <ModalDescription>
-          Select the date your organization was founded or began operations.
-        </ModalDescription>
+        <ModalTitle>{t("startDateTitle")}</ModalTitle>
+        <ModalDescription>{t("startDateDescription")}</ModalDescription>
       </ModalHeader>
 
       <div className="flex justify-center py-2">
@@ -66,7 +67,7 @@ export function StartDateSelectorModal({
       </div>
 
       <ModalFooter className="flex justify-end gap-2">
-        <Button onClick={handleConfirm}>Confirm</Button>
+        <Button onClick={handleConfirm}>{tActions("confirm")}</Button>
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
@@ -74,10 +75,10 @@ export function StartDateSelectorModal({
             className="text-destructive hover:text-destructive flex-1"
             disabled={!selected}
           >
-            Clear
+            {tActions("clear")}
           </Button>
           <Button variant="outline" onClick={handleClose} className="flex-1">
-            Cancel
+            {tActions("cancel")}
           </Button>
         </div>
       </ModalFooter>
