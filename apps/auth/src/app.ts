@@ -67,12 +67,10 @@ function appendAuthError(returnTo: string, error: string): string {
 }
 
 function authErrorRedirect(request: Request, error: string): Response {
-  const returnTo = parseSafeReturnTo(readCookie(request, returnToCookieName));
-  if (returnTo && returnTo !== fallbackReturnTo()) {
-    return redirectResponse(appendAuthError(returnTo, error));
-  }
+  const returnTo =
+    parseSafeReturnTo(readCookie(request, returnToCookieName)) ?? fallbackReturnTo();
 
-  return redirectResponse(`/login?error=${encodeURIComponent(error)}`);
+  return redirectResponse(appendAuthError(returnTo, error));
 }
 
 function serializeError(error: unknown): Record<string, unknown> {
@@ -108,7 +106,7 @@ async function login(request: Request, url: URL): Promise<Response> {
   const provider = url.searchParams.get("provider")?.trim();
   const error = url.searchParams.get("error")?.trim();
 
-  if (error && returnTo !== fallbackReturnTo()) {
+  if (error) {
     return redirectResponse(appendAuthError(returnTo, error));
   }
 
