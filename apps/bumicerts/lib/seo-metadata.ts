@@ -6,8 +6,8 @@ import { requirePublicUrl } from "./url";
 
 const sharedSocialImage = {
   url: "/opengraph-image.png",
-  width: 2136,
-  height: 1180,
+  width: 1200,
+  height: 630,
   alt: "Bumicerts — Fund Regenerative Impact",
 };
 

@@ -92,14 +92,14 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       type: "website",
       locale,
-      images: [{ url: "/opengraph-image.png", width: 2136, height: 1180, alt: title }],
+      images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       site: "@GainForestNow",
       title,
       description,
-      images: [{ url: "/opengraph-image.png", width: 2136, height: 1180, alt: title }],
+      images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: title }],
     },
   };
 }
