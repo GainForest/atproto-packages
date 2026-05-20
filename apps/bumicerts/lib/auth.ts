@@ -44,9 +44,17 @@ let _auth: ReturnType<typeof createAuthSetup> | null = null;
 
 function getAuth() {
   if (_auth) return _auth;
-  // All URL resolution logic lives in lib/url.ts — never read Vercel env vars
-  // or NEXT_PUBLIC_BASE_URL directly here.
+  // All public URL resolution logic lives in lib/url.ts — never read URL env
+  // vars directly here.
   const publicUrl = getPublicUrl();
+  const vercelTargetEnv = env.VERCEL_TARGET_ENV ?? env.VERCEL_ENV;
+  const shouldUseVercelProtectionBypass =
+    vercelTargetEnv !== undefined &&
+    vercelTargetEnv !== "production" &&
+    vercelTargetEnv !== "development";
+  const vercelProtectionBypassSecret = shouldUseVercelProtectionBypass
+    ? env.VERCEL_AUTOMATION_BYPASS_SECRET
+    : undefined;
 
   _auth = createAuthSetup({
     privateKeyJwk: env.ATPROTO_JWK_PRIVATE,
@@ -59,6 +67,7 @@ function getAuth() {
     debug: env.DEBUG === "1" || env.DEBUG === "true",
     defaultPdsDomain: defaultSignupPdsDomain,
     publicUrl,
+    vercelProtectionBypassSecret,
     epds: clientEnv.NEXT_PUBLIC_EPDS_URL
       ? { url: clientEnv.NEXT_PUBLIC_EPDS_URL }
       : undefined,

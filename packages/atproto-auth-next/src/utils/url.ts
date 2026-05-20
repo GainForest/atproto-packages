@@ -12,6 +12,47 @@
 /** Sentinel value used during `next build` when no publicUrl is provided. */
 export const PLACEHOLDER_URL = "https://placeholder.invalid";
 
+export const VERCEL_PROTECTION_BYPASS_QUERY_PARAM =
+  "x-vercel-protection-bypass";
+
+/** Adds the Vercel Deployment Protection bypass query parameter when configured. */
+export function withVercelProtectionBypass(
+  url: string,
+  secret?: string,
+): string {
+  if (!secret) return url;
+
+  const parsed = new URL(url);
+  parsed.searchParams.set(VERCEL_PROTECTION_BYPASS_QUERY_PARAM, secret);
+  return parsed.toString();
+}
+
+/** Adds the Vercel bypass only when the URL belongs to one of the app origins. */
+export function withVercelProtectionBypassForOrigins(
+  url: string,
+  allowedOriginUrls: readonly string[],
+  secret?: string,
+): string {
+  if (!secret) return url;
+
+  try {
+    const parsedUrl = new URL(url);
+    const isAllowedOrigin = allowedOriginUrls.some((allowedOriginUrl) => {
+      try {
+        return parsedUrl.origin === new URL(allowedOriginUrl).origin;
+      } catch {
+        return false;
+      }
+    });
+
+    return isAllowedOrigin
+      ? withVercelProtectionBypass(url, secret)
+      : url;
+  } catch {
+    return url;
+  }
+}
+
 /**
  * Normalize the public URL provided at setup time.
  *

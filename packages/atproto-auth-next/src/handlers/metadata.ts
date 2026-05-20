@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_OAUTH_SCOPE } from "../oauth-client";
-import { isLoopback, resolveRequestPublicUrl } from "../utils/url";
+import {
+  isLoopback,
+  resolveRequestPublicUrl,
+  withVercelProtectionBypass,
+  withVercelProtectionBypassForOrigins,
+} from "../utils/url";
 
 export type EpdsHandleMode = "picker-with-random" | "picker" | "random";
 
@@ -27,6 +32,8 @@ export type ClientMetadataOptions = {
   epdsHandleMode?: EpdsHandleMode;
   /** Whether ePDS should skip consent after signup. */
   epdsSkipConsentOnSignup?: boolean;
+  /** Vercel Deployment Protection bypass secret for OAuth metadata endpoints. */
+  vercelProtectionBypassSecret?: string;
 };
 
 /**
@@ -46,9 +53,35 @@ export function createClientMetadataHandler(
   const scope = options.scope ?? DEFAULT_OAUTH_SCOPE;
 
   return function GET(req: NextRequest) {
-    // Derive base URL from the actual incoming request so that each Vercel
-    // preview deployment serves redirect_uris that match its own hostname.
+    // Derive base URL from the actual incoming request so that each deployment
+    // serves redirect_uris that match its own hostname.
     const url = resolveRequestPublicUrl(req, publicUrl);
+    const endpointBypassSecret = loopback
+      ? undefined
+      : options.vercelProtectionBypassSecret;
+    const clientMetadataUrl = withVercelProtectionBypass(
+      `${url}/client-metadata.json`,
+      endpointBypassSecret,
+    );
+    const jwksUri = withVercelProtectionBypass(
+      `${url}/.well-known/jwks.json`,
+      endpointBypassSecret,
+    );
+    const appResourceOrigins = [url, publicUrl];
+    const logoUri = options.logoUri
+      ? withVercelProtectionBypassForOrigins(
+          options.logoUri,
+          appResourceOrigins,
+          endpointBypassSecret,
+        )
+      : undefined;
+    const emailTemplateUri = options.emailTemplateUri
+      ? withVercelProtectionBypassForOrigins(
+          options.emailTemplateUri,
+          appResourceOrigins,
+          endpointBypassSecret,
+        )
+      : undefined;
 
     const redirectUris = [
       `${url}/api/oauth/callback`,
@@ -67,15 +100,15 @@ export function createClientMetadataHandler(
       response_types: ["code"],
       scope,
       dpop_bound_access_tokens: true,
-      jwks_uri: `${url}/.well-known/jwks.json`,
+      jwks_uri: jwksUri,
     };
 
     // Optional branding fields (these can stay as the setup-time publicUrl —
     // they don't affect OAuth correctness, only consent screen appearance)
-    if (options.logoUri) commonFields.logo_uri = options.logoUri;
+    if (logoUri) commonFields.logo_uri = logoUri;
     if (options.brandColor) commonFields.brand_color = options.brandColor;
     if (options.backgroundColor) commonFields.background_color = options.backgroundColor;
-    if (options.emailTemplateUri) commonFields.email_template_uri = options.emailTemplateUri;
+    if (emailTemplateUri) commonFields.email_template_uri = emailTemplateUri;
     if (options.emailSubjectTemplate) commonFields.email_subject_template = options.emailSubjectTemplate;
     if (options.tosUri) commonFields.tos_uri = options.tosUri;
     if (options.policyUri) commonFields.policy_uri = options.policyUri;
@@ -107,7 +140,7 @@ export function createClientMetadataHandler(
     // Web client
     return NextResponse.json(
       {
-        client_id: `${url}/client-metadata.json`,
+        client_id: clientMetadataUrl,
         ...commonFields,
         token_endpoint_auth_method: "private_key_jwt",
         token_endpoint_auth_signing_alg: "ES256",

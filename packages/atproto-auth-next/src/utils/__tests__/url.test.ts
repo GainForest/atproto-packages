@@ -1,87 +1,135 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { resolvePublicUrl, isLoopback, resolveRequestPublicUrl } from "../url";
+import { describe, expect, it } from "bun:test";
+import {
+  isLoopback,
+  PLACEHOLDER_URL,
+  resolvePublicUrl,
+  resolveRequestPublicUrl,
+  VERCEL_PROTECTION_BYPASS_QUERY_PARAM,
+  withVercelProtectionBypass,
+  withVercelProtectionBypassForOrigins,
+} from "../url";
 
 describe("resolvePublicUrl", () => {
-  const originalEnv = { ...process.env };
-
-  afterEach(() => {
-    // Restore env after each test
-    process.env = { ...originalEnv };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (process.env as any).NODE_ENV = originalEnv.NODE_ENV;
-  });
-
   it("returns explicitUrl when provided, stripped of trailing slash", () => {
     expect(resolvePublicUrl("https://example.com/")).toBe("https://example.com");
     expect(resolvePublicUrl("https://example.com")).toBe("https://example.com");
   });
 
-  it("prefers explicitUrl over env vars", () => {
-    process.env.NEXT_PUBLIC_BASE_URL = "https://other.com";
-    expect(resolvePublicUrl("https://explicit.com")).toBe("https://explicit.com");
+  it("returns the placeholder when no explicitUrl is provided", () => {
+    expect(resolvePublicUrl()).toBe(PLACEHOLDER_URL);
+  });
+});
+
+describe("withVercelProtectionBypass", () => {
+  it("returns the URL unchanged when no secret is configured", () => {
+    expect(
+      withVercelProtectionBypass("https://example.com/client-metadata.json"),
+    ).toBe("https://example.com/client-metadata.json");
   });
 
-  it("uses NEXT_PUBLIC_BASE_URL when set (strips trailing slash)", () => {
-    delete process.env.VERCEL_BRANCH_URL;
-    delete process.env.VERCEL_URL;
-    process.env.NEXT_PUBLIC_BASE_URL = "https://myapp.com/";
-    expect(resolvePublicUrl()).toBe("https://myapp.com");
+  it("adds the bypass query parameter", () => {
+    const url = withVercelProtectionBypass(
+      "https://example.com/client-metadata.json",
+      "preview secret",
+    );
+
+    expect(url).toBe(
+      "https://example.com/client-metadata.json?x-vercel-protection-bypass=preview+secret",
+    );
   });
 
-  it("uses VERCEL_BRANCH_URL when set", () => {
-    delete process.env.NEXT_PUBLIC_BASE_URL;
-    delete process.env.VERCEL_URL;
-    process.env.VERCEL_BRANCH_URL = "my-app-git-main.vercel.app";
-    expect(resolvePublicUrl()).toBe("https://my-app-git-main.vercel.app");
+  it("preserves existing query parameters", () => {
+    const url = withVercelProtectionBypass(
+      "https://example.com/.well-known/jwks.json?cache=miss",
+      "staging-secret",
+    );
+    const parsed = new URL(url);
+
+    expect(parsed.searchParams.get("cache")).toBe("miss");
+    expect(parsed.searchParams.get(VERCEL_PROTECTION_BYPASS_QUERY_PARAM)).toBe(
+      "staging-secret",
+    );
+  });
+});
+
+describe("withVercelProtectionBypassForOrigins", () => {
+  it("adds the bypass query parameter for allowed origins", () => {
+    expect(
+      withVercelProtectionBypassForOrigins(
+        "https://preview.example.com/assets/logo.png",
+        ["https://preview.example.com"],
+        "preview secret",
+      ),
+    ).toBe(
+      "https://preview.example.com/assets/logo.png?x-vercel-protection-bypass=preview+secret",
+    );
   });
 
-  it("falls back to VERCEL_URL when VERCEL_BRANCH_URL is not set", () => {
-    delete process.env.NEXT_PUBLIC_BASE_URL;
-    delete process.env.VERCEL_BRANCH_URL;
-    process.env.VERCEL_URL = "my-app.vercel.app";
-    expect(resolvePublicUrl()).toBe("https://my-app.vercel.app");
+  it("leaves external origins unchanged", () => {
+    expect(
+      withVercelProtectionBypassForOrigins(
+        "https://cdn.example.com/assets/logo.png",
+        ["https://preview.example.com"],
+        "preview secret",
+      ),
+    ).toBe("https://cdn.example.com/assets/logo.png");
   });
 
-  it("returns loopback URL in development when no Vercel env vars set", () => {
-    delete process.env.NEXT_PUBLIC_BASE_URL;
-    delete process.env.VERCEL_BRANCH_URL;
-    delete process.env.VERCEL_URL;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (process.env as any).NODE_ENV = "development";
-    process.env.PORT = "3001";
-    expect(resolvePublicUrl()).toBe("http://127.0.0.1:3001");
-  });
-
-  it("defaults to port 3000 in development when PORT is not set", () => {
-    delete process.env.NEXT_PUBLIC_BASE_URL;
-    delete process.env.VERCEL_BRANCH_URL;
-    delete process.env.VERCEL_URL;
-    delete process.env.PORT;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (process.env as any).NODE_ENV = "development";
-    expect(resolvePublicUrl()).toBe("http://127.0.0.1:3000");
+  it("leaves invalid URLs unchanged", () => {
+    expect(
+      withVercelProtectionBypassForOrigins(
+        "/assets/logo.png",
+        ["https://preview.example.com"],
+        "preview secret",
+      ),
+    ).toBe("/assets/logo.png");
   });
 });
 
 describe("resolveRequestPublicUrl", () => {
   it("returns the origin of the request URL", () => {
-    expect(resolveRequestPublicUrl({ url: "http://127.0.0.1:3001/api/oauth/epds/login" }, "http://127.0.0.1:3000")).toBe("http://127.0.0.1:3001");
+    expect(
+      resolveRequestPublicUrl(
+        { url: "http://127.0.0.1:3001/api/oauth/epds/login" },
+        "http://127.0.0.1:3000",
+      ),
+    ).toBe("http://127.0.0.1:3001");
   });
 
-  it("normalises localhost to 127.0.0.1 (RFC 8252 loopback requirement)", () => {
-    expect(resolveRequestPublicUrl({ url: "http://localhost:3001/api/oauth/epds/login" }, "http://127.0.0.1:3000")).toBe("http://127.0.0.1:3001");
+  it("normalises localhost to 127.0.0.1", () => {
+    expect(
+      resolveRequestPublicUrl(
+        { url: "http://localhost:3001/api/oauth/epds/login" },
+        "http://127.0.0.1:3000",
+      ),
+    ).toBe("http://127.0.0.1:3001");
   });
 
   it("normalises localhost without a port", () => {
-    expect(resolveRequestPublicUrl({ url: "http://localhost/api/oauth/epds/login" }, "http://127.0.0.1:3000")).toBe("http://127.0.0.1");
+    expect(
+      resolveRequestPublicUrl(
+        { url: "http://localhost/api/oauth/epds/login" },
+        "http://127.0.0.1:3000",
+      ),
+    ).toBe("http://127.0.0.1");
   });
 
   it("does not modify production URLs", () => {
-    expect(resolveRequestPublicUrl({ url: "https://bumicerts.com/api/oauth/epds/login" }, "https://bumicerts.com")).toBe("https://bumicerts.com");
+    expect(
+      resolveRequestPublicUrl(
+        { url: "https://bumicerts.com/api/oauth/epds/login" },
+        "https://bumicerts.com",
+      ),
+    ).toBe("https://bumicerts.com");
   });
 
   it("falls back to fallbackPublicUrl on an unparseable URL", () => {
-    expect(resolveRequestPublicUrl({ url: "not-a-url" }, "http://127.0.0.1:3001")).toBe("http://127.0.0.1:3001");
+    expect(
+      resolveRequestPublicUrl(
+        { url: "not-a-url" },
+        "http://127.0.0.1:3001",
+      ),
+    ).toBe("http://127.0.0.1:3001");
   });
 });
 

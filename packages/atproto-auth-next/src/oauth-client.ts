@@ -2,7 +2,7 @@ import { NodeOAuthClient } from "@atproto/oauth-client-node";
 import type { NodeOAuthClientOptions } from "@atproto/oauth-client-node";
 import { requestLocalLock } from "@atproto/oauth-client";
 import { JoseKey } from "@atproto/jwk-jose";
-import { isLoopback } from "./utils/url";
+import { isLoopback, withVercelProtectionBypass } from "./utils/url";
 
 export const DEFAULT_OAUTH_SCOPE = "atproto transition:generic";
 
@@ -17,6 +17,8 @@ export type OAuthClientConfig = {
   extraRedirectUris?: string[];
   /** App name shown in OAuth consent screen. Defaults to "Gainforest". */
   clientName?: string;
+  /** Vercel Deployment Protection bypass secret for OAuth metadata endpoints. */
+  vercelProtectionBypassSecret?: string;
 };
 
 /**
@@ -28,7 +30,7 @@ export type OAuthClientConfig = {
  *   - No client authentication (token_endpoint_auth_method: "none")
  *   - application_type: "native"
  *
- * Production:
+ * Web / non-loopback:
  *   - Uses web client_id: {publicUrl}/client-metadata.json
  *   - Private key JWT authentication
  *   - application_type: "web"
@@ -41,6 +43,7 @@ export function createOAuthClient({
   scope = DEFAULT_OAUTH_SCOPE,
   extraRedirectUris = [],
   clientName = "Gainforest",
+  vercelProtectionBypassSecret,
 }: OAuthClientConfig): NodeOAuthClient {
   const url = publicUrl.replace(/\/$/, "");
   // Must be a non-empty tuple [string, ...string[]] for the OAuth client type
@@ -95,10 +98,19 @@ export function createOAuthClient({
     });
   }
 
-  // Production web client
+  const clientMetadataUrl = withVercelProtectionBypass(
+    `${url}/client-metadata.json`,
+    vercelProtectionBypassSecret,
+  );
+  const jwksUri = withVercelProtectionBypass(
+    `${url}/.well-known/jwks.json`,
+    vercelProtectionBypassSecret,
+  );
+
+  // Web client
   return new NodeOAuthClient({
     clientMetadata: {
-      client_id: `${url}/client-metadata.json`,
+      client_id: clientMetadataUrl,
       client_name: clientName,
       client_uri: url,
       redirect_uris: redirectUris,
@@ -109,7 +121,7 @@ export function createOAuthClient({
       token_endpoint_auth_signing_alg: "ES256",
       application_type: "web",
       dpop_bound_access_tokens: true,
-      jwks_uri: `${url}/.well-known/jwks.json`,
+      jwks_uri: jwksUri,
     },
     keyset: [key],
     requestLock: requestLocalLock,
