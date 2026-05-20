@@ -75,6 +75,25 @@ function authErrorRedirect(request: Request, error: string): Response {
   return redirectResponse(`/login?error=${encodeURIComponent(error)}`);
 }
 
+function serializeError(error: unknown): Record<string, unknown> {
+  if (!(error instanceof Error)) {
+    return { value: String(error) };
+  }
+
+  return {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+    cause: error.cause instanceof Error
+      ? {
+          name: error.cause.name,
+          message: error.cause.message,
+          stack: error.cause.stack,
+        }
+      : error.cause,
+  };
+}
+
 async function login(request: Request, url: URL): Promise<Response> {
   if (request.method !== "GET") {
     return methodNotAllowed();
@@ -115,7 +134,12 @@ async function login(request: Request, url: URL): Promise<Response> {
       const response = redirectResponse(authUrl.toString());
       setReturnToCookie(response, returnTo);
       return response;
-    } catch {
+    } catch (error) {
+      console.error("[auth] Handle login failed", {
+        handle,
+        normalizedHandle: normalizeHandle(handle),
+        error: serializeError(error),
+      });
       const response = redirectResponse(appendAuthError(returnTo, "auth_failed"));
       setReturnToCookie(response, returnTo);
       return response;

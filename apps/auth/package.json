@@ -12,7 +12,11 @@
     "deploy:dev": "bunx wrangler deploy --env dev"
   },
   "dependencies": {
+    "@atproto-labs/did-resolver": "0.2.6",
+    "@atproto-labs/handle-resolver": "0.3.6",
+    "@atproto-labs/identity-resolver": "0.3.6",
     "@atproto/api": "^0.13.17",
+    "@atproto/did": "0.3.0",
     "@gainforest/atproto-auth-next": "workspace:*",
     "@supabase/supabase-js": "2.97.0",
     "iron-session": "^8.0.4",

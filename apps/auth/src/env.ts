@@ -9,6 +9,7 @@ const envSchema = z.object({
   AUTH_ALLOWED_RETURN_ORIGINS: z.string().min(1).optional(),
   AUTH_EPDS_PROVIDERS: z.string().min(1).optional(),
   AUTH_DEFAULT_EPDS_URL: z.string().url().optional(),
+  AUTH_HANDLE_RESOLVER_URL: z.string().url().default("https://public.api.bsky.app"),
   ATPROTO_JWK_PRIVATE: z.string().min(1),
   COOKIE_SECRET: z.string().min(32),
   SUPABASE_URL: z.string().url(),
@@ -33,6 +34,7 @@ function parseEnv(source: Record<string, string | undefined>): AuthEnv {
         AUTH_ALLOWED_RETURN_ORIGINS: fallbackEnv.AUTH_ALLOWED_RETURN_ORIGINS,
         AUTH_EPDS_PROVIDERS: fallbackEnv.AUTH_EPDS_PROVIDERS,
         AUTH_DEFAULT_EPDS_URL: fallbackEnv.AUTH_DEFAULT_EPDS_URL,
+        AUTH_HANDLE_RESOLVER_URL: fallbackEnv.AUTH_HANDLE_RESOLVER_URL ?? "https://public.api.bsky.app",
         ATPROTO_JWK_PRIVATE: fallbackEnv.ATPROTO_JWK_PRIVATE ?? "{}",
         COOKIE_SECRET:
           fallbackEnv.COOKIE_SECRET ?? "development-cookie-secret-placeholder-32",

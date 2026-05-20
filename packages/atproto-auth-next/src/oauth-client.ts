@@ -17,6 +17,10 @@ export type OAuthClientConfig = {
   extraRedirectUris?: string[];
   /** App name shown in OAuth consent screen. Defaults to "Gainforest". */
   clientName?: string;
+  /** Optional fetch override for non-Node runtimes. */
+  fetch?: NodeOAuthClientOptions["fetch"];
+  /** Optional full SDK identity resolver override for non-Node runtimes. */
+  identityResolver?: NodeOAuthClientOptions["identityResolver"];
 };
 
 /**
@@ -41,6 +45,8 @@ export function createOAuthClient({
   scope = DEFAULT_OAUTH_SCOPE,
   extraRedirectUris = [],
   clientName = "Gainforest",
+  fetch,
+  identityResolver,
 }: OAuthClientConfig): NodeOAuthClient {
   const url = publicUrl.replace(/\/$/, "");
   // Must be a non-empty tuple [string, ...string[]] for the OAuth client type
@@ -92,6 +98,8 @@ export function createOAuthClient({
       requestLock: requestLocalLock,
       stateStore,
       sessionStore,
+      fetch,
+      identityResolver,
     });
   }
 
@@ -115,6 +123,8 @@ export function createOAuthClient({
     requestLock: requestLocalLock,
     stateStore,
     sessionStore,
+    fetch,
+    identityResolver,
   });
 }
 

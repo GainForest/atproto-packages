@@ -1,4 +1,8 @@
+import type { AtprotoIdentityDidMethods, DidResolver, ResolvedDocument } from "@atproto-labs/did-resolver";
+import { XrpcHandleResolver } from "@atproto-labs/handle-resolver";
+import { AtprotoIdentityResolver } from "@atproto-labs/identity-resolver";
 import { Agent } from "@atproto/api";
+import { assertDidPlc, assertDidWeb, didDocumentValidator, didWebToUrl, type Did, type DidDocument } from "@atproto/did";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   createOAuthClient,
@@ -23,6 +27,11 @@ let cachedOAuthClient: {
   appId: string;
   epdsCallbackEnabled: boolean;
   client: ReturnType<typeof createOAuthClient>;
+} | null = null;
+
+let cachedIdentityResolver: {
+  handleResolverUrl: string;
+  resolver: AtprotoIdentityResolver;
 } | null = null;
 
 let cachedJwks: {
@@ -52,6 +61,78 @@ function hasEpdsCallback(): boolean {
   return !!(env.AUTH_DEFAULT_EPDS_URL || env.AUTH_EPDS_PROVIDERS);
 }
 
+function workerCompatibleFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const expectsRedirectError = input instanceof Request
+    ? input.redirect === "error"
+    : init?.redirect === "error";
+  const request = input instanceof Request
+    ? input
+    : new Request(input, expectsRedirectError ? { ...init, redirect: "manual" } : init);
+  const safeRequest = expectsRedirectError && request.redirect === "error"
+    ? new Request(request, { redirect: "manual" })
+    : request;
+
+  return fetch(safeRequest).then((response) => {
+    if (expectsRedirectError && response.status >= 300 && response.status < 400) {
+      throw new TypeError("Redirects are not allowed for handle resolution");
+    }
+
+    return response;
+  });
+}
+
+class WorkerDidResolver implements DidResolver<AtprotoIdentityDidMethods> {
+  async resolve<D extends Did>(did: D): Promise<ResolvedDocument<D, AtprotoIdentityDidMethods>> {
+    const url = did.startsWith("did:plc:")
+      ? this.plcUrl(did)
+      : this.webUrl(did);
+    const response = await workerCompatibleFetch(url, {
+      redirect: "error",
+      headers: { accept: "application/did+ld+json,application/json" },
+    });
+    if (!response.ok) {
+      throw new Error(`DID resolution failed for ${did}: ${response.status}`);
+    }
+
+    return didDocumentValidator.parse(await response.json()) as ResolvedDocument<D, AtprotoIdentityDidMethods>;
+  }
+
+  private plcUrl(did: string): URL {
+    assertDidPlc(did);
+    return new URL(`/${encodeURIComponent(did)}`, "https://plc.directory");
+  }
+
+  private webUrl(did: string): URL {
+    assertDidWeb(did);
+    const url = didWebToUrl(did);
+    return url.pathname === "/"
+      ? new URL("/.well-known/did.json", url)
+      : new URL(`${url.pathname}/did.json`, url);
+  }
+}
+
+function getIdentityResolver(): AtprotoIdentityResolver | undefined {
+  if (isLoopback(authBaseUrl)) {
+    return undefined;
+  }
+
+  if (cachedIdentityResolver?.handleResolverUrl === env.AUTH_HANDLE_RESOLVER_URL) {
+    return cachedIdentityResolver.resolver;
+  }
+
+  const resolver = new AtprotoIdentityResolver(
+    new WorkerDidResolver(),
+    new XrpcHandleResolver(env.AUTH_HANDLE_RESOLVER_URL, {
+      fetch: workerCompatibleFetch,
+    }),
+  );
+  cachedIdentityResolver = {
+    handleResolverUrl: env.AUTH_HANDLE_RESOLVER_URL,
+    resolver,
+  };
+  return resolver;
+}
+
 export function getOAuthClient(): ReturnType<typeof createOAuthClient> {
   const epdsCallbackEnabled = hasEpdsCallback();
   if (
@@ -76,6 +157,8 @@ export function getOAuthClient(): ReturnType<typeof createOAuthClient> {
     scope: DEFAULT_OAUTH_SCOPE,
     extraRedirectUris,
     clientName: "GainForest",
+    identityResolver: getIdentityResolver(),
+    fetch: workerCompatibleFetch,
   });
 
   cachedOAuthClient = {
