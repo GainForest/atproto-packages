@@ -21,7 +21,14 @@
         "audio": "Audio",
         "biodiversity": "Biodiversity",
         "document": "Document"
-      }
+      },
+      "ownerTools": "Owner tools",
+      "linkEvidenceTitle": "Link evidence",
+      "linkEvidenceDescription": "Attach existing records or files to {title}. Linked items appear in the public evidence timeline below.",
+      "notTimelineYet": "Not part of the timeline yet",
+      "linkedTitle": "Linked evidence timeline",
+      "linkedItemCount": "{count, plural, =0 {0 items linked to this bumicert activity} =1 {1 item linked to this bumicert activity} other {# items linked to this bumicert activity}}",
+      "linkedDescription": "Review the records, files, and map layers that are already part of the public evidence timeline."
     },
     "evidenceAdder": {
       "title": "Add Evidence",
@@ -92,7 +99,14 @@
         "audio": "Audio Recordings",
         "trees": "Tree Data Set",
         "biodiversity": "Biodiversity Observations"
-      }
+      },
+      "chooseEvidenceType": "Choose evidence type",
+      "selectSourceToLink": "Select a source to link existing evidence to this timeline.",
+      "linkType": "Link {type}",
+      "selectRecordsToLink": "Select evidence records to link to this timeline.",
+      "alreadyLinkedDataset": "Already linked to this timeline",
+      "checkingExistingLinks": "Checking existing timeline links…",
+      "unableToVerifyExistingLinks": "Unable to verify existing timeline links. Refresh to link tree datasets."
     },
     "metadata": {
       "notFound": "Bumicert Not Found"
@@ -142,7 +156,20 @@
         "removing": "Removing…",
         "remove": "Remove",
         "cancel": "Cancel"
-      }
+      },
+      "activeHiddenLayerSummary": "{activeCount} active · {hiddenCount} hidden",
+      "activeHiddenLayerSummaryWithHint": "{activeCount} active · {hiddenCount} hidden — use Show layer on tree dataset cards to preview layers here.",
+      "showLayerHint": "Use Show layer on tree dataset cards to preview layers here.",
+      "activeLayerBadge": "{count} active",
+      "hiddenLayerBadge": "{count} hidden",
+      "activeLayersInPreview": "Active layers in preview",
+      "hiddenLayerPrefix": "Hidden: {title}",
+      "activeOnMap": "Active on map",
+      "hiddenFromMap": "Hidden from map",
+      "visibleLayerDescription": "This dataset layer is visible in the Green Globe preview.",
+      "hiddenLayerDescription": "This dataset layer is available but currently hidden.",
+      "showLayer": "Show layer",
+      "hideLayer": "Hide layer"
     },
     "reference": {
       "linkedRecord": "Linked record",

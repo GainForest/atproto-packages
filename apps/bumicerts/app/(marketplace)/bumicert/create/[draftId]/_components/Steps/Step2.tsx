@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import FormField from "../../../../../../../components/ui/FormField";
 import {
   HandHeartIcon,
@@ -15,12 +15,6 @@ import { BskyRichTextEditor } from "@/components/ui/bsky-richtext-editor";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { extractTextFromLinearDocument } from "@/lib/adapters";
 import { links } from "@/lib/links";
-import {
-  createShortDescriptionEditorSyncState,
-  getShortDescriptionEditorKey,
-  reconcileShortDescriptionEditorSyncState,
-  trackShortDescriptionEditorChange,
-} from "./shortDescriptionEditorSync";
 import { useTranslations } from "next-intl";
 import { localizeFormError } from "../../i18n";
 
@@ -46,19 +40,9 @@ const Step2 = () => {
     text: shortDescription,
     facets: shortDescriptionFacets,
   };
-  const shortDescriptionEditorSyncRef = useRef(
-    createShortDescriptionEditorSyncState(shortDescriptionValue),
-  );
-
-  shortDescriptionEditorSyncRef.current =
-    reconcileShortDescriptionEditorSyncState(
-      shortDescriptionEditorSyncRef.current,
-      shortDescriptionValue,
-    );
-
-  const shortDescriptionEditorKey = getShortDescriptionEditorKey(
-    shortDescriptionEditorSyncRef.current,
-  );
+  const [shortDescriptionEditorVersion, setShortDescriptionEditorVersion] =
+    useState(0);
+  const shortDescriptionEditorKey = `short-description-editor-${shortDescriptionEditorVersion}`;
 
   const handleGenerateShortDescription = async () => {
     const descriptionText = extractTextFromLinearDocument(description).trim();
@@ -83,6 +67,7 @@ const Step2 = () => {
       };
       if (data.success && data.shortDescription) {
         setFormValue("shortDescription", data.shortDescription);
+        setShortDescriptionEditorVersion((version) => version + 1);
       }
     } catch {
       // Silently fail — user can just type manually
@@ -138,14 +123,6 @@ const Step2 = () => {
               key={shortDescriptionEditorKey}
               initialValue={shortDescriptionValue}
               onChange={(text, facets) => {
-                shortDescriptionEditorSyncRef.current =
-                  trackShortDescriptionEditorChange(
-                    shortDescriptionEditorSyncRef.current,
-                    {
-                      text,
-                      facets: facets ?? [],
-                    },
-                  );
                 setFormValue("shortDescription", text);
                 setFormValue("shortDescriptionFacets", facets ?? []);
               }}

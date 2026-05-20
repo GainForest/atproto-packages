@@ -1,9 +1,11 @@
 import { ExternalLinkIcon, Globe2Icon } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
 import type { TimelineMapLayer } from "./timelineMapLayers";
+import { getTimelineMapLayerState } from "./timelineMapLayerState";
 import { useTimelineViewerStore } from "./timelineViewerStore";
-import { useTranslations } from "next-intl";
 
 interface TimelineGreenGlobePreviewProps {
   organizationDid: string;
@@ -20,9 +22,8 @@ export function TimelineGreenGlobePreview({
   const activeMapLayerByDatasetUri = useTimelineViewerStore(
     (state) => state.activeMapLayerByDatasetUri,
   );
-  const activeLayers = layers.filter(
-    (layer) => activeMapLayerByDatasetUri[layer.datasetUri],
-  );
+  const { activeLayers, hiddenLayers, activeCount, hiddenCount } =
+    getTimelineMapLayerState(layers, activeMapLayerByDatasetUri);
   const href =
     activeLayers.length > 0
       ? links.external.greenGlobeTreePreview(organizationDid, {
@@ -45,10 +46,25 @@ export function TimelineGreenGlobePreview({
           <p className="mt-1 text-xs text-muted-foreground">
             {isLoading
               ? t("resolvingSpatialLayers")
-              : activeLayers.length > 0
-                ? t("activeLayerCount", { count: activeLayers.length })
-                : t("showOnMapHint")}
+              : layers.length > 0
+                ? t(
+                    activeLayers.length === 0
+                      ? "activeHiddenLayerSummaryWithHint"
+                      : "activeHiddenLayerSummary",
+                    { activeCount, hiddenCount },
+                  )
+                : t("showLayerHint")}
           </p>
+          {!isLoading && layers.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Badge variant={activeCount > 0 ? "success" : "outline"}>
+                {t("activeLayerBadge", { count: activeCount })}
+              </Badge>
+              <Badge variant="outline" className="text-muted-foreground">
+                {t("hiddenLayerBadge", { count: hiddenCount })}
+              </Badge>
+            </div>
+          ) : null}
         </div>
         {href ? (
           <Button asChild variant="outline" size="sm" className="shrink-0">
@@ -62,15 +78,32 @@ export function TimelineGreenGlobePreview({
 
       {activeLayers.length > 0 ? (
         <div className="space-y-3 p-3 md:p-4">
-          <div className="flex flex-wrap gap-2">
-            {activeLayers.map((layer) => (
-              <span
-                key={layer.datasetUri}
-                className="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary"
-              >
-                {layer.title}
-              </span>
-            ))}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              {t("activeLayersInPreview")}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {activeLayers.map((layer) => (
+                <span
+                  key={layer.datasetUri}
+                  className="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary"
+                >
+                  {layer.title}
+                </span>
+              ))}
+            </div>
+            {hiddenLayers.length > 0 ? (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {hiddenLayers.map((layer) => (
+                  <span
+                    key={layer.datasetUri}
+                    className="rounded-full border border-border/70 px-2.5 py-1 text-xs text-muted-foreground"
+                  >
+                    {t("hiddenLayerPrefix", { title: layer.title })}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
           {href ? (
             <div className="overflow-hidden rounded-xl border border-border/40 bg-muted/10">

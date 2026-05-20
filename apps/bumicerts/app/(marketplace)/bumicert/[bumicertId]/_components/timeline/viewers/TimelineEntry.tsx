@@ -202,25 +202,21 @@ export function TimelineEntry({
     : getRecordedDateLabel(evidenceKind, references, t("notSpecified"));
   const linkedDateLabel = formatPublicDate(item.record?.createdAt ?? item.metadata?.createdAt, t("notSpecified"));
   const greenGlobeHref = getGreenGlobeHref(references);
-  const previewTiles = useMemo(
-    () =>
-      tiles.filter((tile) => {
-        if (!tile.preview) {
-          return false;
-        }
+  const previewTiles = tiles.filter((tile) => {
+    if (!tile.preview) {
+      return false;
+    }
 
-        if (tile.preview.kind === "green-globe") {
-          return false;
-        }
+    if (tile.preview.kind === "green-globe") {
+      return false;
+    }
 
-        if (evidenceKind === "biodiversity" && tile.preview.kind === "text") {
-          return false;
-        }
+    if (evidenceKind === "biodiversity" && tile.preview.kind === "text") {
+      return false;
+    }
 
-        return true;
-      }),
-    [evidenceKind, tiles],
-  );
+    return true;
+  });
   const selectedTileId = useTimelineViewerStore(
     (state) => state.selectedPreviewTileByEntryId[entryId] ?? null,
   );

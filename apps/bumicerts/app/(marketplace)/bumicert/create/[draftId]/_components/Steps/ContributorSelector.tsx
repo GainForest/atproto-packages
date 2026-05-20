@@ -46,20 +46,8 @@ export function ContributorSelector({
     const [actors, setActors] = useState<Actor[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // For manual input
-    const [manualQuery, setManualQuery] = useState(value);
-
     // Debounce query for search
     const debouncedQuery = useDebounce(query, 300);
-
-    // Sync internal state with external value and on tab switch
-    useEffect(() => {
-        if (activeTab === 'search') {
-            setQuery(value);
-        } else {
-            setManualQuery(value);
-        }
-    }, [value, activeTab]);
 
     // Search Effect
     useEffect(() => {
@@ -99,9 +87,12 @@ export function ContributorSelector({
 
     // Handle manual input change
     const handleManualInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
-        setManualQuery(newValue);
-        onChange(newValue);
+        onChange(e.target.value);
+    };
+
+    const handleClear = () => {
+        setQuery("");
+        onClear();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -111,7 +102,7 @@ export function ContributorSelector({
         }
     };
 
-    const showClearButton = activeTab === "search" ? query.length > 0 : manualQuery.length > 0;
+    const showClearButton = activeTab === "search" ? query.length > 0 : value.length > 0;
 
     return (
         <div className="flex flex-col gap-2 w-full rounded-md">
@@ -156,7 +147,7 @@ export function ContributorSelector({
                             {showClearButton && !loading && (
                                 <button
                                     type="button"
-                                    onClick={onClear}
+                                    onClick={handleClear}
                                     className="h-4 w-4 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                                 >
                                     <XIcon className="h-4 w-4" />
@@ -196,7 +187,7 @@ export function ContributorSelector({
                         <LinkIcon className="h-4 w-4 ml-2 text-muted-foreground" />
                         <InputGroupInput
                             placeholder="Contributor name, DID, or URI..."
-                            value={manualQuery}
+                            value={value}
                             onChange={handleManualInputChange}
                             onKeyDown={handleKeyDown}
                             autoFocus={autoFocus}
@@ -204,7 +195,7 @@ export function ContributorSelector({
                         {showClearButton && (
                             <button
                                 type="button"
-                                onClick={onClear}
+                                onClick={handleClear}
                                 className="h-4 w-4 mr-3 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                             >
                                 <XIcon className="h-4 w-4" />

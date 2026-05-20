@@ -47,4 +47,3 @@ next-env.d.ts
 /e2e/.env
 /test-results/
 /playwright-report/
-

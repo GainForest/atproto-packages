@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  getLinkedTreeDatasetUrisFromContent,
   getRenderableAttachmentLinksFromContent,
   parseAttachmentContent,
 } from "./attachmentContentParser";
@@ -79,6 +80,24 @@ describe("attachmentContentParser", () => {
         cid: "cid-1",
       },
     ]);
+  });
+
+  test("extracts unique linked tree dataset AT-URIs from attachment content", () => {
+    const datasetUri =
+      "at://did:plc:org/app.gainforest.dwc.dataset/dataset-1";
+
+    expect(
+      getLinkedTreeDatasetUrisFromContent([
+        { $type: "org.hypercerts.defs#uri", uri: datasetUri },
+        { $type: "org.hypercerts.defs#uri", uri: datasetUri },
+        {
+          $type: "org.hypercerts.defs#uri",
+          uri: "at://did:plc:org/app.gainforest.ac.audio/audio-1",
+        },
+        { $type: "org.hypercerts.defs#uri", uri: "https://example.com" },
+        { $type: "unexpected", uri: datasetUri },
+      ]),
+    ).toEqual([datasetUri]);
   });
 
   test("keeps unknown items as safe fallbacks", () => {

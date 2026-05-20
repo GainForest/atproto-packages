@@ -578,35 +578,32 @@ export function ManageDashboardClient({
     [],
   );
 
-  const handleSetupCompleted = useCallback(
-    async (
-      nextAccount: AuthenticatedAccountState,
-      nextOrganization: OrganizationData,
-    ) => {
-      await Promise.all([
-        indexerUtils.account.current.cancel(),
-        indexerUtils.account.byDid.cancel({ did }),
-      ]);
-      indexerUtils.account.current.setData(undefined, nextAccount);
-      indexerUtils.account.byDid.setData({ did }, nextAccount);
-      startReconciliation({
+  async function handleSetupCompleted(
+    nextAccount: AuthenticatedAccountState,
+    nextOrganization: OrganizationData,
+  ) {
+    await Promise.all([
+      indexerUtils.account.current.cancel(),
+      indexerUtils.account.byDid.cancel({ did }),
+    ]);
+    indexerUtils.account.current.setData(undefined, nextAccount);
+    indexerUtils.account.byDid.setData({ did }, nextAccount);
+    startReconciliation({
+      nextAccount,
+      nextPageData: {
+        did,
+        kind: nextAccount.kind,
+        organization: nextOrganization,
+      },
+      checks: buildSetupReconciliationChecks({
         nextAccount,
-        nextPageData: {
-          did,
-          kind: nextAccount.kind,
-          organization: nextOrganization,
-        },
-        checks: buildSetupReconciliationChecks({
-          nextAccount,
-          nextOrganization,
-        }),
-      });
-      setMode(null);
-    },
-    [did, indexerUtils, setMode, startReconciliation],
-  );
+        nextOrganization,
+      }),
+    });
+    setMode(null);
+  }
 
-  const handleSave = useCallback(async () => {
+  async function handleSave() {
     if (!currentOrganization || !hasChanges() || isSaving) return;
 
     setSaving(true);
@@ -926,26 +923,7 @@ export function ManageDashboardClient({
       setSaving(false);
       setSaveError(formatError(error));
     }
-  }, [
-    currentOrganization,
-    currentKind,
-    currentAccount,
-    did,
-    edits,
-    hasChanges,
-    indexerUtils,
-    isSaving,
-    onSaveSuccess,
-    setMode,
-    setSaveError,
-    setSaving,
-    startReconciliation,
-    updateOrganization,
-    tDashboard,
-    updateProfileAndOrganization,
-    upsertOrganization,
-    upsertProfile,
-  ]);
+  }
 
   if (currentAccountQuery.isLoading && pageData.kind === "unknown") {
     return <ManageDashboardSkeleton />;
