@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { validateGeojsonOrThrow } from "@gainforest/atproto-mutations-next/geojson";
-import { checkUploadRowsAgainstSelectedSite } from "./site-boundary";
+import { checkUploadRowsAgainstSelectedSite, readGeoJsonFile } from "./site-boundary";
 import type { UploadSiteSelection } from "./site-selection";
 import type { ValidatedRow } from "./types";
 
@@ -78,7 +78,8 @@ describe("checkUploadRowsAgainstSelectedSite", () => {
     expect(result.fatalError).toBeNull();
     expect(result.rowsToUpload.map((entry) => entry.rowIndex)).toEqual([0]);
     expect(result.skippedRows).toHaveLength(1);
-    expect(result.skippedRows[0]?.message).toContain("selected site");
+    expect(result.skippedRows[0]?.message).toContain("one selected site boundary");
+    expect(result.skippedRows[0]?.message).toContain("choose the correct site boundary");
   });
 
   test("keeps matching rows while skipping rows that no longer fit the selected site boundary", () => {
@@ -96,6 +97,50 @@ describe("checkUploadRowsAgainstSelectedSite", () => {
     expect(result.rowsToUpload.map((entry) => entry.rowIndex)).toEqual([0]);
     expect(result.skippedRows).toHaveLength(2);
     expect(result.skippedRows[0]?.message).toContain("Near boundary");
+    expect(result.skippedRows[0]?.message).toContain("Fix the coordinates");
     expect(result.skippedRows[1]?.message).toContain("Out of site");
+    expect(result.skippedRows[1]?.message).toContain("choose/create the correct site boundary");
+  });
+
+  test("reports invalid selected boundaries with recovery guidance", () => {
+    const invalidBoundary = validateGeojsonOrThrow({
+      type: "Point",
+      coordinates: [0, 0],
+    });
+
+    const result = checkUploadRowsAgainstSelectedSite({
+      rows: [makeValidatedRow()],
+      siteSelection: SITE_SELECTION,
+      boundary: invalidBoundary,
+    });
+
+    expect(result.rowsToUpload).toHaveLength(0);
+    expect(result.skippedRows).toHaveLength(0);
+    expect(result.fatalError ?? "").toContain("not valid polygon GeoJSON");
+    expect(result.fatalError ?? "").toContain("redraw/re-upload/create");
+  });
+});
+
+describe("readGeoJsonFile", () => {
+  test("reports malformed JSON with recovery guidance", async () => {
+    const file = new File(["{"], "site.geojson", {
+      type: "application/geo+json",
+    });
+
+    await expect(readGeoJsonFile(file)).rejects.toThrow(
+      "Boundary file must be valid GeoJSON JSON",
+    );
+    await expect(readGeoJsonFile(file)).rejects.toThrow("Redraw or re-upload");
+  });
+
+  test("reports valid JSON that is not polygon GeoJSON with recovery guidance", async () => {
+    const file = new File([JSON.stringify({ not: "geojson" })], "site.geojson", {
+      type: "application/geo+json",
+    });
+
+    await expect(readGeoJsonFile(file)).rejects.toThrow(
+      "Boundary file must contain valid polygon GeoJSON",
+    );
+    await expect(readGeoJsonFile(file)).rejects.toThrow("Redraw or re-upload");
   });
 });

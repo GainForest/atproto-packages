@@ -247,6 +247,15 @@ export const SiteEditorModal = ({
     _updateMutation({ rkey, data: { name }, newShapefile });
   };
 
+  const verifyNewBoundary = async (file: File) => {
+    setIsVerifyingBoundary(true);
+    try {
+      await readGeoJsonFile(file);
+    } finally {
+      setIsVerifyingBoundary(false);
+    }
+  };
+
   const verifyBoundaryUpdate = async (file: File) => {
     if (mode !== "edit" || !initialData?.uri) {
       return;
@@ -290,6 +299,8 @@ export const SiteEditorModal = ({
         if (!shapefile) {
           throw new LocalizedSiteEditorError(t("errors.shapefileRequired"));
         }
+
+        await verifyNewBoundary(shapefile);
 
         await handleAdd({
           name: name.trim(),
@@ -509,8 +520,10 @@ export const SiteEditorModal = ({
                   : t("saving")
                 : t("save")
               : isPending
-              ? t("adding")
-              : t("add")}
+                ? isVerifyingBoundary
+                  ? t("checking")
+                  : t("adding")
+                : t("add")}
           </Button>
         )}
         {isCompleted && (

@@ -1,21 +1,22 @@
 import { clientEnv } from "./env/client";
 import type { BumicertDetailTab } from "./bumicert-tabs";
+import { resolveGreenGlobePreviewBaseUrl } from "./url";
 
 type DidDynamicLink = (did?: string) => string;
 const didCatcher = (callback: (did: string) => string): DidDynamicLink => {
   return (did) => (did === undefined ? "#" : callback(did));
 };
 
-const DEFAULT_GREEN_GLOBE_PREVIEW_BASE_URL = "https://gainforest.app";
 const BUMICERT_CREATE_PATH = "/bumicert/create";
 const HYPERLABEL_BASE_URL = "https://hyperlabel-production.up.railway.app";
 const CONTENTSQUARE_UXA_BASE_URL = "https://t.contentsquare.net/uxa";
 const TREE_UPLOAD_FEEDBACK_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLScpHS_-7QTTiHIseqjzvkdbx6jzjenebkaLGXoETNrfit0ZNA/viewform";
 
-const GREEN_GLOBE_PREVIEW_BASE_URL =
-  clientEnv.NEXT_PUBLIC_GREEN_GLOBE_URL?.trim().replace(/\/$/, "") ??
-  DEFAULT_GREEN_GLOBE_PREVIEW_BASE_URL;
+const GREEN_GLOBE_PREVIEW_BASE_URL = resolveGreenGlobePreviewBaseUrl({
+  configuredUrl: clientEnv.NEXT_PUBLIC_GREEN_GLOBE_URL,
+  vercelEnv: clientEnv.NEXT_PUBLIC_VERCEL_ENV,
+});
 
 function bumicertViewPath(didOrId: string, rkey?: string): string {
   if (rkey) {
@@ -147,6 +148,7 @@ export const links = {
       options?: {
         treeUri?: string | null;
         datasetRef?: string | null;
+        datasetRefs?: string[] | null;
       },
     ) => {
       const query = new URLSearchParams();
@@ -154,8 +156,17 @@ export const links = {
       if (options?.treeUri) {
         query.set("tree-uri", options.treeUri);
       }
-      if (options?.datasetRef) {
-        query.set("dataset-ref", options.datasetRef);
+
+      const datasetRefs = Array.from(
+        new Set([
+          ...(options?.datasetRef ? [options.datasetRef] : []),
+          ...(options?.datasetRefs ?? []),
+        ]),
+      );
+      for (const datasetRef of datasetRefs) {
+        if (datasetRef.length > 0) {
+          query.append("dataset-ref", datasetRef);
+        }
       }
 
       const queryString = query.toString();

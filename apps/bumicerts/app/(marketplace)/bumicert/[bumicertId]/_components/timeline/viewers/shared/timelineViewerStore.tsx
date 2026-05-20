@@ -7,10 +7,12 @@ import { createStore, type StoreApi } from "zustand/vanilla";
 type TimelineViewerState = {
   isOwner: boolean;
   selectedPreviewTileByEntryId: Record<string, string>;
+  activeMapLayerByDatasetUri: Record<string, true>;
 };
 
 type TimelineViewerActions = {
   setSelectedPreviewTile: (entryId: string, tileId: string) => void;
+  setMapLayerActive: (datasetUri: string, active: boolean) => void;
 };
 
 type TimelineViewerStore = TimelineViewerState & TimelineViewerActions;
@@ -21,6 +23,7 @@ function createTimelineViewerStore(init: { isOwner: boolean }): TimelineViewerSt
   return createStore<TimelineViewerStore>((set) => ({
     isOwner: init.isOwner,
     selectedPreviewTileByEntryId: {},
+    activeMapLayerByDatasetUri: {},
     setSelectedPreviewTile: (entryId, tileId) =>
       set((state) => ({
         selectedPreviewTileByEntryId: {
@@ -28,6 +31,17 @@ function createTimelineViewerStore(init: { isOwner: boolean }): TimelineViewerSt
           [entryId]: tileId,
         },
       })),
+    setMapLayerActive: (datasetUri, active) =>
+      set((state) => {
+        const next = { ...state.activeMapLayerByDatasetUri };
+        if (active) {
+          next[datasetUri] = true;
+        } else {
+          delete next[datasetUri];
+        }
+
+        return { activeMapLayerByDatasetUri: next };
+      }),
   }));
 }
 

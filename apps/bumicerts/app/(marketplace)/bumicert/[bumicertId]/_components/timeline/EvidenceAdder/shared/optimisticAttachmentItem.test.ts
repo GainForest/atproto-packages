@@ -8,6 +8,10 @@ const subjectInfo = {
   uri: "at://did:plc:test/org.hypercerts.claim.activity/abc123",
   cid: "bafyreitestcid",
 };
+const siteSubject = {
+  uri: "at://did:plc:test/app.certified.location/site-1",
+  cid: "bafyreisitecid",
+};
 
 describe("buildOptimisticAttachmentItem", () => {
   test("keeps remote uri content unchanged", () => {
@@ -25,6 +29,22 @@ describe("buildOptimisticAttachmentItem", () => {
     expect(item.record?.content).toEqual([
       { $type: "org.hypercerts.defs#uri", uri: "https://example.com/report.pdf" },
     ]);
+  });
+
+  test("keeps contextual site subjects after the activity subject", () => {
+    const item = buildOptimisticAttachmentItem({
+      did: "did:plc:org",
+      uri: "at://did:plc:org/org.hypercerts.context.attachment/att-site",
+      rkey: "att-site",
+      cid: "bafy-att-site",
+      title: "Attachment",
+      contentType: "tree-dataset",
+      subjectInfo,
+      contextualSubjects: [siteSubject],
+      contents: ["at://did:plc:test/app.gainforest.dwc.dataset/dataset-1"],
+    });
+
+    expect(item.record?.subjects).toEqual([subjectInfo, siteSubject]);
   });
 
   test("stores optimistic file previews as data urls with mime fallback", () => {

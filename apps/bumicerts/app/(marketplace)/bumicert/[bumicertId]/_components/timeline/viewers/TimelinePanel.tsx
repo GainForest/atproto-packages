@@ -9,16 +9,23 @@ import {
   TIMELINE_EVIDENCE_FILTERS,
   type TimelineEvidenceFilter,
 } from "../shared/evidenceKind";
-import { TimelineEntryList } from "./TimelineEntryList";
+import { TimelineEntryList, type TimelineEntryListItem } from "./TimelineEntryList";
 import { TimelineEmpty } from "./shared/TimelineEmpty";
+import { TimelineGreenGlobePreview } from "./shared/TimelineGreenGlobePreview";
 import { TimelineSkeleton } from "./shared/TimelineSkeleton";
+import {
+  buildTimelineMapLayers,
+  type TimelineMapLayer,
+} from "./shared/timelineMapLayers";
 import { TimelineViewerStoreProvider } from "./shared/timelineViewerStore";
+import { useResolvedAttachmentReferenceMap } from "./shared/referenceResolution/useResolvedAttachmentReferences";
 import { useLocale, useTranslations } from "next-intl";
 
 interface TimelinePanelProps {
   entries: AttachmentItem[];
   isLoading: boolean;
   isOwner: boolean;
+  organizationDid: string;
 }
 
 function parseDate(value: string | null | undefined): Date | null {
@@ -60,11 +67,66 @@ function formatLinkedWindow(entries: AttachmentItem[], locale: string): string |
   return `${formatMonthYear(first, locale)} – ${formatMonthYear(last, locale)}`;
 }
 
-export function TimelinePanel({ entries, isLoading, isOwner }: TimelinePanelProps) {
+function getTimelineEntryId(item: AttachmentItem, index: number): string {
+  return item.metadata?.uri ?? `${item.metadata?.rkey ?? "entry"}-${index}`;
+}
+
+export function TimelinePanel({
+  entries,
+  isLoading,
+  isOwner,
+  organizationDid,
+}: TimelinePanelProps) {
   const t = useTranslations("bumicert.detail.timeline");
   const locale = useLocale();
   const [activeFilter, setActiveFilter] = useState<TimelineEvidenceFilter>("all");
-  const linkedWindow = useMemo(() => formatLinkedWindow(entries, locale), [entries, locale]);
+  const linkedWindow = useMemo(
+    () => formatLinkedWindow(entries, locale),
+    [entries, locale],
+  );
+  const referenceRequests = useMemo(
+    () =>
+      entries.map((entry, index) => ({
+        key: getTimelineEntryId(entry, index),
+        content: entry.record?.content,
+      })),
+    [entries],
+  );
+  const { referencesByKey, isLoading: referencesLoading } =
+    useResolvedAttachmentReferenceMap(referenceRequests);
+  const entryViewModels = useMemo<TimelineEntryListItem[]>(
+    () =>
+      entries.map((entry, index) => {
+        const entryId = getTimelineEntryId(entry, index);
+        const references = referencesByKey.get(entryId) ?? [];
+
+        return {
+          item: entry,
+          index,
+          entryId,
+          references,
+          mapLayers: buildTimelineMapLayers([{ item: entry, references }]),
+        };
+      }),
+    [entries, referencesByKey],
+  );
+  const mapLayers = useMemo<TimelineMapLayer[]>(() => {
+    const seenDatasetUris = new Set<string>();
+    const layers: TimelineMapLayer[] = [];
+
+    for (const entry of entryViewModels) {
+      for (const layer of entry.mapLayers) {
+        if (seenDatasetUris.has(layer.datasetUri)) {
+          continue;
+        }
+
+        seenDatasetUris.add(layer.datasetUri);
+        layers.push(layer);
+      }
+    }
+
+    return layers;
+  }, [entryViewModels]);
   const entriesByFilter = useMemo(() => {
     const counts: Array<[TimelineEvidenceFilter, number]> =
       TIMELINE_EVIDENCE_FILTERS.map((filter) => [
@@ -80,13 +142,16 @@ export function TimelinePanel({ entries, isLoading, isOwner }: TimelinePanelProp
   }, [entries]);
   const filteredEntries = useMemo(
     () =>
-      entries.filter((entry) =>
+      entryViewModels.filter((entry) =>
         matchesTimelineFilter(
-          getTimelineEvidenceKind(entry.record?.contentType, entry.record?.content),
+          getTimelineEvidenceKind(
+            entry.item.record?.contentType,
+            entry.item.record?.content,
+          ),
           activeFilter,
         ),
       ),
-    [activeFilter, entries],
+    [activeFilter, entryViewModels],
   );
 
   return (
@@ -135,6 +200,14 @@ export function TimelinePanel({ entries, isLoading, isOwner }: TimelinePanelProp
           </div>
         </div>
 
+        {!isLoading ? (
+          <TimelineGreenGlobePreview
+            organizationDid={organizationDid}
+            layers={mapLayers}
+            isLoading={referencesLoading}
+          />
+        ) : null}
+
         {isLoading ? (
           <TimelineSkeleton />
         ) : entries.length === 0 ? (
@@ -144,7 +217,10 @@ export function TimelinePanel({ entries, isLoading, isOwner }: TimelinePanelProp
             {t("emptyFiltered")}
           </div>
         ) : (
-          <TimelineEntryList entries={filteredEntries} />
+          <TimelineEntryList
+            entries={filteredEntries}
+            referencesLoading={referencesLoading}
+          />
         )}
       </div>
     </TimelineViewerStoreProvider>

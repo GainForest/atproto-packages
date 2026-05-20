@@ -1,9 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Archive, FileSpreadsheet, Upload, X } from "lucide-react";
+import { Archive, CirclePlus, FileSpreadsheet, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +18,11 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
+import { useModal } from "@/components/ui/modal/context";
+import {
+  SiteEditorModal,
+  SiteEditorModalId,
+} from "@/components/global/modals/upload/site/editor";
 import { useCsvParser } from "@/lib/upload/use-csv-parser";
 import { getPartnerEstablishmentMeansOptions } from "@/lib/upload/establishment-means";
 import { detectKoboFormat } from "@/lib/upload/kobo-mapper";
@@ -42,9 +47,12 @@ import type {
   UploadDatasetSelection,
 } from "@/lib/upload/upload-dataset-selection";
 import {
+  getBoundaryCapableUploadSites,
   resolveUploadSiteSelection,
+  shouldOfferCreateUploadSiteBoundary,
   toUploadSiteSelection,
   uploadSiteHasBoundary,
+  uploadSiteHasTransientBoundary,
   type UploadSiteSelection,
 } from "@/lib/upload/site-selection";
 import {
@@ -153,6 +161,7 @@ export default function FileDropStep({
   const format = useFormatter();
   const { parsedData, headers, rowCount, error, isParsing, parseFile, reset } =
     useCsvParser();
+  const { pushModal, show } = useModal();
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedMediaZipFile, setSelectedMediaZipFile] = useState<File | null>(
@@ -227,6 +236,10 @@ export default function FileDropStep({
     }),
     [sitesQuery.data],
   );
+  const sitesWithBoundary = useMemo(
+    () => getBoundaryCapableUploadSites(uploadSites),
+    [uploadSites],
+  );
   const selectedSite = useMemo(
     () =>
       resolveUploadSiteSelection({
@@ -239,6 +252,24 @@ export default function FileDropStep({
   const selectedSiteHasBoundary = selectedSite
     ? uploadSiteHasBoundary(selectedSite)
     : false;
+  const selectedSiteBoundarySyncing = selectedSite
+    ? uploadSiteHasTransientBoundary(selectedSite)
+    : false;
+  const siteBoundaryQueries = useQueries({
+    queries: sitesWithBoundary.map((site) => ({
+      queryKey: uploadSiteBoundaryQueryKey(site.uri),
+      queryFn: () => fetchUploadSiteBoundary(site),
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+  const boundaryCandidateChecksDone =
+    sitesWithBoundary.length > 0 &&
+    siteBoundaryQueries.every((query) => query.isSuccess || query.isError);
+  const hasValidatedBoundaryCandidate = siteBoundaryQueries.some(
+    (query) => query.isSuccess,
+  );
+  const allBoundaryCandidatesFailed =
+    boundaryCandidateChecksDone && !hasValidatedBoundaryCandidate;
   const siteBoundaryQuery = useQuery({
     queryKey: uploadSiteBoundaryQueryKey(selectedSite?.uri),
     queryFn: () => {
@@ -253,6 +284,32 @@ export default function FileDropStep({
   });
   const selectedSiteBoundaryReady =
     selectedSiteHasBoundary && siteBoundaryQuery.isSuccess;
+  const selectedSiteBoundaryFailed =
+    selectedSiteHasBoundary && siteBoundaryQuery.isError;
+  const showCreateSiteBoundaryAction =
+    !selectedSiteBoundarySyncing &&
+    shouldOfferCreateUploadSiteBoundary({
+      sitesWithBoundary,
+      selectedSite,
+      selectedSiteBoundaryFailed,
+      allBoundaryCandidatesFailed,
+    });
+
+  const handleCreateSiteBoundary = useCallback(() => {
+    pushModal(
+      {
+        id: SiteEditorModalId,
+        content: (
+          <SiteEditorModal
+            initialData={null}
+            onCreated={(site) => setSelectedSiteUri(site.uri)}
+          />
+        ),
+      },
+      true,
+    );
+    show();
+  }, [pushModal, show]);
 
   const handleFile = useCallback(
     (file: File) => {
@@ -498,6 +555,22 @@ export default function FileDropStep({
     !sitesQuery.isLoading &&
     !sitesQuery.error &&
     selectedSite === null;
+  const createSiteBoundaryAction = showCreateSiteBoundaryAction ? (
+    <div className="space-y-3 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">
+          {t("createSiteBoundaryUnavailableTitle")}
+        </p>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {t("createSiteBoundaryUnavailableDescription")}
+        </p>
+      </div>
+      <Button type="button" variant="outline" onClick={handleCreateSiteBoundary}>
+        <CirclePlus />
+        {t("createSiteBoundary")}
+      </Button>
+    </div>
+  ) : null;
 
   return (
     <div className="space-y-5">
@@ -713,13 +786,16 @@ export default function FileDropStep({
             {t("sitesLoadError")}
           </p>
         ) : uploadSites.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {t("noSites")}
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {t("noSites")}
+            </p>
+            {createSiteBoundaryAction}
+          </div>
         ) : (
           <>
             <Select
-              value={selectedSite?.uri}
+              value={selectedSite?.uri ?? ""}
               onValueChange={setSelectedSiteUri}
             >
               <SelectTrigger id="site-boundary-select">
@@ -729,6 +805,7 @@ export default function FileDropStep({
                 {uploadSites.map((site) => {
                   const isDefault = defaultSiteQuery.data === site.uri;
                   const hasBoundary = uploadSiteHasBoundary(site);
+                  const isSyncingBoundary = uploadSiteHasTransientBoundary(site);
 
                   return (
                     <SelectItem
@@ -738,7 +815,11 @@ export default function FileDropStep({
                     >
                       {site.name}
                       {isDefault ? ` (${tCommon("default")})` : ""}
-                      {!hasBoundary ? ` — ${tCommon("noBoundary")}` : ""}
+                      {isSyncingBoundary
+                        ? ` — ${t("syncingBoundary")}`
+                        : !hasBoundary
+                          ? ` — ${tCommon("noBoundary")}`
+                          : ""}
                     </SelectItem>
                   );
                 })}
@@ -752,6 +833,12 @@ export default function FileDropStep({
                   {t("boundaryOnly")}
                 </p>
               </div>
+            ) : null}
+
+            {selectedSiteBoundarySyncing ? (
+              <p className="text-sm text-muted-foreground">
+                {t("siteBoundarySyncing")}
+              </p>
             ) : null}
 
             {selectedSite && selectedSiteHasBoundary && siteBoundaryQuery.isLoading ? (
@@ -772,11 +859,13 @@ export default function FileDropStep({
               </p>
             ) : null}
 
-            {selectedSite && !selectedSiteHasBoundary ? (
+            {selectedSite && !selectedSiteHasBoundary && !selectedSiteBoundarySyncing ? (
               <p className="text-sm text-destructive">
                 {t("siteNoBoundary")}
               </p>
             ) : null}
+
+            {createSiteBoundaryAction}
           </>
         )}
       </div>

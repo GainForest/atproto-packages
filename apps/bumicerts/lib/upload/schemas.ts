@@ -177,7 +177,7 @@ function getBoundaryIssue(
       path: "siteBoundary",
       message: t
         ? t("nearBoundary")
-        : `Near boundary: this tree is ${formatBoundaryDistance(failure.distanceMeters)} outside the selected site and will be skipped.`,
+        : `Near boundary: this tree is ${formatBoundaryDistance(failure.distanceMeters)} outside the selected site polygon. Fix the coordinates so the tree is inside the selected boundary, or go back and choose/create the correct site boundary; this row will be skipped.`,
     };
   }
 
@@ -186,7 +186,7 @@ function getBoundaryIssue(
       path: "siteBoundary",
       message: t
         ? t("invalidBoundary")
-        : `Invalid selected site boundary: ${failure.reason ?? "the boundary could not be used for tree validation."}`,
+        : `Invalid selected site boundary: ${failure.reason ?? "the boundary could not be used for tree validation."} Redraw or re-upload valid polygon GeoJSON, or select/create another site boundary before uploading trees.`,
     };
   }
 
@@ -194,7 +194,7 @@ function getBoundaryIssue(
     path: "siteBoundary",
     message: t
       ? t("outOfSite")
-      : `Out of site: this tree is outside the selected site boundary and will be skipped.`,
+      : "Out of site: this tree is outside the selected site polygon. Fix the coordinates so the tree is inside the selected boundary, or go back and choose/create the correct site boundary; this row will be skipped.",
   };
 }
 

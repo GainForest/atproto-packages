@@ -173,6 +173,14 @@ export default function PreviewStep({
   }, [errors]);
 
   const errorSummary = useMemo(() => buildErrorSummary(errors), [errors]);
+  const hasBoundaryErrors = errors.some((error) =>
+    error.issues.some((issue) => issue.path === "siteBoundary"),
+  );
+  const allErrorsAreBoundaryErrors =
+    errors.length > 0 &&
+    errors.every((error) =>
+      error.issues.every((issue) => issue.path === "siteBoundary"),
+    );
   const previewSkippedRows = useMemo(
     () => buildPreviewRowAttentionSummaries(errors, mappedRows, tRowAttention),
     [errors, mappedRows, tRowAttention],
@@ -244,9 +252,7 @@ export default function PreviewStep({
       ) : siteBoundaryQuery.error ? (
         <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <XCircle className="h-4 w-4 shrink-0" />
-          <span>
-            {t("boundaryLoadError")}
-          </span>
+          <span>{t("boundaryLoadError")}</span>
         </div>
       ) : allValid ? (
         <div className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 p-3 text-sm text-primary">
@@ -259,7 +265,11 @@ export default function PreviewStep({
         <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <XCircle className="h-4 w-4 shrink-0" />
           <span>
-            {t("allInvalid")}
+            {allErrorsAreBoundaryErrors
+              ? t("allInvalidBoundary")
+              : hasBoundaryErrors
+                ? t("allInvalidWithBoundaryErrors")
+                : t("allInvalid")}
           </span>
         </div>
       ) : (
@@ -267,6 +277,10 @@ export default function PreviewStep({
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>
             {t("partialValid", { validCount, errorCount })}
+            {" "}
+            {hasBoundaryErrors
+              ? t("partialValidBoundaryHint")
+              : t("partialValidMappingHint")}
           </span>
         </div>
       )}

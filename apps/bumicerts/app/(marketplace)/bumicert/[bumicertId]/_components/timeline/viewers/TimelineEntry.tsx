@@ -13,21 +13,26 @@ import {
   type TimelineEvidenceKind,
 } from "../shared/evidenceKind";
 import { formatEvidenceDateRangeFromValues } from "../shared/datasetStats";
-import { useResolvedAttachmentReferences } from "./shared/referenceResolution/useResolvedAttachmentReferences";
 import type { ResolvedAttachmentReference } from "./shared/referenceResolution/referenceViewModel";
 import { TimelineDeleteConfirm } from "./shared/TimelineDeleteConfirm";
 import {
   TimelineOptionalNote,
   hasTimelineOptionalNote,
 } from "./shared/TimelineOptionalNote";
+import { TimelineDatasetMapLayerCards } from "./shared/TimelineDatasetMapLayerCards";
 import { TimelinePreviewPanel } from "./shared/TimelinePreviewPanel";
 import { TimelineTileRow } from "./shared/TimelineTileRow";
 import { useTimelineViewerStore } from "./shared/timelineViewerStore";
+import type { TimelineMapLayer } from "./shared/timelineMapLayers";
 import { useTranslations } from "next-intl";
 
 interface TimelineEntryProps {
   item: AttachmentItem;
   index: number;
+  entryId: string;
+  references: ResolvedAttachmentReference[];
+  referencesLoading: boolean;
+  mapLayers: TimelineMapLayer[];
 }
 
 function formatPublicDate(value: string | null | undefined, fallback: string): string {
@@ -159,7 +164,14 @@ function getGreenGlobeHref(references: ResolvedAttachmentReference[]): string | 
   return references.find((reference) => reference.greenGlobeHref)?.greenGlobeHref ?? null;
 }
 
-export function TimelineEntry({ item, index }: TimelineEntryProps) {
+export function TimelineEntry({
+  item,
+  index,
+  entryId,
+  references,
+  referencesLoading,
+  mapLayers,
+}: TimelineEntryProps) {
   const t = useTranslations("bumicert.detail.timelineEntry");
   const [expanded, setExpanded] = useState(index === 0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -168,9 +180,6 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
   const panelId = useId();
   const deleteConfirmId = useId();
   const isOwner = useTimelineViewerStore((state) => state.isOwner);
-  const { references, isLoading: referencesLoading } =
-    useResolvedAttachmentReferences(item.record?.content);
-  const entryId = item.metadata?.uri ?? `${item.metadata?.rkey ?? "entry"}-${index}`;
   const tiles = useMemo(
     () =>
       buildTimelineFeedTiles({
@@ -197,6 +206,10 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
     () =>
       tiles.filter((tile) => {
         if (!tile.preview) {
+          return false;
+        }
+
+        if (tile.preview.kind === "green-globe") {
           return false;
         }
 
@@ -378,6 +391,8 @@ export function TimelineEntry({ item, index }: TimelineEntryProps) {
               </div>
             </div>
           ) : null}
+
+          <TimelineDatasetMapLayerCards layers={mapLayers} />
 
           <TimelinePreviewPanel preview={activeInlinePreview} />
 

@@ -469,7 +469,7 @@ export default function UploadStep({
         durationSeconds: Math.round((completedAtMs - uploadStartMs) / 1_000),
       });
       setUploadFatalError(
-        "This upload is missing its required site selection. Please start over and choose a site boundary.",
+        "This upload is missing its required single site boundary. Please start over, select a site boundary, or create one if no usable boundary exists.",
       );
       setClockMs(completedAtMs);
       setUploadDone(true);
@@ -562,7 +562,7 @@ export default function UploadStep({
         durationSeconds: Math.round((completedAtMs - uploadStartMs) / 1_000),
       });
       setUploadFatalError(
-        "Couldn't recheck the selected site boundary before upload. Please return to site selection and choose a valid GeoJSON boundary.",
+        "Couldn't recheck the selected site boundary before upload. Return to site selection and choose another site boundary, or redraw/re-upload/create a valid polygon GeoJSON boundary before uploading trees.",
       );
       setClockMs(completedAtMs);
       setUploadDone(true);
