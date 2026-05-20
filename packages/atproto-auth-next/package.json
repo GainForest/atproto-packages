@@ -26,6 +26,12 @@
       "import": "./dist/stores.js",
       "require": "./dist/stores.cjs"
     },
+    "./oauth": {
+      "source": "./src/oauth.ts",
+      "types": "./dist/oauth.d.ts",
+      "import": "./dist/oauth.js",
+      "require": "./dist/oauth.cjs"
+    },
     "./client": {
       "source": "./src/client.ts",
       "types": "./dist/client.d.ts",
@@ -37,6 +43,7 @@
     "*": {
       "server": ["dist/server.d.ts"],
       "stores": ["dist/stores.d.ts"],
+      "oauth": ["dist/oauth.d.ts"],
       "client": ["dist/client.d.ts"]
     }
   },
@@ -48,7 +55,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@atproto/api": "^0.13.17",
+    "@atproto/api": "0.19.0",
     "@atproto/jwk-jose": "^0.1.11",
     "@atproto/oauth-client-node": "^0.3.9",
     "iron-session": "^8.0.4"

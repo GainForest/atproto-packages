@@ -2,7 +2,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { s3Client, S3_BUCKET } from "@/lib/config/s3";
-import { auth } from "@/lib/auth";
+import { getCurrentSession } from "@/lib/current-session";
 import { serverEnv as env } from "@/lib/env/server";
 
 // Allowed image MIME types
@@ -45,7 +45,7 @@ function isFile(value: FormDataEntryValue | null): value is File {
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<UploadResponse | ErrorResponse>> {
-  const session = await auth.session.getSession();
+  const session = await getCurrentSession();
   if (!session.isLoggedIn) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

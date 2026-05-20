@@ -5,6 +5,7 @@ export default defineConfig({
     index: "src/index.ts",
     server: "src/server.ts",
     stores: "src/stores.ts",
+    oauth: "src/oauth.ts",
     client: "src/client.ts",
   },
   format: ["cjs", "esm"],

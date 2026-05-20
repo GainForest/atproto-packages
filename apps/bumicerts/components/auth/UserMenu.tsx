@@ -17,6 +17,7 @@ import { links } from "@/lib/links";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { useAtprotoStore } from "@/components/stores/atproto";
 import { logout } from "@/components/actions/oauth";
+import { buildCentralLogoutUrl } from "@/lib/central-auth-client";
 import { useModal } from "@/components/ui/modal/context";
 import { MODAL_IDS } from "@/components/global/modals/ids";
 import { useAccount } from "@/components/providers/AccountProvider";
@@ -168,6 +169,12 @@ function AuthenticatedMenu({
 
   const handleLogout = async () => {
     setOpen(false);
+    const centralLogoutUrl = buildCentralLogoutUrl();
+    if (centralLogoutUrl) {
+      window.location.href = centralLogoutUrl;
+      return;
+    }
+
     await logout();
     accountUtils.account.current.setData(undefined, UNAUTHENTICATED_ACCOUNT_SUMMARY);
     setAuth(null);

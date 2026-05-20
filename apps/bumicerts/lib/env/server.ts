@@ -38,6 +38,8 @@ export const serverEnv = createEnv({
     // ATProto OAuth
     ATPROTO_JWK_PRIVATE: z.string().min(1),
     COOKIE_SECRET: z.string().min(32),
+    AUTH_BASE_URL: z.string().url().optional(),
+    AUTH_APP_ID: z.string().min(1).optional(),
 
     // Supabase (service role — server only)
     SUPABASE_URL: z.string().url(),
@@ -90,6 +92,8 @@ export const serverEnv = createEnv({
     STAGING_URL: process.env.STAGING_URL,
     ATPROTO_JWK_PRIVATE: process.env.ATPROTO_JWK_PRIVATE,
     COOKIE_SECRET: process.env.COOKIE_SECRET,
+    AUTH_BASE_URL: process.env.AUTH_BASE_URL,
+    AUTH_APP_ID: process.env.AUTH_APP_ID,
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     SUPABASE_KEY: process.env.SUPABASE_KEY,

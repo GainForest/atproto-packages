@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRightIcon, LoaderIcon } from "lucide-react";
 import { authorize } from "@/components/actions/oauth";
+import { buildCentralLoginUrl } from "@/lib/central-auth-client";
 import { clientEnv as env } from "@/lib/env/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,12 @@ function EmailForm() {
       "auth_redirect",
       `${window.location.pathname}${window.location.search}`,
     );
+    const centralLoginUrl = buildCentralLoginUrl({ email });
+    if (centralLoginUrl) {
+      window.location.href = centralLoginUrl;
+      return;
+    }
+
     const url = email
       ? `/api/oauth/epds/login?email=${encodeURIComponent(email)}`
       : "/api/oauth/epds/login";
@@ -189,6 +196,12 @@ function HandleForm() {
     );
     startTransition(async () => {
       try {
+        const centralLoginUrl = buildCentralLoginUrl({ handle: handle.trim() });
+        if (centralLoginUrl) {
+          window.location.href = centralLoginUrl;
+          return;
+        }
+
         const result = await authorize(handle.trim());
         if ("authorizationUrl" in result) {
           window.location.href = result.authorizationUrl;

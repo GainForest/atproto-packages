@@ -8,12 +8,14 @@ export type SessionConfig = {
   cookieSecret: string;
   cookieName?: string;
   secure?: boolean;
+  domain?: string;
 };
 
 export function buildSessionOptions({
   cookieSecret,
   cookieName = DEFAULT_COOKIE_NAME,
   secure,
+  domain,
 }: SessionConfig): SessionOptions {
   if (cookieSecret.length < 32) {
     throw new Error("cookieSecret must be at least 32 characters");
@@ -28,6 +30,7 @@ export function buildSessionOptions({
       sameSite: "lax" as const,
       maxAge: COOKIE_MAX_AGE_SECONDS,
       path: "/",
+      domain,
     },
   };
 }

@@ -52,7 +52,13 @@ function getAuth() {
     privateKeyJwk: env.ATPROTO_JWK_PRIVATE,
     cookieSecret: env.COOKIE_SECRET,
     supabase,
-    appId: "bumicerts",
+    appId:
+      env.AUTH_APP_ID ??
+      (env.AUTH_BASE_URL
+        ? env.NODE_ENV === "production"
+          ? "gainforest-auth"
+          : "gainforest-auth-local"
+        : "bumicerts"),
     clientName: "Bumicerts",
     cookieName: "bumicerts_session",
     cookieSecure: env.NODE_ENV === "production",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { getCurrentSession } from "@/lib/current-session";
 import { links } from "@/lib/links";
 import { AccountOnboardingRequired } from "./_components/AccountOnboardingRequired";
 import ErrorPage from "@/components/error-page";
@@ -11,9 +11,9 @@ import { noIndexMetadata } from "@/lib/seo-metadata";
 export const metadata: Metadata = noIndexMetadata();
 
 export default async function AccountPage() {
-  const session = await auth.session.getSession();
+  const session = await getCurrentSession();
 
-  if (!session.isLoggedIn || !session.did) {
+  if (!session.did) {
     redirect(links.home);
   }
 

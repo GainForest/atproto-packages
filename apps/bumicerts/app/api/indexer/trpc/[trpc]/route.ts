@@ -1,5 +1,5 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { auth } from "@/lib/auth";
+import { getCurrentSession } from "@/lib/current-session";
 import { localQueryRouter } from "@/lib/trpc/query-router/router";
 
 /**
@@ -15,13 +15,10 @@ const handler = (req: Request) =>
     req,
     router: localQueryRouter,
     createContext: async () => {
-      const session = await auth.session.getSession();
+      const session = await getCurrentSession();
 
       return {
-        sessionDid:
-          session.isLoggedIn && session.did
-            ? session.did
-            : null,
+        sessionDid: session.did,
       };
     },
     onError: ({ path, error }) => {
