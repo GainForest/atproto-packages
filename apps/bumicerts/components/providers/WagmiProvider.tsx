@@ -62,24 +62,14 @@ function WagmiClientProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  if (typeof window === "undefined") {
-    return (
-      <WagmiProviderBase config={wagmiConfig}>
-        <QueryClientProvider client={wagmiQueryClient}>
-          {children}
-        </QueryClientProvider>
-      </WagmiProviderBase>
-    );
-  }
-
   return (
     <WagmiProviderBase config={wagmiConfig}>
       <QueryClientProvider client={wagmiQueryClient}>
         <RainbowKitProvider
           theme={lightTheme({
-            accentColor:           "var(--primary)",
+            accentColor: "var(--primary)",
             accentColorForeground: "var(--primary-foreground)",
-            borderRadius:          "medium",
+            borderRadius: "medium",
           })}
         >
           {children}

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import type { AttachmentItem } from "@/graphql/indexer/queries/attachments";
 import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { EvidenceAdder } from "../timeline/EvidenceAdder";
+import { isAttachmentForActivity } from "../timeline/shared/attachmentSubjects";
 import { TimelinePanel } from "../timeline/viewers/TimelinePanel";
 
 interface TimelineTabProps {
@@ -46,7 +47,12 @@ export function TimelineTab({
             />
           </div>
         )}
-        <TimelinePanel entries={entries} isLoading={isLoading} isOwner={isOwner} />
+        <TimelinePanel
+          entries={entries}
+          isLoading={isLoading}
+          isOwner={isOwner}
+          organizationDid={organizationDid}
+        />
       </div>
     </motion.div>
   );
@@ -57,7 +63,5 @@ function getEntriesForActivity(
   activityUri: string,
 ): AttachmentItem[] {
   const items = data ?? [];
-  return items.filter((item) =>
-    item.record?.subjects?.some((subject) => subject?.uri === activityUri),
-  );
+  return items.filter((item) => isAttachmentForActivity(item, activityUri));
 }

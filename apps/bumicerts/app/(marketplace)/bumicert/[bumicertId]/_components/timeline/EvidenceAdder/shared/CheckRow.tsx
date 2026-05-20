@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { CheckIcon, CircleCheck, CircleDashed } from "lucide-react";
+import { CheckIcon, CircleDashed } from "lucide-react";
 
 function CheckRow({
   selected,
@@ -23,7 +23,7 @@ function CheckRow({
       type="button"
       onClick={onToggle}
       className={cn(
-        "w-full bg-background hover:bg-accent flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all duration-150",
+        "w-full bg-background hover:bg-accent flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-background",
         selected ? "bg-accent" : "",
       )}
       disabled={disabled}
