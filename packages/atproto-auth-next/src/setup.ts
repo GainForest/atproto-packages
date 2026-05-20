@@ -114,11 +114,6 @@ export type AuthSetupConfig = {
    */
   cookieSecure?: boolean;
   /**
-   * Optional parent-domain cookie scope, e.g. ".gainforest.app".
-   * Leave unset for host-only cookies in local development and single-app deployments.
-   */
-  cookieDomain?: string;
-  /**
    * Enable debug logging for this auth setup. Defaults to false.
    * Pass true when you want verbose auth logs (e.g. `DEBUG === "1"`).
    */
@@ -308,7 +303,6 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     clientName = "Gainforest",
     cookieName,
     cookieSecure,
-    cookieDomain,
     defaultPdsDomain,
     epds: epdsConfig,
     epdsHandleMode,
@@ -356,7 +350,6 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     cookieSecret,
     cookieName,
     secure: cookieSecure,
-    domain: cookieDomain,
   };
 
   // ─── Stores ─────────────────────────────────────────────────────────────────

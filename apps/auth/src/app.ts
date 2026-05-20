@@ -1,4 +1,4 @@
-import { oauthClient, clientMetadata, jwks, normalizeHandle, resolveHandle } from "./auth.js";
+import { clientMetadata, getJwks, getOAuthClient, normalizeHandle, resolveHandle, resolveProfile } from "./auth.js";
 import {
   clearReturnToCookie,
   clearSessionCookie,
@@ -35,6 +35,7 @@ function loginForm(returnTo: string, error: string | null): Response {
 <h1>Sign in to GainForest</h1>
 <p>Use your ATProto handle or email account.</p>
 ${error ? '<p style="color:crimson">Sign-in failed. Please try again.</p>' : ""}
+<p><a href="${escapeHtml(returnTo)}">Return to app</a></p>
 <form method="get" action="/login" style="display:grid;gap:12px">
 <input type="hidden" name="returnTo" value="${escapeHtml(returnTo)}">
 <label for="email">Email</label>
@@ -64,7 +65,10 @@ async function login(request: Request, url: URL): Promise<Response> {
     return methodNotAllowed();
   }
 
-  const returnTo = parseSafeReturnTo(url.searchParams.get("returnTo")) ?? fallbackReturnTo();
+  const returnTo =
+    parseSafeReturnTo(url.searchParams.get("returnTo")) ??
+    parseSafeReturnTo(readCookie(request, returnToCookieName)) ??
+    fallbackReturnTo();
   const email = url.searchParams.get("email")?.trim();
   const handle = url.searchParams.get("handle")?.trim();
   const provider = url.searchParams.get("provider")?.trim();
@@ -85,7 +89,7 @@ async function login(request: Request, url: URL): Promise<Response> {
 
   if (handle) {
     try {
-      const authUrl = await oauthClient.authorize(normalizeHandle(handle), {
+      const authUrl = await getOAuthClient().authorize(normalizeHandle(handle), {
         scope: "atproto transition:generic",
       });
       const response = redirectResponse(authUrl.toString());
@@ -119,7 +123,7 @@ async function epdsLogin(request: Request, url: URL): Promise<Response> {
   }
 
   try {
-    const authUrl = await oauthClient.authorize(epdsUrl, {
+    const authUrl = await getOAuthClient().authorize(epdsUrl, {
       scope: "atproto transition:generic",
       prompt: "login",
     });
@@ -140,7 +144,7 @@ async function oauthCallback(request: Request, url: URL): Promise<Response> {
   }
 
   try {
-    const { session } = await oauthClient.callback(url.searchParams);
+    const { session } = await getOAuthClient().callback(url.searchParams);
     const handle = await resolveHandle(session);
     const returnTo =
       parseSafeReturnTo(readCookie(request, returnToCookieName)) ?? fallbackReturnTo();
@@ -167,24 +171,27 @@ async function sessionResponse(request: Request): Promise<Response> {
     return jsonResponse({ isLoggedIn: false });
   }
 
-  const oauthSession = await oauthClient.restore(session.did).catch(() => null);
+  const oauthSession = await getOAuthClient().restore(session.did).catch(() => null);
   if (!oauthSession) {
     const response = jsonResponse({ isLoggedIn: false });
     clearSessionCookie(response);
     return response;
   }
 
+  const profile = await resolveProfile(oauthSession).catch(() => undefined);
+
   return jsonResponse({
     isLoggedIn: true,
     did: session.did,
     handle: session.handle,
+    profile,
   });
 }
 
 async function logout(request: Request, url: URL): Promise<Response> {
   const session = await readSession(request);
   if (session) {
-    await oauthClient.revoke(session.did).catch(() => undefined);
+    await getOAuthClient().revoke(session.did).catch(() => undefined);
   }
 
   const returnTo = parseSafeReturnTo(url.searchParams.get("returnTo")) ?? fallbackReturnTo();
@@ -234,7 +241,7 @@ export async function route(request: Request): Promise<Response> {
     return cacheControl(jsonResponse(clientMetadata(url)), "no-store");
   }
   if (url.pathname === "/.well-known/jwks.json") {
-    return cacheControl(jsonResponse(jwks), "public, max-age=3600");
+    return cacheControl(jsonResponse(getJwks()), "public, max-age=3600");
   }
 
   return notFound();

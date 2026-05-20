@@ -1,5 +1,5 @@
 import { Agent } from "@atproto/api";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   createOAuthClient,
   DEFAULT_OAUTH_SCOPE,
@@ -11,29 +11,112 @@ import {
 } from "@gainforest/atproto-auth-next/stores";
 import { authBaseUrl, env } from "./env.js";
 
-const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+let cachedSupabase: {
+  url: string;
+  serviceRoleKey: string;
+  client: SupabaseClient;
+} | null = null;
 
-const extraRedirectUris = env.NEXT_PUBLIC_EPDS_URL
-  ? [`${authBaseUrl}/api/oauth/epds/callback`]
-  : [];
+let cachedOAuthClient: {
+  authBaseUrl: string;
+  privateKeyJwk: string;
+  appId: string;
+  epdsCallbackEnabled: boolean;
+  client: ReturnType<typeof createOAuthClient>;
+} | null = null;
 
-export const oauthClient = createOAuthClient({
-  publicUrl: authBaseUrl,
-  privateKeyJwk: env.ATPROTO_JWK_PRIVATE,
-  sessionStore: createSupabaseSessionStore(supabase, env.AUTH_APP_ID),
-  stateStore: createSupabaseStateStore(supabase, env.AUTH_APP_ID),
-  scope: DEFAULT_OAUTH_SCOPE,
-  extraRedirectUris,
-  clientName: "GainForest",
-});
+let cachedJwks: {
+  privateKeyJwk: string;
+  value: { keys: Array<Record<string, unknown>> };
+} | null = null;
 
-export async function resolveHandle(session: Awaited<ReturnType<typeof oauthClient.callback>>["session"]): Promise<string> {
+function getSupabase(): SupabaseClient {
+  if (
+    cachedSupabase &&
+    cachedSupabase.url === env.SUPABASE_URL &&
+    cachedSupabase.serviceRoleKey === env.SUPABASE_SERVICE_ROLE_KEY
+  ) {
+    return cachedSupabase.client;
+  }
+
+  const client = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+  cachedSupabase = {
+    url: env.SUPABASE_URL,
+    serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+    client,
+  };
+  return client;
+}
+
+function hasEpdsCallback(): boolean {
+  return !!(env.AUTH_DEFAULT_EPDS_URL || env.AUTH_EPDS_PROVIDERS);
+}
+
+export function getOAuthClient(): ReturnType<typeof createOAuthClient> {
+  const epdsCallbackEnabled = hasEpdsCallback();
+  if (
+    cachedOAuthClient &&
+    cachedOAuthClient.authBaseUrl === authBaseUrl &&
+    cachedOAuthClient.privateKeyJwk === env.ATPROTO_JWK_PRIVATE &&
+    cachedOAuthClient.appId === env.AUTH_APP_ID &&
+    cachedOAuthClient.epdsCallbackEnabled === epdsCallbackEnabled
+  ) {
+    return cachedOAuthClient.client;
+  }
+
+  const extraRedirectUris = epdsCallbackEnabled
+    ? [`${authBaseUrl}/api/oauth/epds/callback`]
+    : [];
+  const supabase = getSupabase();
+  const client = createOAuthClient({
+    publicUrl: authBaseUrl,
+    privateKeyJwk: env.ATPROTO_JWK_PRIVATE,
+    sessionStore: createSupabaseSessionStore(supabase, env.AUTH_APP_ID),
+    stateStore: createSupabaseStateStore(supabase, env.AUTH_APP_ID),
+    scope: DEFAULT_OAUTH_SCOPE,
+    extraRedirectUris,
+    clientName: "GainForest",
+  });
+
+  cachedOAuthClient = {
+    authBaseUrl,
+    privateKeyJwk: env.ATPROTO_JWK_PRIVATE,
+    appId: env.AUTH_APP_ID,
+    epdsCallbackEnabled,
+    client,
+  };
+  return client;
+}
+
+type OAuthCallbackSession = Awaited<ReturnType<ReturnType<typeof getOAuthClient>["callback"]>>["session"];
+
+type ProfileData = {
+  handle?: string;
+  displayName?: string;
+  avatar?: string;
+};
+
+export async function resolveHandle(session: OAuthCallbackSession): Promise<string> {
   try {
     const agent = new Agent(session);
     const { data } = await agent.com.atproto.repo.describeRepo({ repo: session.did });
     return data.handle;
   } catch {
     return session.did;
+  }
+}
+
+export async function resolveProfile(session: OAuthCallbackSession): Promise<ProfileData | undefined> {
+  try {
+    const agent = new Agent(session);
+    const { data } = await agent.app.bsky.actor.getProfile({ actor: session.did });
+    return {
+      handle: data.handle,
+      displayName: data.displayName,
+      avatar: data.avatar,
+    };
+  } catch {
+    return undefined;
   }
 }
 
@@ -49,13 +132,21 @@ function publicJwks() {
   return { keys: [publicKey] };
 }
 
-export const jwks = publicJwks();
+export function getJwks(): { keys: Array<Record<string, unknown>> } {
+  if (cachedJwks?.privateKeyJwk === env.ATPROTO_JWK_PRIVATE) {
+    return cachedJwks.value;
+  }
+
+  const value = publicJwks();
+  cachedJwks = { privateKeyJwk: env.ATPROTO_JWK_PRIVATE, value };
+  return value;
+}
 
 export function clientMetadata(requestUrl: URL) {
   const url = `${requestUrl.protocol}//${requestUrl.host}`;
   const redirectUris = [
     `${url}/api/oauth/callback`,
-    ...(env.NEXT_PUBLIC_EPDS_URL ? [`${url}/api/oauth/epds/callback`] : []),
+    ...(hasEpdsCallback() ? [`${url}/api/oauth/epds/callback`] : []),
   ];
   const scope = DEFAULT_OAUTH_SCOPE;
 

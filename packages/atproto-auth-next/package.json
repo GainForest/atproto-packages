@@ -55,7 +55,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@atproto/api": "0.19.0",
+    "@atproto/api": "^0.13.17",
     "@atproto/jwk-jose": "^0.1.11",
     "@atproto/oauth-client": "0.7.0",
     "@atproto/oauth-client-node": "^0.3.9",

@@ -7,7 +7,7 @@ function parseProviderEntry(entry: string): [string, string] | null {
   }
 
   const provider = entry.slice(0, separatorIndex).trim();
-  const rawUrl = entry.slice(separatorIndex + 1).trim();
+  const rawUrl = entry.slice(separatorIndex + 1).trim().replace(/^['\"]|['\"]$/g, "");
   if (!provider || !rawUrl) {
     return null;
   }
@@ -22,8 +22,8 @@ function parseProviderEntry(entry: string): [string, string] | null {
 function buildEpdsProviderMap(): Map<string, string> {
   const map = new Map<string, string>();
 
-  if (env.NEXT_PUBLIC_EPDS_URL) {
-    map.set("default", env.NEXT_PUBLIC_EPDS_URL.replace(/\/$/, ""));
+  if (env.AUTH_DEFAULT_EPDS_URL) {
+    map.set("default", env.AUTH_DEFAULT_EPDS_URL.replace(/\/$/, ""));
   }
 
   for (const entry of env.AUTH_EPDS_PROVIDERS?.split(",") ?? []) {
@@ -36,9 +36,9 @@ function buildEpdsProviderMap(): Map<string, string> {
   return map;
 }
 
-const epdsProviders = buildEpdsProviderMap();
-
 export function resolveEpdsProvider(provider: string | null): string | null {
+  const epdsProviders = buildEpdsProviderMap();
+
   if (provider) {
     return epdsProviders.get(provider) ?? null;
   }
@@ -51,5 +51,5 @@ export function resolveEpdsProvider(provider: string | null): string | null {
 }
 
 export function hasEpdsProviders(): boolean {
-  return epdsProviders.size > 0;
+  return buildEpdsProviderMap().size > 0;
 }

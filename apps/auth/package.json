@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "deploy": "bunx wrangler deploy"
+    "deploy:prod": "bunx wrangler deploy --env \"\"",
+    "deploy:dev": "bunx wrangler deploy --env dev"
   },
   "dependencies": {
     "@atproto/api": "^0.13.17",

@@ -48,17 +48,15 @@ function getAuth() {
   // or NEXT_PUBLIC_BASE_URL directly here.
   const publicUrl = getPublicUrl();
 
+  if (env.AUTH_BASE_URL && !env.AUTH_APP_ID) {
+    throw new Error("AUTH_APP_ID is required when AUTH_BASE_URL is configured");
+  }
+
   _auth = createAuthSetup({
     privateKeyJwk: env.ATPROTO_JWK_PRIVATE,
     cookieSecret: env.COOKIE_SECRET,
     supabase,
-    appId:
-      env.AUTH_APP_ID ??
-      (env.AUTH_BASE_URL
-        ? env.NODE_ENV === "production"
-          ? "gainforest-auth"
-          : "gainforest-auth-local"
-        : "bumicerts"),
+    appId: env.AUTH_APP_ID ?? "bumicerts",
     clientName: "Bumicerts",
     cookieName: "bumicerts_session",
     cookieSecure: env.NODE_ENV === "production",
