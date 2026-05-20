@@ -1,25 +1,36 @@
 import { authBaseUrl, env } from "./env.js";
 
-function configuredReturnOrigins(): Set<string> {
-  const origins = env.AUTH_ALLOWED_RETURN_ORIGINS
+function configuredReturnOrigins(): string[] {
+  return env.AUTH_ALLOWED_RETURN_ORIGINS
     ?.split(",")
     .map((origin) => origin.trim())
-    .filter(Boolean);
+    .filter(Boolean) ?? [];
+}
 
-  return new Set(origins ?? []);
+function isConfiguredAllowedOrigin(url: URL): boolean {
+  return configuredReturnOrigins().some((origin) => {
+    if (origin === url.origin) {
+      return true;
+    }
+
+    if (origin === "http://localhost:*" && url.protocol === "http:" && url.hostname === "localhost") {
+      return true;
+    }
+
+    if (origin === "http://127.0.0.1:*" && url.protocol === "http:" && url.hostname === "127.0.0.1") {
+      return true;
+    }
+
+    return false;
+  });
 }
 
 function isDefaultAllowedOrigin(url: URL): boolean {
-  const isLoopback = url.hostname === "localhost" || url.hostname === "127.0.0.1";
-  if (url.protocol !== "https:" && !isLoopback) {
+  if (url.protocol !== "https:") {
     return false;
   }
 
-  return (
-    url.hostname === "gainforest.app" ||
-    url.hostname.endsWith(".gainforest.app") ||
-    isLoopback
-  );
+  return url.hostname === "gainforest.app" || url.hostname.endsWith(".gainforest.app");
 }
 
 export function parseSafeReturnTo(value: string | null): string | null {
@@ -29,7 +40,7 @@ export function parseSafeReturnTo(value: string | null): string | null {
 
   try {
     const url = new URL(value);
-    if (configuredReturnOrigins().has(url.origin) || isDefaultAllowedOrigin(url)) {
+    if (isConfiguredAllowedOrigin(url) || isDefaultAllowedOrigin(url)) {
       return url.toString();
     }
   } catch {
