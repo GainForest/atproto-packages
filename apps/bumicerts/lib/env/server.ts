@@ -18,6 +18,10 @@ export const serverEnv = createEnv({
     VERCEL_ENV: z
       .enum(["development", "preview", "production"])
       .optional(),
+    // Includes custom Vercel environments such as staging.
+    VERCEL_TARGET_ENV: z.string().optional(),
+    // Used by OAuth metadata URLs for protected non-production deployments.
+    VERCEL_AUTOMATION_BYPASS_SECRET: z.string().min(1).optional(),
     // Raw deployment alias — e.g. bumicerts-r3f59v16y-gainforest.vercel.app
     // Never the custom domain. Use getPublicUrl() from lib/url.ts instead of
     // reading this directly.
@@ -87,6 +91,9 @@ export const serverEnv = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     VERCEL_ENV: process.env.VERCEL_ENV,
+    VERCEL_TARGET_ENV: process.env.VERCEL_TARGET_ENV,
+    VERCEL_AUTOMATION_BYPASS_SECRET:
+      process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
     VERCEL_URL: process.env.VERCEL_URL,
     VERCEL_PROJECT_PRODUCTION_URL: process.env.VERCEL_PROJECT_PRODUCTION_URL,
     VERCEL_GIT_COMMIT_REF: process.env.VERCEL_GIT_COMMIT_REF,

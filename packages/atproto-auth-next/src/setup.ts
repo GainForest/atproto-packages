@@ -94,6 +94,11 @@ export type AuthSetupConfig = {
    * Falls back to "https://placeholder.invalid" at build time if omitted.
    */
   publicUrl?: string;
+  /**
+   * Vercel Deployment Protection bypass secret for OAuth metadata endpoints.
+   * Only pass this for protected non-production deployments.
+   */
+  vercelProtectionBypassSecret?: string;
 
   // ─── Optional: OAuth config ───────────────────────────────────────────────────
   /**
@@ -299,6 +304,7 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     cookieSecret,
     supabase,
     appId,
+    vercelProtectionBypassSecret,
     scope = DEFAULT_OAUTH_SCOPE,
     clientName = "Gainforest",
     cookieName,
@@ -370,6 +376,7 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     scope,
     extraRedirectUris,
     clientName,
+    vercelProtectionBypassSecret,
   });
 
   // ─── Route handlers ──────────────────────────────────────────────────────────
@@ -399,6 +406,7 @@ export function createAuthSetup(config: AuthSetupConfig): AuthSetup {
     policyUri,
     epdsHandleMode,
     epdsSkipConsentOnSignup,
+    vercelProtectionBypassSecret,
   });
 
   const jwksHandler = createJwksHandler(privateKeyJwk);
