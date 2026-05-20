@@ -22,13 +22,13 @@
         "biodiversity": "Biodiversidad",
         "document": "Documento"
       },
-      "ownerTools": "Owner tools",
-      "linkEvidenceTitle": "Link evidence",
-      "linkEvidenceDescription": "Attach existing records or files to {title}. Linked items appear in the public evidence timeline below.",
-      "notTimelineYet": "Not part of the timeline yet",
-      "linkedTitle": "Linked evidence timeline",
-      "linkedItemCount": "{count, plural, =0 {0 items linked to this bumicert activity} =1 {1 item linked to this bumicert activity} other {# items linked to this bumicert activity}}",
-      "linkedDescription": "Review the records, files, and map layers that are already part of the public evidence timeline."
+      "ownerTools": "Herramientas del propietario",
+      "linkEvidenceTitle": "Vincular evidencia",
+      "linkEvidenceDescription": "Adjunta registros o archivos existentes a {title}. Los elementos vinculados aparecen en la cronología pública de evidencias a continuación.",
+      "notTimelineYet": "Aún no forma parte de la cronología",
+      "linkedTitle": "Cronología de evidencia vinculada",
+      "linkedItemCount": "{count, plural, =0 {0 elementos vinculados a esta actividad de bumicert} =1 {1 elemento vinculado a esta actividad de bumicert} other {# elementos vinculados a esta actividad de bumicert}}",
+      "linkedDescription": "Revisa los registros, archivos y capas del mapa que ya forman parte de la cronología pública de evidencias."
     },
     "evidenceAdder": {
       "title": "Agregar evidencia",
@@ -100,13 +100,13 @@
         "trees": "Conjunto de datos de árboles",
         "biodiversity": "Observaciones de biodiversidad"
       },
-      "chooseEvidenceType": "Choose evidence type",
-      "selectSourceToLink": "Select a source to link existing evidence to this timeline.",
-      "linkType": "Link {type}",
-      "selectRecordsToLink": "Select evidence records to link to this timeline.",
-      "alreadyLinkedDataset": "Already linked to this timeline",
-      "checkingExistingLinks": "Checking existing timeline links…",
-      "unableToVerifyExistingLinks": "Unable to verify existing timeline links. Refresh to link tree datasets."
+      "chooseEvidenceType": "Elige el tipo de evidencia",
+      "selectSourceToLink": "Selecciona una fuente para vincular evidencia existente a esta cronología.",
+      "linkType": "Vincular {type}",
+      "selectRecordsToLink": "Selecciona registros de evidencia para vincularlos a esta cronología.",
+      "alreadyLinkedDataset": "Ya está vinculado a esta cronología",
+      "checkingExistingLinks": "Comprobando los vínculos existentes de la cronología…",
+      "unableToVerifyExistingLinks": "No se pudieron verificar los vínculos existentes de la cronología. Actualiza la página para vincular conjuntos de datos de árboles."
     },
     "metadata": {
       "notFound": "Bumicert no encontrado"
@@ -157,19 +157,19 @@
         "remove": "Eliminar",
         "cancel": "Cancelar"
       },
-      "activeHiddenLayerSummary": "{activeCount} active · {hiddenCount} hidden",
-      "activeHiddenLayerSummaryWithHint": "{activeCount} active · {hiddenCount} hidden — use Show layer on tree dataset cards to preview layers here.",
-      "showLayerHint": "Use Show layer on tree dataset cards to preview layers here.",
-      "activeLayerBadge": "{count} active",
-      "hiddenLayerBadge": "{count} hidden",
-      "activeLayersInPreview": "Active layers in preview",
-      "hiddenLayerPrefix": "Hidden: {title}",
-      "activeOnMap": "Active on map",
-      "hiddenFromMap": "Hidden from map",
-      "visibleLayerDescription": "This dataset layer is visible in the Green Globe preview.",
-      "hiddenLayerDescription": "This dataset layer is available but currently hidden.",
-      "showLayer": "Show layer",
-      "hideLayer": "Hide layer"
+      "activeHiddenLayerSummary": "{activeCount} activas · {hiddenCount} ocultas",
+      "activeHiddenLayerSummaryWithHint": "{activeCount} activas · {hiddenCount} ocultas — usa Mostrar capa en las tarjetas de conjuntos de datos de árboles para previsualizar las capas aquí.",
+      "showLayerHint": "Usa Mostrar capa en las tarjetas de conjuntos de datos de árboles para previsualizar las capas aquí.",
+      "activeLayerBadge": "{count, plural, =1 {1 activa} other {# activas}}",
+      "hiddenLayerBadge": "{count, plural, =1 {1 oculta} other {# ocultas}}",
+      "activeLayersInPreview": "Capas activas en la vista previa",
+      "hiddenLayerPrefix": "Oculta: {title}",
+      "activeOnMap": "Activa en el mapa",
+      "hiddenFromMap": "Oculta del mapa",
+      "visibleLayerDescription": "Esta capa del conjunto de datos está visible en la vista previa de Green Globe.",
+      "hiddenLayerDescription": "Esta capa del conjunto de datos está disponible, pero actualmente está oculta.",
+      "showLayer": "Mostrar capa",
+      "hideLayer": "Ocultar capa"
     },
     "reference": {
       "linkedRecord": "Registro vinculado",

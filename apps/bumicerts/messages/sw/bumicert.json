@@ -22,13 +22,13 @@
         "biodiversity": "Bioanuwai",
         "document": "Hati"
       },
-      "ownerTools": "Owner tools",
-      "linkEvidenceTitle": "Link evidence",
-      "linkEvidenceDescription": "Attach existing records or files to {title}. Linked items appear in the public evidence timeline below.",
-      "notTimelineYet": "Not part of the timeline yet",
-      "linkedTitle": "Linked evidence timeline",
-      "linkedItemCount": "{count, plural, =0 {0 items linked to this bumicert activity} =1 {1 item linked to this bumicert activity} other {# items linked to this bumicert activity}}",
-      "linkedDescription": "Review the records, files, and map layers that are already part of the public evidence timeline."
+      "ownerTools": "Zana za mmiliki",
+      "linkEvidenceTitle": "Unganisha ushahidi",
+      "linkEvidenceDescription": "Ambatisha rekodi au faili zilizopo kwenye {title}. Vipengee vilivyounganishwa vitaonekana kwenye ratiba ya ushahidi ya umma hapa chini.",
+      "notTimelineYet": "Bado si sehemu ya ratiba",
+      "linkedTitle": "Ratiba ya ushahidi uliounganishwa",
+      "linkedItemCount": "{count, plural, =0 {vipengee 0 vilivyounganishwa na shughuli hii ya bumicert} =1 {kipengee 1 kimeunganishwa na shughuli hii ya bumicert} other {vipengee # vimeunganishwa na shughuli hii ya bumicert}}",
+      "linkedDescription": "Kagua rekodi, faili na tabaka za ramani ambazo tayari ni sehemu ya ratiba ya ushahidi ya umma."
     },
     "evidenceAdder": {
       "title": "Ongeza Ushahidi",
@@ -100,13 +100,13 @@
         "trees": "Seti ya data ya miti",
         "biodiversity": "Uchunguzi wa bioanuwai"
       },
-      "chooseEvidenceType": "Choose evidence type",
-      "selectSourceToLink": "Select a source to link existing evidence to this timeline.",
-      "linkType": "Link {type}",
-      "selectRecordsToLink": "Select evidence records to link to this timeline.",
-      "alreadyLinkedDataset": "Already linked to this timeline",
-      "checkingExistingLinks": "Checking existing timeline links…",
-      "unableToVerifyExistingLinks": "Unable to verify existing timeline links. Refresh to link tree datasets."
+      "chooseEvidenceType": "Chagua aina ya ushahidi",
+      "selectSourceToLink": "Chagua chanzo ili kuunganisha ushahidi uliopo kwenye ratiba hii.",
+      "linkType": "Unganisha {type}",
+      "selectRecordsToLink": "Chagua rekodi za ushahidi za kuunganisha kwenye ratiba hii.",
+      "alreadyLinkedDataset": "Tayari imeunganishwa kwenye ratiba hii",
+      "checkingExistingLinks": "Inakagua viungo vilivyopo vya ratiba…",
+      "unableToVerifyExistingLinks": "Haiwezi kuthibitisha viungo vilivyopo vya ratiba. Onyesha upya ili kuunganisha seti za data za miti."
     },
     "metadata": {
       "notFound": "Bumicert Haijapatikana"
@@ -157,19 +157,19 @@
         "remove": "Ondoa",
         "cancel": "Ghairi"
       },
-      "activeHiddenLayerSummary": "{activeCount} active · {hiddenCount} hidden",
-      "activeHiddenLayerSummaryWithHint": "{activeCount} active · {hiddenCount} hidden — use Show layer on tree dataset cards to preview layers here.",
-      "showLayerHint": "Use Show layer on tree dataset cards to preview layers here.",
-      "activeLayerBadge": "{count} active",
-      "hiddenLayerBadge": "{count} hidden",
-      "activeLayersInPreview": "Active layers in preview",
-      "hiddenLayerPrefix": "Hidden: {title}",
-      "activeOnMap": "Active on map",
-      "hiddenFromMap": "Hidden from map",
-      "visibleLayerDescription": "This dataset layer is visible in the Green Globe preview.",
-      "hiddenLayerDescription": "This dataset layer is available but currently hidden.",
-      "showLayer": "Show layer",
-      "hideLayer": "Hide layer"
+      "activeHiddenLayerSummary": "{activeCount} yanayotumika · {hiddenCount} yaliyofichwa",
+      "activeHiddenLayerSummaryWithHint": "{activeCount} yanayotumika · {hiddenCount} yaliyofichwa — tumia Onyesha tabaka kwenye kadi za seti za data za miti ili kuhakiki tabaka hapa.",
+      "showLayerHint": "Tumia Onyesha tabaka kwenye kadi za seti za data za miti ili kuhakiki tabaka hapa.",
+      "activeLayerBadge": "{count} yanayotumika",
+      "hiddenLayerBadge": "{count} yaliyofichwa",
+      "activeLayersInPreview": "Tabaka zinazotumika kwenye onyesho la awali",
+      "hiddenLayerPrefix": "Imefichwa: {title}",
+      "activeOnMap": "Inatumika kwenye ramani",
+      "hiddenFromMap": "Imefichwa kwenye ramani",
+      "visibleLayerDescription": "Tabaka hili la seti ya data linaonekana kwenye onyesho la awali la Green Globe.",
+      "hiddenLayerDescription": "Tabaka hili la seti ya data linapatikana lakini limefichwa kwa sasa.",
+      "showLayer": "Onyesha tabaka",
+      "hideLayer": "Ficha tabaka"
     },
     "reference": {
       "linkedRecord": "Rekodi iliyounganishwa",
