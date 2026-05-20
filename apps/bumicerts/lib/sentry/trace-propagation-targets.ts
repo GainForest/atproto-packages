@@ -19,12 +19,20 @@ function normalizeOrigin(value: string): string | null {
   }
 }
 
+function isString(value: string | null | undefined): value is string {
+  return typeof value === "string";
+}
+
 export function buildTracePropagationTargets(
   ...origins: Array<string | undefined>
 ): RegExp[] {
   const normalizedOrigins = Array.from(
-    new Set(origins.map((origin) => origin && normalizeOrigin(origin)).filter(Boolean)),
-  ) as string[];
+    new Set(
+      origins
+        .map((origin) => (origin ? normalizeOrigin(origin) : null))
+        .filter(isString),
+    ),
+  );
 
   return normalizedOrigins.map(
     (origin) => new RegExp(`^${escapeRegExp(origin)}(?:/|$)`),

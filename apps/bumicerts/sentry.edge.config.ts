@@ -17,6 +17,7 @@ const tracePropagationTargets = buildTracePropagationTargets(
   process.env.NEXT_PUBLIC_PRODUCTION_URL,
   process.env.NEXT_PUBLIC_STAGING_URL,
   process.env.VERCEL_URL,
+  process.env.VERCEL_PROJECT_PRODUCTION_URL,
 );
 
 Sentry.init({
