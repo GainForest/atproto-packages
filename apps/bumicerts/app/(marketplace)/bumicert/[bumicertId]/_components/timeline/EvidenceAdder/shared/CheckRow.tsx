@@ -8,6 +8,7 @@ function CheckRow({
   onToggle,
   primary,
   secondary,
+  status,
   disabled,
   icon: Icon,
 }: {
@@ -15,6 +16,7 @@ function CheckRow({
   onToggle: () => void;
   primary: string;
   secondary?: string;
+  status?: string;
   disabled?: boolean;
   icon: React.ComponentType<{ className?: string }>;
 }) {
@@ -22,6 +24,7 @@ function CheckRow({
     <button
       type="button"
       onClick={onToggle}
+      aria-pressed={selected}
       className={cn(
         "w-full bg-background hover:bg-accent flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-background",
         selected ? "bg-accent" : "",
@@ -47,7 +50,10 @@ function CheckRow({
           {primary}
         </p>
         {secondary && (
-          <p className="text-xs text-muted-foreground truncate">{secondary}</p>
+          <p className="truncate text-xs text-muted-foreground">{secondary}</p>
+        )}
+        {status && (
+          <p className="text-xs font-medium text-muted-foreground">{status}</p>
         )}
       </div>
     </button>

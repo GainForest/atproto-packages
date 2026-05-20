@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useModal } from "@/components/ui/modal/context";
 import {
   ModalContent,
@@ -20,6 +21,8 @@ export function WebsiteEditorModal({
   currentUrl,
   onConfirm,
 }: WebsiteEditorModalProps) {
+  const t = useTranslations("upload.modals");
+  const tActions = useTranslations("upload.actions");
   const { hide, popModal, stack } = useModal();
   const [value, setValue] = useState(currentUrl ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +49,7 @@ export function WebsiteEditorModal({
   const handleConfirm = async () => {
     const trimmed = value.trim();
     if (trimmed && !validate(trimmed)) {
-      setError("Please enter a valid URL (e.g. https://yourorg.com)");
+      setError(t("websiteInvalid"));
       return;
     }
     const normalised = trimmed
@@ -61,10 +64,8 @@ export function WebsiteEditorModal({
   return (
     <ModalContent>
       <ModalHeader backAction={stack.length > 1 ? handleClose : undefined}>
-        <ModalTitle>Website</ModalTitle>
-        <ModalDescription>
-          Enter your organization&apos;s website address.
-        </ModalDescription>
+        <ModalTitle>{t("websiteTitle")}</ModalTitle>
+        <ModalDescription>{t("websiteDescription")}</ModalDescription>
       </ModalHeader>
 
       <div className="py-4 flex flex-col gap-2">
@@ -78,7 +79,7 @@ export function WebsiteEditorModal({
           onKeyDown={(e) => {
             if (e.key === "Enter") void handleConfirm();
           }}
-          placeholder="https://yourorganization.com"
+          placeholder={t("websitePlaceholder")}
           className="w-full h-10 px-3 text-sm bg-muted/40 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
           autoFocus
         />
@@ -86,7 +87,7 @@ export function WebsiteEditorModal({
       </div>
 
       <ModalFooter className="flex justify-end gap-2">
-        <Button onClick={handleConfirm}>Save</Button>
+        <Button onClick={handleConfirm}>{tActions("save")}</Button>
         <div className="flex items-center gap-1">
           {value && (
             <Button
@@ -97,11 +98,11 @@ export function WebsiteEditorModal({
               }}
               className="text-destructive hover:text-destructive flex-1"
             >
-              Remove
+              {t("remove")}
             </Button>
           )}
           <Button variant="outline" onClick={handleClose} className="flex-1">
-            Cancel
+            {tActions("cancel")}
           </Button>
         </div>
       </ModalFooter>

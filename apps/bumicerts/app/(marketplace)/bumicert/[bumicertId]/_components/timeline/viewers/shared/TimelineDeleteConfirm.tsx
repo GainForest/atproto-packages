@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangleIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 interface TimelineDeleteConfirmProps {
   id: string;
@@ -19,6 +20,8 @@ export function TimelineDeleteConfirm({
   isDeleting,
   error,
 }: TimelineDeleteConfirmProps) {
+  const t = useTranslations("bumicert.detail.timelineEntry.deleteConfirm");
+
   return (
     <AnimatePresence>
       <motion.div
@@ -33,7 +36,7 @@ export function TimelineDeleteConfirm({
         <div className="flex items-center gap-2 text-destructive">
           <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" />
           <p className="text-xs font-medium">
-            Remove &ldquo;{title}&rdquo;? This cannot be undone.
+            {t("body", { title })}
           </p>
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}
@@ -45,7 +48,7 @@ export function TimelineDeleteConfirm({
             onClick={onConfirm}
             disabled={isDeleting}
           >
-            {isDeleting ? "Removing…" : "Remove"}
+            {isDeleting ? t("removing") : t("remove")}
           </Button>
           <Button
             size="sm"
@@ -54,7 +57,7 @@ export function TimelineDeleteConfirm({
             onClick={onCancel}
             disabled={isDeleting}
           >
-            Cancel
+            {t("cancel")}
           </Button>
         </div>
       </motion.div>

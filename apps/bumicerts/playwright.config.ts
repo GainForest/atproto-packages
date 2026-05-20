@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = Number(process.env.E2E_PORT ?? 3001);
+const port = Number(process.env.E2E_PORT ?? 3101);
 const baseURL = process.env.E2E_BASE_URL ?? `http://127.0.0.1:${port}`;
+
+process.env.E2E_BASE_URL ??= baseURL;
 
 export default defineConfig({
   testDir: "./e2e/tests",
@@ -21,10 +23,10 @@ export default defineConfig({
     viewport: { width: 1440, height: 1000 },
   },
   webServer: {
-    command: `NEXT_PUBLIC_BASE_URL=${baseURL} bun run dev`,
+    command: `NEXT_PUBLIC_BASE_URL=${baseURL} bun run build && NEXT_PUBLIC_BASE_URL=${baseURL} bunx next start --port ${port}`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    reuseExistingServer: false,
+    timeout: 300_000,
   },
   projects: [
     {

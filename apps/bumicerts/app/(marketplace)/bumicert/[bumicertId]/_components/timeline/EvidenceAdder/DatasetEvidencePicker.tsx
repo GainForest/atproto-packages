@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import type {
   CertifiedLocation,
   DatasetItem,
@@ -17,6 +18,13 @@ import {
   groupDatasetUrisBySite,
   type DatasetSiteContext,
 } from "./shared/datasetSiteContext";
+import {
+  ALREADY_LINKED_DATASET_MESSAGE,
+  CHECKING_LINKED_DATASETS_MESSAGE,
+  UNABLE_TO_VERIFY_LINKED_DATASETS_MESSAGE,
+  buildSelectableTreeDatasetUris,
+  getTreeDatasetSelectionState,
+} from "./shared/datasetEvidenceSelection";
 import { buildDatasetEvidenceStatsByUri } from "../shared/datasetStats";
 import {
   getOccurrenceDatasetRef,
@@ -30,35 +38,22 @@ function hasTreeDatasetMetadata(item: DatasetItem): boolean {
   );
 }
 
-function formatSiteContext(context: DatasetSiteContext): string {
-  if (context.status === "ready") {
-    return context.siteName ? `Site: ${context.siteName}` : "Site context ready";
-  }
-
-  if (context.status === "mixed-site-refs") {
-    return "Multiple sites in this dataset; attach site-specific datasets instead";
-  }
-
-  if (context.status === "incomplete-site-ref") {
-    return "Some trees are missing site context";
-  }
-
-  if (context.status === "unresolved-site") {
-    return "Site record could not be resolved";
-  }
-
-  return "Site context unavailable";
-}
-
 const DatasetEvidencePicker = ({
   datasets,
   occurrences,
   locations,
+  linkedDatasetUris,
+  timelineAttachmentsLoading,
+  timelineAttachmentsUnavailable,
 }: {
   datasets: DatasetItem[];
   occurrences: OccurrenceItem[];
   locations: CertifiedLocation[];
+  linkedDatasetUris: ReadonlySet<string>;
+  timelineAttachmentsLoading: boolean;
+  timelineAttachmentsUnavailable: boolean;
 }) => {
+  const t = useTranslations("bumicert.detail.evidenceAdder");
   const tabConfig = getManagedEvidenceTabConfig("trees");
   const description = useEvidenceAdderStore((state) => state.description);
   const resetDescription = useEvidenceAdderStore(
@@ -96,12 +91,13 @@ const DatasetEvidencePicker = ({
       const uri = dataset.metadata?.uri;
       return uri ? [{ item: dataset, uri }] : [];
     });
-  const selectableUris = new Set(
-    rows.flatMap(({ uri }) => {
-      const context = getDatasetSiteContext(siteContextsByDataset, uri);
-      return context.status === "ready" ? [uri] : [];
-    }),
-  );
+  const selectableUris = buildSelectableTreeDatasetUris({
+    rows,
+    siteContextsByDataset,
+    linkedDatasetUris,
+    timelineAttachmentsLoading,
+    timelineAttachmentsUnavailable,
+  });
   const { selectedUris, selectedContents, toggleUri, resetSelection } =
     useUriSelection(selectableUris);
   const groupedSelections = groupDatasetUrisBySite({
@@ -110,7 +106,7 @@ const DatasetEvidencePicker = ({
   });
   const computedMutationData: AttachmentData[] = groupedSelections.map(
     (group) => ({
-      title: tabConfig.attachment.title,
+      title: t("attachmentTitles.trees"),
       contentType: tabConfig.attachment.contentType,
       description,
       subjectInfo: {
@@ -126,6 +122,46 @@ const DatasetEvidencePicker = ({
     return <ListEmpty tabId="trees" />;
   }
 
+  const getSiteContextLabel = (context: DatasetSiteContext): string => {
+    if (context.status === "ready") {
+      return context.siteName
+        ? t("siteContextLabel", { siteName: context.siteName })
+        : t("siteContextReady");
+    }
+
+    if (context.status === "mixed-site-refs") {
+      return t("siteContextMixed");
+    }
+
+    if (context.status === "incomplete-site-ref") {
+      return t("siteContextIncomplete");
+    }
+
+    if (context.status === "unresolved-site") {
+      return t("siteContextUnresolved");
+    }
+
+    return t("siteContextUnavailable");
+  };
+
+  const getSelectionDisabledReasonLabel = (
+    reason: string | null,
+  ): string | null => {
+    if (reason === ALREADY_LINKED_DATASET_MESSAGE) {
+      return t("alreadyLinkedDataset");
+    }
+
+    if (reason === CHECKING_LINKED_DATASETS_MESSAGE) {
+      return t("checkingExistingLinks");
+    }
+
+    if (reason === UNABLE_TO_VERIFY_LINKED_DATASETS_MESSAGE) {
+      return t("unableToVerifyExistingLinks");
+    }
+
+    return reason;
+  };
+
   return (
     <>
       <ListLayout>
@@ -135,12 +171,22 @@ const DatasetEvidencePicker = ({
           const speciesCount = stats?.speciesCount ?? 0;
           const dateRange = stats?.recordedDateRange;
           const siteContext = getDatasetSiteContext(siteContextsByDataset, uri);
-          const canSelect = siteContext.status === "ready";
+          const selectionState = getTreeDatasetSelectionState({
+            uri,
+            siteContext,
+            linkedDatasetUris,
+            timelineAttachmentsLoading,
+            timelineAttachmentsUnavailable,
+          });
+          const canSelect = selectionState.canSelect;
+          const disabledReasonLabel = getSelectionDisabledReasonLabel(
+            selectionState.disabledReason,
+          );
           const secondary = [
-            `${treeCount} tree${treeCount === 1 ? "" : "s"}`,
-            speciesCount > 0 ? `${speciesCount} species` : null,
+            t("treeCount", { count: treeCount }),
+            speciesCount > 0 ? t("speciesCount", { count: speciesCount }) : null,
             dateRange,
-            formatSiteContext(siteContext),
+            getSiteContextLabel(siteContext),
           ]
             .filter(
               (value): value is string =>
@@ -154,8 +200,9 @@ const DatasetEvidencePicker = ({
               selected={canSelect && selectedUris.has(uri)}
               onToggle={() => toggleUri(uri)}
               icon={tabConfig.icon}
-              primary={item.record?.name ?? "Unnamed tree dataset"}
+              primary={item.record?.name ?? t("unnamedTreeDataset")}
               secondary={secondary}
+              status={disabledReasonLabel ?? undefined}
               disabled={isSubmitting || !canSelect}
             />
           );

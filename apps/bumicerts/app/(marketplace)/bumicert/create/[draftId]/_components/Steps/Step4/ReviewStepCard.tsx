@@ -3,6 +3,8 @@ import React from "react";
 import { ArrowRightIcon, CircleCheckIcon } from "lucide-react";
 import CircularProgressBar from "@/components/circular-progressbar";
 import z from "zod";
+import { useTranslations } from "next-intl";
+import { localizeFormError } from "../../../i18n";
 
 const ReviewStepCard = <
   K extends string,
@@ -14,6 +16,7 @@ const ReviewStepCard = <
   children,
   schema,
   errors,
+  getFieldLabel,
 }: {
   title: string;
   percentage?: number;
@@ -21,19 +24,23 @@ const ReviewStepCard = <
   children?: React.ReactNode;
   schema: T;
   errors: Partial<Record<K, string>>;
+  getFieldLabel?: (key: K) => string;
 }) => {
+  const t = useTranslations("bumicert.create.draft.review");
+  const validationT = useTranslations("bumicert.create.draft");
   const errorKeys = Object.keys(errors) as K[];
   const errorKeysWithRequired = errorKeys.filter(
-    (key) => errors[key] === "Required"
+    (key) => localizeFormError(errors[key], validationT) === validationT("validation.required")
   );
   const errorKeysWithoutRequired = errorKeys.filter(
-    (key) => errors[key] !== "Required"
+    (key) => localizeFormError(errors[key], validationT) !== validationT("validation.required")
   );
   const hasErrors =
     errorKeysWithRequired.length > 0 || errorKeysWithoutRequired.length > 0;
+  const getLabel = (key: K) => getFieldLabel?.(key) ?? schema.shape[key].description ?? key;
+
   return (
     <div className="rounded-xl border border-primary/10 shadow-lg overflow-hidden bg-primary/10 flex flex-col">
-      {/* Header */}
       <div className="flex items-center justify-between text-primary px-2 py-1">
         <span className="font-medium">{title}</span>
         <div className="flex items-center gap-2">
@@ -44,59 +51,48 @@ const ReviewStepCard = <
               size={"sm"}
               onClick={onEdit}
             >
-              Edit
+              {t("edit")}
               <ArrowRightIcon />
             </Button>
           )}
         </div>
       </div>
 
-      {/* Body */}
       <div className="bg-background flex-1 rounded-xl">
         <div className="m-2 flex flex-col bg-muted/50 rounded-lg shadow-sm">
           {hasErrors && (
             <div className="bg-red-500/5 rounded-lg p-2 border border-red-500/20 shadow-sm flex flex-col gap-1">
-              {/* Missing Fields */}
               {errorKeysWithRequired.length > 0 && (
                 <div>
                   <span className="text-sm font-medium text-destructive">
-                    The following fields are missing:
+                    {t("missingFields")}
                   </span>
                   <div className="flex items-center gap-1 flex-wrap mt-1">
-                    {errorKeysWithRequired.length > 0 &&
-                      errorKeysWithRequired.map((key) => {
-                        const description = schema.shape[key].description;
-                        return (
-                          <span
-                            className="text-xs text-foreground bg-red-500/5 px-1.5 py-1 rounded-md"
-                            key={key}
-                          >
-                            {description}
-                          </span>
-                        );
-                      })}
+                    {errorKeysWithRequired.map((key) => (
+                      <span
+                        className="text-xs text-foreground bg-red-500/5 px-1.5 py-1 rounded-md"
+                        key={key}
+                      >
+                        {getLabel(key)}
+                      </span>
+                    ))}
                   </div>
                 </div>
               )}
-              {/* Encountered Errors */}
               {errorKeysWithoutRequired.length > 0 && (
                 <div>
                   <span className="text-sm font-medium text-destructive">
-                    The following fields encountered errors:
+                    {t("fieldsWithErrors")}
                   </span>
                   <div className="flex items-center gap-1 flex-wrap mt-1">
-                    {errorKeysWithoutRequired.length > 0 &&
-                      errorKeysWithoutRequired.map((key) => {
-                        const description = schema.shape[key].description;
-                        return (
-                          <span
-                            className="text-xs text-foreground bg-red-500/5 px-1.5 py-1 rounded-md"
-                            key={key}
-                          >
-                            {description}
-                          </span>
-                        );
-                      })}
+                    {errorKeysWithoutRequired.map((key) => (
+                      <span
+                        className="text-xs text-foreground bg-red-500/5 px-1.5 py-1 rounded-md"
+                        key={key}
+                      >
+                        {getLabel(key)}
+                      </span>
+                    ))}
                   </div>
                 </div>
               )}
@@ -105,19 +101,19 @@ const ReviewStepCard = <
 
           <div className="flex items-center justify-between p-2 gap-2">
             <span className="text-sm font-medium text-foreground">
-              {hasErrors ?
-                "Please fix these issues to continue."
-              : "All the fields are filled correctly."}
+              {hasErrors ? t("fixIssues") : t("allFieldsCorrect")}
             </span>
             <div className="flex items-center gap-1">
-              {hasErrors && percentage !== undefined ?
+              {hasErrors && percentage !== undefined ? (
                 <CircularProgressBar
                   size={28}
                   value={percentage}
                   text={`${percentage}%`}
                   textSize={0.4}
                 />
-              : <CircleCheckIcon className="size-6 text-primary" />}
+              ) : (
+                <CircleCheckIcon className="size-6 text-primary" />
+              )}
               {hasErrors && (
                 <Button
                   className="rounded-full"
@@ -125,7 +121,7 @@ const ReviewStepCard = <
                   size={"sm"}
                   onClick={onEdit}
                 >
-                  Fix
+                  {t("fix")}
                   <ArrowRightIcon />
                 </Button>
               )}

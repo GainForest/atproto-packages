@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ExternalLinkIcon, HelpCircleIcon, LeafIcon } from "lucide-react";
@@ -6,8 +7,33 @@ import { CreateBumicertTabs } from "./_components/CreateBumicertTabs";
 import GetStartedButton from "./_components/GetStartedButton";
 import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
+import { getTranslations } from "next-intl/server";
+import { noIndexMetadata } from "@/lib/seo-metadata";
 
-function CreateHeroCard() {
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("bumicert.create.landing.hero");
+  return {
+    ...noIndexMetadata("Create a Bumicert"),
+    description: t("description"),
+  };
+}
+
+type CreatePageTranslations = Awaited<ReturnType<typeof getCreatePageTranslations>>;
+
+const getCreatePageTranslations = async () => {
+  const t = await getTranslations("bumicert.create.landing");
+  return {
+    heroTitleLine1: t("hero.titleLine1"),
+    heroTitleLine2: t("hero.titleLine2"),
+    heroDescription: t("hero.description"),
+    explainerTitle: t("explainer.title"),
+    explainerBody1: t("explainer.body1"),
+    explainerBody2: t("explainer.body2"),
+    learnMore: t("explainer.learnMore"),
+  };
+};
+
+function CreateHeroCard({ translations }: { translations: CreatePageTranslations }) {
   return (
     <section className="relative overflow-visible rounded-[1.6rem] border border-border/80 bg-card shadow-sm">
       <div className="relative min-h-[17.5rem] overflow-hidden rounded-[1.55rem]">
@@ -36,13 +62,12 @@ function CreateHeroCard() {
             <LeafIcon className="size-6" />
           </div>
           <h1 className="font-serif text-4xl font-medium leading-[0.98] tracking-[-0.03em] text-foreground sm:text-5xl">
-            Create impact.
+            {translations.heroTitleLine1}
             <br />
-            Certify change.
+            {translations.heroTitleLine2}
           </h1>
           <p className="mt-5 max-w-[25rem] text-base leading-7 text-muted-foreground">
-            Create a Bumicert to showcase your commitment to sustainability and
-            inspire real change.
+            {translations.heroDescription}
           </p>
           <div className="mt-7">
             <GetStartedButton />
@@ -69,28 +94,26 @@ function CreateHeroCard() {
   );
 }
 
-function ExplainerCard() {
+function ExplainerCard({ translations }: { translations: CreatePageTranslations }) {
   return (
     <aside className="rounded-[1.6rem] border border-border/80 bg-card/75 p-7 shadow-sm backdrop-blur-sm lg:min-h-[17.5rem]">
       <div className="mb-8 flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary">
         <HelpCircleIcon className="size-5" />
       </div>
       <h2 className="font-serif text-3xl font-medium leading-tight tracking-[-0.02em] text-foreground">
-        What is a Bumicert?
+        {translations.explainerTitle}
       </h2>
       <div className="mt-4 space-y-4 text-base leading-7 text-muted-foreground">
         <p>
-          A Bumicert is your impact story—proof of your contribution to people,
-          communities, and the planet.
+          {translations.explainerBody1}
         </p>
         <p>
-          It helps you document, share, and celebrate your positive impact with
-          transparency and credibility.
+          {translations.explainerBody2}
         </p>
       </div>
       <Button variant="outline" size="sm" asChild className="mt-5">
         <Link href={links.external.docs} target="_blank" rel="noreferrer">
-          Learn more
+          {translations.learnMore}
           <ExternalLinkIcon />
         </Link>
       </Button>
@@ -98,13 +121,15 @@ function ExplainerCard() {
   );
 }
 
-const CreateBumicertPage = () => {
+const CreateBumicertPage = async () => {
+  const translations = await getCreatePageTranslations();
+
   return (
     <AuthWrapper className="max-w-[1440px] px-4 py-8 sm:px-6">
       <div className="space-y-8">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_30rem]">
-          <CreateHeroCard />
-          <ExplainerCard />
+          <CreateHeroCard translations={translations} />
+          <ExplainerCard translations={translations} />
         </div>
         <CreateBumicertTabs />
       </div>

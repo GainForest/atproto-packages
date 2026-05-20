@@ -10,8 +10,8 @@ test("adds evidence to a bumicert evidence timeline", async ({ page }, testInfo)
   await fillBumicertWizard(page, testInfo);
 
   await page.getByRole("link", { name: /link evidence now/i }).click();
-  await expect(page.getByText(/add evidence/i).first()).toBeVisible({ timeout: 45_000 });
-  await expect(page.getByRole("heading", { name: /evidence timeline/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /link evidence/i })).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByRole("heading", { name: /linked evidence timeline/i })).toBeVisible();
   await expect(page.getByText(/0 items/i).first()).toBeVisible();
   await screenshotStep(page, testInfo, "evidence-timeline-ready");
 

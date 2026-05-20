@@ -7,10 +7,9 @@ import {
   ModalTitle,
 } from "@/components/ui/modal/modal";
 import { useState, type ChangeEvent } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { parseAtUri, toSerializableFile } from "@/lib/mutations-utils";
-import { formatError } from "@/lib/utils/trpc-errors";
-
 import FileInput from "@/components/ui/FileInput";
 import { Input } from "@/components/ui/input";
 import { ArrowLeftIcon, CheckIcon, Loader2Icon, PencilIcon } from "lucide-react";
@@ -97,25 +96,33 @@ function toTreeBoundaryCoordinate(
   };
 }
 
+type SiteEditorTranslator = ReturnType<typeof useTranslations<"modals.siteEditor">>;
+
+class LocalizedSiteEditorError extends Error {}
+
 function buildBoundaryEditBlockedMessage(options: {
   failures: ReturnType<typeof findTreeBoundaryFailures>;
   uncheckedCount: number;
+  t: SiteEditorTranslator;
 }): string {
   if (options.uncheckedCount > 0) {
-    return `${options.uncheckedCount} linked tree${options.uncheckedCount === 1 ? "" : "s"} could not be checked because coordinates are missing. Keep the existing boundary or fix those tree records first.`;
+    return options.t("errors.uncheckedTrees", { count: options.uncheckedCount });
   }
 
   const sample = options.failures.slice(0, 3).map((failure) => {
-    const rowLabel = failure.tree.scientificName ?? `Tree ${failure.tree.index + 1}`;
+    const rowLabel = failure.tree.scientificName ?? options.t("errors.treeFallback", { index: failure.tree.index + 1 });
     const issue = failure.kind === "near-boundary"
-      ? "near boundary"
+      ? options.t("errors.nearBoundary")
       : failure.kind === "out-of-site"
-        ? "out of site"
-        : "invalid boundary";
+        ? options.t("errors.outOfSite")
+        : options.t("errors.invalidBoundary");
     return `${rowLabel} (${issue}, ${formatBoundaryDistance(failure.distanceMeters)})`;
   });
 
-  return `This boundary would exclude ${options.failures.length} linked tree${options.failures.length === 1 ? "" : "s"}. Keep those trees inside the site before saving. ${sample.join("; ")}`;
+  return options.t("errors.boundaryBlocked", {
+    count: options.failures.length,
+    sample: sample.join("; "),
+  });
 }
 
 export const SiteEditorModal = ({
@@ -151,6 +158,7 @@ export const SiteEditorModal = ({
   const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   const { stack, popModal, hide, pushModal, show } = useModal();
+  const t = useTranslations("modals.siteEditor");
   const indexerUtils = indexerTrpc.useUtils();
   const linkedTreesQuery = indexerTrpc.dwc.occurrencesBySiteRef.useQuery(
     {
@@ -178,7 +186,7 @@ export const SiteEditorModal = ({
     shapefile: File;
   }) => {
     if (!did) {
-      throw new Error("User is not authenticated");
+      throw new LocalizedSiteEditorError(t("errors.unauthenticated"));
     }
 
     const shapefileData = await toSerializableFile(shapefile);
@@ -239,10 +247,20 @@ export const SiteEditorModal = ({
     _updateMutation({ rkey, data: { name }, newShapefile });
   };
 
+  const readBoundaryFileForEditor = async (file: File) => {
+    try {
+      return await readGeoJsonFile(file);
+    } catch (error) {
+      throw new LocalizedSiteEditorError(
+        error instanceof Error ? error.message : t("errors.unexpected"),
+      );
+    }
+  };
+
   const verifyNewBoundary = async (file: File) => {
     setIsVerifyingBoundary(true);
     try {
-      await readGeoJsonFile(file);
+      await readBoundaryFileForEditor(file);
     } finally {
       setIsVerifyingBoundary(false);
     }
@@ -259,12 +277,10 @@ export const SiteEditorModal = ({
         linkedTreesQuery.data ?? (await linkedTreesQuery.refetch()).data;
 
       if (!linkedTrees) {
-        throw new Error(
-          "Couldn't verify existing linked trees against the new boundary. Try again before saving.",
-        );
+        throw new LocalizedSiteEditorError(t("errors.verifyBoundary"));
       }
 
-      const boundary = await readGeoJsonFile(file);
+      const boundary = await readBoundaryFileForEditor(file);
       const treeCoordinates = linkedTrees.flatMap((occurrence, index) => {
         const coordinate = toTreeBoundaryCoordinate(occurrence, index);
         return coordinate ? [coordinate] : [];
@@ -276,8 +292,8 @@ export const SiteEditorModal = ({
       });
 
       if (uncheckedCount > 0 || failures.length > 0) {
-        throw new Error(
-          buildBoundaryEditBlockedMessage({ failures, uncheckedCount }),
+        throw new LocalizedSiteEditorError(
+          buildBoundaryEditBlockedMessage({ failures, uncheckedCount, t }),
         );
       }
     } finally {
@@ -291,7 +307,7 @@ export const SiteEditorModal = ({
     try {
       if (mode === "add") {
         if (!shapefile) {
-          throw new Error("A GeoJSON site boundary is required.");
+          throw new LocalizedSiteEditorError(t("errors.shapefileRequired"));
         }
 
         await verifyNewBoundary(shapefile);
@@ -302,7 +318,7 @@ export const SiteEditorModal = ({
         });
       } else {
         if (!rkey) {
-          throw new Error("Record key is required for editing");
+          throw new LocalizedSiteEditorError(t("errors.recordKeyRequired"));
         }
 
         if (hasShapefileInput && shapefile) {
@@ -316,25 +332,43 @@ export const SiteEditorModal = ({
         });
       }
     } catch (error) {
-      setSubmissionError(error instanceof Error ? error.message : String(error));
+      setSubmissionError(
+        error instanceof LocalizedSiteEditorError
+          ? error.message
+          : t("errors.unexpected"),
+      );
     }
   };
 
   const isPending = isAdding || isUpdating || isVerifyingBoundary;
   const disableSubmission =
     !did || !name.trim() || (mode === "add" && !hasShapefileInput) || isPending;
-  const error = addError || updateError;
+  const mutationError = addError
+    ? t("errors.addFailed")
+    : updateError
+      ? t("errors.updateFailed")
+      : null;
+  const fileInputLabels = {
+    pasteFromClipboard: t("fileInput.pasteFromClipboard"),
+    uploadFromDevice: t("fileInput.uploadFromDevice"),
+    remove: t("fileInput.remove"),
+    dropToReplaceImage: t("fileInput.dropToReplaceImage"),
+    dropToReplaceFile: t("fileInput.dropToReplaceFile"),
+    noImageInClipboard: t("fileInput.noImageInClipboard"),
+    clipboardReadFailed: t("fileInput.clipboardReadFailed"),
+    fileTooLarge: (maxSizeInMB: number) =>
+      t("fileInput.fileTooLarge", { maxSizeInMB }),
+    unsupportedFileType: t("fileInput.unsupportedFileType"),
+  };
 
   return (
     <ModalContent>
       <ModalHeader
         backAction={stack.length === 1 ? undefined : () => popModal()}
       >
-        <ModalTitle>{mode === "edit" ? "Edit" : "Add"} Site</ModalTitle>
+        <ModalTitle>{mode === "edit" ? t("titleEdit") : t("titleAdd")}</ModalTitle>
         <ModalDescription>
-          {mode === "edit"
-            ? "Edit the site information."
-            : "Add a new site to the organization."}
+          {mode === "edit" ? t("descriptionEdit") : t("descriptionAdd")}
         </ModalDescription>
       </ModalHeader>
       <AnimatePresence mode="wait">
@@ -354,10 +388,10 @@ export const SiteEditorModal = ({
                   htmlFor="name-for-site"
                   className="text-sm text-muted-foreground"
                 >
-                  Enter a name for the site
+                  {t("nameLabel")}
                 </label>
                 <Input
-                  placeholder="Grassroots Farm"
+                  placeholder={t("namePlaceholder")}
                   id="name-for-site"
                   value={name}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -372,7 +406,7 @@ export const SiteEditorModal = ({
                 <iframe
                   src={previewUrl}
                   className="w-full h-64 rounded-lg border border-border"
-                  title="Site shapefile preview"
+                  title={t("previewTitle")}
                 />
                 <Button
                   size="sm"
@@ -380,7 +414,7 @@ export const SiteEditorModal = ({
                   variant={"outline"}
                   onClick={() => setShowEditor(true)}
                 >
-                  Edit
+                  {t("edit")}
                 </Button>
               </div>
             )}
@@ -390,6 +424,7 @@ export const SiteEditorModal = ({
                   {mode === "edit" && (
                     <Button
                       variant={"ghost"}
+                      aria-label={t("back")}
                       onClick={() => setShowEditor(false)}
                     >
                       <ArrowLeftIcon />
@@ -400,17 +435,18 @@ export const SiteEditorModal = ({
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
                       <FileInput
-                        placeholder="Upload a GeoJSON file"
+                        placeholder={t("uploadPlaceholder")}
                         value={shapefile ?? undefined}
                         supportedFileTypes={[".geojson", ".json"]}
                         maxSizeInMB={10}
+                        labels={fileInputLabels}
                         onFileChange={(file) => setShapefile(file)}
                       />
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-px bg-border flex-1" />
-                    <span className="text-xs text-muted-foreground">or</span>
+                    <span className="text-xs text-muted-foreground">{t("or")}</span>
                     <div className="h-px bg-border flex-1" />
                   </div>
                   <Button
@@ -429,7 +465,7 @@ export const SiteEditorModal = ({
                               });
                               const file = new File(
                                 [blob],
-                                "drawn-polygon.geojson",
+                                t("drawnFileName"),
                                 {
                                   type: "application/geo+json",
                                 }
@@ -443,14 +479,14 @@ export const SiteEditorModal = ({
                     }}
                   >
                     <PencilIcon className="size-4 mr-2" />
-                    Draw a site
+                    {t("drawSite")}
                   </Button>
                 </div>
               </>
             )}
-            {submissionError || error ? (
+            {submissionError || mutationError ? (
               <div className="text-sm text-destructive mt-2">
-                {submissionError ?? formatError(error)}
+                {submissionError ?? mutationError}
               </div>
             ) : null}
           </motion.section>
@@ -474,7 +510,7 @@ export const SiteEditorModal = ({
               <CheckIcon className="size-6 text-white" />
             </div>
             <span className="text-lg font-medium mt-2">
-              Site {mode === "edit" ? "updated" : "added"} successfully
+              {mode === "edit" ? t("successEdit") : t("successAdd")}
             </span>
           </motion.section>
         )}
@@ -490,14 +526,14 @@ export const SiteEditorModal = ({
             {mode === "edit"
               ? isPending
                 ? isVerifyingBoundary
-                  ? "Checking boundary..."
-                  : "Saving..."
-                : "Save"
+                  ? t("checking")
+                  : t("saving")
+                : t("save")
               : isPending
-              ? isVerifyingBoundary
-                ? "Checking boundary..."
-                : "Adding..."
-              : "Add"}
+                ? isVerifyingBoundary
+                  ? t("checking")
+                  : t("adding")
+                : t("add")}
           </Button>
         )}
         {isCompleted && (
@@ -512,7 +548,7 @@ export const SiteEditorModal = ({
               }
             }}
           >
-            Close
+            {t("close")}
           </Button>
         )}
       </ModalFooter>

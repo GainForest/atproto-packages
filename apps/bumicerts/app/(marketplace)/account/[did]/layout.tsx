@@ -10,6 +10,7 @@ import {
   readAccountRouteParams,
 } from "./server/account-route";
 import type { AccountRouteData } from "./server/account-route";
+import { getTranslations } from "next-intl/server";
 
 export default async function AccountLayout({
   children,
@@ -29,11 +30,12 @@ export default async function AccountLayout({
     ]);
   } catch (error) {
     console.error("[AccountLayout] Failed to read account", did, error);
+    const t = await getTranslations("marketplace.account.errors");
     return (
       <Container className="pt-4">
         <ErrorPage
-          title="Couldn't load this account"
-          description="We had trouble fetching this account's data. Please try again."
+          title={t("loadAccountTitle")}
+          description={t("loadAccountDescription")}
           error={error}
         />
       </Container>

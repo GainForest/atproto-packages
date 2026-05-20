@@ -1,0 +1,72 @@
+{
+  "seo": {
+    "title": "Bumicerts — Fund Regenerative Impact",
+    "description": "Bumicerts connects funders with nature stewards doing on-ground regenerative work. Fund verified environmental impact directly."
+  },
+  "language": {
+    "label": "Language",
+    "changeAria": "Change language",
+    "currentLanguage": "Current language"
+  },
+  "navigation": {
+    "navigation": "Navigation",
+    "openNavigation": "Open navigation"
+  },
+  "theme": {
+    "toggle": "Toggle theme"
+  },
+  "cart": {
+    "aria": "Cart",
+    "ariaWithCount": "Cart ({count, plural, one {# item} other {# items}})"
+  },
+  "auth": {
+    "getStarted": "Get started",
+    "unknown": "Unknown",
+    "completeOnboarding": "Complete onboarding",
+    "organizationAccount": "Organization account",
+    "userAccount": "User account",
+    "myAccount": "My Account",
+    "signOut": "Sign out"
+  },
+  "errorPage": {
+    "title": "Something went wrong.",
+    "description": "We're sorry, but an error occurred while processing your request.",
+    "tryAgain": "Try again",
+    "home": "Home"
+  },
+  "notFound": {
+    "description": "This page doesn't exist. Maybe it was moved, or maybe it never existed at all.",
+    "backHome": "Back to Home"
+  },
+  "sidebar": {
+    "sections": {
+      "explore": "EXPLORE",
+      "manage": "MANAGE"
+    },
+    "items": {
+      "bumicerts": "Bumicerts",
+      "organizations": "Organizations",
+      "leaderboard": "Leaderboard",
+      "organization": "Organization",
+      "sites": "Sites",
+      "audio": "Audio",
+      "trees": "Trees",
+      "profile": "Profile"
+    },
+    "prompts": {
+      "signInDescription": "Sign in to manage your account and content.",
+      "signIn": "Sign In",
+      "onboardingDescription": "Complete onboarding to manage your account.",
+      "onboard": "Onboard",
+      "accountLoadError": "Couldn't load your account right now.",
+      "checkingAccount": "Checking your account..."
+    },
+    "creationCard": {
+      "createBumicert": "Create a Bumicert"
+    }
+  },
+  "bumicertCard": {
+    "missingImage": "Bumicert image unavailable",
+    "additionalObjectives": "{count, plural, one {# additional objective} other {# additional objectives}}"
+  }
+}

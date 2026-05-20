@@ -1,0 +1,72 @@
+{
+  "seo": {
+    "title": "Bumicerts — Fadhili athari ya urejeshaji",
+    "description": "Bumicerts huwaunganisha wafadhili na walinzi wa mazingira wanaofanya kazi ya urejeshaji ardhini. Fadhili athari ya mazingira iliyothibitishwa moja kwa moja."
+  },
+  "language": {
+    "label": "Lugha",
+    "changeAria": "Badilisha lugha",
+    "currentLanguage": "Lugha ya sasa"
+  },
+  "navigation": {
+    "navigation": "Urambazaji",
+    "openNavigation": "Fungua urambazaji"
+  },
+  "theme": {
+    "toggle": "Badilisha mandhari"
+  },
+  "cart": {
+    "aria": "Kikapu",
+    "ariaWithCount": "Kikapu ({count, plural, one {# bidhaa} other {# bidhaa}})"
+  },
+  "auth": {
+    "getStarted": "Anza",
+    "unknown": "Haijulikani",
+    "completeOnboarding": "Kamilisha utangulizi",
+    "organizationAccount": "Akaunti ya shirika",
+    "userAccount": "Akaunti ya mtumiaji",
+    "myAccount": "Akaunti yangu",
+    "signOut": "Ondoka"
+  },
+  "errorPage": {
+    "title": "Hitilafu imetokea.",
+    "description": "Samahani, hitilafu ilitokea wakati wa kushughulikia ombi lako.",
+    "tryAgain": "Jaribu tena",
+    "home": "Nyumbani"
+  },
+  "notFound": {
+    "description": "Ukurasa huu haupo. Labda ulihamishwa, au labda haukuwahi kuwepo.",
+    "backHome": "Rudi nyumbani"
+  },
+  "sidebar": {
+    "sections": {
+      "explore": "GUNDUA",
+      "manage": "SIMAMIA"
+    },
+    "items": {
+      "bumicerts": "Bumicerts",
+      "organizations": "Mashirika",
+      "leaderboard": "Jedwali la viongozi",
+      "organization": "Shirika",
+      "sites": "Maeneo",
+      "audio": "Sauti",
+      "trees": "Miti",
+      "profile": "Wasifu"
+    },
+    "prompts": {
+      "signInDescription": "Ingia ili kusimamia akaunti na maudhui yako.",
+      "signIn": "Ingia",
+      "onboardingDescription": "Kamilisha utangulizi ili kusimamia akaunti yako.",
+      "onboard": "Anza utangulizi",
+      "accountLoadError": "Hatukuweza kupakia akaunti yako kwa sasa.",
+      "checkingAccount": "Tunakagua akaunti yako..."
+    },
+    "creationCard": {
+      "createBumicert": "Unda Bumicert"
+    }
+  },
+  "bumicertCard": {
+    "missingImage": "Picha ya Bumicert haipatikani",
+    "additionalObjectives": "{count, plural, one {lengo # la ziada} other {malengo # ya ziada}}"
+  }
+}

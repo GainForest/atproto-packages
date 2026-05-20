@@ -35,6 +35,7 @@ import { ShoppingCartIcon, Trash2Icon, ExternalLinkIcon } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { links } from "@/lib/links";
+import { useTranslations } from "next-intl";
 
 // ── Validity helper ────────────────────────────────────────────────────────────
 
@@ -81,7 +82,8 @@ function CartItemRow({
   unavailable: boolean;
   onRemove: () => void;
 }) {
-  const href = `/bumicert/${encodeURIComponent(item.id)}`;
+  const t = useTranslations("modals.cart");
+  const href = links.bumicert.view(item.id);
 
   return (
     <div
@@ -97,7 +99,7 @@ function CartItemRow({
             unavailable ? "text-muted-foreground" : "text-foreground",
           )}
         >
-          {item.title || "Untitled"}
+          {item.title || t("untitled")}
         </p>
         <p className="text-xs text-muted-foreground truncate mt-0.5">
           {item.organizationName}
@@ -109,7 +111,7 @@ function CartItemRow({
           size="icon"
           variant="ghost"
           className="size-8 text-muted-foreground hover:text-foreground"
-          title="View bumicert"
+          title={t("viewBumicert")}
         >
           <Link href={href}>
             <ExternalLinkIcon className="size-3.5" />
@@ -120,7 +122,7 @@ function CartItemRow({
           variant="ghost"
           className="size-8 text-muted-foreground hover:text-destructive"
           onClick={onRemove}
-          title="Remove from cart"
+          title={t("removeFromCart")}
         >
           <Trash2Icon className="size-3.5" />
         </Button>
@@ -188,6 +190,8 @@ function CartItemLoader({
 // ── Empty state ───────────────────────────────────────────────────────────────
 
 function EmptyState() {
+  const t = useTranslations("modals.cart");
+
   return (
     <div className="flex flex-col items-center gap-3 py-10 text-center">
       <div className="flex size-14 items-center justify-center rounded-full bg-muted">
@@ -195,14 +199,14 @@ function EmptyState() {
       </div>
       <div className="space-y-1">
         <p className="text-sm font-medium text-foreground">
-          Your cart is empty
+          {t("emptyTitle")}
         </p>
         <p className="text-xs text-muted-foreground">
-          Add bumicerts you&apos;d like to donate to later.
+          {t("emptyDescription")}
         </p>
       </div>
       <Button asChild variant="outline" size="sm" className="mt-2">
-        <Link href={links.explore}>Explore Bumicerts</Link>
+        <Link href={links.explore}>{t("exploreBumicerts")}</Link>
       </Button>
     </div>
   );
@@ -211,6 +215,7 @@ function EmptyState() {
 // ── Main modal ────────────────────────────────────────────────────────────────
 
 export function CartModal() {
+  const t = useTranslations("modals.cart");
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const facilitatorAddress = clientEnv.NEXT_PUBLIC_FACILITATOR_WALLET_ADDRESS;
@@ -251,9 +256,9 @@ export function CartModal() {
   return (
     <ModalContent dismissible={false} className="max-w-md">
       <ModalHeader backAction={stack.length > 1 ? handleClose : undefined}>
-        <ModalTitle>Your Cart</ModalTitle>
+        <ModalTitle>{t("title")}</ModalTitle>
         <ModalDescription>
-          Bumicerts you&apos;ve saved to donate to later.
+          {t("description")}
         </ModalDescription>
       </ModalHeader>
 
@@ -274,20 +279,19 @@ export function CartModal() {
         <ModalFooter className="flex flex-col gap-2">
           <Button asChild className="w-full" disabled={openItemsCount === 0}>
             <Link href={links.checkout} onClick={handleCheckout}>
-              Checkout
               {openItemsCount > 0
-                ? ` (${openItemsCount} item${openItemsCount > 1 ? "s" : ""})`
-                : ""}
+                ? t("checkoutWithCount", { count: openItemsCount })
+                : t("checkout")}
             </Link>
           </Button>
           <Button variant="outline" onClick={handleClose} className="w-full">
-            Cancel
+            {t("cancel")}
           </Button>
         </ModalFooter>
       ) : (
         <ModalFooter>
           <Button variant="outline" onClick={handleClose} className="w-full">
-            Close
+            {t("close")}
           </Button>
         </ModalFooter>
       )}
@@ -308,6 +312,7 @@ function CartListWithCallback({
   onRemove: (id: string) => void;
   onResolved: (id: string, data: ResolvedCartItem | null) => void;
 }) {
+  const t = useTranslations("modals.cart");
   const [resolved, setResolved] = useState<
     Record<string, ResolvedCartItem | null>
   >({});
@@ -363,7 +368,7 @@ function CartListWithCallback({
               <div className="flex items-center gap-3 py-3">
                 <div className="flex-1 h-px bg-border" />
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  No longer accepting donations
+                  {t("noLongerAccepting")}
                 </span>
                 <div className="flex-1 h-px bg-border" />
               </div>

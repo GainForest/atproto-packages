@@ -10,6 +10,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { links } from "@/lib/links";
 import { useCurrentAccountIdentity } from "@/hooks/use-current-account-identity";
+import { useTranslations } from "next-intl";
 
 const AuthWrapper = ({
   children,
@@ -20,6 +21,7 @@ const AuthWrapper = ({
   className?: string;
   footer?: React.ReactNode;
 }) => {
+  const t = useTranslations("bumicert.create.auth");
   const { auth, account, query } = useCurrentAccountIdentity();
 
   const isAuthenticated = auth.status === "AUTHENTICATED";
@@ -37,8 +39,8 @@ const AuthWrapper = ({
     if (isUnauthenticated) {
       return (
         <ErrorPage
-          title="You are not signed in."
-          description="Please sign in to create a bumicert."
+          title={t("signedOutTitle")}
+          description={t("signedOutDescription")}
           showRefreshButton={false}
           cta={<AtprotoSignInButton />}
         />
@@ -48,8 +50,8 @@ const AuthWrapper = ({
     if (hasAccountError) {
       return (
         <ErrorPage
-          title="Couldn't load your account"
-          description="We had trouble loading your account. Please try again."
+          title={t("accountErrorTitle")}
+          description={t("accountErrorDescription")}
           error={query.error}
           showRefreshButton
           showHomeButton={false}
@@ -60,14 +62,14 @@ const AuthWrapper = ({
     if (isAuthenticated && !hasBumicertAccount && !isLoadingAccount) {
       return (
         <ErrorPage
-          title="Your account is not set up yet."
-          description="Please complete your account information to create a bumicert."
+          title={t("accountSetupTitle")}
+          description={t("accountSetupDescription")}
           showRefreshButton={false}
           cta={
             <Link href={links.manage.home}>
               <Button>
                 <UserIcon />
-                Manage my account
+                {t("manageAccount")}
               </Button>
             </Link>
           }
@@ -80,7 +82,7 @@ const AuthWrapper = ({
         <div className="flex flex-col items-center justify-center">
           <Loader2Icon className="animate-spin text-primary" />
           <span className="text-muted-foreground font-medium mt-2">
-            Please wait...
+            {t("pleaseWait")}
           </span>
         </div>
       );

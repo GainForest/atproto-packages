@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, Fragment } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { TREE_UPLOAD_EVENTS } from "@/lib/analytics/events";
@@ -15,7 +16,7 @@ import {
 } from "lucide-react";
 import { applyMappings } from "@/lib/upload/column-mapper";
 import { parseAndValidateRows } from "@/lib/upload/schemas";
-import { TARGET_FIELDS } from "@/lib/upload/types";
+import { getTargetFieldLabel } from "@/lib/upload/types";
 import type {
   ColumnMapping,
   TreeUploadRowAttentionSummary,
@@ -45,12 +46,16 @@ type PreviewStepProps = {
 };
 
 /** Get the human-readable label for a target field */
-function getFieldLabel(field: string): string {
+function getFieldLabel(
+  field: string,
+  siteBoundaryLabel: string,
+  targetFieldLabel: (field: string) => string,
+): string {
   if (field === "siteBoundary") {
-    return "Site Boundary";
+    return siteBoundaryLabel;
   }
 
-  return TARGET_FIELDS.find((f) => f.field === field)?.label ?? field;
+  return targetFieldLabel(field);
 }
 
 /** Summarise errors: count occurrences of each field path */
@@ -82,13 +87,17 @@ export default function PreviewStep({
   onNext,
   onBack,
 }: PreviewStepProps) {
+  const t = useTranslations("upload.trees.preview");
+  const tValidation = useTranslations("upload.trees.validation");
+  const tTargetFields = useTranslations("upload.trees.targetFields");
+  const tRowAttention = useTranslations("upload.trees.rowAttention");
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [errorSectionOpen, setErrorSectionOpen] = useState(false);
   const siteBoundaryQuery = useQuery({
     queryKey: uploadSiteBoundaryQueryKey(siteSelection?.uri),
     queryFn: () => {
       if (!siteSelection) {
-        throw new Error("Select a site before previewing tree data.");
+        throw new Error(t("selectSiteBeforePreview"));
       }
 
       return fetchUploadSiteBoundary(siteSelection);
@@ -109,6 +118,7 @@ export default function PreviewStep({
         siteSelection && siteBoundary
           ? { geoJson: siteBoundary, siteRef: siteSelection.uri }
           : null,
+      t: tValidation,
     });
     // Collect the unique target field names that appear in the mapped data
     // Exclude photoUrl — it's replaced by a synthetic "Photos" column
@@ -130,7 +140,7 @@ export default function PreviewStep({
       mappedRows: mapped,
       hasAnyPhotos: anyPhotos,
     };
-  }, [koboMediaZipIndex, parsedData, mappings, siteBoundary, siteSelection]);
+  }, [koboMediaZipIndex, parsedData, mappings, siteBoundary, siteSelection, tValidation]);
 
   const { valid, errors } = validationResult;
   const totalRows = parsedData.length;
@@ -172,8 +182,8 @@ export default function PreviewStep({
       error.issues.every((issue) => issue.path === "siteBoundary"),
     );
   const previewSkippedRows = useMemo(
-    () => buildPreviewRowAttentionSummaries(errors, mappedRows),
-    [errors, mappedRows],
+    () => buildPreviewRowAttentionSummaries(errors, mappedRows, tRowAttention),
+    [errors, mappedRows, tRowAttention],
   );
 
   // Pair each preview row with its actual index in mappedRows (before slicing)
@@ -222,11 +232,9 @@ export default function PreviewStep({
     <div className="space-y-5">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold">Preview &amp; Validate</h2>
+        <h2 className="text-lg font-semibold">{t("title")}</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Review your data before uploading. Rows with errors will be skipped;
-          go back to adjust mappings, tree coordinates, or the selected boundary
-          if you want to include them.
+          {t("description")}
         </p>
       </div>
 
@@ -234,31 +242,23 @@ export default function PreviewStep({
       {siteSelection === null ? (
         <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <XCircle className="h-4 w-4 shrink-0" />
-          <span>
-            Select one site boundary before previewing tree data. If no usable
-            boundary exists, go back and create a site boundary first.
-          </span>
+          <span>{t("selectSiteBeforePreview")}</span>
         </div>
       ) : siteBoundaryQuery.isLoading ? (
         <div className="flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-600 dark:text-yellow-400">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>Checking rows against {siteSelection.name}&apos;s boundary…</span>
+          <span>{t("checkingBoundary", { siteName: siteSelection.name })}</span>
         </div>
       ) : siteBoundaryQuery.error ? (
         <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <XCircle className="h-4 w-4 shrink-0" />
-          <span>
-            Couldn&apos;t load the selected site boundary as valid polygon GeoJSON.
-            Go back and choose another site boundary, or redraw/re-upload/create
-            a valid boundary before previewing trees.
-          </span>
+          <span>{t("boundaryLoadError")}</span>
         </div>
       ) : allValid ? (
         <div className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/10 p-3 text-sm text-primary">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>
-            All {totalRows} row{totalRows !== 1 ? "s" : ""} are valid and ready
-            to upload to {siteSelection.name}.
+            {t("allValid", { totalRows, siteName: siteSelection.name })}
           </span>
         </div>
       ) : allInvalid ? (
@@ -266,21 +266,21 @@ export default function PreviewStep({
           <XCircle className="h-4 w-4 shrink-0" />
           <span>
             {allErrorsAreBoundaryErrors
-              ? "No rows fall inside the selected site polygon. Fix tree coordinates so they are inside the selected boundary, or go back and choose/create the correct site boundary."
+              ? t("allInvalidBoundary")
               : hasBoundaryErrors
-                ? "No valid rows found. Fix the listed mapping or required-field errors, and fix any tree coordinates outside the selected site polygon."
-                : "No valid rows found. Please go back and fix column mappings or required tree fields."}
+                ? t("allInvalidWithBoundaryErrors")
+                : t("allInvalid")}
           </span>
         </div>
       ) : (
         <div className="flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-600 dark:text-yellow-400">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>
-            {validCount} row{validCount !== 1 ? "s" : ""} valid,{" "}
-            {errorCount} row{errorCount !== 1 ? "s" : ""} have errors.
+            {t("partialValid", { validCount, errorCount })}
+            {" "}
             {hasBoundaryErrors
-              ? " Fix any tree coordinates outside the selected polygon, go back and choose/create the correct site boundary if needed, and fix any other listed mapping or field errors."
-              : " Fix the listed mapping or field errors if you want to include them."}
+              ? t("partialValidBoundaryHint")
+              : t("partialValidMappingHint")}
           </span>
         </div>
       )}
@@ -288,11 +288,10 @@ export default function PreviewStep({
       {/* Data preview table */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium">Data Preview</h3>
+          <h3 className="text-sm font-medium">{t("dataPreview")}</h3>
           {showingNote && (
             <span className="text-xs text-muted-foreground">
-              Showing {MAX_PREVIEW_ROWS} of {totalRows} rows — all valid rows
-              will be uploaded
+              {t("showingRows", { maxRows: MAX_PREVIEW_ROWS, totalRows })}
             </span>
           )}
         </div>
@@ -309,16 +308,16 @@ export default function PreviewStep({
                     key={header}
                     className="px-3 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap"
                   >
-                    {getFieldLabel(header)}
+                    {getFieldLabel(header, t("siteBoundaryField"), (field) => getTargetFieldLabel(field, tTargetFields))}
                   </th>
                 ))}
                 {hasAnyPhotos && (
                   <th className="px-3 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap">
-                    Photos
+                    {t("photos")}
                   </th>
                 )}
                 <th className="px-3 py-2 text-left font-medium text-muted-foreground uppercase tracking-wide w-16">
-                  Status
+                  {t("status")}
                 </th>
               </tr>
             </thead>
@@ -407,7 +406,7 @@ export default function PreviewStep({
                                 className="text-xs text-destructive flex items-start gap-1.5"
                               >
                                 <span className="font-medium shrink-0">
-                                  {getFieldLabel(issue.path)}:
+                                  {getFieldLabel(issue.path, t("siteBoundaryField"), (field) => getTargetFieldLabel(field, tTargetFields))}:
                                 </span>
                                 <span>{issue.message}</span>
                               </li>
@@ -434,7 +433,7 @@ export default function PreviewStep({
           >
             <span className="flex items-center gap-2 text-destructive">
               <XCircle className="h-4 w-4 shrink-0" />
-              {errorCount} row{errorCount !== 1 ? "s" : ""} with errors
+              {t("rowsWithErrors", { count: errorCount })}
             </span>
             {errorSectionOpen ? (
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -448,7 +447,7 @@ export default function PreviewStep({
               {/* Common errors */}
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                  Common Issues
+                  {t("commonIssues")}
                 </p>
                 <ul className="space-y-1">
                   {errorSummary.map((item) => (
@@ -458,7 +457,7 @@ export default function PreviewStep({
                       </span>
                       <span>
                         <span className="font-medium">
-                          {getFieldLabel(item.path)}
+                          {getFieldLabel(item.path, t("siteBoundaryField"), (field) => getTargetFieldLabel(field, tTargetFields))}
                         </span>
                         {" — "}
                         <span className="text-muted-foreground">
@@ -473,7 +472,7 @@ export default function PreviewStep({
               {/* All error rows */}
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                  Error Rows
+                  {t("errorRows")}
                 </p>
                 <ul className="space-y-2 max-h-48 overflow-y-auto">
                   {errors.map((err) => (
@@ -482,12 +481,12 @@ export default function PreviewStep({
                       className="text-xs border border-destructive/20 rounded-md p-2 space-y-0.5"
                     >
                       <p className="font-medium text-foreground">
-                        Row {err.index + 1}
+                        {t("rowNumber", { number: err.index + 1 })}
                       </p>
                       {err.issues.map((issue, i) => (
                         <p key={i} className="text-muted-foreground">
                           <span className="text-destructive font-medium">
-                            {getFieldLabel(issue.path)}:
+                            {getFieldLabel(issue.path, t("siteBoundaryField"), (field) => getTargetFieldLabel(field, tTargetFields))}:
                           </span>{" "}
                           {issue.message}
                         </p>
@@ -504,10 +503,10 @@ export default function PreviewStep({
       {/* Footer */}
       <div className="flex items-center justify-between pt-2 border-t border-border">
         <Button variant="outline" onClick={onBack}>
-          Back to Column Mapping
+          {t("backToMapping")}
         </Button>
         <Button onClick={handleNext} disabled={!canContinue}>
-          Upload {validCount} Valid Row{validCount !== 1 ? "s" : ""}
+          {t("uploadValidRows", { count: validCount })}
         </Button>
       </div>
     </div>

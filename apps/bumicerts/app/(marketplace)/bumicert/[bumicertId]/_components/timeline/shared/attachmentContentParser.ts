@@ -38,6 +38,13 @@ export type RenderableAttachmentLink = {
   cid: string | null;
 };
 
+const TREE_DATASET_COLLECTION = "app.gainforest.dwc.dataset";
+
+function isTreeDatasetAtUri(uri: string): boolean {
+  const match = uri.match(/^at:\/\/[^/]+\/([^/]+)\/[^/]+$/);
+  return match?.[1] === TREE_DATASET_COLLECTION;
+}
+
 function isJsonRecord(value: unknown): value is JsonRecord {
   return value !== null && typeof value === "object";
 }
@@ -172,4 +179,25 @@ export function getRenderableAttachmentLinksFromContent(
   content: unknown,
 ): RenderableAttachmentLink[] {
   return getRenderableAttachmentLinks(parseAttachmentContent(content));
+}
+
+export function getLinkedTreeDatasetUrisFromContent(content: unknown): string[] {
+  const linkedDatasetUris: string[] = [];
+  const seenUris = new Set<string>();
+
+  for (const item of parseAttachmentContent(content)) {
+    if (
+      item.kind !== "uri" ||
+      item.uriKind !== "at-uri" ||
+      !isTreeDatasetAtUri(item.uri) ||
+      seenUris.has(item.uri)
+    ) {
+      continue;
+    }
+
+    seenUris.add(item.uri);
+    linkedDatasetUris.push(item.uri);
+  }
+
+  return linkedDatasetUris;
 }

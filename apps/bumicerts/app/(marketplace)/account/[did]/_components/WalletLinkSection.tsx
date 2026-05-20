@@ -16,6 +16,7 @@
 import { useAccount, useSwitchChain } from "wagmi";
 import { base } from "wagmi/chains";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useWalletAttestation } from "@/hooks/useWalletAttestation";
 import { useRecipientVerify } from "@/components/global/modals/donate/hooks/useRecipientVerify";
@@ -27,6 +28,7 @@ interface WalletLinkSectionProps {
 }
 
 export function WalletLinkSection({ orgDid }: WalletLinkSectionProps) {
+  const t = useTranslations("marketplace.account.wallet");
   const { address, chainId, isConnected } = useAccount();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const auth = useAtprotoStore((state) => state.auth);
@@ -46,9 +48,9 @@ export function WalletLinkSection({ orgDid }: WalletLinkSectionProps) {
   if (!isAuthenticated) {
     return (
       <div className="border border-border rounded-xl p-6">
-        <h3 className="font-semibold mb-2">Set Up Donations</h3>
+        <h3 className="font-semibold mb-2">{t("setUpDonations")}</h3>
         <p className="text-sm text-muted-foreground">
-          Sign in to link your wallet and receive donations.
+          {t("signInDescription")}
         </p>
       </div>
     );
@@ -58,16 +60,16 @@ export function WalletLinkSection({ orgDid }: WalletLinkSectionProps) {
   if (!isVerifying && recipientStatus?.hasAttestation) {
     return (
       <div className="border border-border rounded-xl p-6 flex flex-col gap-3">
-        <h3 className="font-semibold">Donations Enabled ✓</h3>
+        <h3 className="font-semibold">{t("enabled")}</h3>
         <p className="text-sm text-muted-foreground">
-          Wallet:{" "}
+          {t("walletLabel")}
           <span className="font-mono">
             {recipientStatus.address.slice(0, 6)}...
             {recipientStatus.address.slice(-4)}
           </span>
         </p>
         <p className="text-xs text-muted-foreground">
-          Donors can now send USDC to your organization via Bumicerts.
+          {t("enabledDescription")}
         </p>
       </div>
     );
@@ -77,29 +79,29 @@ export function WalletLinkSection({ orgDid }: WalletLinkSectionProps) {
   return (
     <div className="border border-border rounded-xl p-6 flex flex-col gap-5">
       <div>
-        <h3 className="font-semibold">Set Up Donations</h3>
+        <h3 className="font-semibold">{t("setUpDonations")}</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Link a wallet to receive USDC donations from supporters.
+          {t("setupDescription")}
         </p>
       </div>
 
       {/* Step 1: Connect */}
       {!isConnected && (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium">Step 1: Connect your wallet</p>
-          <ConnectButton label="Connect Wallet" showBalance={false} />
+          <p className="text-sm font-medium">{t("stepConnect")}</p>
+          <ConnectButton label={t("connectWallet")} showBalance={false} />
         </div>
       )}
 
       {/* Step 2: Switch network */}
       {isConnected && !isCorrectNetwork && (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium">Step 2: Switch to Base network</p>
+          <p className="text-sm font-medium">{t("stepSwitch")}</p>
           <Button
             onClick={() => switchChain({ chainId: base.id })}
             disabled={isSwitching}
           >
-            {isSwitching ? "Switching..." : "Switch to Base"}
+            {isSwitching ? t("switching") : t("switchToBase")}
           </Button>
         </div>
       )}
@@ -110,25 +112,25 @@ export function WalletLinkSection({ orgDid }: WalletLinkSectionProps) {
           {status === "success" ? (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-green-700 dark:text-green-400 font-medium">
-                ✓ Wallet linked successfully!
+                {t("linkedSuccess")}
               </p>
               <p className="text-xs text-muted-foreground">
-                It may take a moment for the indexer to process your attestation.
+                {t("linkedSuccessDescription")}
               </p>
               <Button variant="outline" size="sm" onClick={() => { reset(); refetch(); }}>
-                Refresh
+                {t("refresh")}
               </Button>
             </div>
           ) : (
             <>
               <p className="text-sm font-medium">
                 {status === "idle"
-                  ? "Step 3: Link your wallet"
+                  ? t("stepLink")
                   : status === "signing"
-                    ? "Waiting for signature…"
+                    ? t("waitingSignature")
                     : status === "writing"
-                      ? "Writing attestation…"
-                      : "Error linking wallet"}
+                      ? t("writingAttestation")
+                      : t("errorLinking")}
               </p>
               {address && (
                 <p className="text-xs text-muted-foreground font-mono">
@@ -143,12 +145,12 @@ export function WalletLinkSection({ orgDid }: WalletLinkSectionProps) {
                 disabled={status === "signing" || status === "writing"}
               >
                 {status === "signing"
-                  ? "Sign in wallet…"
+                  ? t("signInWallet")
                   : status === "writing"
-                    ? "Writing to ATProto…"
+                    ? t("writingToAtproto")
                     : status === "error"
-                      ? "Retry"
-                      : "Sign & Link Wallet"}
+                      ? t("retry")
+                      : t("signAndLink")}
               </Button>
             </>
           )}

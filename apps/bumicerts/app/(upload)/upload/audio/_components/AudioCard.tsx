@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFormatter, useTranslations } from "next-intl";
 
 /**
  * Map PDS-normalised MIME types back to canonical browser-playable equivalents.
@@ -52,6 +53,9 @@ interface AudioCardProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AudioCard({ audio, onEdit }: AudioCardProps) {
+  const t = useTranslations("upload.audio");
+  const tActions = useTranslations("upload.actions");
+  const format = useFormatter();
   const indexerUtils = indexerTrpc.useUtils();
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -75,7 +79,7 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
   const meta = record?.metadata as Record<string, unknown> | null | undefined;
   const audioUrl = blob?.["uri"] as string | undefined;
   const mimeType = toPlayableMimeType((blob?.["mimeType"] as string) ?? undefined);
-  const name = record?.name ?? "Untitled Recording";
+  const name = record?.name ?? t("untitled");
   const description =
     record?.description &&
     typeof record.description === "object" &&
@@ -105,12 +109,12 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
         <div className="p-3 border-b border-border">
           <audio controls className="w-full h-10" preload="metadata">
             <source src={audioUrl} type={mimeType} />
-            Your browser does not support the audio element.
+            {t("browserUnsupported")}
           </audio>
         </div>
       ) : (
         <div className="h-10 flex items-center justify-center border-b border-border text-xs text-muted-foreground">
-          Audio unavailable
+          {t("unavailable")}
         </div>
       )}
 
@@ -142,7 +146,7 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleEdit} disabled={isDeleting}>
                 <PencilIcon className="h-3.5 w-3.5 mr-2" />
-                Edit
+                {tActions("edit")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -151,7 +155,7 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
                 disabled={isDeleting}
               >
                 <Trash2Icon className="h-3.5 w-3.5 mr-2" />
-                Delete
+                {tActions("delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -165,12 +169,17 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
 
         <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
           {recordedAt ? (
-            <span>{new Date(recordedAt).toLocaleDateString()}</span>
+            <span>
+              {format.dateTime(new Date(recordedAt), { dateStyle: "medium" })}
+            </span>
           ) : (
             <span />
           )}
           {sampleRate ? (
-            <span>{(sampleRate / 1000).toFixed(1)}kHz</span>
+            <span>
+              {format.number(sampleRate / 1000, { maximumFractionDigits: 1 })}
+              kHz
+            </span>
           ) : null}
         </div>
       </div>
@@ -179,10 +188,10 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
       {isConfirmingDelete && (
         <div className="mx-3 mb-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
           <p className="text-sm text-destructive font-medium mb-1">
-            Delete this recording?
+            {t("deleteConfirmTitle")}
           </p>
           <p className="text-xs text-muted-foreground mb-3">
-            This action cannot be undone.
+            {t("deleteConfirmDescription")}
           </p>
           <div className="flex gap-2">
             <Button
@@ -194,7 +203,7 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
               {isDeleting ? (
                 <Loader2Icon className="animate-spin h-3 w-3 mr-1" />
               ) : null}
-              Delete
+              {tActions("delete")}
             </Button>
             <Button
               variant="outline"
@@ -202,7 +211,7 @@ export function AudioCard({ audio, onEdit }: AudioCardProps) {
               onClick={() => setIsConfirmingDelete(false)}
               disabled={isDeleting}
             >
-              Cancel
+              {tActions("cancel")}
             </Button>
           </div>
         </div>

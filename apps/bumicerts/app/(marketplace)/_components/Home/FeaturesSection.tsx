@@ -2,30 +2,14 @@
 
 import { motion } from "framer-motion";
 import { LeafIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
-const FEATURES = [
-  {
-    number: "01",
-    title: "Verified environmental impact",
-    description:
-      "Every certificate is backed by photos, geolocation data, and community verification.",
-  },
-  {
-    number: "02",
-    title: "Direct community funding",
-    description:
-      "Your support goes straight to the stewards doing on-ground restoration work.",
-  },
-  {
-    number: "03",
-    title: "Decentralized & transparent",
-    description:
-      "Built on open, decentralized infrastructure. Every action is recorded, traceable, and permanent.",
-  },
-];
+const FEATURE_KEYS = ["verified", "direct", "transparent"] as const;
 
 export function FeaturesSection() {
+  const t = useTranslations("landing.features");
+
   return (
     <section className="px-6 pb-0 pt-3 sm:px-12 md:px-6 md:pb-6 md:pt-6">
       <div className="mx-auto max-w-6xl">
@@ -38,14 +22,14 @@ export function FeaturesSection() {
         >
           <LeafIcon className="size-4 text-primary" />
           <span className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            About Us
+            {t("eyebrow")}
           </span>
         </motion.div>
 
         <div className="grid grid-cols-1 gap-12 sm:grid-cols-3 sm:gap-8">
-          {FEATURES.map((feature, index) => (
+          {FEATURE_KEYS.map((featureKey, index) => (
             <motion.div
-              key={feature.number}
+              key={featureKey}
               initial={{ opacity: 0, y: 22 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -58,19 +42,19 @@ export function FeaturesSection() {
                 "sm:px-5",
                 index === 0 && "sm:pl-0",
                 index > 0 && "sm:border-l sm:border-border/80",
-                index === FEATURES.length - 1 && "sm:pr-0",
+                index === FEATURE_KEYS.length - 1 && "sm:pr-0",
               )}
             >
               <span className="block font-garamond text-5xl font-light leading-none tracking-tight text-primary/45">
-                {feature.number}.
+                {t(`items.${featureKey}.number`)}.
               </span>
 
               <h3 className="mt-4 font-instrument text-lg leading-tight text-foreground">
-                {feature.title}
+                {t(`items.${featureKey}.title`)}
               </h3>
 
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                {feature.description}
+                {t(`items.${featureKey}.description`)}
               </p>
             </motion.div>
           ))}

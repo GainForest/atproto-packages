@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BumicertCardVisual, BumicertCardSkeleton, cardVariants } from "./BumicertCard";
 import type { BumicertData } from "@/lib/types";
 import { SearchIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { links } from "@/lib/links";
 
 // Container variants with design system stagger timing
@@ -24,6 +25,8 @@ export function BumicertGrid({
   bumicerts: BumicertData[];
   loading?: boolean;
 }) {
+  const t = useTranslations("marketplace.explore.empty");
+
   if (loading) {
     return (
       <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-6 lg:gap-8 mt-4 items-stretch">
@@ -53,7 +56,7 @@ export function BumicertGrid({
         <div className="flex items-center gap-2 mb-3">
           <SearchIcon className="h-4 w-4 text-primary" />
           <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-            No Results
+            {t("eyebrow")}
           </span>
         </div>
 
@@ -61,14 +64,14 @@ export function BumicertGrid({
           className="text-2xl md:text-3xl font-light text-foreground mb-3"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
-          No projects found
+          {t("title")}
         </h3>
 
         <p
           className="text-base text-foreground/80 max-w-md leading-relaxed"
           style={{ fontFamily: "var(--font-instrument-serif-var)", fontStyle: "italic" }}
         >
-          Try adjusting your search or filters to discover more regenerative impact projects.
+          {t("description")}
         </p>
       </motion.div>
     );

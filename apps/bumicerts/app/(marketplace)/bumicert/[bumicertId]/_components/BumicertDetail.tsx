@@ -22,6 +22,7 @@ import DeleteBumicertModal, {
   DeleteBumicertModalId,
 } from "./DeleteBumicertModal";
 import { BumicertPreview } from "./BumicertPreview";
+import { useTranslations } from "next-intl";
 
 interface BumicertDetailProps {
   bumicert: BumicertData;
@@ -75,6 +76,7 @@ export function BumicertDetail({
   isOwner,
   fundingConfig,
 }: BumicertDetailProps) {
+  const t = useTranslations("bumicert.detail");
   const [tab] = useTabParam();
   const hasCoverImage = Boolean(bumicert.coverImageUrl);
   const isOverviewTab = tab === "overview";
@@ -157,7 +159,7 @@ export function BumicertDetail({
                       onClick={handleDeleteClick}
                     >
                       <Trash2Icon className="h-4 w-4" />
-                      Delete Bumicert
+                      {t("actions.deleteBumicert")}
                     </Button>
                   ) : null}
                 </div>

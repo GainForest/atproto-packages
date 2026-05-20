@@ -31,11 +31,12 @@ import {
   PencilIcon,
   Trash2Icon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatAddress(address: string | null | undefined): string {
-  if (!address) return "Unknown";
+  if (!address) return "";
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
@@ -64,6 +65,7 @@ function WalletRow({
   onEdit: (link: EvmLink) => void;
   onDelete: (link: EvmLink) => void;
 }) {
+  const t = useTranslations("modals.wallet.manage");
   const address = link.record?.address ?? "";
   const valid = isWalletValid(link, facilitatorAddress);
   const hasLabel = !!link.record?.name;
@@ -84,9 +86,9 @@ function WalletRow({
         <span
           className={`text-xs leading-tight ${hasLabel ? "text-muted-foreground" : "text-muted-foreground/50 italic"}`}
         >
-          {hasLabel ? link.record?.name : "No label"}
+          {hasLabel ? link.record?.name : t("noLabel")}
           {!valid && (
-            <span className="text-destructive ml-1">· Unverified</span>
+            <span className="text-destructive ml-1">· {t("unverified")}</span>
           )}
         </span>
       </div>
@@ -96,7 +98,7 @@ function WalletRow({
           variant="ghost"
           className="size-8 text-muted-foreground hover:text-foreground"
           onClick={() => onEdit(link)}
-          title="Edit / re-link"
+          title={t("editRelink")}
         >
           <PencilIcon className="size-3.5" />
         </Button>
@@ -105,7 +107,7 @@ function WalletRow({
           variant="ghost"
           className="size-8 text-muted-foreground hover:text-destructive"
           onClick={() => onDelete(link)}
-          title="Remove"
+          title={t("remove")}
         >
           <Trash2Icon className="size-3.5" />
         </Button>
@@ -129,6 +131,7 @@ export function ManageWalletsModal({
   onBack,
   onChanged,
 }: ManageWalletsModalProps) {
+  const t = useTranslations("modals.wallet.manage");
   const { pushModal, popModal, stack, hide } = useModal();
   const indexerUtils = indexerTrpc.useUtils();
   const facilitatorAddress = clientEnv.NEXT_PUBLIC_FACILITATOR_WALLET_ADDRESS;
@@ -189,14 +192,14 @@ export function ManageWalletsModal({
   return (
     <ModalContent dismissible={false}>
       <ModalHeader backAction={handleBack}>
-        <ModalTitle>Linked Wallets</ModalTitle>
-        <ModalDescription>Manage your linked wallets</ModalDescription>
+        <ModalTitle>{t("title")}</ModalTitle>
+        <ModalDescription>{t("description")}</ModalDescription>
       </ModalHeader>
 
       <div className="pt-1">
         {links.length === 0 ? (
           <p className="text-sm text-muted-foreground py-6 text-center">
-            No linked wallets.
+            {t("empty")}
           </p>
         ) : (
           <div>

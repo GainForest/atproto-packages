@@ -1,15 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 
 const PERIODS = ["all", "month", "week"] as const;
 type DashboardPeriod = (typeof PERIODS)[number];
-
-const LABELS: Record<DashboardPeriod, string> = {
-  all: "All Time",
-  month: "Past 30 Days",
-  week: "Past 7 Days",
-};
 
 interface PeriodFilterProps {
   period: DashboardPeriod;
@@ -17,6 +12,8 @@ interface PeriodFilterProps {
 }
 
 export function PeriodFilter({ period, onPeriodChange }: PeriodFilterProps) {
+  const t = useTranslations("marketplace.dashboard.periods");
+
   return (
     <div className="flex items-center gap-1 rounded-full border border-border bg-muted/30 p-1">
       {PERIODS.map((p) => {
@@ -33,7 +30,7 @@ export function PeriodFilter({ period, onPeriodChange }: PeriodFilterProps) {
                 : "text-muted-foreground hover:text-foreground",
             ].join(" ")}
           >
-            {LABELS[p]}
+            {t(p)}
           </button>
         );
       })}

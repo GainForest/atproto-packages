@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ImagePlus, Loader2, Upload } from "lucide-react";
 import {
   ModalContent,
@@ -59,17 +60,17 @@ type UploadState = "idle" | "uploading" | "success" | "error";
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SUBJECT_PARTS: { value: SubjectPart; label: string }[] = [
-  { value: "entireOrganism", label: "Entire Organism" },
-  { value: "leaf", label: "Leaf" },
-  { value: "bark", label: "Bark" },
-  { value: "flower", label: "Flower" },
-  { value: "fruit", label: "Fruit" },
-  { value: "seed", label: "Seed" },
-  { value: "stem", label: "Stem" },
-  { value: "twig", label: "Twig" },
-  { value: "bud", label: "Bud" },
-  { value: "root", label: "Root" },
+const SUBJECT_PARTS: SubjectPart[] = [
+  "entireOrganism",
+  "leaf",
+  "bark",
+  "flower",
+  "fruit",
+  "seed",
+  "stem",
+  "twig",
+  "bud",
+  "root",
 ];
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
@@ -94,6 +95,7 @@ export default function PhotoAttachModal({
 }: PhotoAttachModalProps) {
   const createMultimedia = trpc.ac.multimedia.create.useMutation();
   const { hide, popModal, stack } = useModal();
+  const t = useTranslations("modals.photoAttachment");
 
   const [selectedPart, setSelectedPart] = useState<SubjectPart>("entireOrganism");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -125,11 +127,11 @@ export default function PhotoAttachModal({
     setUploadState("idle");
 
     if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      setFileError("Only JPEG, PNG, WebP, and HEIC images are supported.");
+      setFileError(t("errors.unsupported"));
       return;
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      setFileError(`File is too large. Maximum size is 4.5 MB (got ${formatBytes(file.size)}).`);
+      setFileError(t("errors.tooLarge", { size: formatBytes(file.size) }));
       return;
     }
 
@@ -140,7 +142,7 @@ export default function PhotoAttachModal({
 
     setImageFile(file);
     setPreviewUrl(URL.createObjectURL(file));
-  }, [previewUrl]);
+  }, [previewUrl, t]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -190,9 +192,9 @@ export default function PhotoAttachModal({
         previewUrl: URL.createObjectURL(imageFile),
       });
       await handleClose();
-    } catch (err) {
+    } catch {
       setUploadState("error");
-      setUploadError(String(err));
+      setUploadError(t("errors.uploadFailed"));
     }
   };
 
@@ -201,15 +203,15 @@ export default function PhotoAttachModal({
 
   return (
     <ModalContent>
-      <ModalTitle>Add Photo to {speciesName}</ModalTitle>
+      <ModalTitle>{t("title", { speciesName })}</ModalTitle>
       <ModalDescription>
-        Select the part of the tree shown in your photo and upload an image to attach it to this occurrence record.
+        {t("description")}
       </ModalDescription>
 
       <div className="space-y-4 mt-4">
         {/* Subject Part Selector */}
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Subject Part</label>
+          <label className="text-sm font-medium">{t("subjectPart")}</label>
           <Select
             value={selectedPart}
             onValueChange={(v) => setSelectedPart(v as SubjectPart)}
@@ -220,8 +222,8 @@ export default function PhotoAttachModal({
             </SelectTrigger>
             <SelectContent>
               {SUBJECT_PARTS.map((part) => (
-                <SelectItem key={part.value} value={part.value}>
-                  {part.label}
+                <SelectItem key={part} value={part}>
+                  {t(`parts.${part}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -230,7 +232,7 @@ export default function PhotoAttachModal({
 
         {/* Image Drop Zone */}
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Image</label>
+          <label className="text-sm font-medium">{t("image")}</label>
           <div
             className={`relative cursor-pointer rounded-lg border-2 border-dashed transition-colors ${
               isDragging
@@ -247,7 +249,7 @@ export default function PhotoAttachModal({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={previewUrl}
-                  alt="Preview"
+                  alt={t("previewAlt")}
                   className="max-h-48 w-full rounded-md object-contain"
                 />
                 <span className="text-xs text-muted-foreground">
@@ -255,7 +257,7 @@ export default function PhotoAttachModal({
                 </span>
                 {!isUploading && !isSuccess && (
                   <span className="text-xs text-muted-foreground">
-                    Click or drag to replace
+                    {t("replace")}
                   </span>
                 )}
               </div>
@@ -263,9 +265,9 @@ export default function PhotoAttachModal({
               <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
                 <ImagePlus className="h-8 w-8" />
                 <span className="text-sm font-medium">
-                  Drag &amp; drop or click to select
+                  {t("drop")}
                 </span>
-                <span className="text-xs">JPEG, PNG, WebP, HEIC — max 4.5 MB</span>
+                <span className="text-xs">{t("requirements")}</span>
               </div>
             )}
           </div>
@@ -286,11 +288,11 @@ export default function PhotoAttachModal({
         {/* Optional Caption */}
         <div className="space-y-1.5">
           <label className="text-sm font-medium">
-            Caption{" "}
-            <span className="text-muted-foreground font-normal">(optional)</span>
+            {t("caption")} {" "}
+            <span className="text-muted-foreground font-normal">({t("optional")})</span>
           </label>
           <Input
-            placeholder="Describe the photo…"
+            placeholder={t("captionPlaceholder")}
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             disabled={isUploading || isSuccess}
@@ -312,12 +314,12 @@ export default function PhotoAttachModal({
           {isUploading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Uploading…
+              {t("uploading")}
             </>
           ) : (
             <>
               <Upload className="h-4 w-4" />
-              Upload Photo
+              {t("upload")}
             </>
           )}
         </Button>
@@ -327,7 +329,7 @@ export default function PhotoAttachModal({
           onClick={handleClose}
           disabled={isUploading}
         >
-          Cancel
+          {t("cancel")}
         </Button>
       </ModalFooter>
     </ModalContent>

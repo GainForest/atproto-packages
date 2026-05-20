@@ -2,18 +2,21 @@
 
 import Link from "next/link";
 import { GithubIcon, TwitterIcon, BookOpenIcon, GlobeIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { links } from "@/lib/links";
 import { cn } from "@/lib/utils";
 
 const SOCIAL_LINKS = [
-  { href: links.external.github, label: "GitHub", Icon: GithubIcon },
-  { href: links.external.docs, label: "Documentation", Icon: BookOpenIcon },
-  { href: links.external.twitter, label: "X (Twitter)", Icon: TwitterIcon },
-  { href: links.external.gainforest, label: "GainForest", Icon: GlobeIcon },
+  { href: links.external.github, labelKey: "github", Icon: GithubIcon },
+  { href: links.external.docs, labelKey: "documentation", Icon: BookOpenIcon },
+  { href: links.external.twitter, labelKey: "twitter", Icon: TwitterIcon },
+  { href: links.external.gainforest, labelKey: "gainforest", Icon: GlobeIcon },
 ];
 
 export function SocialFooter() {
+  const t = useTranslations("marketplace.sidebar.social");
+
   return (
     <div className="flex items-center justify-between px-2">
       {/* Social icons */}
@@ -24,7 +27,7 @@ export function SocialFooter() {
             href={link.href}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={link.label}
+            aria-label={t(link.labelKey)}
             className={cn(
               "p-1.5 rounded-md",
               "text-muted-foreground hover:text-foreground hover:bg-muted/60",

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Building2Icon } from "lucide-react";
 import type { OrganizationData } from "@/lib/types";
 import type { AuthenticatedAccountState } from "@/lib/account";
@@ -459,11 +460,13 @@ function mergeRefetchedPageData(options: {
 }
 
 function RegisterOrganizationButton() {
+  const t = useTranslations("upload.actions");
+
   return (
     <Button asChild variant="secondary">
       <Link href={links.manage.onboardOrganization}>
         <Building2Icon />
-        Register as an Organization
+        {t("registerOrganization")}
       </Link>
     </Button>
   );
@@ -474,6 +477,7 @@ export function ManageDashboardClient({
   initialAccount,
   initialData,
 }: ManageDashboardClientProps) {
+  const tDashboard = useTranslations("upload.dashboard");
   const indexerUtils = indexerTrpc.useUtils();
   const [mode, setMode] = useManageMode();
   const [pendingReconciliation, setPendingReconciliation] =
@@ -574,35 +578,32 @@ export function ManageDashboardClient({
     [],
   );
 
-  const handleSetupCompleted = useCallback(
-    async (
-      nextAccount: AuthenticatedAccountState,
-      nextOrganization: OrganizationData,
-    ) => {
-      await Promise.all([
-        indexerUtils.account.current.cancel(),
-        indexerUtils.account.byDid.cancel({ did }),
-      ]);
-      indexerUtils.account.current.setData(undefined, nextAccount);
-      indexerUtils.account.byDid.setData({ did }, nextAccount);
-      startReconciliation({
+  async function handleSetupCompleted(
+    nextAccount: AuthenticatedAccountState,
+    nextOrganization: OrganizationData,
+  ) {
+    await Promise.all([
+      indexerUtils.account.current.cancel(),
+      indexerUtils.account.byDid.cancel({ did }),
+    ]);
+    indexerUtils.account.current.setData(undefined, nextAccount);
+    indexerUtils.account.byDid.setData({ did }, nextAccount);
+    startReconciliation({
+      nextAccount,
+      nextPageData: {
+        did,
+        kind: nextAccount.kind,
+        organization: nextOrganization,
+      },
+      checks: buildSetupReconciliationChecks({
         nextAccount,
-        nextPageData: {
-          did,
-          kind: nextAccount.kind,
-          organization: nextOrganization,
-        },
-        checks: buildSetupReconciliationChecks({
-          nextAccount,
-          nextOrganization,
-        }),
-      });
-      setMode(null);
-    },
-    [did, indexerUtils, setMode, startReconciliation],
-  );
+        nextOrganization,
+      }),
+    });
+    setMode(null);
+  }
 
-  const handleSave = useCallback(async () => {
+  async function handleSave() {
     if (!currentOrganization || !hasChanges() || isSaving) return;
 
     setSaving(true);
@@ -610,7 +611,7 @@ export function ManageDashboardClient({
 
     try {
       if (currentAccount.kind === "unknown") {
-        throw new Error("Account data is not ready to save yet.");
+        throw new Error(tDashboard("accountNotReady"));
       }
 
       let pendingUpgrade: {
@@ -634,9 +635,7 @@ export function ManageDashboardClient({
 
         if (shouldUpgrade) {
           if (!isComplete) {
-            throw new Error(
-              "Complete the organization fields before registering as an organization.",
-            );
+            throw new Error(tDashboard("registerIncomplete"));
           }
 
           const nextCountryCode = resolveEditValue(
@@ -647,9 +646,7 @@ export function ManageDashboardClient({
             ? countries[nextCountryCode]
             : null;
           if (!nextCountry) {
-            throw new Error(
-              "Country is required to register as an organization.",
-            );
+            throw new Error(tDashboard("countryRequired"));
           }
 
           pendingUpgrade = {
@@ -926,25 +923,7 @@ export function ManageDashboardClient({
       setSaving(false);
       setSaveError(formatError(error));
     }
-  }, [
-    currentOrganization,
-    currentKind,
-    currentAccount,
-    did,
-    edits,
-    hasChanges,
-    indexerUtils,
-    isSaving,
-    onSaveSuccess,
-    setMode,
-    setSaveError,
-    setSaving,
-    startReconciliation,
-    updateOrganization,
-    updateProfileAndOrganization,
-    upsertOrganization,
-    upsertProfile,
-  ]);
+  }
 
   if (currentAccountQuery.isLoading && pageData.kind === "unknown") {
     return <ManageDashboardSkeleton />;

@@ -11,8 +11,10 @@ import {
   ChevronRightIcon,
 } from "lucide-react";
 import { useStep5Store } from "./Steps/Step5/store";
+import { useTranslations } from "next-intl";
 
 const StepHeader = () => {
+  const t = useTranslations("bumicert.create.draft.steps");
   const { currentStepIndex, setCurrentStepIndex: setCurrentStep } =
     useNewBumicertStore();
 
@@ -92,7 +94,7 @@ const StepHeader = () => {
                         initial={{ opacity: 0, x: -20, filter: "blur(10px)" }}
                         animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                       >
-                        <b className="font-medium text-nowrap">{step.title}</b>
+                        <b className="font-medium text-nowrap">{t(`${step.key}.title`)}</b>
                       </motion.div>
                     )}
                   </div>

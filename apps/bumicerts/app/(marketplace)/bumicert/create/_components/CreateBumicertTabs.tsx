@@ -5,13 +5,11 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import DraftBumicerts from "./DraftBumicerts";
 import MyBumicerts from "./MyBumicerts";
+import { useTranslations } from "next-intl";
 
 type CreateTab = "recent" | "drafts";
 
-const tabs: { value: CreateTab; label: string }[] = [
-  { value: "recent", label: "Recent Bumicerts" },
-  { value: "drafts", label: "Drafts" },
-];
+const tabs: CreateTab[] = ["recent", "drafts"];
 
 const tabPanelIds: Record<CreateTab, string> = {
   recent: "create-bumicert-recent-panel",
@@ -24,27 +22,28 @@ const tabButtonIds: Record<CreateTab, string> = {
 };
 
 export function CreateBumicertTabs() {
+  const t = useTranslations("bumicert.create.tabs");
   const [activeTab, setActiveTab] = useState<CreateTab>("recent");
 
   return (
     <section className="pt-2">
       <div
         role="tablist"
-        aria-label="Bumicert creation views"
+        aria-label={t("ariaLabel")}
         className="flex items-end gap-8 border-b border-border/80 px-1"
       >
         {tabs.map((tab) => {
-          const isActive = activeTab === tab.value;
+          const isActive = activeTab === tab;
 
           return (
             <button
-              key={tab.value}
-              id={tabButtonIds[tab.value]}
+              key={tab}
+              id={tabButtonIds[tab]}
               type="button"
               role="tab"
               aria-selected={isActive}
-              aria-controls={tabPanelIds[tab.value]}
-              onClick={() => setActiveTab(tab.value)}
+              aria-controls={tabPanelIds[tab]}
+              onClick={() => setActiveTab(tab)}
               className={cn(
                 "relative -mb-px px-4 pb-4 pt-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2",
                 isActive
@@ -52,7 +51,7 @@ export function CreateBumicertTabs() {
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {tab.label}
+              {t(tab)}
               {isActive && (
                 <motion.span
                   layoutId="create-bumicert-active-tab"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFormatter, useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import {
   BadgeCheckIcon,
@@ -50,6 +51,9 @@ export function SiteCard({
   onChange,
   isPreviewing,
 }: SiteCardProps) {
+  const t = useTranslations("upload.sites");
+  const tActions = useTranslations("upload.actions");
+  const format = useFormatter();
   const indexerUtils = indexerTrpc.useUtils();
   const { pushModal, show } = useModal();
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -181,20 +185,20 @@ export function SiteCard({
         <div className="flex items-center justify-between gap-2 px-3 h-10 pr-11 border-b border-border">
           {isPreviewing ? (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-medium">
-              Previewing
+              {t("previewing")}
             </span>
           ) : isPreviewable ? (
             <span className="text-xs text-muted-foreground">
-              Click to preview
+              {t("clickToPreview")}
             </span>
           ) : (
-            <span className="text-xs text-muted-foreground">No preview</span>
+            <span className="text-xs text-muted-foreground">{t("noPreview")}</span>
           )}
 
           {isDefault && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-medium">
               <BadgeCheckIcon className="h-3 w-3" />
-              Default
+              {t("default")}
             </span>
           )}
         </div>
@@ -202,23 +206,29 @@ export function SiteCard({
         {/* Card body */}
         <div className="px-3 py-2.5 flex-1 flex flex-col w-full items-start justify-between text-left">
           <h3 className="font-medium text-base leading-snug line-clamp-3">
-            {site.record?.name ?? "Unnamed site"}
+            {site.record?.name ?? t("unnamed")}
           </h3>
 
           {isLoadingGeo && !inlineCoord ? (
             <Loader2Icon className="h-3.5 w-3.5 animate-spin text-muted-foreground mt-1" />
           ) : metrics ? (
             typeof metrics === "string" ? (
-              <p className="text-xs text-destructive mt-1">{metrics}</p>
+              <p className="text-xs text-destructive mt-1">
+                {t("invalid")}
+              </p>
             ) : (
               <div className="flex w-full items-center justify-between mt-1.5">
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <CrosshairIcon className="h-3 w-3 shrink-0" />
-                  {metrics.lat.toFixed(2)}°, {metrics.lon.toFixed(2)}°
+                  {format.number(metrics.lat, {
+                    maximumFractionDigits: 2,
+                  })}°, {format.number(metrics.lon, { maximumFractionDigits: 2 })}°
                 </span>
                 {metrics.area > 0 && (
                   <span className="text-xs text-muted-foreground">
-                    {metrics.area.toFixed(1)} ha
+                    {format.number(metrics.area, {
+                      maximumFractionDigits: 1,
+                    })} ha
                   </span>
                 )}
               </div>
@@ -253,14 +263,14 @@ export function SiteCard({
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleEdit} disabled={disableActions}>
               <PencilIcon className="h-3.5 w-3.5 mr-2" />
-              Edit
+              {tActions("edit")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleSetDefault}
               disabled={isDefault || disableActions}
             >
               <BadgeCheckIcon className="h-3.5 w-3.5 mr-2" />
-              {isDefault ? "Already default" : "Make default"}
+              {isDefault ? t("alreadyDefault") : t("makeDefault")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -269,7 +279,7 @@ export function SiteCard({
               disabled={isDefault || disableActions}
             >
               <Trash2Icon className="h-3.5 w-3.5 mr-2" />
-              Delete
+              {tActions("delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
