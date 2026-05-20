@@ -11,6 +11,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { requirePublicUrl } from "@/lib/url";
 import { resolveSupportedLanguage } from "@/lib/i18n/languages";
+import { jsonLd } from "@/lib/seo-metadata";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,7 +46,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: new URL(baseUrl),
-    title,
+    title: {
+      default: title,
+      template: "%s — Bumicerts",
+    },
     description,
     applicationName: "Bumicerts",
     authors: [{ name: "GainForest", url: "https://gainforest.earth" }],
@@ -78,21 +82,24 @@ export async function generateMetadata(): Promise<Metadata> {
       },
       { rel: "apple-touch-icon", url: "/apple-touch-icon.png" },
     ],
-    robots: "noindex, nofollow",
+    robots: {
+      index: true,
+      follow: true,
+    },
     openGraph: {
       title,
       siteName: "Bumicerts",
       description,
       type: "website",
       locale,
-      images: [{ url: "/opengraph-image.png", alt: title }],
+      images: [{ url: "/opengraph-image.png", width: 2136, height: 1180, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       site: "@GainForestNow",
       title,
       description,
-      images: [{ url: "/opengraph-image.png", alt: title }],
+      images: [{ url: "/opengraph-image.png", width: 2136, height: 1180, alt: title }],
     },
   };
 }
@@ -103,6 +110,42 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
+function buildRootStructuredData(description: string): Record<string, unknown>[] {
+  const baseUrl = requirePublicUrl();
+
+  return [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": `${baseUrl}#website`,
+      name: "Bumicerts",
+      url: baseUrl,
+      description,
+      publisher: {
+        "@id": `${baseUrl}#organization`,
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": `${baseUrl}#organization`,
+      name: "GainForest",
+      url: "https://gainforest.earth",
+      logo: {
+        "@type": "ImageObject",
+        url: `${baseUrl}/apple-touch-icon.png`,
+        width: 180,
+        height: 180,
+      },
+      sameAs: [
+        "https://gainforest.earth",
+        "https://github.com/GainForest",
+        "https://x.com/GainForestNow",
+      ],
+    },
+  ];
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -110,12 +153,18 @@ export default async function RootLayout({
 }>) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const t = await getTranslations("common.seo");
+  const structuredData = buildRootStructuredData(t("description"));
 
   return (
     <html lang={locale} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cormorantGaramond.variable} ${instrumentSerif.variable} antialiased`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
+        />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>

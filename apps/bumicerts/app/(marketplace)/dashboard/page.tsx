@@ -2,14 +2,17 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { listOrganizationData } from "@/lib/account/server";
 import { DashboardClient } from "./_components/DashboardClient";
+import { links } from "@/lib/links";
+import { buildPublicPageMetadata, getLocalizedAbsoluteUrl, jsonLd } from "@/lib/seo-metadata";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("marketplace.dashboard.metadata");
 
-  return {
+  return buildPublicPageMetadata({
+    pathname: links.dashboard,
     title: t("title"),
     description: t("description"),
-  };
+  });
 }
 
 /**
@@ -39,5 +42,30 @@ async function fetchOrgCountryMap(): Promise<Record<string, string>> {
 
 export default async function DashboardPage() {
   const orgCountryMap = await fetchOrgCountryMap();
-  return <DashboardClient orgCountryMap={orgCountryMap} />;
+  const pageUrl = await getLocalizedAbsoluteUrl(links.dashboard);
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    name: "Bumicerts donation analytics",
+    description:
+      "Platform-wide donation metrics for Bumicerts, including total raised, unique donors, funding trends, and recent transactions.",
+    url: pageUrl,
+    creator: {
+      "@type": "Organization",
+      name: "GainForest",
+      url: "https://gainforest.earth",
+    },
+    measurementTechnique:
+      "Donation receipts indexed from org.hypercerts.funding.receipt records.",
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
+      />
+      <DashboardClient orgCountryMap={orgCountryMap} />
+    </>
+  );
 }
