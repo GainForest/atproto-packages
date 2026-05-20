@@ -17,21 +17,20 @@ type TileIcon = ComponentType<{ className?: string }>;
 
 type TileRegistryEntry = {
   icon: TileIcon;
-  label: string;
 };
 
 const TIMELINE_TILE_REGISTRY: Record<FeedTileKind, TileRegistryEntry> = {
-  site: { icon: MapPinIcon, label: "Linked site" },
-  tree: { icon: SproutIcon, label: "Linked tree record" },
-  dataset: { icon: DatabaseIcon, label: "Linked dataset" },
-  biodiversity: { icon: LeafIcon, label: "Biodiversity observations" },
-  audio: { icon: AudioLinesIcon, label: "Linked audio" },
-  image: { icon: FileImageIcon, label: "Image" },
-  video: { icon: FileVideoIcon, label: "Video" },
-  pdf: { icon: FileTextIcon, label: "PDF" },
-  file: { icon: FileIcon, label: "File" },
-  link: { icon: ExternalLinkIcon, label: "Link" },
-  record: { icon: FileIcon, label: "Linked record" },
+  site: { icon: MapPinIcon },
+  tree: { icon: SproutIcon },
+  dataset: { icon: DatabaseIcon },
+  biodiversity: { icon: LeafIcon },
+  audio: { icon: AudioLinesIcon },
+  image: { icon: FileImageIcon },
+  video: { icon: FileVideoIcon },
+  pdf: { icon: FileTextIcon },
+  file: { icon: FileIcon },
+  link: { icon: ExternalLinkIcon },
+  record: { icon: FileIcon },
 };
 
 export function getTimelineTileRegistryEntry(kind: FeedTileKind): TileRegistryEntry {

@@ -20,6 +20,7 @@ import {
   buildOptimisticAttachmentItem,
   type OptimisticAttachmentContent,
 } from "./optimisticAttachmentItem";
+import { useTranslations } from "next-intl";
 
 export type AttachmentData = {
   title: string;
@@ -44,9 +45,6 @@ type CreatedAttachment = {
   created: CreatedAttachmentRecord;
   resolvedContents: ResolvedAttachmentContent[];
 };
-
-const INVALID_ACTIVITY_SUBJECT_MESSAGE =
-  "Cannot link evidence because the bumicert reference is incomplete. Refresh the page and try again.";
 
 function hasDescription(
   description: BumicertsLeafletEditorProps["content"] | undefined,
@@ -96,16 +94,6 @@ function hasInvalidActivitySubject(items: AttachmentData[]): boolean {
   );
 }
 
-function buildPartialSuccessMessage(args: {
-  createdCount: number;
-  totalCount: number;
-  cause: unknown;
-}): string {
-  const createdLabel = `${args.createdCount} attachment${args.createdCount === 1 ? "" : "s"}`;
-  const totalLabel = `${args.totalCount} group${args.totalCount === 1 ? "" : "s"}`;
-  return `${createdLabel} linked, but not all ${totalLabel} completed. ${formatError(args.cause)}`;
-}
-
 const Mutator = ({
   data,
   onSuccess,
@@ -113,6 +101,7 @@ const Mutator = ({
   data: AttachmentMutatorData;
   onSuccess?: () => void;
 }) => {
+  const t = useTranslations("bumicert.detail.evidenceAdder");
   const isSubmitting = useEvidenceAdderStore((state) => state.isSubmitting);
   const setIsSubmitting = useEvidenceAdderStore(
     (state) => state.setIsSubmitting,
@@ -129,7 +118,7 @@ const Mutator = ({
     0,
   );
   const subjectErrorMessage = hasInvalidActivitySubject(dataItems)
-    ? INVALID_ACTIVITY_SUBJECT_MESSAGE
+    ? t("incompleteBumicertReference")
     : null;
 
   const mutate = async () => {
@@ -137,7 +126,7 @@ const Mutator = ({
     if (itemsToCreate.length === 0) return;
 
     if (hasInvalidActivitySubject(itemsToCreate)) {
-      setErrorMessage(INVALID_ACTIVITY_SUBJECT_MESSAGE);
+      setErrorMessage(t("incompleteBumicertReference"));
       return;
     }
 
@@ -236,10 +225,10 @@ const Mutator = ({
       if (createdAttachments.length > 0) {
         onSuccess?.();
         setErrorMessage(
-          buildPartialSuccessMessage({
+          t("partialLinkSuccess", {
             createdCount: createdAttachments.length,
             totalCount: itemsToCreate.length,
-            cause: e,
+            error: formatError(e),
           }),
         );
       } else {
@@ -265,10 +254,10 @@ const Mutator = ({
       >
         {isSubmitting ? <Loader2Icon className="animate-spin" /> : null}
         {isSubmitting
-          ? "Linking…"
+          ? t("linking")
           : totalContentCount === 0
-            ? "Select evidence to link"
-            : `Link ${totalContentCount} item${totalContentCount !== 1 ? "s" : ""}`}
+            ? t("selectToLink")
+            : t("linkItems", { count: totalContentCount })}
         {!isSubmitting ? <ArrowRightIcon /> : null}
       </Button>
     </>

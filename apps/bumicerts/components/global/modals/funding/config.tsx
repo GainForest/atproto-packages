@@ -29,7 +29,6 @@ import { indexerTrpc } from "@/lib/trpc/indexer/client";
 import { clientEnv } from "@/lib/env/client";
 import type { FundingConfigData } from "@/lib/types";
 import type { EvmLink } from "@/graphql/indexer/queries/linkEvm";
-import { formatError } from "@/lib/utils/trpc-errors";
 import { AddWalletModal } from "@/components/global/modals/wallet/add";
 import { ManageWalletsModal } from "@/components/global/modals/wallet/manage";
 import { MODAL_IDS } from "@/components/global/modals/ids";
@@ -40,11 +39,12 @@ import {
   WalletIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatAddress(address: string | null | undefined): string {
-  if (!address) return "Unknown";
+  if (!address) return "—";
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
@@ -61,11 +61,12 @@ function isWalletTrusted(
 function walletLabel(
   link: EvmLink,
   facilitatorAddress: string | undefined,
+  notVerifiedSuffix: string,
 ): string {
   const addr = formatAddress(link.record?.address);
   const name = link.record?.name;
   const trusted = isWalletTrusted(link, facilitatorAddress);
-  const warning = !trusted ? " · Not verified" : "";
+  const warning = !trusted ? ` · ${notVerifiedSuffix}` : "";
   return name ? `${addr} (${name})${warning}` : `${addr}${warning}`;
 }
 
@@ -110,17 +111,12 @@ function StyledSelect({
 
 // ── Status options ────────────────────────────────────────────────────────────
 
-const STATUS_OPTIONS = [
-  { value: "open", label: "Open" },
-  { value: "coming-soon", label: "Coming Soon" },
-  { value: "paused", label: "Paused" },
-  { value: "closed", label: "Closed" },
-] as const;
+const STATUS_VALUES = ["open", "coming-soon", "paused", "closed"] as const;
 
-type StatusValue = (typeof STATUS_OPTIONS)[number]["value"];
+type StatusValue = (typeof STATUS_VALUES)[number];
 
 function isStatusValue(value: string): value is StatusValue {
-  return STATUS_OPTIONS.some((option) => option.value === value);
+  return STATUS_VALUES.some((option) => option === value);
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -140,6 +136,7 @@ export function FundingConfigModal({
   existingConfig,
   onSaved,
 }: FundingConfigModalProps) {
+  const t = useTranslations("modals.fundingConfig");
   const { pushModal, popModal, stack, hide } = useModal();
   const indexerUtils = indexerTrpc.useUtils();
   const facilitatorAddress = clientEnv.NEXT_PUBLIC_FACILITATOR_WALLET_ADDRESS;
@@ -249,7 +246,8 @@ export function FundingConfigModal({
       onSaved();
       handleClose();
     } catch (e) {
-      setSaveError(formatError(e));
+      console.error("[FundingConfigModal] Failed to save funding config:", e);
+      setSaveError(t("saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -289,13 +287,13 @@ export function FundingConfigModal({
 
   const walletOptions = evmLinks.map((link) => ({
     value: link.metadata?.uri ?? "",
-    label: walletLabel(link, facilitatorAddress),
+    label: walletLabel(link, facilitatorAddress, t("notVerifiedSuffix")),
   }));
 
   return (
     <ModalContent dismissible={false}>
       <ModalHeader backAction={stack.length > 1 ? handleClose : undefined}>
-        <ModalTitle>Donation Settings</ModalTitle>
+        <ModalTitle>{t("title")}</ModalTitle>
       </ModalHeader>
 
       <div className="flex flex-col gap-4 pt-1">
@@ -304,7 +302,7 @@ export function FundingConfigModal({
           <div className="flex items-center justify-between">
             <Label className="flex items-center gap-1.5">
               <WalletIcon className="size-3.5 text-muted-foreground" />
-              Receiving Wallet
+              {t("receivingWallet")}
             </Label>
             {evmLinks.length > 0 && (
               <button
@@ -312,7 +310,7 @@ export function FundingConfigModal({
                 onClick={handleManageWallets}
                 className="text-xs text-primary hover:underline"
               >
-                Manage
+                {t("manage")}
               </button>
             )}
           </div>
@@ -324,7 +322,7 @@ export function FundingConfigModal({
               className="flex items-center justify-center gap-1.5 h-9 w-full rounded-md border border-dashed border-input text-sm text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
             >
               <PlusIcon className="size-3.5" />
-              Link a Wallet
+              {t("linkWallet")}
             </button>
           ) : (
             <div className="flex items-center gap-2">
@@ -332,17 +330,17 @@ export function FundingConfigModal({
                 value={effectiveSelectedWalletUri}
                 onChange={setSelectedWalletUri}
                 options={walletOptions}
-                placeholder="Select a wallet"
+                placeholder={t("selectWallet")}
                 className="flex-1"
               />
               <button
                 type="button"
                 onClick={handleAddWallet}
-                title="Link a new wallet"
+                title={t("linkNewWallet")}
                 className="flex items-center gap-1 h-9 shrink-0 rounded-md border border-input px-2.5 text-sm text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
               >
                 <PlusIcon className="size-3.5" />
-                Link
+                {t("link")}
               </button>
             </div>
           )}
@@ -352,8 +350,8 @@ export function FundingConfigModal({
               <AlertTriangleIcon className="size-3.5 text-destructive mt-0.5 shrink-0" />
               <p className="text-xs text-destructive leading-snug">
                 {!selectedLink.specialMetadata?.valid
-                  ? "Signature unverified — donations may not be processable."
-                  : "Not verified by Bumicerts — re-link through the platform."}
+                  ? t("signatureUnverified")
+                  : t("notVerified")}
               </p>
             </div>
           )}
@@ -362,7 +360,7 @@ export function FundingConfigModal({
             <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
               <AlertTriangleIcon className="size-3.5 text-destructive mt-0.5 shrink-0" />
               <p className="text-xs text-destructive leading-snug">
-                The previously selected wallet is no longer available. Choose a linked wallet before saving.
+                {t("savedWalletMissing")}
               </p>
             </div>
           )}
@@ -370,7 +368,7 @@ export function FundingConfigModal({
 
         {/* ── Status ───────────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-1.5">
-          <Label>Status</Label>
+          <Label>{t("status")}</Label>
           <StyledSelect
             value={status}
             onChange={(value) => {
@@ -378,10 +376,12 @@ export function FundingConfigModal({
                 setStatus(value);
               }
             }}
-            options={STATUS_OPTIONS.map((option) => ({
-              value: option.value,
-              label: option.label,
-            }))}
+            options={[
+              { value: "open", label: t("statusOptions.open") },
+              { value: "coming-soon", label: t("statusOptions.coming-soon") },
+              { value: "paused", label: t("statusOptions.paused") },
+              { value: "closed", label: t("statusOptions.closed") },
+            ]}
           />
         </div>
 
@@ -389,13 +389,13 @@ export function FundingConfigModal({
         <Accordion type="single" collapsible>
           <AccordionItem value="advanced" className="border-0">
             <AccordionTrigger className="py-1.5 text-muted-foreground hover:no-underline hover:text-foreground text-sm font-normal">
-              Advanced
+              {t("advanced")}
             </AccordionTrigger>
             <AccordionContent>
               <div className="flex flex-col gap-3 pt-1">
                 <div className="flex flex-col gap-1">
                   <Label className="text-xs text-muted-foreground font-normal">
-                    Funding goal (USD)
+                    {t("fundingGoal")}
                   </Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none select-none">
@@ -403,7 +403,7 @@ export function FundingConfigModal({
                     </span>
                     <Input
                       inputMode="decimal"
-                      placeholder="No goal"
+                      placeholder={t("noGoal")}
                       value={goalInUSD}
                       onChange={(e) =>
                         setGoalInUSD(e.target.value.replace(/[^0-9.]/g, ""))
@@ -416,7 +416,7 @@ export function FundingConfigModal({
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex flex-col gap-1">
                     <Label className="text-xs text-muted-foreground font-normal">
-                      Min donation
+                      {t("minDonation")}
                     </Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none select-none">
@@ -424,7 +424,7 @@ export function FundingConfigModal({
                       </span>
                       <Input
                         inputMode="decimal"
-                        placeholder="None"
+                        placeholder={t("none")}
                         value={minDonationInUSD}
                         onChange={(e) =>
                           setMinDonationInUSD(
@@ -437,7 +437,7 @@ export function FundingConfigModal({
                   </div>
                   <div className="flex flex-col gap-1">
                     <Label className="text-xs text-muted-foreground font-normal">
-                      Max donation
+                      {t("maxDonation")}
                     </Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm pointer-events-none select-none">
@@ -445,7 +445,7 @@ export function FundingConfigModal({
                       </span>
                       <Input
                         inputMode="decimal"
-                        placeholder="None"
+                        placeholder={t("none")}
                         value={maxDonationInUSD}
                         onChange={(e) =>
                           setMaxDonationInUSD(
@@ -464,7 +464,7 @@ export function FundingConfigModal({
                     onCheckedChange={(c) => setAllowOversell(c === true)}
                   />
                   <span className="text-sm text-muted-foreground">
-                    Accept donations over goal
+                    {t("allowOversell")}
                   </span>
                 </label>
               </div>
@@ -481,10 +481,10 @@ export function FundingConfigModal({
           disabled={isSaving || !effectiveSelectedWalletUri}
           className="w-full"
         >
-          {isSaving ? "Saving…" : "Save"}
+          {isSaving ? t("saving") : t("save")}
         </Button>
         <Button variant="outline" onClick={handleClose} className="w-full">
-          Cancel
+          {t("cancel")}
         </Button>
       </ModalFooter>
     </ModalContent>

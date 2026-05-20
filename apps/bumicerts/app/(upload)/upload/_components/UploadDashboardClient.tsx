@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Building2Icon } from "lucide-react";
 import type { OrganizationData } from "@/lib/types";
 import type { AuthenticatedAccountState } from "@/lib/account";
@@ -459,11 +460,13 @@ function mergeRefetchedPageData(options: {
 }
 
 function RegisterOrganizationButton() {
+  const t = useTranslations("upload.actions");
+
   return (
     <Button asChild variant="secondary">
       <Link href={links.manage.onboardOrganization}>
         <Building2Icon />
-        Register as an Organization
+        {t("registerOrganization")}
       </Link>
     </Button>
   );
@@ -474,6 +477,7 @@ export function ManageDashboardClient({
   initialAccount,
   initialData,
 }: ManageDashboardClientProps) {
+  const tDashboard = useTranslations("upload.dashboard");
   const indexerUtils = indexerTrpc.useUtils();
   const [mode, setMode] = useManageMode();
   const [pendingReconciliation, setPendingReconciliation] =
@@ -610,7 +614,7 @@ export function ManageDashboardClient({
 
     try {
       if (currentAccount.kind === "unknown") {
-        throw new Error("Account data is not ready to save yet.");
+        throw new Error(tDashboard("accountNotReady"));
       }
 
       let pendingUpgrade: {
@@ -634,9 +638,7 @@ export function ManageDashboardClient({
 
         if (shouldUpgrade) {
           if (!isComplete) {
-            throw new Error(
-              "Complete the organization fields before registering as an organization.",
-            );
+            throw new Error(tDashboard("registerIncomplete"));
           }
 
           const nextCountryCode = resolveEditValue(
@@ -647,9 +649,7 @@ export function ManageDashboardClient({
             ? countries[nextCountryCode]
             : null;
           if (!nextCountry) {
-            throw new Error(
-              "Country is required to register as an organization.",
-            );
+            throw new Error(tDashboard("countryRequired"));
           }
 
           pendingUpgrade = {
@@ -941,6 +941,7 @@ export function ManageDashboardClient({
     setSaving,
     startReconciliation,
     updateOrganization,
+    tDashboard,
     updateProfileAndOrganization,
     upsertOrganization,
     upsertProfile,

@@ -5,6 +5,8 @@ import { useSignTypedData } from "wagmi";
 import { clientEnv } from "@/lib/env/client";
 import { toUsdcUnits, EIP3009_TYPES, CHAIN_ID, USDC_CONTRACT } from "@/lib/facilitator/usdc";
 import type { CheckoutItem, CheckoutResult } from "./useCheckoutFlow";
+import { paymentErrorKeyFromResponse } from "@/components/global/modals/payment-errors";
+import { useTranslations } from "next-intl";
 
 interface UseBatchPaymentParams {
   address: `0x${string}` | undefined;
@@ -26,13 +28,13 @@ function isHexBytes32(value: string): value is HexAddress {
   return /^0x[a-fA-F0-9]{64}$/.test(value);
 }
 
-function createNonce(): HexAddress {
+function createNonce(errorMessage: string): HexAddress {
   const nonce = `0x${Array.from(crypto.getRandomValues(new Uint8Array(32)))
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("")}`;
 
   if (!isHexBytes32(nonce)) {
-    throw new Error("Failed to create a valid nonce");
+    throw new Error(errorMessage);
   }
 
   return nonce;
@@ -73,7 +75,7 @@ function parseCheckoutResult(value: unknown): CheckoutResult | null {
           transactionHash: "",
           receiptUri: null,
           success: false,
-          error: "Invalid result entry",
+          error: "invalidResponse",
         };
       }
 
@@ -114,23 +116,31 @@ export function useBatchPayment({
   onSuccess,
   onError,
 }: UseBatchPaymentParams) {
+  const tErrors = useTranslations("modals.errors");
   const { signTypedDataAsync } = useSignTypedData();
 
   const executeBatchPayment = useCallback(
     async (items: CheckoutItem[], totalAmount: number) => {
       if (!address) {
-        onError("Wallet not connected");
+        onError(tErrors("walletNotConnected"));
         return;
       }
 
       const facilitatorWallet = clientEnv.NEXT_PUBLIC_FACILITATOR_WALLET_ADDRESS;
       if (!facilitatorWallet || !isHexAddress(facilitatorWallet)) {
-        onError("Facilitator wallet not configured");
+        onError(tErrors("facilitatorWalletNotConfigured"));
         return;
       }
 
       const now = Math.floor(Date.now() / 1000);
-      const nonce = createNonce();
+      let nonce: HexAddress;
+      try {
+        nonce = createNonce(tErrors("nonceGenerationFailed"));
+      } catch (err) {
+        console.error("[useBatchPayment] Payment failed:", err);
+        onError(err instanceof Error ? err.message : tErrors("paymentFailed"));
+        return;
+      }
 
       const usdcAmount = toUsdcUnits(totalAmount);
 
@@ -170,7 +180,7 @@ export function useBatchPayment({
           message,
         });
       } catch {
-        onError("Signature rejected");
+        onError(tErrors("signatureRejected"));
         return;
       }
 
@@ -207,22 +217,22 @@ export function useBatchPayment({
         });
 
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: "Unknown error" }));
-          throw new Error(err.error ?? "Payment failed");
+          const err = await res.json().catch(() => null);
+          throw new Error(tErrors(paymentErrorKeyFromResponse(err)));
         }
 
         const rawData = await res.json();
         const data = parseCheckoutResult(rawData);
         if (!data) {
-          throw new Error("Payment completed, but response was invalid.");
+          throw new Error(tErrors("invalidResponse"));
         }
         onSuccess(data);
       } catch (err) {
         console.error("[useBatchPayment] Payment failed:", err);
-        onError(err instanceof Error ? err.message : "Payment failed");
+        onError(err instanceof Error ? err.message : tErrors("paymentFailed"));
       }
     },
-    [address, donorDid, shouldStoreDonationAsAnonymous, onSigning, onProcessing, onSuccess, onError, signTypedDataAsync]
+    [address, donorDid, shouldStoreDonationAsAnonymous, onSigning, onProcessing, onSuccess, onError, signTypedDataAsync, tErrors]
   );
 
   return { executeBatchPayment };

@@ -21,6 +21,7 @@ import { useBatchPayment } from "./hooks/useBatchPayment";
 import type { CartBumicertItem } from "@/graphql/indexer/queries/cartBumicert";
 import type { EvmLink } from "@/graphql/indexer/queries/linkEvm";
 import Container from "@/components/ui/container";
+import { useTranslations } from "next-intl";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -82,6 +83,8 @@ function useCheckoutItemLoader(
 // ---------------------------------------------------------------------------
 
 function EmptyState() {
+  const t = useTranslations("modals.checkout");
+
   return (
     <div className="flex flex-col items-center gap-6 py-20 text-center">
       <div className="flex size-16 items-center justify-center rounded-full bg-muted">
@@ -92,14 +95,14 @@ function EmptyState() {
           className="text-2xl font-light tracking-[-0.02em]"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
-          Your cart is empty
+          {t("emptyTitle")}
         </h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Add bumicerts you&apos;d like to support
+          {t("emptyDescription")}
         </p>
       </div>
       <Button asChild className="rounded-full px-6">
-        <Link href={links.explore}>Explore Bumicerts</Link>
+        <Link href={links.explore}>{t("exploreBumicerts")}</Link>
       </Button>
     </div>
   );
@@ -133,6 +136,7 @@ function LoadingState() {
 // ---------------------------------------------------------------------------
 
 export function CheckoutClient() {
+  const t = useTranslations("modals.checkout");
   const cartIds = useCartStore((s) => s.items);
   const removeFromCart = useCartStore((s) => s.removeItem);
   const clearCart = useCartStore((s) => s.clearCart);
@@ -232,10 +236,10 @@ export function CheckoutClient() {
           className="text-3xl font-light tracking-[-0.02em]"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
-          Checkout
+          {t("title")}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Set your donation amount for each bumicert
+          {t("subtitle")}
         </p>
       </div>
 
@@ -243,7 +247,7 @@ export function CheckoutClient() {
       {state === "error" && error && (
         <div className="mb-6 p-4 border border-destructive/30 bg-destructive/5 rounded-2xl">
           <p className="text-sm text-destructive font-medium">
-            Payment failed: {error}
+            {t("paymentFailed", { error })}
           </p>
           <Button
             variant="outline"
@@ -251,7 +255,7 @@ export function CheckoutClient() {
             className="mt-3 rounded-full"
             onClick={reset}
           >
-            Try again
+            {t("tryAgain")}
           </Button>
         </div>
       )}
@@ -272,7 +276,7 @@ export function CheckoutClient() {
         ) : checkoutItems.length === 0 ? (
           <div className="border border-border rounded-2xl p-8 text-center">
             <p className="text-sm text-muted-foreground">
-              None of the items in your cart are currently accepting donations.
+              {t("noneAccepting")}
             </p>
             <Button
               asChild
@@ -280,7 +284,7 @@ export function CheckoutClient() {
               size="sm"
               className="mt-4 rounded-full"
             >
-              <Link href={links.explore}>Explore other bumicerts</Link>
+              <Link href={links.explore}>{t("exploreOther")}</Link>
             </Button>
           </div>
         ) : (
@@ -310,9 +314,9 @@ export function CheckoutClient() {
               className="mt-1 size-4 rounded border-border"
             />
             <div>
-              <span className="text-sm font-medium">Donate anonymously</span>
+              <span className="text-sm font-medium">{t("anonymousLabel")}</span>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Your wallet address will be recorded, but not your identity.
+                {t("anonymousDescription")}
               </p>
             </div>
           </label>
@@ -378,6 +382,7 @@ function SingleItemLoader({
   setLoadedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   setCheckoutItems: React.Dispatch<React.SetStateAction<CheckoutItem[]>>;
 }) {
+  const t = useTranslations("modals.checkout");
   const { item, isLoading, isOpen } = useCheckoutItemLoader(
     id,
     facilitatorAddress,
@@ -396,8 +401,8 @@ function SingleItemLoader({
       bumicertId: item.id,
       activityUri: `at://${item.organizationDid}/org.hypercerts.claim.activity/${item.rkey}`,
       orgDid: item.organizationDid,
-      title: item.title ?? "Untitled",
-      organizationName: item.organizationName ?? "Unknown",
+      title: item.title ?? t("untitled"),
+      organizationName: item.organizationName ?? t("unknownOrganization"),
       amount: DEFAULT_AMOUNT,
     };
 
@@ -406,7 +411,7 @@ function SingleItemLoader({
       if (prev.some((p) => p.id === checkoutItem.id)) return prev;
       return [...prev, checkoutItem];
     });
-  }, [id, item, isLoading, isOpen, loadedIds, setLoadedIds, setCheckoutItems]);
+  }, [id, item, isLoading, isOpen, loadedIds, setLoadedIds, setCheckoutItems, t]);
 
   // This component doesn't render anything — it just loads data
   return null;

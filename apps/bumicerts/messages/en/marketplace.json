@@ -1,0 +1,337 @@
+{
+  "explore": {
+    "metadata": {
+      "title": "Explore Bumicerts — Verified Regenerative Impact Projects",
+      "description": "Browse verified environmental impact certificates from nature stewards around the world. Filter by country, organization, and impact area."
+    },
+    "structuredData": {
+      "name": "Explore Bumicerts",
+      "description": "Verified environmental impact certificates from nature stewards around the world."
+    },
+    "hero": {
+      "eyebrow": "Explore Projects",
+      "titlePrefix": "Discover",
+      "titleEmphasis": "Regenerative Impact",
+      "description": "Browse projects from communities and organizations restoring ecosystems, strengthening livelihoods, and building a more resilient future."
+    },
+    "actions": {
+      "createBumicert": "Create Bumicert",
+      "allProjects": "All Projects",
+      "allFilters": "All filters",
+      "clearAll": "Clear all",
+      "applyFilters": "Apply filters",
+      "applyFiltersWithCount": "Apply filters ({count})",
+      "clearCategory": "Clear {category}"
+    },
+    "filters": {
+      "allTitle": "All Filters",
+      "description": "Filter projects by organization, country, or impact area",
+      "organization": "Organization",
+      "bioregion": "Bioregion",
+      "country": "Country",
+      "impactArea": "Impact Area"
+    },
+    "sort": {
+      "newest": "Newest",
+      "oldest": "Oldest"
+    },
+    "search": {
+      "ariaLabel": "Search projects",
+      "placeholder": "Search projects by name, keyword, or location...",
+      "sortAriaLabel": "Sort projects"
+    },
+    "empty": {
+      "eyebrow": "No Results",
+      "title": "No projects found",
+      "description": "Try adjusting your search or filters to discover more regenerative impact projects."
+    },
+    "resultsFound": "{count, plural, one {# project found} other {# projects found}}"
+  },
+  "organizations": {
+    "metadata": {
+      "title": "Organizations — Bumicerts",
+      "description": "Browse all nature steward organizations creating verified environmental impact on Bumicerts."
+    },
+    "hero": {
+      "imageAltLight": "Misty mountain forest at sunrise",
+      "imageAltDark": "Misty mountain forest at dusk",
+      "eyebrow": "Organizations",
+      "titleAriaLabel": "Nature Stewards",
+      "titleFirst": "Nature",
+      "titleSecond": "Stewards",
+      "description": "Discover organizations leading environmental stewardship and community-driven change."
+    },
+    "search": {
+      "placeholder": "Search organizations..."
+    },
+    "sort": {
+      "bumicerts": "Most Bumicerts",
+      "alpha": "Alphabetical",
+      "newest": "Newest"
+    },
+    "empty": {
+      "title": "No organizations found",
+      "description": "Try adjusting your search or filters."
+    },
+    "error": {
+      "title": "Something went wrong",
+      "description": "We were unable to load the organizations. Please try refreshing the page."
+    }
+  },
+  "leaderboard": {
+    "metadata": {
+      "title": "Leaderboard — Bumicerts",
+      "description": "See the top donors making an impact on Bumicerts. Our Impact Champions are ranked by their total funding contributions."
+    },
+    "hero": {
+      "eyebrow": "Leaderboard",
+      "titlePrefix": "Impact",
+      "titleEmphasis": "Champions",
+      "description": "Celebrating the generous contributors driving regenerative change for communities and the planet."
+    },
+    "periods": {
+      "all": "All Time",
+      "month": "This Month",
+      "week": "This Week"
+    },
+    "donorFilters": {
+      "all": "All Donors",
+      "anonymous": "Anonymous Only",
+      "known": "Known Only"
+    },
+    "sort": {
+      "label": "Sort by",
+      "totalRaised": "Total Raised",
+      "donationCount": "Donation Count",
+      "recentDonation": "Recent Donation"
+    },
+    "stats": {
+      "totalRaised": "Total Raised",
+      "totalRaisedDetail": "All time across the platform",
+      "totalDonors": "Total Donors",
+      "totalDonorsDetail": "Generous impact champions",
+      "projectsSupported": "Projects Supported",
+      "projectsSupportedDetail": "Restoring ecosystems & livelihoods"
+    },
+    "empty": {
+      "title": "No donations yet",
+      "description": "Be the first to make an impact."
+    },
+    "card": {
+      "rankAriaLabel": "Rank {rank}",
+      "anonymous": "Anonymous ({address})",
+      "donationSummary": "{count, plural, one {# donation} other {# donations}}",
+      "lastDonation": "Last donation {relativeTime}",
+      "topDonor": "Top Donor",
+      "natureChampion": "Nature Champion",
+      "consistentGiver": "Consistent Giver",
+      "risingSupporter": "Rising Supporter",
+      "openWallet": "Open {wallet} on BaseScan",
+      "openAccount": "Open donor account in a new tab"
+    }
+  },
+  "dashboard": {
+    "metadata": {
+      "title": "Donations Dashboard — Bumicerts",
+      "description": "Platform-wide donations analytics: total raised, unique donors, funding trends, and recent transactions.",
+      "measurementTechnique": "Donation receipts indexed from org.hypercerts.funding.receipt records."
+    },
+    "hero": {
+      "eyebrow": "Platform Analytics",
+      "title": "Donations Dashboard"
+    },
+    "periods": {
+      "all": "All Time",
+      "month": "Past 30 Days",
+      "week": "Past 7 Days"
+    },
+    "kpis": {
+      "totalRaised": "Total Raised",
+      "totalRaisedSub": "All USD donations",
+      "totalDonations": "Total Donations",
+      "totalDonationsSub": "Receipts recorded",
+      "uniqueDonors": "Unique Donors",
+      "uniqueDonorsSub": "By DID or wallet",
+      "avgDonation": "Avg Donation",
+      "avgDonationSub": "Per transaction",
+      "activeBumicerts": "Active Bumicerts",
+      "activeBumicertsSub": "Have received funds"
+    },
+    "geo": {
+      "title": "Geographic Reach",
+      "countriesRepresented": "Countries represented",
+      "topCountries": "Top Countries",
+      "empty": "No geographic data available.",
+      "organizationCount": "{count, plural, one {# organization} other {# organizations}}"
+    },
+    "chart": {
+      "title": "Donation Volume Over Time",
+      "raisedPer": "USD raised per {granularity}",
+      "empty": "No donation data for this period.",
+      "donationCount": "{count, plural, one {# donation} other {# donations}}",
+      "granularities": {
+        "day": "Daily",
+        "week": "Weekly",
+        "month": "Monthly"
+      }
+    },
+    "tables": {
+      "topDonors": "Top Donors",
+      "byOrganization": "By Organization",
+      "recentTransactions": "Recent Transactions",
+      "noDonations": "No donations yet.",
+      "noTransactions": "No transactions yet.",
+      "donor": "Donor",
+      "totalDonated": "Total Donated",
+      "donations": "Donations",
+      "lastDonation": "Last Donation",
+      "organization": "Organization",
+      "totalRaised": "Total Raised",
+      "bumicerts": "Bumicerts",
+      "donors": "Donors",
+      "date": "Date",
+      "amount": "Amount",
+      "bumicert": "Bumicert",
+      "txHash": "Tx Hash",
+      "anonymous": "Anonymous",
+      "anonymousWallet": "Anonymous ({address})",
+      "allTimeDonations": "All time · {count, plural, one {# donation} other {# donations}}",
+      "showingLatest": "showing latest 50",
+      "viewBumicert": "View bumicert"
+    }
+  },
+  "account": {
+    "metadata": {
+      "accountTitle": "Account — Bumicerts",
+      "bumicertsTitle": "Bumicerts — Bumicerts",
+      "donationsTitle": "Donation History — Bumicerts",
+      "accountFallback": "Account",
+      "profileDescription": "{displayName} on Bumicerts",
+      "organizationDescription": "{displayName} on Bumicerts.",
+      "bumicertsPageTitle": "{displayName} Bumicerts — Bumicerts",
+      "bumicertsPageDescription": "Browse all Bumicerts created by {displayName}.",
+      "donationsPageTitle": "{displayName} Donation History — Bumicerts",
+      "donationsPageDescription": "Browse the public donation history for {displayName}."
+    },
+    "errors": {
+      "loadOwnTitle": "Couldn't load your account",
+      "loadOwnDescription": "We had trouble fetching your account data. Please try again.",
+      "loadAccountTitle": "Couldn't load this account",
+      "loadAccountDescription": "We had trouble fetching this account's data. Please try again.",
+      "loadBumicertsTitle": "Couldn't load this account's Bumicerts",
+      "loadBumicertsDescription": "We had trouble fetching this account's Bumicerts. Please try again."
+    },
+    "onboarding": {
+      "title": "Onboarding required",
+      "description": "You are signed in, but your Bumicerts account is not set up yet. Complete onboarding to continue.",
+      "action": "Start onboarding"
+    },
+    "tabs": {
+      "home": "Home",
+      "bumicerts": "Bumicerts",
+      "donationHistory": "Donation History"
+    },
+    "setupPrompt": {
+      "title": "Set up your organization",
+      "description": "Before you can upload content, you need to set up your organization profile. This only takes a few minutes.",
+      "action": "Set Up Organization"
+    },
+    "wallet": {
+      "setUpDonations": "Set Up Donations",
+      "signInDescription": "Sign in to link your wallet and receive donations.",
+      "enabled": "Donations Enabled ✓",
+      "walletLabel": "Wallet:",
+      "enabledDescription": "Donors can now send USDC to your organization via Bumicerts.",
+      "setupDescription": "Link a wallet to receive USDC donations from supporters.",
+      "stepConnect": "Step 1: Connect your wallet",
+      "connectWallet": "Connect Wallet",
+      "stepSwitch": "Step 2: Switch to Base network",
+      "switching": "Switching...",
+      "switchToBase": "Switch to Base",
+      "linkedSuccess": "✓ Wallet linked successfully!",
+      "linkedSuccessDescription": "It may take a moment for the indexer to process your attestation.",
+      "refresh": "Refresh",
+      "stepLink": "Step 3: Link your wallet",
+      "waitingSignature": "Waiting for signature…",
+      "writingAttestation": "Writing attestation…",
+      "errorLinking": "Error linking wallet",
+      "signInWallet": "Sign in wallet…",
+      "writingToAtproto": "Writing to ATProto…",
+      "retry": "Retry",
+      "signAndLink": "Sign & Link Wallet"
+    },
+    "bumicerts": {
+      "emptyEyebrow": "No Bumicerts",
+      "emptyDescription": "This account hasn’t published any Bumicerts yet.",
+      "unknownCreator": "Unknown"
+    },
+    "sidebar": {
+      "achievements": "Achievements",
+      "viewAllAchievements": "View all achievements",
+      "donationUnavailable": "Donation records are not available right now",
+      "noPublicDonationsRecorded": "No public donations recorded yet",
+      "supportedOrganizations": "Supported {count} {count, plural, one {organization} other {organizations}}",
+      "noPublicDonationsReceived": "No public donations received yet",
+      "receivedDonations": "Received {count} {count, plural, one {donation} other {donations}}",
+      "setupPublicProfile": "Set up a public Bumicerts profile",
+      "completedProfileDetails": "Completed {count} profile {count, plural, one {detail} other {details}}",
+      "bumicertUnavailable": "Bumicert records are not available right now",
+      "publishedBumicerts": "Published {count} {count, plural, one {Bumicert} other {Bumicerts}}",
+      "noBumicertsPublished": "No Bumicerts published yet",
+      "profileReady": "Profile Ready",
+      "bumicertSteward": "Bumicert Steward",
+      "creatorSeed": "Creator Seed",
+      "communityBacked": "Community Backed",
+      "impactSupporter": "Impact Supporter",
+      "inviteCollaborators": "Invite collaborators",
+      "inviteCollaboratorsDescription": "Bring supporters and collaborators into your Bumicerts work and grow your regenerative impact together.",
+      "inviteFriends": "Invite friends",
+      "inviteFriendsDescription": "Invite your friends to join Bumicerts and create a positive impact together.",
+      "shareOrganization": "Explore {displayName}’s Bumicerts profile: {pageUrl}",
+      "shareUser": "Join me on Bumicerts and support regenerative impact: {pageUrl}",
+      "totalBumicerts": "Total Bumicerts",
+      "donationsReceived": "Donations Received",
+      "totalDonations": "Total Donations"
+    },
+    "hero": {
+      "coverImageAlt": "{displayName} cover image",
+      "copyLink": "Copy link",
+      "copied": "Copied!",
+      "share": "Share",
+      "editProfile": "Edit profile",
+      "edit": "Edit",
+      "since": "Since {date}"
+    }
+  },
+  "sidebar": {
+    "sections": {
+      "explore": "EXPLORE",
+      "manage": "MANAGE"
+    },
+    "items": {
+      "bumicerts": "Bumicerts",
+      "organizations": "Organizations",
+      "leaderboard": "Leaderboard",
+      "organization": "Organization",
+      "sites": "Sites",
+      "audio": "Audio",
+      "trees": "Trees",
+      "profile": "Profile"
+    },
+    "createBumicert": "Create a Bumicert",
+    "prompts": {
+      "signInDescription": "Sign in to manage your account and content.",
+      "signInAction": "Sign In",
+      "accountError": "Couldn't load your account right now.",
+      "checkingAccount": "Checking your account...",
+      "onboardingDescription": "Complete onboarding to manage your account.",
+      "onboardingAction": "Onboard"
+    },
+    "social": {
+      "documentation": "Documentation",
+      "github": "GitHub",
+      "twitter": "X (Twitter)",
+      "gainforest": "GainForest"
+    }
+  }
+}

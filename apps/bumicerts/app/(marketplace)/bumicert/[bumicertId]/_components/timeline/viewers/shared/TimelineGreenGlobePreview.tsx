@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { links } from "@/lib/links";
 import type { TimelineMapLayer } from "./timelineMapLayers";
 import { useTimelineViewerStore } from "./timelineViewerStore";
+import { useTranslations } from "next-intl";
 
 interface TimelineGreenGlobePreviewProps {
   organizationDid: string;
@@ -15,6 +16,7 @@ export function TimelineGreenGlobePreview({
   layers,
   isLoading,
 }: TimelineGreenGlobePreviewProps) {
+  const t = useTranslations("bumicert.detail.timelineEntry");
   const activeMapLayerByDatasetUri = useTimelineViewerStore(
     (state) => state.activeMapLayerByDatasetUri,
   );
@@ -38,21 +40,21 @@ export function TimelineGreenGlobePreview({
         <div className="min-w-0">
           <h3 className="flex items-center gap-2 text-base font-medium text-foreground">
             <Globe2Icon className="size-4 text-primary" />
-            Green Globe map
+            {t("greenGlobeMapTitle")}
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
             {isLoading
-              ? "Resolving spatial evidence layers…"
+              ? t("resolvingSpatialLayers")
               : activeLayers.length > 0
-                ? `${activeLayers.length} active layer${activeLayers.length === 1 ? "" : "s"}`
-                : "Use Show on map on tree dataset cards to preview layers here."}
+                ? t("activeLayerCount", { count: activeLayers.length })
+                : t("showOnMapHint")}
           </p>
         </div>
         {href ? (
           <Button asChild variant="outline" size="sm" className="shrink-0">
             <a href={href} target="_blank" rel="noopener noreferrer">
               <ExternalLinkIcon className="size-3" />
-              Open Green Globe
+              {t("openGreenGlobe")}
             </a>
           </Button>
         ) : null}
@@ -73,7 +75,7 @@ export function TimelineGreenGlobePreview({
           {href ? (
             <div className="overflow-hidden rounded-xl border border-border/40 bg-muted/10">
               <iframe
-                title="Green Globe evidence preview"
+                title={t("greenGlobeIframeTitle")}
                 src={href}
                 className="h-[240px] w-full border-0 md:h-[360px]"
                 loading="lazy"

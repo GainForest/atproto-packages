@@ -141,6 +141,8 @@ export const links = {
         `tg://msg?text=${encodeURIComponent(text)}`,
     },
     greenGlobePreviewBase: GREEN_GLOBE_PREVIEW_BASE_URL,
+    greenGlobeGeoView: (uri: string) =>
+      `${GREEN_GLOBE_PREVIEW_BASE_URL}/geo/view?source-value=${encodeURIComponent(uri)}`,
     greenGlobeTreePreview: (
       did: string,
       options?: {

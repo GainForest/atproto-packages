@@ -14,7 +14,7 @@ import { links } from "@/lib/links";
 export interface NavLeaf {
   kind: "leaf";
   id: string;
-  text: string;
+  labelKey: string;
   Icon: React.ComponentType<{ className?: string }>;
   href: string;
   pathCheck: { equals?: string; startsWith?: string };
@@ -23,7 +23,7 @@ export interface NavLeaf {
 export interface NavSection {
   kind: "section";
   id: string;
-  label: string;
+  labelKey: string;
   items: NavLeaf[];
   /** If true, section is only shown when authenticated. Shows sign-in prompt otherwise. */
   requiresAuth?: boolean;
@@ -42,12 +42,12 @@ export const NAV_ITEMS: NavItem[] = [
   {
     kind: "section",
     id: "explore",
-    label: "EXPLORE",
+    labelKey: "sections.explore",
     items: [
       {
         kind: "leaf",
         id: "bumicerts",
-        text: "Bumicerts",
+        labelKey: "items.bumicerts",
         Icon: CompassIcon,
         href: links.explore,
         pathCheck: { startsWith: links.explore },
@@ -55,7 +55,7 @@ export const NAV_ITEMS: NavItem[] = [
       {
         kind: "leaf",
         id: "organizations",
-        text: "Organizations",
+        labelKey: "items.organizations",
         Icon: Building2Icon,
         href: links.allOrganizations,
         pathCheck: { startsWith: "/organizations" },
@@ -63,7 +63,7 @@ export const NAV_ITEMS: NavItem[] = [
       {
         kind: "leaf",
         id: "leaderboard",
-        text: "Leaderboard",
+        labelKey: "items.leaderboard",
         Icon: TrophyIcon,
         href: links.leaderboard,
         pathCheck: { equals: links.leaderboard },
@@ -73,13 +73,13 @@ export const NAV_ITEMS: NavItem[] = [
   {
     kind: "section",
     id: "manage",
-    label: "MANAGE",
+    labelKey: "sections.manage",
     requiresAuth: true,
     items: [
       {
         kind: "leaf",
         id: "organization",
-        text: "Organization",
+        labelKey: "items.organization",
         Icon: Building2Icon,
         href: links.manage.home,
         pathCheck: { equals: links.manage.home },
@@ -87,7 +87,7 @@ export const NAV_ITEMS: NavItem[] = [
       {
         kind: "leaf",
         id: "sites",
-        text: "Sites",
+        labelKey: "items.sites",
         Icon: MapPinIcon,
         href: links.manage.sites,
         pathCheck: { startsWith: links.manage.sites },
@@ -95,7 +95,7 @@ export const NAV_ITEMS: NavItem[] = [
       {
         kind: "leaf",
         id: "audio",
-        text: "Audio",
+        labelKey: "items.audio",
         Icon: MicIcon,
         href: links.manage.audio,
         pathCheck: { startsWith: links.manage.audio },
@@ -103,7 +103,7 @@ export const NAV_ITEMS: NavItem[] = [
       {
         kind: "leaf",
         id: "bumicerts-manage",
-        text: "Bumicerts",
+        labelKey: "items.bumicerts",
         Icon: BumicertIcon,
         href: links.manage.bumicerts,
         pathCheck: { startsWith: links.manage.bumicerts },
@@ -111,7 +111,7 @@ export const NAV_ITEMS: NavItem[] = [
       {
         kind: "leaf",
         id: "trees",
-        text: "Trees",
+        labelKey: "items.trees",
         Icon: TreePineIcon,
         href: links.manage.trees,
         pathCheck: { startsWith: links.manage.trees },

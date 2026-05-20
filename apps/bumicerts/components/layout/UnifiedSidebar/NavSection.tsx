@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { motion } from "framer-motion";
 import { NavLeaf } from "./NavLeaf";
 import { SignInPrompt } from "./SignInPrompt";
@@ -23,6 +24,7 @@ function isLeafActive(
 
 export function NavSection({ section, isAuthenticated, startIndex }: NavSectionProps) {
   const pathname = usePathname();
+  const t = useTranslations("common.sidebar");
 
   // If section requires auth and user is not authenticated, show sign-in prompt
   if (section.requiresAuth && !isAuthenticated) {
@@ -40,7 +42,7 @@ export function NavSection({ section, isAuthenticated, startIndex }: NavSectionP
           className="px-3 py-1"
         >
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/60">
-            {section.label}
+            {t(section.labelKey)}
           </span>
         </motion.div>
 
@@ -64,7 +66,7 @@ export function NavSection({ section, isAuthenticated, startIndex }: NavSectionP
         className="px-3 py-1"
       >
         <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/60">
-          {section.label}
+          {t(section.labelKey)}
         </span>
       </motion.div>
 

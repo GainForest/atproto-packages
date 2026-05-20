@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
 import {
   GlobeIcon,
   CalendarIcon,
@@ -30,6 +31,7 @@ export function OrgHero({
   organization,
   showEditButton = false,
 }: OrgHeroProps) {
+  const t = useTranslations("marketplace.account.hero");
   const [copied, setCopied] = useState(false);
 
   const initial = organization.displayName.charAt(0).toUpperCase();
@@ -68,7 +70,7 @@ export function OrgHero({
           {organization.coverImageUrl ? (
             <Image
               src={getProxiedImageUrl(organization.coverImageUrl)}
-              alt={`${organization.displayName} cover image`}
+              alt={t("coverImageAlt", { displayName: organization.displayName })}
               fill
               priority
               className="object-cover object-center"
@@ -93,7 +95,7 @@ export function OrgHero({
           whileTap={{ scale: 0.94 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/55 backdrop-blur-xl border border-white/20 shadow-lg cursor-pointer hover:bg-background/70 transition-colors"
-          aria-label="Copy link"
+          aria-label={t("copyLink")}
         >
           <AnimatePresence mode="wait" initial={false}>
             {copied ? (
@@ -106,7 +108,7 @@ export function OrgHero({
                 className="flex items-center gap-1.5"
               >
                 <CheckIcon className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span className="text-xs font-medium text-primary">Copied!</span>
+                <span className="text-xs font-medium text-primary">{t("copied")}</span>
               </motion.span>
             ) : (
               <motion.span
@@ -118,7 +120,7 @@ export function OrgHero({
                 className="flex items-center gap-1.5"
               >
                 <Share2Icon className="h-3.5 w-3.5 text-foreground/80 shrink-0" />
-                <span className="text-xs font-medium text-foreground/80">Share</span>
+                <span className="text-xs font-medium text-foreground/80">{t("share")}</span>
               </motion.span>
             )}
           </AnimatePresence>
@@ -128,10 +130,10 @@ export function OrgHero({
           <Link
             href={links.manage.edit}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground border border-primary/20 shadow-lg transition-colors"
-            aria-label="Edit profile"
+            aria-label={t("editProfile")}
           >
             <PencilIcon className="h-3.5 w-3.5 shrink-0" />
-            <span className="text-xs font-medium">Edit</span>
+            <span className="text-xs font-medium">{t("edit")}</span>
           </Link>
         )}
       </div>
@@ -166,7 +168,7 @@ export function OrgHero({
             {sinceLabel && (
               <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.08em] text-foreground/60 bg-background/40 backdrop-blur-md border border-border/50 rounded-full px-2.5 py-1 font-medium">
                 <CalendarIcon className="h-3 w-3 shrink-0" />
-                Since {sinceLabel}
+                {t("since", { date: sinceLabel })}
               </span>
             )}
 

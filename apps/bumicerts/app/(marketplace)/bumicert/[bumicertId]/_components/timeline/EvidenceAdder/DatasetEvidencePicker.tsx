@@ -22,32 +22,13 @@ import {
   getOccurrenceDatasetRef,
   isTreeDatasetOccurrence,
 } from "../shared/occurrenceEvidenceClassification";
+import { useTranslations } from "next-intl";
 
 function hasTreeDatasetMetadata(item: DatasetItem): boolean {
   return (
     typeof item.record?.establishmentMeans === "string" &&
     item.record.establishmentMeans.length > 0
   );
-}
-
-function formatSiteContext(context: DatasetSiteContext): string {
-  if (context.status === "ready") {
-    return context.siteName ? `Site: ${context.siteName}` : "Site context ready";
-  }
-
-  if (context.status === "mixed-site-refs") {
-    return "Multiple sites in this dataset; attach site-specific datasets instead";
-  }
-
-  if (context.status === "incomplete-site-ref") {
-    return "Some trees are missing site context";
-  }
-
-  if (context.status === "unresolved-site") {
-    return "Site record could not be resolved";
-  }
-
-  return "Site context unavailable";
 }
 
 const DatasetEvidencePicker = ({
@@ -59,6 +40,7 @@ const DatasetEvidencePicker = ({
   occurrences: OccurrenceItem[];
   locations: CertifiedLocation[];
 }) => {
+  const t = useTranslations("bumicert.detail.evidenceAdder");
   const tabConfig = getManagedEvidenceTabConfig("trees");
   const description = useEvidenceAdderStore((state) => state.description);
   const resetDescription = useEvidenceAdderStore(
@@ -110,7 +92,7 @@ const DatasetEvidencePicker = ({
   });
   const computedMutationData: AttachmentData[] = groupedSelections.map(
     (group) => ({
-      title: tabConfig.attachment.title,
+      title: t("attachmentTitles.trees"),
       contentType: tabConfig.attachment.contentType,
       description,
       subjectInfo: {
@@ -126,6 +108,28 @@ const DatasetEvidencePicker = ({
     return <ListEmpty tabId="trees" />;
   }
 
+  const getSiteContextLabel = (context: DatasetSiteContext): string => {
+    if (context.status === "ready") {
+      return context.siteName
+        ? t("siteContextLabel", { siteName: context.siteName })
+        : t("siteContextReady");
+    }
+
+    if (context.status === "mixed-site-refs") {
+      return t("siteContextMixed");
+    }
+
+    if (context.status === "incomplete-site-ref") {
+      return t("siteContextIncomplete");
+    }
+
+    if (context.status === "unresolved-site") {
+      return t("siteContextUnresolved");
+    }
+
+    return t("siteContextUnavailable");
+  };
+
   return (
     <>
       <ListLayout>
@@ -137,10 +141,10 @@ const DatasetEvidencePicker = ({
           const siteContext = getDatasetSiteContext(siteContextsByDataset, uri);
           const canSelect = siteContext.status === "ready";
           const secondary = [
-            `${treeCount} tree${treeCount === 1 ? "" : "s"}`,
-            speciesCount > 0 ? `${speciesCount} species` : null,
+            t("treeCount", { count: treeCount }),
+            speciesCount > 0 ? t("speciesCount", { count: speciesCount }) : null,
             dateRange,
-            formatSiteContext(siteContext),
+            getSiteContextLabel(siteContext),
           ]
             .filter(
               (value): value is string =>
@@ -154,7 +158,7 @@ const DatasetEvidencePicker = ({
               selected={canSelect && selectedUris.has(uri)}
               onToggle={() => toggleUri(uri)}
               icon={tabConfig.icon}
-              primary={item.record?.name ?? "Unnamed tree dataset"}
+              primary={item.record?.name ?? t("unnamedTreeDataset")}
               secondary={secondary}
               disabled={isSubmitting || !canSelect}
             />

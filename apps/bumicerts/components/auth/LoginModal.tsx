@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type FormEvent } from "react";
+import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRightIcon, LoaderIcon } from "lucide-react";
 import { authorize } from "@/components/actions/oauth";
@@ -19,6 +20,8 @@ function PillToggle({
   active: "handle" | "email";
   onChange: (tab: "handle" | "email") => void;
 }) {
+  const t = useTranslations("modals.auth.login");
+
   return (
     <div className="flex w-full rounded-full bg-muted p-1">
       <button
@@ -31,7 +34,7 @@ function PillToggle({
             : "text-muted-foreground hover:text-foreground",
         )}
       >
-        Email
+        {t("tabs.email")}
       </button>
       <button
         type="button"
@@ -43,7 +46,7 @@ function PillToggle({
             : "text-muted-foreground hover:text-foreground",
         )}
       >
-        Handle
+        {t("tabs.handle")}
       </button>
     </div>
   );
@@ -52,10 +55,11 @@ function PillToggle({
 // ─── Email Form ───────────────────────────────────────────────────────────────
 
 function EmailForm() {
+  const t = useTranslations("modals.auth.login");
   const [email, setEmail] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setIsRedirecting(true);
     setTimeout(() => setIsRedirecting(false), 10_000);
@@ -74,20 +78,20 @@ function EmailForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <label htmlFor="login-email" className="text-sm font-medium">
-          Email
+          {t("email.label")}
         </label>
         <Input
           id="login-email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
+          placeholder={t("email.placeholder")}
           autoComplete="email"
           autoFocus
           disabled={isRedirecting}
         />
         <p className="text-xs text-muted-foreground">
-          We&apos;ll send you a verification code
+          {t("email.helper")}
         </p>
       </div>
 
@@ -99,11 +103,11 @@ function EmailForm() {
         {isRedirecting ? (
           <>
             <LoaderIcon className="animate-spin" />
-            Redirecting…
+            {t("actions.redirecting")}
           </>
         ) : (
           <>
-            Continue
+            {t("actions.continue")}
             <ArrowRightIcon />
           </>
         )}
@@ -118,7 +122,13 @@ function isValidHandleLabel(label: string): boolean {
   return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label);
 }
 
-function getHandleError(handle: string): string | null {
+type HandleErrorKey =
+  | "invalidCharacters"
+  | "missingDomain"
+  | "emptyLabel"
+  | "invalidLabelEdges";
+
+function getHandleErrorKey(handle: string): HandleErrorKey | null {
   const trimmedHandle = handle.trim();
 
   if (!trimmedHandle) {
@@ -126,36 +136,49 @@ function getHandleError(handle: string): string | null {
   }
 
   if (/[^a-z0-9\-.]/.test(trimmedHandle)) {
-    return "Only letters, numbers, hyphens, and dots are allowed.";
+    return "invalidCharacters";
   }
 
   const labels = trimmedHandle.split(".");
 
   if (labels.length < 2) {
-    return "Enter your full handle, including its domain.";
+    return "missingDomain";
   }
 
   if (labels.some((label) => label.length === 0)) {
-    return "Handle labels cannot be empty.";
+    return "emptyLabel";
   }
 
   if (!labels.every(isValidHandleLabel)) {
-    return "Handle labels must start and end with a letter or number.";
+    return "invalidLabelEdges";
   }
 
   return null;
 }
 
 function HandleForm() {
+  const t = useTranslations("modals.auth.login");
+  const getValidationMessage = (key: HandleErrorKey) => {
+    switch (key) {
+      case "invalidCharacters":
+        return t("handle.validation.invalidCharacters");
+      case "missingDomain":
+        return t("handle.validation.missingDomain");
+      case "emptyLabel":
+        return t("handle.validation.emptyLabel");
+      case "invalidLabelEdges":
+        return t("handle.validation.invalidLabelEdges");
+    }
+  };
   const [handle, setHandle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const normalizedHandle = handle.trim();
-  const handleError = getHandleError(handle);
-  const canSubmit = Boolean(normalizedHandle) && !handleError;
+  const handleErrorKey = getHandleErrorKey(handle);
+  const canSubmit = Boolean(normalizedHandle) && !handleErrorKey;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
     setError(null);
@@ -170,11 +193,14 @@ function HandleForm() {
         if ("authorizationUrl" in result) {
           window.location.href = result.authorizationUrl;
         } else {
-          // Error returned from server action (not thrown)
-          setError(result.error);
+          setError(
+            result.errorType === "identity"
+              ? t("handle.errors.identity")
+              : t("handle.errors.server"),
+          );
         }
       } catch {
-        setError("Something went wrong. Please try again.");
+        setError(t("handle.errors.generic"));
       }
     });
   };
@@ -183,7 +209,7 @@ function HandleForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <label htmlFor="login-handle" className="text-sm font-medium">
-          Handle
+          {t("handle.label")}
         </label>
         <Input
           id="login-handle"
@@ -193,14 +219,14 @@ function HandleForm() {
             setHandle(e.target.value.toLowerCase());
             setError(null);
           }}
-          placeholder="alice.example.com"
+          placeholder={t("handle.placeholder")}
           autoComplete="username"
           autoFocus
           disabled={isPending}
         />
 
         <AnimatePresence mode="wait">
-          {handleError ? (
+          {handleErrorKey ? (
             <motion.p
               key="herr"
               initial={{ opacity: 0, y: -4 }}
@@ -208,7 +234,7 @@ function HandleForm() {
               exit={{ opacity: 0, y: -4 }}
               className="text-xs text-destructive"
             >
-              {handleError}
+              {getValidationMessage(handleErrorKey)}
             </motion.p>
           ) : normalizedHandle ? (
             <motion.p
@@ -218,7 +244,7 @@ function HandleForm() {
               exit={{ opacity: 0, y: -4 }}
               className="text-xs text-muted-foreground"
             >
-              Signing in as{" "}
+              {t("handle.signingInAs")}{" "}
               <span className="font-mono text-foreground">
                 {normalizedHandle}
               </span>
@@ -248,11 +274,11 @@ function HandleForm() {
         {isPending ? (
           <>
             <LoaderIcon className="animate-spin" />
-            Redirecting…
+            {t("actions.redirecting")}
           </>
         ) : (
           <>
-            Continue
+            {t("actions.continue")}
             <ArrowRightIcon />
           </>
         )}
@@ -264,6 +290,7 @@ function HandleForm() {
 // ─── Login Modal ──────────────────────────────────────────────────────────────
 
 export function LoginModal() {
+  const t = useTranslations("modals.auth.login");
   const [activeTab, setActiveTab] = useState<"handle" | "email">("email");
   const hasEpds = !!env.NEXT_PUBLIC_EPDS_URL;
 
@@ -279,7 +306,7 @@ export function LoginModal() {
       <div className="flex justify-center mb-4">
         <Image
           src="/assets/media/images/gainforest-logo.svg"
-          alt="GainForest"
+          alt={t("logoAlt")}
           width={40}
           height={40}
         />
@@ -291,10 +318,10 @@ export function LoginModal() {
           className="text-3xl font-light tracking-[-0.02em] text-foreground mb-2"
           style={{ fontFamily: "var(--font-garamond-var)" }}
         >
-          Get Started
+          {t("heading")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Sign up or Sign in to your account
+          {t("subheading")}
         </p>
       </div>
 

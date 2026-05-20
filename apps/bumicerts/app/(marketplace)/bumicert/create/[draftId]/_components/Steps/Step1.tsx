@@ -31,8 +31,11 @@ import {
   BUMICERT_COVER_IMAGE_MAX_SIZE_MB,
   BUMICERT_COVER_IMAGE_SUPPORTED_TYPES,
 } from "../../constants";
+import { useTranslations } from "next-intl";
+import { localizeFormError } from "../../i18n";
 
 const Step1 = () => {
+  const t = useTranslations("bumicert.create.draft");
   const { viewport, openState } = useNavbarContext();
 
   const { maxStepIndexReached, currentStepIndex } = useNewBumicertStore();
@@ -57,7 +60,7 @@ const Step1 = () => {
   return (
     <div>
       <h1 className="text-2xl font-medium text-muted-foreground">
-        Share your impact at a glance.
+        {t("stepForms.cover.heading")}
       </h1>
       <div className="flex flex-col gap-2 mt-8">
         <div
@@ -70,15 +73,15 @@ const Step1 = () => {
         >
           <FormField
             Icon={ImagePlusIcon}
-            label="Cover Image"
-            error={errors.coverImage}
+            label={t("stepForms.cover.coverImage.label")}
+            error={localizeFormError(errors.coverImage, t)}
             showError={shouldShowValidationErrors}
-            info="Choose an image that best represents your work"
+            info={t("stepForms.cover.coverImage.info")}
             required
           >
             <FileInput
               className="h-80"
-              placeholder="Upload or drag and drop an image"
+              placeholder={t("stepForms.cover.coverImage.placeholder")}
               value={coverImage}
               onFileChange={(file) =>
                 setFormValue(
@@ -95,15 +98,15 @@ const Step1 = () => {
           <div className="flex flex-col gap-2">
             <FormField
               Icon={ClubIcon}
-              label="Bumicert Title"
-              error={errors.projectName}
+              label={t("stepForms.cover.title.label")}
+              error={localizeFormError(errors.projectName, t)}
               showError={shouldShowValidationErrors}
-              info="Give your bumicert a clear, descriptive title"
+              info={t("stepForms.cover.title.info")}
               required
             >
               <InputGroup className="bg-background">
                 <InputGroupInput
-                  placeholder="My Awesome Bumicert"
+                  placeholder={t("stepForms.cover.title.placeholder")}
                   id="project-title"
                   value={projectName}
                   onChange={(e) => setFormValue("projectName", e.target.value)}
@@ -118,12 +121,12 @@ const Step1 = () => {
             </FormField>
             <FormField
               Icon={CalendarClockIcon}
-              label="Bumicert Date Range"
+              label={t("stepForms.cover.dateRange.label")}
               className="flex-1"
-              error={errors.projectDateRange}
+              error={localizeFormError(errors.projectDateRange, t)}
               showError={shouldShowValidationErrors}
               required
-              info="Select the period when your work and impact took place"
+              info={t("stepForms.cover.dateRange.info")}
             >
               <div className="mt-1 flex flex-col gap-2">
                 <Popover>
@@ -140,7 +143,7 @@ const Step1 = () => {
                       >
                         {format(startDate, "LLL dd, y")} →{" "}
                         {isOngoing || endDate === null
-                          ? "Ongoing"
+                          ? t("stepForms.cover.dateRange.ongoing")
                           : format(endDate, "LLL dd, y")}
                       </span>
                     </button>
@@ -172,19 +175,19 @@ const Step1 = () => {
                     htmlFor="is-ongoing"
                     className="text-sm text-muted-foreground cursor-pointer select-none"
                   >
-                    This work is still ongoing
+                    {t("stepForms.cover.dateRange.ongoingCheckbox")}
                   </Label>
                 </div>
               </div>
             </FormField>
             <FormField
               Icon={HandHeartIcon}
-              label="What kind of work are you doing?"
+              label={t("stepForms.cover.workType.label")}
               className="flex-1"
-              error={errors.workType}
+              error={localizeFormError(errors.workType, t)}
               showError={shouldShowValidationErrors}
               required
-              info="Feel free to choose more than one"
+              info={t("stepForms.cover.workType.info")}
             >
               <Capsules
                 className="mt-1"
@@ -192,13 +195,13 @@ const Step1 = () => {
                 value={workType}
                 onChange={(value) => setFormValue("workType", value)}
                 options={[
-                  { value: "Ecological Restoration", label: "Ecological Restoration" },
-                  { value: "Agroforestry", label: "Agroforestry" },
-                  { value: "Climate Adaptation", label: "Climate Adaptation" },
-                  { value: "Biodiversity Monitoring", label: "Biodiversity Monitoring" },
-                  { value: "Environmental Education", label: "Environmental Education" },
-                  { value: "Indigenous & Local Knowledge", label: "Indigenous & Local Knowledge" },
-                  { value: "Environmental Justice", label: "Environmental Justice" },
+                  { value: "Ecological Restoration", label: t("stepForms.cover.workType.options.ecologicalRestoration") },
+                  { value: "Agroforestry", label: t("stepForms.cover.workType.options.agroforestry") },
+                  { value: "Climate Adaptation", label: t("stepForms.cover.workType.options.climateAdaptation") },
+                  { value: "Biodiversity Monitoring", label: t("stepForms.cover.workType.options.biodiversityMonitoring") },
+                  { value: "Environmental Education", label: t("stepForms.cover.workType.options.environmentalEducation") },
+                  { value: "Indigenous & Local Knowledge", label: t("stepForms.cover.workType.options.indigenousLocalKnowledge") },
+                  { value: "Environmental Justice", label: t("stepForms.cover.workType.options.environmentalJustice") },
                 ]}
               />
             </FormField>

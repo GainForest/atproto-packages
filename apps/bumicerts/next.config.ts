@@ -2,9 +2,12 @@ import "./lib/env/server"; // Validate server env vars at build time
 import "./lib/env/client"; // Validate client env vars at build time
 
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 import { clientEnv } from "./lib/env/client";
 import { serverEnv } from "./lib/env/server";
 import { links } from "./lib/links";
+
+const withNextIntl = createNextIntlPlugin();
 
 const imageProxyUrl = new URL(clientEnv.NEXT_PUBLIC_IMAGE_PROXY_URL);
 const imageProxyProtocol = imageProxyUrl.protocol === "http:" ? "http" : "https";
@@ -70,4 +73,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

@@ -22,14 +22,12 @@ import DatasetEvidencePicker from "./DatasetEvidencePicker";
 import BiodiversityEvidencePicker from "./BiodiversityEvidencePicker";
 import FileEvidencePicker from "./FileEvidencePicker";
 import { ListSkeleton } from "./shared/RecordList";
-import {
-  EVIDENCE_TABS,
-  getEvidenceTabLabel,
-} from "./shared/evidenceRegistry";
+import { EVIDENCE_TABS } from "./shared/evidenceRegistry";
 import {
   EvidenceAdderStoreProvider,
   useEvidenceAdderStore,
 } from "./shared/evidenceAdderStore";
+import { useTranslations } from "next-intl";
 
 const LoadingWrapper = ({
   isLoading,
@@ -67,6 +65,7 @@ export function EvidenceAdder({
 }
 
 function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) {
+  const t = useTranslations("bumicert.detail.evidenceAdder");
   const activeTab = useEvidenceAdderStore((state) => state.activeTab);
   const setActiveTab = useEvidenceAdderStore((state) => state.setActiveTab);
   const isSubmitting = useEvidenceAdderStore((state) => state.isSubmitting);
@@ -93,13 +92,13 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
     return (
       <div className="flex flex-col">
         <span className="text-muted-foreground italic font-instrument text-2xl font-medium">
-          Add Evidence
+          {t("title")}
         </span>
         <span className="text-sm text-muted-foreground">
-          Select the type of evidence to add.
+          {t("selectType")}
         </span>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2 mt-4">
-          {EVIDENCE_TABS.map(({ id, label, icon: Icon }) => {
+          {EVIDENCE_TABS.map(({ id, icon: Icon }) => {
             return (
               <Button
                 key={id}
@@ -108,7 +107,7 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
                 className="h-auto hover:bg-accent hover:text-primary rounded-2xl shadow-none flex flex-col items-start justify-between"
               >
                 <Icon className="opacity-40" />
-                <span className="text-xl">{label}</span>
+                <span className="text-xl">{t(`tabs.${id}`)}</span>
               </Button>
             );
           })}
@@ -133,10 +132,10 @@ function EvidenceAdderContent({ organizationDid }: { organizationDid: string }) 
         </Button>
         <div className="flex flex-col">
           <span className="text-muted-foreground italic font-instrument text-2xl font-medium">
-            Add {getEvidenceTabLabel(activeTab)}
+            {t("addType", { type: t(`tabs.${activeTab}`) })}
           </span>
           <span className="text-sm text-muted-foreground">
-            Select the evidence to add.
+            {t("selectEvidence")}
           </span>
         </div>
       </div>

@@ -12,7 +12,15 @@ import { BumicertDetail } from "./_components/BumicertDetail";
 import ErrorPage from "@/components/error-page";
 import Container from "@/components/ui/container";
 import { auth } from "@/lib/auth";
-import { requirePublicUrl } from "@/lib/url";
+import { getTranslations } from "next-intl/server";
+import { links } from "@/lib/links";
+import {
+  getLocalizedAbsoluteUrl,
+  getLocalizedAbsoluteUrls,
+  jsonLd,
+  noIndexMetadata,
+  sharedOpenGraphImage,
+} from "@/lib/seo-metadata";
 
 const getActivityData = cache(async (did: string) => {
   try {
@@ -34,30 +42,34 @@ export async function generateMetadata({
   params: Promise<{ bumicertId: string }>;
 }): Promise<Metadata> {
   const { bumicertId } = await params;
+  const t = await getTranslations("bumicert.detail");
   const id = decodeURIComponent(bumicertId);
   const parsed = id.includes("-") ? id.split("-") : null;
-  if (!parsed) return { title: "Bumicert Not Found" };
+  if (!parsed) return noIndexMetadata(t("metadata.notFound"));
 
   const [did, rkey] = parsed;
   const { data, error } = await getActivityData(did);
-  if (error || !data) return { title: "Bumicert Not Found" };
+  if (error || !data) return noIndexMetadata(t("metadata.notFound"));
 
   const activity = (data.activities ?? []).find((a) => a.metadata?.rkey === rkey);
-  if (!activity) return { title: "Bumicert Not Found" };
+  if (!activity) return noIndexMetadata(t("metadata.notFound"));
 
   const bumicert = activityToBumicertData(activity);
-  const pageUrl = `${requirePublicUrl()}/bumicert/${encodeURIComponent(id)}`;
+  const pathname = links.bumicert.view(did, rkey);
+  const pageUrl = await getLocalizedAbsoluteUrl(pathname);
   const description = bumicert.shortDescription || extractTextFromLinearDocument(bumicert.description).slice(0, 160);
 
-  const baseUrl = requirePublicUrl();
   const ogImage = bumicert.coverImageUrl
     ? { url: bumicert.coverImageUrl, width: 1200, height: 630, alt: bumicert.title }
-    : { url: `${baseUrl}/opengraph-image.png`, width: 1200, height: 630, alt: "Bumicerts" };
+    : sharedOpenGraphImage;
 
   return {
-    title: `${bumicert.title} — Bumicerts`,
+    title: bumicert.title,
     description,
-    alternates: { canonical: pageUrl },
+    alternates: {
+      canonical: pageUrl,
+      languages: getLocalizedAbsoluteUrls(pathname),
+    },
     openGraph: {
       title: bumicert.title,
       description,
@@ -96,13 +108,15 @@ export default async function BumicertDetailPage({
     auth.session.getSession(),
   ]);
 
+  const t = await getTranslations("bumicert.detail");
+
   if (error) {
     console.error("Error fetching Bumicert", did, rkey, error);
     return (
       <Container className="pt-4">
         <ErrorPage
-          title="Couldn't load this bumicert"
-          description="We had trouble fetching this bumicert's data. Please try again or go back to the homepage."
+          title={t("error.loadTitle")}
+          description={t("error.loadDescription")}
           error={error}
         />
       </Container>
@@ -113,7 +127,7 @@ export default async function BumicertDetailPage({
   if (!activity) notFound();
 
   const bumicert = activityToBumicertData(activity);
-  const pageUrl = `${requirePublicUrl()}/bumicert/${encodeURIComponent(id)}`;
+  const pageUrl = await getLocalizedAbsoluteUrl(links.bumicert.view(did, rkey));
 
   // ── Ownership check ─────────────────────────────────────────────────────────
   const isOwner = session.isLoggedIn && session.did === bumicert.organizationDid;
@@ -155,20 +169,21 @@ export default async function BumicertDetailPage({
     author: {
       "@type": "Organization",
       name: bumicert.organizationName,
-      url: `${requirePublicUrl()}/account/${encodeURIComponent(bumicert.organizationDid)}`,
+      url: await getLocalizedAbsoluteUrl(links.account.byDid(bumicert.organizationDid)),
     },
     ...(bumicert.coverImageUrl
       ? { image: { "@type": "ImageObject", url: bumicert.coverImageUrl } }
       : {}),
     ...(bumicert.startDate ? { datePublished: bumicert.startDate } : {}),
     ...(bumicert.createdAt ? { dateCreated: bumicert.createdAt } : {}),
+    ...(bumicert.createdAt ? { dateModified: bumicert.createdAt } : {}),
   };
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
       />
       <main className="w-full">
         <Container className="pt-3 pb-12">

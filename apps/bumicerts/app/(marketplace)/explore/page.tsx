@@ -1,14 +1,26 @@
 import { activitiesToBumicertDataArray } from "@/lib/adapters";
 import type { BumicertData } from "@/lib/types";
 import { ExploreShell } from "./_components/ExploreShell";
-import { requirePublicUrl } from "@/lib/url";
+import { getTranslations } from "next-intl/server";
 import { getIndexerCaller } from "@/lib/trpc/indexer/server";
+import { links } from "@/lib/links";
+import {
+  buildPublicPageMetadata,
+  getLocalizedAbsoluteUrl,
+  jsonLd,
+} from "@/lib/seo-metadata";
 
-export const metadata = {
-  title: "Explore Bumicerts — Verified Regenerative Impact Projects",
-  description:
-    "Browse verified environmental impact certificates from nature stewards around the world. Filter by country, organization, and impact area.",
-};
+export async function generateMetadata() {
+  const t = await getTranslations("marketplace.explore.metadata");
+
+  return {
+    ...(await buildPublicPageMetadata({
+      pathname: links.explore,
+      title: t("title"),
+      description: t("description"),
+    })),
+  };
+}
 
 export default async function ExplorePage() {
   let bumicerts: BumicertData[] = [];
@@ -28,21 +40,37 @@ export default async function ExplorePage() {
     console.error("Failed to fetch bumicerts:", error);
   }
 
+  const t = await getTranslations("marketplace.explore.structuredData");
+  const pageUrl = await getLocalizedAbsoluteUrl(links.explore);
+  const itemListElement = await Promise.all(
+    bumicerts.slice(0, 20).map(async (bumicert, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: bumicert.title,
+      url: await getLocalizedAbsoluteUrl(
+        links.bumicert.view(bumicert.organizationDid, bumicert.rkey),
+      ),
+    })),
+  );
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "Explore Bumicerts",
-    description:
-      "Verified environmental impact certificates from nature stewards around the world.",
+    name: t("name"),
+    description: t("description"),
     numberOfItems: bumicerts.length,
-    url: `${requirePublicUrl()}/explore`,
+    url: pageUrl,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: bumicerts.length,
+      itemListElement,
+    },
   };
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(structuredData) }}
       />
       {/*
         ExploreShell renders the static chrome (heading, search, sort, filter chips).

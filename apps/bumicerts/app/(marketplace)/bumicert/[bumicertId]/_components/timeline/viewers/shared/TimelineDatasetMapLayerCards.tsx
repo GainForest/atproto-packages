@@ -2,6 +2,7 @@ import { MapIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { TimelineMapLayer } from "./timelineMapLayers";
 import { useTimelineViewerStore } from "./timelineViewerStore";
+import { useTranslations } from "next-intl";
 
 interface TimelineDatasetMapLayerCardsProps {
   layers: TimelineMapLayer[];
@@ -10,6 +11,7 @@ interface TimelineDatasetMapLayerCardsProps {
 export function TimelineDatasetMapLayerCards({
   layers,
 }: TimelineDatasetMapLayerCardsProps) {
+  const t = useTranslations("bumicert.detail.timelineEntry");
   const activeMapLayerByDatasetUri = useTimelineViewerStore(
     (state) => state.activeMapLayerByDatasetUri,
   );
@@ -23,7 +25,9 @@ export function TimelineDatasetMapLayerCards({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-muted-foreground">Tree dataset map layers</p>
+      <p className="text-xs text-muted-foreground">
+        {t("treeDatasetMapLayers")}
+      </p>
       {layers.map((layer) => {
         const isActive = Boolean(activeMapLayerByDatasetUri[layer.datasetUri]);
 
@@ -47,12 +51,16 @@ export function TimelineDatasetMapLayerCards({
               variant={isActive ? "secondary" : "outline"}
               size="sm"
               aria-pressed={isActive}
-              aria-label={`${isActive ? "Hide" : "Show"} ${layer.title} ${isActive ? "from" : "on"} Green Globe map`}
+              aria-label={
+                isActive
+                  ? t("hideDatasetFromGreenGlobeMap", { title: layer.title })
+                  : t("showDatasetOnGreenGlobeMap", { title: layer.title })
+              }
               className="shrink-0"
               onClick={() => setMapLayerActive(layer.datasetUri, !isActive)}
             >
               <MapIcon className="size-3" />
-              {isActive ? "Hide from map" : "Show on map"}
+              {isActive ? t("hideFromMap") : t("showOnMap")}
             </Button>
           </div>
         );

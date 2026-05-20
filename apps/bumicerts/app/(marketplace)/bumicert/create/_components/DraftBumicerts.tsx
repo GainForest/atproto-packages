@@ -27,6 +27,7 @@ import type {
 import DeleteDraftModal, {
   DeleteDraftModalId,
 } from "../[draftId]/_components/DeleteDraftModal";
+import { useTranslations } from "next-intl";
 
 async function fetchDrafts(): Promise<DraftBumicertResponse[]> {
   const res = await fetch(links.api.drafts.bumicert.get(), {
@@ -109,6 +110,7 @@ const DraftStatus = ({
 };
 
 const DraftBumicerts = () => {
+  const t = useTranslations("bumicert.create.drafts");
   const auth = useAtprotoStore((state) => state.auth);
   const { pushModal, show, hide, popModal } = useModal();
 
@@ -126,17 +128,17 @@ const DraftBumicerts = () => {
     if (!drafts) return [];
     return drafts.map((draft) => ({
       ...draft,
-      title: draft.data.title || "Untitled Draft",
+      title: draft.data.title || t("untitledDraft"),
       progress: calculateProgress(draft.data),
     }));
-  }, [drafts]);
+  }, [drafts, t]);
 
   if (!auth.authenticated) {
     return (
       <DraftStatus
         icon={<AlertCircleIcon className="size-8" />}
-        title="Sign in to view drafts"
-        description="Draft Bumicerts are saved to your account so you can continue your work later."
+        title={t("signedOutTitle")}
+        description={t("signedOutDescription")}
       />
     );
   }
@@ -145,8 +147,8 @@ const DraftBumicerts = () => {
     return (
       <DraftStatus
         icon={<Loader2Icon className="size-8 animate-spin" />}
-        title="Loading drafts"
-        description="We are checking for saved Bumicert applications."
+        title={t("loadingTitle")}
+        description={t("loadingDescription")}
       />
     );
   }
@@ -155,12 +157,8 @@ const DraftBumicerts = () => {
     return (
       <DraftStatus
         icon={<AlertCircleIcon className="size-8" />}
-        title="Couldn't load drafts"
-        description={
-          error instanceof Error
-            ? error.message
-            : "Failed to load drafts. Please try again."
-        }
+        title={t("errorTitle")}
+        description={error instanceof Error ? error.message : t("errorFallback")}
       />
     );
   }
@@ -189,8 +187,8 @@ const DraftBumicerts = () => {
     return (
       <DraftStatus
         icon={<FilePenLineIcon className="size-8" />}
-        title="No drafts yet"
-        description="Start a new Bumicert and save it as a draft when you want to return later."
+        title={t("emptyTitle")}
+        description={t("emptyDescription")}
       />
     );
   }
@@ -218,7 +216,7 @@ const DraftBumicerts = () => {
               variant="ghost"
               size="icon-sm"
               className="rounded-full text-destructive hover:text-destructive"
-              aria-label={`Delete ${draft.title}`}
+              aria-label={t("deleteAria", { title: draft.title })}
               onClick={() => handleDeleteDraft(draft)}
             >
               <Trash2Icon />

@@ -26,6 +26,7 @@ import BlueskyIcon from "@/icons/BlueskyIcon";
 import TelegramIcon from "@/icons/TelegramIcon";
 import { useCopy } from "@/hooks/use-copy";
 import { Separator } from "@/components/ui/separator";
+import { useTranslations } from "next-intl";
 
 interface SuccessModalProps {
   amount: number;
@@ -42,6 +43,7 @@ export function SuccessModal({
   bumicertId,
   donorRecordedAs,
 }: SuccessModalProps) {
+  const t = useTranslations("modals.donate.success");
   const { hide, clear } = useModal();
 
   const baseScanUrl = `https://basescan.org/tx/${transactionHash}`;
@@ -55,7 +57,10 @@ export function SuccessModal({
   const baseUrl = getPublicUrlClient();
   const shareUrl = `${baseUrl}${links.bumicert.view(bumicertId)}`;
 
-  const shareText = `I just donated $${amount.toFixed(2)} to this bumicert: ${shareUrl}`;
+  const shareText = t("shareText", {
+    amount: amount.toFixed(2),
+    shareUrl,
+  });
 
   const shareXUrl = links.external.share.x(shareText);
   const shareBlueskyUrl = links.external.share.bluesky(shareText);
@@ -66,9 +71,9 @@ export function SuccessModal({
   return (
     <ModalContent dismissible={false}>
       <ModalHeader>
-        <ModalTitle className="sr-only">Donation Successful</ModalTitle>
+        <ModalTitle className="sr-only">{t("title")}</ModalTitle>
         <ModalDescription className="sr-only">
-          Your donation was successful.
+          {t("description")}
         </ModalDescription>
       </ModalHeader>
 
@@ -82,26 +87,29 @@ export function SuccessModal({
 
           <div className="flex flex-col gap-1">
             <p className="font-instrument italic font-medium text-4xl text-primary">
-              Thank you!
+              {t("thankYou")}
             </p>
             <p className="font-medium text-muted-foreground mt-2 text-pretty">
-              Your donation of&nbsp;
-              <span className="text-foreground text-nowrap">
-                {amount.toFixed(2)} USDC
-              </span>
-              &nbsp;to&nbsp;
-              <span className="text-foreground">{organizationName}</span>
-              &nbsp;was successful.
+              {t.rich("successfulDonation", {
+                amount: amount.toFixed(2),
+                organizationName,
+                amountText: (chunks) => (
+                  <span className="text-foreground text-nowrap">{chunks}</span>
+                ),
+                organizationText: (chunks) => (
+                  <span className="text-foreground">{chunks}</span>
+                ),
+              })}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               {donorRecordedAs === "did"
-                ? "Recorded with your Bumicerts profile."
-                : "Recorded as anonymous."}
+                ? t("recordedProfile")
+                : t("recordedAnonymous")}
             </p>
           </div>
           <Button variant={"secondary"} asChild>
             <Link href={baseScanUrl} target="_blank">
-              View Transaction Receipt <ArrowUpRightIcon />
+              {t("viewReceipt")} <ArrowUpRightIcon />
             </Link>
           </Button>
         </div>
@@ -109,21 +117,29 @@ export function SuccessModal({
         <div className="rounded-3xl p-3 pt-2 w-full bg-muted flex flex-col gap-2">
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Share2 className="size-3.5" />
-            <span className="text-sm">Share this with others</span>
+            <span className="text-sm">{t("shareWithOthers")}</span>
           </div>
           <div className="grid grid-cols-4 gap-1">
             <Button variant={"outline"} className="shadow-none" asChild>
-              <Link href={shareXUrl} target="_blank">
+              <Link href={shareXUrl} target="_blank" aria-label={t("shareOnX")}>
                 <XIcon className="text-black dark:text-white" />
               </Link>
             </Button>
             <Button variant={"outline"} className="shadow-none" asChild>
-              <Link href={shareBlueskyUrl} target="_blank">
+              <Link
+                href={shareBlueskyUrl}
+                target="_blank"
+                aria-label={t("shareOnBluesky")}
+              >
                 <BlueskyIcon className="text-blue-600" />
               </Link>
             </Button>
             <Button variant={"outline"} className="shadow-none" asChild>
-              <Link href={shareTelegramUrl} target="_blank">
+              <Link
+                href={shareTelegramUrl}
+                target="_blank"
+                aria-label={t("shareOnTelegram")}
+              >
                 <TelegramIcon className="text-blue-500" />
               </Link>
             </Button>
@@ -131,6 +147,7 @@ export function SuccessModal({
               variant={"outline"}
               className="shadow-none"
               onClick={() => copy(shareText)}
+              aria-label={t("copyShareText")}
             >
               {isCopied ? <CheckIcon /> : <CopyIcon />}
             </Button>
@@ -142,7 +159,7 @@ export function SuccessModal({
         <div className="rounded-2xl w-full flex flex-col gap-2">
           <div className="flex items-center px-3 gap-1.5 text-muted-foreground">
             <CompassIcon className="size-3.5" />
-            <span className="text-sm">What next?</span>
+            <span className="text-sm">{t("whatNext")}</span>
           </div>
           <div className="min-w-full w-0 overflow-x-auto">
             <div className="flex items-center gap-1">
@@ -154,7 +171,7 @@ export function SuccessModal({
               >
                 <Link href={links.leaderboard}>
                   <TrophyIcon className="opacity-40" />
-                  <span>See Leaderboard</span>
+                  <span>{t("seeLeaderboard")}</span>
                 </Link>
               </Button>
               <Button
@@ -165,7 +182,7 @@ export function SuccessModal({
               >
                 <Link href={links.explore}>
                   <CompassIcon className="opacity-40" />
-                  <span>Explore more Bumicerts</span>
+                  <span>{t("exploreMore")}</span>
                 </Link>
               </Button>
             </div>
@@ -175,7 +192,7 @@ export function SuccessModal({
 
       <ModalFooter>
         <Button className="w-full" onClick={handleDone}>
-          Done
+          {t("done")}
         </Button>
       </ModalFooter>
     </ModalContent>

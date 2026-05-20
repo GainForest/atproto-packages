@@ -20,6 +20,7 @@ import {
   chunkDatasetRefLookupGroups,
   chunkReferenceLookupInputs,
 } from "./referenceBatches";
+import { useTranslations } from "next-intl";
 
 export type AttachmentReferenceRequest = {
   key: string;
@@ -51,6 +52,8 @@ function getAtUrisFromContent(content: unknown): string[] {
   return uris;
 }
 
+type ReferenceLabels = Parameters<typeof buildResolvedReference>[0]["labels"];
+
 function getReferencesByUri(args: {
   parsedUris: ParsedUriLookup[];
   audioByUri: Map<string, AudioRecordingItem>;
@@ -58,6 +61,7 @@ function getReferencesByUri(args: {
   datasetByUri: Map<string, DatasetItem>;
   occurrencesByDatasetUri: Map<string, OccurrenceItem[]>;
   locationByUri: Map<string, CertifiedLocation>;
+  labels: ReferenceLabels;
 }): Map<string, ResolvedAttachmentReference> {
   const referencesByUri = new Map<string, ResolvedAttachmentReference>();
 
@@ -72,6 +76,7 @@ function getReferencesByUri(args: {
         dataset: args.datasetByUri.get(uri),
         datasetOccurrences: args.occurrencesByDatasetUri.get(uri),
         location: args.locationByUri.get(uri),
+        labels: args.labels,
       }),
     );
   }
@@ -85,6 +90,7 @@ export function useResolvedAttachmentReferenceMap(
   referencesByKey: Map<string, ResolvedAttachmentReference[]>;
   isLoading: boolean;
 } {
+  const t = useTranslations("bumicert.detail.reference");
   const lookupInput = useMemo(() => {
     const urisByKey = new Map<string, string[]>();
     const uniqueUris = new Set<string>();
@@ -272,6 +278,25 @@ export function useResolvedAttachmentReferenceMap(
     return map;
   }, [locationQueries, locationRefs]);
 
+  const referenceLabels = useMemo<ReferenceLabels>(
+    () => ({
+      linkedRecord: t("linkedRecord"),
+      linkedAudioRecord: t("linkedAudioRecord"),
+      audioEvidence: t("audioEvidence"),
+      playRecording: t("playRecording"),
+      linkedDataset: t("linkedDataset"),
+      viewGreenGlobe: t("viewGreenGlobe"),
+      linkedTreeRecord: t("linkedTreeRecord"),
+      linkedSiteRecord: t("linkedSiteRecord"),
+      siteEvidence: t("siteEvidence"),
+      openSiteMap: t("openSiteMap"),
+      recordCount: (count: number) => t("recordCount", { count }),
+      speciesCount: (count: number) => t("speciesCount", { count }),
+      individualCount: (count: number) => t("individualCount", { count }),
+    }),
+    [t],
+  );
+
   const referencesByKey = useMemo(() => {
     const referencesByUri = getReferencesByUri({
       parsedUris,
@@ -280,6 +305,7 @@ export function useResolvedAttachmentReferenceMap(
       datasetByUri,
       occurrencesByDatasetUri,
       locationByUri,
+      labels: referenceLabels,
     });
     const map = new Map<string, ResolvedAttachmentReference[]>();
 
@@ -302,6 +328,7 @@ export function useResolvedAttachmentReferenceMap(
     occurrenceByUri,
     occurrencesByDatasetUri,
     parsedUris,
+    referenceLabels,
   ]);
 
   const isLoading =

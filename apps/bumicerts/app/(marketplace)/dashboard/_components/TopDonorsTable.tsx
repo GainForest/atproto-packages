@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronsUpDownIcon, ChevronUpIcon, ChevronDownIcon, UsersIcon } from "lucide-react";
 import type { TopDonorRow } from "../_utils/aggregations";
 import { UserChip } from "@/components/ui/user-chip";
+import { useLocale, useTranslations } from "next-intl";
 
 interface TopDonorsTableProps {
   rows: TopDonorRow[];
@@ -12,11 +13,11 @@ interface TopDonorsTableProps {
 type SortKey = "rank" | "totalAmount" | "donationCount" | "lastDonatedAt";
 type SortDir = "asc" | "desc";
 
-function formatWalletAddress(address: string): string {
+function formatWalletAddress(address: string, anonymousLabel: (address: string) => string): string {
   const truncated = address.length > 12
     ? `${address.slice(0, 6)}…${address.slice(-4)}`
     : address;
-  return `Anonymous (${truncated})`;
+  return anonymousLabel(truncated);
 }
 
 interface SortIconProps {
@@ -55,6 +56,9 @@ function SortableCol({ col, sortKey, sortDir, onSort, children }: ColProps) {
 }
 
 export function TopDonorsTable({ rows }: TopDonorsTableProps) {
+  const t = useTranslations("marketplace.dashboard.tables");
+  const locale = useLocale();
+  const anonymousLabel = (address: string) => t("anonymousWallet", { address });
   const [sortKey, setSortKey] = useState<SortKey>("rank");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -83,12 +87,12 @@ export function TopDonorsTable({ rows }: TopDonorsTableProps) {
       <div className="px-5 pt-5 pb-3 flex items-center gap-2">
         <UsersIcon className="h-4 w-4 text-primary" />
         <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground font-medium">
-          Top Donors
+          {t("topDonors")}
         </span>
       </div>
 
       {rows.length === 0 ? (
-        <p className="px-5 pb-5 text-sm text-muted-foreground">No donations yet.</p>
+        <p className="px-5 pb-5 text-sm text-muted-foreground">{t("noDonations")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -98,16 +102,16 @@ export function TopDonorsTable({ rows }: TopDonorsTableProps) {
                   #
                 </SortableCol>
                 <th className="py-2 px-3 text-left text-xs uppercase tracking-[0.12em] text-muted-foreground font-medium">
-                  Donor
+                  {t("donor")}
                 </th>
                 <SortableCol col="totalAmount" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>
-                  Total Donated
+                  {t("totalDonated")}
                 </SortableCol>
                 <SortableCol col="donationCount" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>
-                  Donations
+                  {t("donations")}
                 </SortableCol>
                 <SortableCol col="lastDonatedAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>
-                  Last Donation
+                  {t("lastDonation")}
                 </SortableCol>
               </tr>
             </thead>
@@ -123,7 +127,7 @@ export function TopDonorsTable({ rows }: TopDonorsTableProps) {
                   <td className="py-2.5 px-3">
                     {row.donorType === "wallet" ? (
                       <span className="text-xs text-foreground" title={row.donorId}>
-                        {formatWalletAddress(row.donorId)}
+                        {formatWalletAddress(row.donorId, anonymousLabel)}
                       </span>
                     ) : (
                       <UserChip 
@@ -136,7 +140,7 @@ export function TopDonorsTable({ rows }: TopDonorsTableProps) {
                     )}
                   </td>
                   <td className="py-2.5 px-3 text-foreground tabular-nums">
-                    {new Intl.NumberFormat("en-US", {
+                    {new Intl.NumberFormat(locale, {
                       style: "currency",
                       currency: "USD",
                     }).format(row.totalAmount)}
@@ -146,7 +150,7 @@ export function TopDonorsTable({ rows }: TopDonorsTableProps) {
                   </td>
                   <td className="py-2.5 px-3 text-muted-foreground text-xs">
                     {row.lastDonatedAt
-                      ? new Date(row.lastDonatedAt).toLocaleDateString("en-US", {
+                      ? new Date(row.lastDonatedAt).toLocaleDateString(locale, {
                           year: "numeric",
                           month: "short",
                           day: "numeric",

@@ -8,6 +8,7 @@ import {
 } from "../_components/AccountSidebar";
 import * as activitiesModule from "@/graphql/indexer/queries/activities";
 import {
+  DEFAULT_DONATIONS_METADATA,
   buildAccountDonationsMetadata,
   getAccountRouteData,
   readAccountRouteParams,
@@ -24,7 +25,7 @@ export async function generateMetadata({
     const { did } = await readAccountRouteParams(params);
     return buildAccountDonationsMetadata(await getAccountRouteData(did));
   } catch {
-    return { title: "Donation History — Bumicerts" };
+    return DEFAULT_DONATIONS_METADATA;
   }
 }
 

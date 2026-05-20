@@ -261,10 +261,34 @@ export function getPhotoUrl(photo: MultimediaItem): string | null {
   return photo.record.accessUri;
 }
 
-export function formatTreeSubtitle(item: TreeManagerItem): string {
+export type TreeManagerUtilityTranslator = (
+  key:
+    | "locationNotSet"
+    | "dateNotSet"
+    | "scientificNameRequired"
+    | "eventDateRequired"
+    | "latitudeRequired"
+    | "longitudeRequired"
+    | "latitudeInvalid"
+    | "longitudeInvalid"
+    | "fieldValidNumber"
+    | "fieldGreaterThanOrEqual"
+    | "fieldPositive"
+    | "fieldLessThanOrEqual"
+    | "dbhLabel"
+    | "heightLabel"
+    | "diameterLabel"
+    | "canopyCoverLabel",
+  values?: Record<string, string | number>,
+) => string;
+
+export function formatTreeSubtitle(
+  item: TreeManagerItem,
+  t?: TreeManagerUtilityTranslator,
+): string {
   const record = item.occurrence.record;
   if (!record) {
-    return "Location not set";
+    return t ? t("locationNotSet") : "Location not set";
   }
 
   const locality = record.locality;
@@ -282,12 +306,16 @@ export function formatTreeSubtitle(item: TreeManagerItem): string {
     return country;
   }
 
-  return "Location not set";
+  return t ? t("locationNotSet") : "Location not set";
 }
 
-export function formatEventDate(value: string | null | undefined): string {
+export function formatEventDate(
+  value: string | null | undefined,
+  t?: TreeManagerUtilityTranslator,
+  formatDate?: (date: Date) => string,
+): string {
   if (!value) {
-    return "Date not set";
+    return t ? t("dateNotSet") : "Date not set";
   }
 
   const parsed = new Date(value);
@@ -295,7 +323,7 @@ export function formatEventDate(value: string | null | undefined): string {
     return value;
   }
 
-  return parsed.toLocaleDateString();
+  return formatDate ? formatDate(parsed) : parsed.toLocaleDateString();
 }
 
 export function hasAnyMeasurementValue(draft: TreeMeasurementDraft): boolean {
@@ -335,39 +363,41 @@ export function toFloraMeasurementPayload(
 }
 
 export function validateOccurrenceDraft(
-  draft: TreeOccurrenceDraft
+  draft: TreeOccurrenceDraft,
+  t?: TreeManagerUtilityTranslator,
 ): string | null {
   if (!draft.scientificName.trim()) {
-    return "Scientific name is required.";
+    return t ? t("scientificNameRequired") : "Scientific name is required.";
   }
 
   if (!draft.eventDate.trim()) {
-    return "Event date is required.";
+    return t ? t("eventDateRequired") : "Event date is required.";
   }
 
   if (!draft.decimalLatitude.trim()) {
-    return "Latitude is required.";
+    return t ? t("latitudeRequired") : "Latitude is required.";
   }
 
   if (!draft.decimalLongitude.trim()) {
-    return "Longitude is required.";
+    return t ? t("longitudeRequired") : "Longitude is required.";
   }
 
   const latitude = Number(draft.decimalLatitude);
   if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
-    return "Latitude must be a number between -90 and 90.";
+    return t ? t("latitudeInvalid") : "Latitude must be a number between -90 and 90.";
   }
 
   const longitude = Number(draft.decimalLongitude);
   if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
-    return "Longitude must be a number between -180 and 180.";
+    return t ? t("longitudeInvalid") : "Longitude must be a number between -180 and 180.";
   }
 
   return null;
 }
 
 export function validateMeasurementDraft(
-  draft: TreeMeasurementDraft
+  draft: TreeMeasurementDraft,
+  t?: TreeManagerUtilityTranslator,
 ): string | null {
   const fields: Array<{
     label: string;
@@ -376,11 +406,11 @@ export function validateMeasurementDraft(
     minimumExclusive?: number;
     maximumInclusive?: number;
   }> = [
-    { label: "DBH", rawValue: draft.dbh, minimumExclusive: 0 },
-    { label: "Height", rawValue: draft.totalHeight, minimumExclusive: 0 },
-    { label: "Diameter", rawValue: draft.diameter, minimumExclusive: 0 },
+    { label: t ? t("dbhLabel") : "DBH", rawValue: draft.dbh, minimumExclusive: 0 },
+    { label: t ? t("heightLabel") : "Height", rawValue: draft.totalHeight, minimumExclusive: 0 },
+    { label: t ? t("diameterLabel") : "Diameter", rawValue: draft.diameter, minimumExclusive: 0 },
     {
-      label: "Canopy cover",
+      label: t ? t("canopyCoverLabel") : "Canopy cover",
       rawValue: draft.canopyCoverPercent,
       minimumInclusive: 0,
       maximumInclusive: CANOPY_COVER_PERCENT_MAX,
@@ -401,28 +431,32 @@ export function validateMeasurementDraft(
 
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue)) {
-      return `${label} must be a valid number.`;
+      return t ? t("fieldValidNumber", { label }) : `${label} must be a valid number.`;
     }
 
     if (
       minimumInclusive !== undefined &&
       numericValue < minimumInclusive
     ) {
-      return `${label} must be a number greater than or equal to ${minimumInclusive}.`;
+      return t
+        ? t("fieldGreaterThanOrEqual", { label, minimum: minimumInclusive })
+        : `${label} must be a number greater than or equal to ${minimumInclusive}.`;
     }
 
     if (
       minimumExclusive !== undefined &&
       numericValue <= minimumExclusive
     ) {
-      return `${label} must be a positive number.`;
+      return t ? t("fieldPositive", { label }) : `${label} must be a positive number.`;
     }
 
     if (
       maximumInclusive !== undefined &&
       numericValue > maximumInclusive
     ) {
-      return `${label} must be a number less than or equal to ${maximumInclusive}.`;
+      return t
+        ? t("fieldLessThanOrEqual", { label, maximum: maximumInclusive })
+        : `${label} must be a number less than or equal to ${maximumInclusive}.`;
     }
   }
 

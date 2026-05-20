@@ -4,8 +4,10 @@ import {
   getManagedEvidenceTabConfig,
   type ManagedEvidenceTabId,
 } from "./evidenceRegistry";
+import { useTranslations } from "next-intl";
 
 const ManageOption = ({ type }: { type: ManagedEvidenceTabId }) => {
+  const t = useTranslations("bumicert.detail.evidenceAdder");
   const { manageHref } = getManagedEvidenceTabConfig(type);
 
   if (!manageHref) {
@@ -20,7 +22,7 @@ const ManageOption = ({ type }: { type: ManagedEvidenceTabId }) => {
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
       >
-        Manage
+        {t("manage")}
         <ArrowUpRight className="size-3" />
       </Link>
     </div>

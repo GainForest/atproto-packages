@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { links } from "@/lib/links";
 import { countries } from "@/lib/countries";
@@ -60,12 +61,17 @@ export const EMPTY_FILTERS: Filters = {
   objectives: [],
 };
 
-const SORT_OPTIONS = [
-  { value: "newest", label: "Newest" },
-  { value: "oldest", label: "Oldest" },
-];
+const SORT_OPTIONS = ["newest", "oldest"] as const;
 
-function buildFilterCategories(bumicerts: BumicertData[]) {
+function buildFilterCategories(
+  bumicerts: BumicertData[],
+  labels: {
+    organization: string;
+    bioregion: string;
+    country: string;
+    impactArea: string;
+  },
+) {
   const organizations = Array.from(
     new Map(
       bumicerts.map((b) => [b.organizationDid, b.organizationName]),
@@ -99,25 +105,25 @@ function buildFilterCategories(bumicerts: BumicertData[]) {
   return [
     {
       key: "organizations" as const,
-      label: "Organization",
+      label: labels.organization,
       icon: BuildingIcon,
       options: organizations,
     },
     {
       key: "bioregions" as const,
-      label: "Bioregion",
+      label: labels.bioregion,
       icon: MapPinIcon,
       options: bioregionOptions,
     },
     {
       key: "countries" as const,
-      label: "Country",
+      label: labels.country,
       icon: MapPinIcon,
       options: countryOptions,
     },
     {
       key: "objectives" as const,
-      label: "Impact Area",
+      label: labels.impactArea,
       icon: TagIcon,
       options: objectives,
     },
@@ -142,6 +148,7 @@ function AllFiltersModalContent({
   filterCategories: FilterCategory[];
 }) {
   const [pendingFilters, setPendingFilters] = useState<Filters>(initialFilters);
+  const t = useTranslations("marketplace.explore");
 
   const togglePendingFilter = (category: keyof Filters, value: string) => {
     setPendingFilters((prev) => {
@@ -179,10 +186,8 @@ function AllFiltersModalContent({
   return (
     <ModalContent>
       <ModalHeader>
-        <ModalTitle>All Filters</ModalTitle>
-        <ModalDescription>
-          Filter projects by organization, country, or impact area
-        </ModalDescription>
+        <ModalTitle>{t("filters.allTitle")}</ModalTitle>
+        <ModalDescription>{t("filters.description")}</ModalDescription>
       </ModalHeader>
 
       <div className="max-h-[50vh] overflow-y-auto -mx-2 px-2">
@@ -242,7 +247,7 @@ function AllFiltersModalContent({
                       onClick={() => clearPendingCategory(category.key)}
                       className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      Clear {category.label.toLowerCase()}
+                      {t("actions.clearCategory", { category: category.label.toLowerCase() })}
                     </button>
                   )}
                 </AccordionContent>
@@ -258,13 +263,15 @@ function AllFiltersModalContent({
             onClick={clearAllPending}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            Clear all
+            {t("actions.clearAll")}
           </button>
           <button
             onClick={handleApply}
             className="h-10 px-5 bg-primary text-primary-foreground text-sm font-medium rounded-full hover:bg-primary/90 transition-colors"
           >
-            Apply filters{pendingCount > 0 ? ` (${pendingCount})` : ""}
+            {pendingCount > 0
+              ? t("actions.applyFiltersWithCount", { count: pendingCount })
+              : t("actions.applyFilters")}
           </button>
         </div>
       </ModalFooter>
@@ -302,11 +309,18 @@ export function ExploreHeaderSlots({
   shouldAnimate: boolean;
 }) {
   const { isUnauthenticated } = useHeaderContext();
+  const t = useTranslations("marketplace.explore");
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const modal = useModal();
   const filterCategories = useMemo(
-    () => buildFilterCategories(bumicerts),
-    [bumicerts],
+    () =>
+      buildFilterCategories(bumicerts, {
+        organization: t("filters.organization"),
+        bioregion: t("filters.bioregion"),
+        country: t("filters.country"),
+        impactArea: t("filters.impactArea"),
+      }),
+    [bumicerts, t],
   );
 
   // Stable reference so HeaderContent's useEffect dependency doesn't fire every render
@@ -324,11 +338,11 @@ export function ExploreHeaderSlots({
           )}
         >
           <PlusIcon className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Create Bumicert</span>
+          <span className="hidden sm:inline">{t("actions.createBumicert")}</span>
         </motion.span>
       </Link>
     ),
-    [isUnauthenticated],
+    [isUnauthenticated, t],
   );
 
   const openFiltersModal = async () => {
@@ -373,8 +387,8 @@ export function ExploreHeaderSlots({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              aria-label="Search projects"
-              placeholder="Search projects by name, keyword, or location..."
+              aria-label={t("search.ariaLabel")}
+              placeholder={t("search.placeholder")}
             />
           </InputGroup>
 
@@ -384,14 +398,14 @@ export function ExploreHeaderSlots({
                 setOpenDropdown((prev) => (prev === "sort" ? null : "sort"))
               }
               type="button"
-              aria-label="Sort projects"
+              aria-label={t("search.sortAriaLabel")}
               aria-expanded={openDropdown === "sort"}
               variant="outline"
               size="lg"
             >
               <ArrowUpDownIcon />
               <span className="hidden sm:inline">
-                {SORT_OPTIONS.find((o) => o.value === sort)?.label}
+                {t(`sort.${sort}`)}
               </span>
               <ChevronDownIcon
                 className={cn(
@@ -411,20 +425,20 @@ export function ExploreHeaderSlots({
                 >
                   {SORT_OPTIONS.map((option) => (
                     <button
-                      key={option.value}
+                      key={option}
                       type="button"
                       onClick={() => {
-                        setSort(option.value);
+                        setSort(option);
                         setOpenDropdown(null);
                       }}
                       className={cn(
                         "w-full px-3 py-2 text-left text-sm transition-colors",
-                        sort === option.value
+                        sort === option
                           ? "text-primary bg-primary/5"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
                       )}
                     >
-                      {option.label}
+                      {t(`sort.${option}`)}
                     </button>
                   ))}
                 </motion.div>
@@ -447,7 +461,7 @@ export function ExploreHeaderSlots({
                     : "border-border bg-card/85 text-muted-foreground hover:border-primary/35 hover:text-foreground",
                 )}
               >
-                All Projects
+                {t("actions.allProjects")}
               </button>
               {(() => {
                 const allChips = filterCategories.flatMap((category) =>
@@ -493,7 +507,7 @@ export function ExploreHeaderSlots({
             )}
           >
             <SlidersHorizontalIcon className="h-3.5 w-3.5" />
-            <span>All filters</span>
+            <span>{t("actions.allFilters")}</span>
             {activeFilterCount > 0 && (
               <span className="h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">
                 {activeFilterCount}

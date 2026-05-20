@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import type {
   AuthenticatedAccountState,
   OrganizationAccountState,
@@ -13,17 +14,18 @@ import {
   buildOrganizationDataFromUserAccount,
 } from "@/lib/account/server";
 import { links } from "@/lib/links";
+import {
+  getLocalizedAbsoluteUrl,
+  getLocalizedAbsoluteUrls,
+  noIndexMetadata,
+  sharedOpenGraphImage,
+} from "@/lib/seo-metadata";
 import { getIndexerCaller } from "@/lib/trpc/indexer/server";
 import type { OrganizationData } from "@/lib/types";
-import { requirePublicUrl } from "@/lib/url";
 
-const DEFAULT_ACCOUNT_METADATA: Metadata = { title: "Account — Bumicerts" };
-const DEFAULT_BUMICERTS_METADATA: Metadata = {
-  title: "Bumicerts — Bumicerts",
-};
-const DEFAULT_DONATIONS_METADATA: Metadata = {
-  title: "Donation History — Bumicerts",
-};
+export const DEFAULT_ACCOUNT_METADATA: Metadata = noIndexMetadata("Account");
+export const DEFAULT_BUMICERTS_METADATA: Metadata = noIndexMetadata("Bumicerts");
+export const DEFAULT_DONATIONS_METADATA: Metadata = noIndexMetadata("Donation History");
 
 export type AccountRouteParams = {
   did: string;
@@ -70,7 +72,7 @@ export const getAccountRouteData = cache(async (
   did: string,
 ): Promise<AccountRouteData> => {
   const account = await readAccountByDid(did);
-  const pageUrl = buildPublicAccountUrl(did);
+  const pageUrl = await buildPublicAccountUrl(did);
 
   if (account.kind === "unknown") {
     return {
@@ -102,9 +104,11 @@ export const getAccountRouteData = cache(async (
   };
 });
 
-export function buildAccountPageMetadata(
+export async function buildAccountPageMetadata(
   routeData: AccountRouteData,
-): Metadata {
+): Promise<Metadata> {
+  const t = await getTranslations("marketplace.account.metadata");
+
   if (routeData.kind === "unknown") {
     return DEFAULT_ACCOUNT_METADATA;
   }
@@ -112,23 +116,28 @@ export function buildAccountPageMetadata(
   if (routeData.kind === "user") {
     const displayName = routeData.organization.displayName;
     const description =
-      routeData.account.profile.description ?? `${displayName} on Bumicerts`;
+      routeData.account.profile.description ?? t("profileDescription", { displayName });
 
     return {
-      title: `${displayName} — Bumicerts`,
+      title: displayName,
       description,
-      alternates: { canonical: routeData.pageUrl },
+      alternates: {
+        canonical: routeData.pageUrl,
+        languages: getLocalizedAbsoluteUrls(links.account.byDid(routeData.did)),
+      },
       openGraph: {
         title: displayName,
         description,
         url: routeData.pageUrl,
         siteName: "Bumicerts",
         type: "profile",
+        images: [{ ...sharedOpenGraphImage, alt: displayName }],
       },
       twitter: {
-        card: "summary",
+        card: "summary_large_image",
         title: displayName,
         description,
+        images: [{ ...sharedOpenGraphImage, alt: displayName }],
       },
     };
   }
@@ -136,67 +145,74 @@ export function buildAccountPageMetadata(
   const displayName =
     routeData.organization.displayName.trim().length > 0
       ? routeData.organization.displayName
-      : (routeData.account.profile.displayName ?? "Account");
+      : (routeData.account.profile.displayName ?? t("accountFallback"));
   const description =
     routeData.organization.shortDescription.trim().length > 0
       ? routeData.organization.shortDescription
-      : `${displayName} on Bumicerts.`;
+      : t("organizationDescription", { displayName });
   const coverImageUrl = routeData.organization.coverImageUrl;
 
+  const image = coverImageUrl
+    ? {
+        url: coverImageUrl,
+        width: 1200,
+        height: 630,
+        alt: displayName,
+      }
+    : { ...sharedOpenGraphImage, alt: displayName };
+
   return {
-    title: `${displayName} — Bumicerts`,
+    title: displayName,
     description,
-    alternates: { canonical: routeData.pageUrl },
+    alternates: {
+      canonical: routeData.pageUrl,
+      languages: getLocalizedAbsoluteUrls(links.account.byDid(routeData.did)),
+    },
     openGraph: {
       title: displayName,
       description,
       url: routeData.pageUrl,
       siteName: "Bumicerts",
       type: "profile",
-      ...(coverImageUrl
-        ? {
-            images: [
-              {
-                url: coverImageUrl,
-                width: 1200,
-                height: 630,
-                alt: displayName,
-              },
-            ],
-          }
-        : {}),
+      images: [image],
     },
     twitter: {
-      card: coverImageUrl ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title: displayName,
       description,
+      images: [image],
     },
   };
 }
 
-export function buildAccountBumicertsMetadata(
+export async function buildAccountBumicertsMetadata(
   routeData: AccountRouteData,
-): Metadata {
+): Promise<Metadata> {
+  const t = await getTranslations("marketplace.account.metadata");
+
   if (routeData.kind === "unknown") {
     return DEFAULT_BUMICERTS_METADATA;
   }
 
   const displayName = routeData.organization.displayName.trim().length
     ? routeData.organization.displayName
-    : (routeData.account.profile.displayName ?? "Account");
+    : (routeData.account.profile.displayName ?? t("accountFallback"));
 
   return {
-    title: `${displayName} Bumicerts — Bumicerts`,
-    description: `Browse all Bumicerts created by ${displayName}.`,
+    title: t("bumicertsPageTitle", { displayName }),
+    description: t("bumicertsPageDescription", { displayName }),
     alternates: {
-      canonical: buildPublicUrl(links.account.bumicerts(routeData.did)),
+      canonical: await buildPublicUrl(links.account.bumicerts(routeData.did)),
+      languages: getLocalizedAbsoluteUrls(links.account.bumicerts(routeData.did)),
     },
   };
 }
 
-export function buildAccountDonationsMetadata(
+export async function buildAccountDonationsMetadata(
   routeData: AccountRouteData,
-): Metadata {
+): Promise<Metadata> {
+  const t = await getTranslations("marketplace.account.metadata");
+
   if (routeData.kind !== "user") {
     return DEFAULT_DONATIONS_METADATA;
   }
@@ -204,10 +220,11 @@ export function buildAccountDonationsMetadata(
   const displayName = routeData.organization.displayName;
 
   return {
-    title: `${displayName} Donation History — Bumicerts`,
-    description: `Browse the public donation history for ${displayName}.`,
+    title: t("donationsPageTitle", { displayName }),
+    description: t("donationsPageDescription", { displayName }),
     alternates: {
-      canonical: buildPublicUrl(links.account.donations(routeData.did)),
+      canonical: await buildPublicUrl(links.account.donations(routeData.did)),
+      languages: getLocalizedAbsoluteUrls(links.account.donations(routeData.did)),
     },
   };
 }
@@ -251,10 +268,10 @@ export function buildAccountStructuredData(
   };
 }
 
-function buildPublicAccountUrl(did: string): string {
+async function buildPublicAccountUrl(did: string): Promise<string> {
   return buildPublicUrl(links.account.byDid(did));
 }
 
-function buildPublicUrl(pathname: string): string {
-  return `${requirePublicUrl()}${pathname}`;
+async function buildPublicUrl(pathname: string): Promise<string> {
+  return getLocalizedAbsoluteUrl(pathname);
 }

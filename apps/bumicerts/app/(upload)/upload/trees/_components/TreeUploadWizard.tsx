@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import FileDropStep from "./FileDropStep";
 import ColumnMappingStep from "./ColumnMappingStep";
 import PreviewStep from "./PreviewStep";
@@ -116,13 +117,15 @@ function initWizard(did: string): InitializedWizard {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const STEPS = [
-  { number: 1, label: "Upload File" },
-  { number: 2, label: "Map Columns" },
-  { number: 3, label: "Preview" },
-  { number: 4, label: "Upload" },
+  { number: 1, labelKey: "uploadFile" },
+  { number: 2, labelKey: "mapColumns" },
+  { number: 3, labelKey: "preview" },
+  { number: 4, labelKey: "upload" },
 ] as const;
 
 function StepIndicator({ currentStep }: { currentStep: 1 | 2 | 3 | 4 }) {
+  const t = useTranslations("upload.trees.steps");
+
   return (
     <div className="flex items-center gap-0 mb-8">
       {STEPS.map((step, idx) => {
@@ -170,7 +173,7 @@ function StepIndicator({ currentStep }: { currentStep: 1 | 2 | 3 | 4 }) {
                     : "text-muted-foreground/60"
                 }`}
               >
-                {step.label}
+                {t(step.labelKey)}
               </span>
             </div>
 
@@ -200,6 +203,7 @@ type TreeUploadWizardProps = {
 export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
   // Lazy initializer: checks sessionStorage on first render for pending upload
   // data (e.g. after an OAuth redirect) and restores to step 4 if found.
+  const t = useTranslations("upload.trees");
   const [initialWizard] = useState(() => initWizard(did));
   const [state, setState] = useState<WizardState>(initialWizard.state);
   const [uploadId, setUploadId] = useState(initialWizard.uploadId);
@@ -342,9 +346,9 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Upload Tree Data</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Upload tree biodiversity records from a CSV or TSV file.
+          {t("description")}
         </p>
       </div>
 
@@ -399,7 +403,7 @@ export function TreeUploadWizard({ did }: TreeUploadWizardProps) {
           establishmentMeans={establishmentMeans}
           datasetSelection={datasetSelection}
           siteSelection={siteSelection}
-          backLabel={parsedData !== null ? "Back to Preview" : "Start Over"}
+          backLabel={parsedData !== null ? t("backToPreview") : t("startOver")}
           onBack={handleBackToStep3}
           onComplete={handleComplete}
         />

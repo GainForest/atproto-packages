@@ -5,8 +5,10 @@ import { useFormStore } from "../../../form-store";
 import { UploadLogoModal, UploadLogoModalId } from "./UploadLogoModal";
 import { BumicertCardVisual } from "@/components/bumicert/BumicertCard";
 import { useCurrentAccountIdentity } from "@/hooks/use-current-account-identity";
+import { useTranslations } from "next-intl";
 
 const BumicertPreviewCard = () => {
+  const t = useTranslations("bumicert.create.draft.review.preview");
   const step1FormValues = useFormStore((state) => state.formValues[0]);
   const step2FormValues = useFormStore((state) => state.formValues[1]);
   const {
@@ -25,7 +27,7 @@ const BumicertPreviewCard = () => {
     <div className="rounded-xl border border-primary/10 shadow-lg overflow-hidden bg-primary/10 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-center text-center text-primary px-2 py-1">
-        <span className="font-medium">Preview your bumicert</span>
+        <span className="font-medium">{t("title")}</span>
       </div>
 
       <div className="bg-background p-3 rounded-xl flex-1 flex flex-col gap-3">
@@ -48,7 +50,7 @@ const BumicertPreviewCard = () => {
               <UploadIcon className="size-4" />
             </button>
             <span className="text-sm text-pretty mr-3">
-              Your account doesn&apos;t have a logo. Do you want to add one?
+              {t("missingLogo")}
             </span>
           </div>
         )}
@@ -74,13 +76,13 @@ const BumicertPreviewCard = () => {
           <div className="flex-1 flex flex-col items-center justify-center py-8">
             <Loader2Icon className="animate-spin" />
             <span className="text-sm text-muted-foreground text-center text-pretty mt-2">
-              Generating the preview...
+              {t("generating")}
             </span>
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center py-8">
             <span className="text-sm text-muted-foreground text-center text-pretty">
-              Complete the first step to preview your bumicert.
+              {t("completeFirstStep")}
             </span>
           </div>
         )}

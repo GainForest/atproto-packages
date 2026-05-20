@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { links } from "@/lib/links";
 import { AccountOnboardingRequired } from "./_components/AccountOnboardingRequired";
 import ErrorPage from "@/components/error-page";
+import { getTranslations } from "next-intl/server";
 import { getIndexerCaller } from "@/lib/trpc/indexer/server";
+import { noIndexMetadata } from "@/lib/seo-metadata";
+
+export const metadata: Metadata = noIndexMetadata();
 
 export default async function AccountPage() {
   const session = await auth.session.getSession();
@@ -18,10 +23,11 @@ export default async function AccountPage() {
     account = await indexer.account.byDid({ did: session.did });
   } catch (error) {
     console.error("[AccountPage] Failed to read account", session.did, error);
+    const t = await getTranslations("marketplace.account.errors");
     return (
       <ErrorPage
-        title="Couldn't load your account"
-        description="We had trouble fetching your account data. Please try again."
+        title={t("loadOwnTitle")}
+        description={t("loadOwnDescription")}
         error={error}
       />
     );

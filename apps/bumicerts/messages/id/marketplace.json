@@ -1,0 +1,337 @@
+{
+  "explore": {
+    "metadata": {
+      "title": "Jelajahi Bumicerts — Proyek Dampak Regeneratif Terverifikasi",
+      "description": "Jelajahi sertifikat dampak lingkungan terverifikasi dari penjaga alam di seluruh dunia. Saring menurut negara, organisasi, dan area dampak."
+    },
+    "structuredData": {
+      "name": "Jelajahi Bumicerts",
+      "description": "Sertifikat dampak lingkungan terverifikasi dari penjaga alam di seluruh dunia."
+    },
+    "hero": {
+      "eyebrow": "Jelajahi proyek",
+      "titlePrefix": "Temukan",
+      "titleEmphasis": "Dampak regeneratif",
+      "description": "Jelajahi proyek dari komunitas dan organisasi yang memulihkan ekosistem, memperkuat penghidupan, dan membangun masa depan yang lebih tangguh."
+    },
+    "actions": {
+      "createBumicert": "Buat Bumicert",
+      "allProjects": "Semua proyek",
+      "allFilters": "Semua filter",
+      "clearAll": "Hapus semua",
+      "applyFilters": "Terapkan filter",
+      "applyFiltersWithCount": "Terapkan filter ({count})",
+      "clearCategory": "Hapus {category}"
+    },
+    "filters": {
+      "allTitle": "Semua filter",
+      "description": "Saring proyek menurut organisasi, negara, atau area dampak",
+      "organization": "Organisasi",
+      "bioregion": "Wilayah hayati",
+      "country": "Negara",
+      "impactArea": "Area dampak"
+    },
+    "sort": {
+      "newest": "Terbaru",
+      "oldest": "Terlama"
+    },
+    "search": {
+      "ariaLabel": "Cari proyek",
+      "placeholder": "Cari proyek berdasarkan nama, kata kunci, atau lokasi...",
+      "sortAriaLabel": "Urutkan proyek"
+    },
+    "empty": {
+      "eyebrow": "Tidak ada hasil",
+      "title": "Tidak ada proyek ditemukan",
+      "description": "Coba sesuaikan pencarian atau filter untuk menemukan lebih banyak proyek dampak regeneratif."
+    },
+    "resultsFound": "{count, plural, one {# proyek ditemukan} other {# proyek ditemukan}}"
+  },
+  "organizations": {
+    "metadata": {
+      "title": "Organisasi — Bumicerts",
+      "description": "Jelajahi semua organisasi penjaga alam yang menciptakan dampak lingkungan terverifikasi di Bumicerts."
+    },
+    "hero": {
+      "imageAltLight": "Hutan pegunungan berkabut saat matahari terbit",
+      "imageAltDark": "Hutan pegunungan berkabut saat senja",
+      "eyebrow": "Organisasi",
+      "titleAriaLabel": "Penjaga alam",
+      "titleFirst": "Alam",
+      "titleSecond": "Penjaga",
+      "description": "Temukan organisasi yang memimpin penjagaan lingkungan dan perubahan berbasis komunitas."
+    },
+    "search": {
+      "placeholder": "Cari organisasi..."
+    },
+    "sort": {
+      "bumicerts": "Bumicerts terbanyak",
+      "alpha": "Alfabetis",
+      "newest": "Terbaru"
+    },
+    "empty": {
+      "title": "Tidak ada organisasi ditemukan",
+      "description": "Coba sesuaikan pencarian atau filter."
+    },
+    "error": {
+      "title": "Terjadi kesalahan",
+      "description": "Kami tidak dapat memuat organisasi. Coba segarkan halaman."
+    }
+  },
+  "leaderboard": {
+    "metadata": {
+      "title": "Papan peringkat — Bumicerts",
+      "description": "Lihat donatur teratas yang memberi dampak di Bumicerts. Champion Dampak kami diperingkat menurut total kontribusi dana mereka."
+    },
+    "hero": {
+      "eyebrow": "Papan peringkat",
+      "titlePrefix": "Dampak",
+      "titleEmphasis": "Champion",
+      "description": "Mengapresiasi para kontributor dermawan yang mendorong perubahan regeneratif bagi komunitas dan planet."
+    },
+    "periods": {
+      "all": "Sepanjang waktu",
+      "month": "Bulan ini",
+      "week": "Minggu ini"
+    },
+    "donorFilters": {
+      "all": "Semua donatur",
+      "anonymous": "Hanya anonim",
+      "known": "Hanya dikenal"
+    },
+    "sort": {
+      "label": "Urutkan berdasarkan",
+      "totalRaised": "Total terkumpul",
+      "donationCount": "Jumlah donasi",
+      "recentDonation": "Donasi terbaru"
+    },
+    "stats": {
+      "totalRaised": "Total terkumpul",
+      "totalRaisedDetail": "Sepanjang waktu di platform",
+      "totalDonors": "Total donatur",
+      "totalDonorsDetail": "Champion dampak yang dermawan",
+      "projectsSupported": "Proyek yang didukung",
+      "projectsSupportedDetail": "Memulihkan ekosistem dan penghidupan"
+    },
+    "empty": {
+      "title": "Belum ada donasi",
+      "description": "Jadilah yang pertama memberi dampak."
+    },
+    "card": {
+      "rankAriaLabel": "Peringkat {rank}",
+      "anonymous": "Anonim ({address})",
+      "donationSummary": "{count, plural, one {# donasi} other {# donasi}}",
+      "lastDonation": "Donasi terakhir {relativeTime}",
+      "topDonor": "Donatur teratas",
+      "natureChampion": "Champion alam",
+      "consistentGiver": "Pemberi konsisten",
+      "risingSupporter": "Pendukung baru",
+      "openWallet": "Buka {wallet} di BaseScan",
+      "openAccount": "Buka akun donatur di tab baru"
+    }
+  },
+  "dashboard": {
+    "metadata": {
+      "title": "Dasbor donasi — Bumicerts",
+      "description": "Analitik donasi seluruh platform: total terkumpul, donatur unik, tren pendanaan, dan transaksi terbaru.",
+      "measurementTechnique": "Tanda terima donasi yang diindeks dari catatan org.hypercerts.funding.receipt."
+    },
+    "hero": {
+      "eyebrow": "Analitik platform",
+      "title": "Dasbor donasi"
+    },
+    "periods": {
+      "all": "Sepanjang waktu",
+      "month": "30 hari terakhir",
+      "week": "7 hari terakhir"
+    },
+    "kpis": {
+      "totalRaised": "Total terkumpul",
+      "totalRaisedSub": "Semua donasi USD",
+      "totalDonations": "Total donasi",
+      "totalDonationsSub": "Tanda terima tercatat",
+      "uniqueDonors": "Donatur unik",
+      "uniqueDonorsSub": "Berdasarkan DID atau dompet",
+      "avgDonation": "Rata-rata donasi",
+      "avgDonationSub": "Per transaksi",
+      "activeBumicerts": "Bumicerts aktif",
+      "activeBumicertsSub": "Telah menerima dana"
+    },
+    "geo": {
+      "title": "Jangkauan geografis",
+      "countriesRepresented": "Negara terwakili",
+      "topCountries": "Negara teratas",
+      "empty": "Tidak ada data geografis.",
+      "organizationCount": "{count, plural, one {# organisasi} other {# organisasi}}"
+    },
+    "chart": {
+      "title": "Volume donasi dari waktu ke waktu",
+      "raisedPer": "USD terkumpul per {granularity}",
+      "empty": "Tidak ada data donasi untuk periode ini.",
+      "donationCount": "{count, plural, one {# donasi} other {# donasi}}",
+      "granularities": {
+        "day": "Harian",
+        "week": "Mingguan",
+        "month": "Bulanan"
+      }
+    },
+    "tables": {
+      "topDonors": "Donatur teratas",
+      "byOrganization": "Berdasarkan organisasi",
+      "recentTransactions": "Transaksi terbaru",
+      "noDonations": "Belum ada donasi.",
+      "noTransactions": "Belum ada transaksi.",
+      "donor": "Donatur",
+      "totalDonated": "Total didonasikan",
+      "donations": "Donasi",
+      "lastDonation": "Donasi terakhir",
+      "organization": "Organisasi",
+      "totalRaised": "Total terkumpul",
+      "bumicerts": "Bumicerts",
+      "donors": "Donatur",
+      "date": "Tanggal",
+      "amount": "Jumlah",
+      "bumicert": "Bumicert",
+      "txHash": "Hash tx",
+      "anonymous": "Anonim",
+      "anonymousWallet": "Anonim ({address})",
+      "allTimeDonations": "Sepanjang waktu · {count, plural, one {# donasi} other {# donasi}}",
+      "showingLatest": "menampilkan 50 terbaru",
+      "viewBumicert": "Lihat bumicert"
+    }
+  },
+  "account": {
+    "metadata": {
+      "accountTitle": "Akun — Bumicerts",
+      "bumicertsTitle": "Bumicerts — Bumicerts",
+      "donationsTitle": "Riwayat donasi — Bumicerts",
+      "accountFallback": "Akun",
+      "profileDescription": "{displayName} di Bumicerts",
+      "organizationDescription": "{displayName} di Bumicerts.",
+      "bumicertsPageTitle": "Bumicerts {displayName} — Bumicerts",
+      "bumicertsPageDescription": "Jelajahi semua Bumicerts yang dibuat oleh {displayName}.",
+      "donationsPageTitle": "Riwayat donasi {displayName} — Bumicerts",
+      "donationsPageDescription": "Jelajahi riwayat donasi publik untuk {displayName}."
+    },
+    "errors": {
+      "loadOwnTitle": "Tidak dapat memuat akun Anda",
+      "loadOwnDescription": "Kami kesulitan mengambil data akun Anda. Coba lagi.",
+      "loadAccountTitle": "Tidak dapat memuat akun ini",
+      "loadAccountDescription": "Kami kesulitan mengambil data akun ini. Coba lagi.",
+      "loadBumicertsTitle": "Tidak dapat memuat Bumicerts akun ini",
+      "loadBumicertsDescription": "Kami kesulitan mengambil Bumicerts akun ini. Coba lagi."
+    },
+    "onboarding": {
+      "title": "Onboarding diperlukan",
+      "description": "Anda sudah masuk, tetapi akun Bumicerts Anda belum disiapkan. Selesaikan onboarding untuk melanjutkan.",
+      "action": "Mulai onboarding"
+    },
+    "tabs": {
+      "home": "Beranda",
+      "bumicerts": "Bumicerts",
+      "donationHistory": "Riwayat donasi"
+    },
+    "setupPrompt": {
+      "title": "Siapkan organisasi Anda",
+      "description": "Sebelum mengunggah konten, Anda perlu menyiapkan profil organisasi. Ini hanya memerlukan beberapa menit.",
+      "action": "Siapkan organisasi"
+    },
+    "wallet": {
+      "setUpDonations": "Siapkan donasi",
+      "signInDescription": "Masuk untuk menautkan dompet Anda dan menerima donasi.",
+      "enabled": "Donasi diaktifkan ✓",
+      "walletLabel": "Dompet:",
+      "enabledDescription": "Donatur kini dapat mengirim USDC ke organisasi Anda melalui Bumicerts.",
+      "setupDescription": "Tautkan dompet untuk menerima donasi USDC dari pendukung.",
+      "stepConnect": "Langkah 1: Hubungkan dompet Anda",
+      "connectWallet": "Hubungkan dompet",
+      "stepSwitch": "Langkah 2: Beralih ke jaringan Base",
+      "switching": "Beralih...",
+      "switchToBase": "Beralih ke Base",
+      "linkedSuccess": "✓ Dompet berhasil ditautkan!",
+      "linkedSuccessDescription": "Indexer mungkin memerlukan waktu untuk memproses attestasi Anda.",
+      "refresh": "Segarkan",
+      "stepLink": "Langkah 3: Tautkan dompet Anda",
+      "waitingSignature": "Menunggu tanda tangan…",
+      "writingAttestation": "Menulis attestasi…",
+      "errorLinking": "Kesalahan menautkan dompet",
+      "signInWallet": "Tanda tangan di dompet…",
+      "writingToAtproto": "Menulis ke ATProto…",
+      "retry": "Coba lagi",
+      "signAndLink": "Tandatangani & tautkan dompet"
+    },
+    "bumicerts": {
+      "emptyEyebrow": "Tidak ada Bumicerts",
+      "emptyDescription": "Akun ini belum menerbitkan Bumicerts.",
+      "unknownCreator": "Tidak diketahui"
+    },
+    "sidebar": {
+      "achievements": "Pencapaian",
+      "viewAllAchievements": "Lihat semua pencapaian",
+      "donationUnavailable": "Catatan donasi tidak tersedia saat ini",
+      "noPublicDonationsRecorded": "Belum ada donasi publik tercatat",
+      "supportedOrganizations": "Mendukung {count} {count, plural, one {organisasi} other {organisasi}}",
+      "noPublicDonationsReceived": "Belum ada donasi publik diterima",
+      "receivedDonations": "Menerima {count} {count, plural, one {donasi} other {donasi}}",
+      "setupPublicProfile": "Siapkan profil Bumicerts publik",
+      "completedProfileDetails": "Menyelesaikan {count} {count, plural, one {detail} other {detail}} profil",
+      "bumicertUnavailable": "Catatan Bumicert tidak tersedia saat ini",
+      "publishedBumicerts": "Menerbitkan {count} {count, plural, one {Bumicert} other {Bumicerts}}",
+      "noBumicertsPublished": "Belum ada Bumicerts diterbitkan",
+      "profileReady": "Profil siap",
+      "bumicertSteward": "Penjaga Bumicert",
+      "creatorSeed": "Benih kreator",
+      "communityBacked": "Didukung komunitas",
+      "impactSupporter": "Pendukung dampak",
+      "inviteCollaborators": "Undang kolaborator",
+      "inviteCollaboratorsDescription": "Ajak pendukung dan kolaborator ke karya Bumicerts Anda dan tumbuhkan dampak regeneratif bersama.",
+      "inviteFriends": "Undang teman",
+      "inviteFriendsDescription": "Undang teman Anda bergabung dengan Bumicerts dan menciptakan dampak positif bersama.",
+      "shareOrganization": "Jelajahi profil Bumicerts {displayName}: {pageUrl}",
+      "shareUser": "Bergabunglah dengan saya di Bumicerts dan dukung dampak regeneratif: {pageUrl}",
+      "totalBumicerts": "Jumlah Bumicerts",
+      "donationsReceived": "Donasi diterima",
+      "totalDonations": "Total donasi"
+    },
+    "hero": {
+      "coverImageAlt": "Gambar sampul {displayName}",
+      "copyLink": "Salin tautan",
+      "copied": "Tersalin!",
+      "share": "Bagikan",
+      "editProfile": "Edit profil",
+      "edit": "Sunting",
+      "since": "Sejak {date}"
+    }
+  },
+  "sidebar": {
+    "sections": {
+      "explore": "JELAJAHI",
+      "manage": "KELOLA"
+    },
+    "items": {
+      "bumicerts": "Bumicerts",
+      "organizations": "Organisasi",
+      "leaderboard": "Papan peringkat",
+      "organization": "Organisasi",
+      "sites": "Situs",
+      "audio": "Audio",
+      "trees": "Pohon",
+      "profile": "Profil"
+    },
+    "createBumicert": "Buat Bumicert",
+    "prompts": {
+      "signInDescription": "Masuk untuk mengelola akun dan konten Anda.",
+      "signInAction": "Masuk",
+      "accountError": "Tidak dapat memuat akun Anda saat ini.",
+      "checkingAccount": "Memeriksa akun Anda...",
+      "onboardingDescription": "Selesaikan onboarding untuk mengelola akun Anda.",
+      "onboardingAction": "Onboarding"
+    },
+    "social": {
+      "documentation": "Dokumentasi",
+      "github": "GitHub",
+      "twitter": "X (Twitter)",
+      "gainforest": "GainForest"
+    }
+  }
+}

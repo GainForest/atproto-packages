@@ -64,11 +64,26 @@ export function buildResolvedReference(args: {
   dataset?: DatasetItem;
   datasetOccurrences?: OccurrenceItem[];
   location?: CertifiedLocation;
+  labels: {
+    linkedRecord: string;
+    linkedAudioRecord: string;
+    audioEvidence: string;
+    playRecording: string;
+    linkedDataset: string;
+    viewGreenGlobe: string;
+    linkedTreeRecord: string;
+    linkedSiteRecord: string;
+    siteEvidence: string;
+    openSiteMap: string;
+    recordCount: (count: number) => string;
+    speciesCount: (count: number) => string;
+    individualCount: (count: number) => string;
+  };
 }): ResolvedAttachmentReference {
-  const { uri, parsed, audio, occurrence, dataset, datasetOccurrences, location } = args;
+  const { uri, parsed, audio, occurrence, dataset, datasetOccurrences, location, labels } = args;
 
   if (!parsed) {
-    return { id: uri, kind: "unknown", title: "Linked record" };
+    return { id: uri, kind: "unknown", title: labels.linkedRecord };
   }
 
   if (parsed.collection === "app.gainforest.ac.audio") {
@@ -76,11 +91,11 @@ export function buildResolvedReference(args: {
     return {
       id: uri,
       kind: "audio",
-      title: audio?.record?.name ?? "Linked audio record",
-      description: date || "Audio evidence",
+      title: audio?.record?.name ?? labels.linkedAudioRecord,
+      description: date || labels.audioEvidence,
       recordedAt: getRecordedAt(audio?.record?.metadata) ?? audio?.record?.createdAt ?? null,
       actionHref: getAudioBlobUri(audio),
-      actionLabel: "Play recording",
+      actionLabel: labels.playRecording,
     };
   }
 
@@ -93,11 +108,11 @@ export function buildResolvedReference(args: {
     return {
       id: uri,
       kind: "dataset",
-      title: dataset?.record?.name ?? "Linked dataset",
+      title: dataset?.record?.name ?? labels.linkedDataset,
       description: [
-        recordCount > 0 ? `${recordCount} record${recordCount === 1 ? "" : "s"}` : null,
+        recordCount > 0 ? labels.recordCount(recordCount) : null,
         stats.speciesCount > 0
-          ? `${stats.speciesCount} species`
+          ? labels.speciesCount(stats.speciesCount)
           : null,
       ]
         .filter((value): value is string => typeof value === "string")
@@ -116,14 +131,14 @@ export function buildResolvedReference(args: {
       actionHref: links.external.greenGlobeTreePreview(parsed.did, {
         datasetRef: uri,
       }),
-      actionLabel: "View in Green Globe",
+      actionLabel: labels.viewGreenGlobe,
     };
   }
 
   if (parsed.collection === "app.gainforest.dwc.occurrence") {
     const count = occurrence?.record?.individualCount;
     const countText =
-      count == null ? null : `${count} individual${count === 1 ? "" : "s"}`;
+      count == null ? null : labels.individualCount(count);
     const when = formatDate(
       occurrence?.record?.eventDate ?? occurrence?.record?.createdAt,
     );
@@ -133,7 +148,7 @@ export function buildResolvedReference(args: {
       title:
         occurrence?.record?.scientificName ??
         occurrence?.record?.vernacularName ??
-        "Linked tree record",
+        labels.linkedTreeRecord,
       description: [countText, when].filter(Boolean).join(" · ") || undefined,
       recordedAt: occurrence?.record?.eventDate ?? occurrence?.record?.createdAt ?? null,
       datasetRef: occurrence?.record?.datasetRef ?? null,
@@ -146,17 +161,17 @@ export function buildResolvedReference(args: {
     return {
       id: uri,
       kind: "location",
-      title: location?.record?.name ?? "Linked site record",
-      description: location?.record?.locationType ?? "Site evidence",
+      title: location?.record?.name ?? labels.linkedSiteRecord,
+      description: location?.record?.locationType ?? labels.siteEvidence,
       actionHref: canViewMap
         ? links.external.polygonsAppUrl({
             mode: "view",
             params: { certifiedLocationRecordUri: locationUri },
           })
         : undefined,
-      actionLabel: "Open site map",
+      actionLabel: labels.openSiteMap,
     };
   }
 
-  return { id: uri, kind: "unknown", title: "Linked record" };
+  return { id: uri, kind: "unknown", title: labels.linkedRecord };
 }
