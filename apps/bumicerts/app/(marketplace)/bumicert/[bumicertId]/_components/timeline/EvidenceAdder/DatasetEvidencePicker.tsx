@@ -92,7 +92,7 @@ const DatasetEvidencePicker = ({
   });
   const computedMutationData: AttachmentData[] = groupedSelections.map(
     (group) => ({
-      title: tabConfig.attachment.title,
+      title: t("attachmentTitles.trees"),
       contentType: tabConfig.attachment.contentType,
       description,
       subjectInfo: {
