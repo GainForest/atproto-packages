@@ -74,6 +74,12 @@ export const serverEnv = createEnv({
 
     // Base network RPC
     BASE_RPC_URL: z.string().url().default("https://mainnet.base.org"),
+
+    // Sentry build-time config — only needed during production builds for
+    // source map upload. Safe to omit locally and on preview builds.
+    SENTRY_AUTH_TOKEN: z.string().min(1).optional(),
+    SENTRY_ORG: z.string().min(1).optional(),
+    SENTRY_PROJECT: z.string().min(1).optional(),
   },
 
   client: {},
@@ -108,6 +114,9 @@ export const serverEnv = createEnv({
     FACILITATOR_PASSWORD: process.env.FACILITATOR_PASSWORD,
     FACILITATOR_PRIVATE_KEY: process.env.FACILITATOR_PRIVATE_KEY,
     BASE_RPC_URL: process.env.BASE_RPC_URL,
+    SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+    SENTRY_ORG: process.env.SENTRY_ORG,
+    SENTRY_PROJECT: process.env.SENTRY_PROJECT,
   },
 
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

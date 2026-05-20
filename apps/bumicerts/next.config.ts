@@ -1,6 +1,7 @@
 import "./lib/env/server"; // Validate server env vars at build time
 import "./lib/env/client"; // Validate client env vars at build time
 
+import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 import { clientEnv } from "./lib/env/client";
@@ -73,4 +74,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+export default withSentryConfig(withNextIntl(nextConfig), {
+  // Sentry org + project. Required for source-map upload during production
+  // builds. Reading from env keeps the values out of source control and lets
+  // staging/prod target different Sentry projects.
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Only log Sentry plugin output in CI; keeps local builds quiet.
+  silent: !process.env.CI,
+
+  // Upload a wider set of source maps so server + edge stack traces are
+  // human-readable, not just the client bundle.
+  widenClientFileUpload: true,
+});

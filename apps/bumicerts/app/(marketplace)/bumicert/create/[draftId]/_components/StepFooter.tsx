@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon, ChevronRightIcon, LightbulbIcon, XIcon, SaveIcon } from "lucide-react";
-import React, { useEffect, useEffectEvent, useState } from "react";
+import React, { useState } from "react";
 import useNewBumicertStore from "../store";
 import { STEPS, STEPS as steps } from "../_data/steps";
 import { useFormStore } from "../form-store";
@@ -21,17 +21,6 @@ const StepFooter = () => {
   const showTipButton = viewport === "mobile";
   const [showTips, setShowTips] = useState(false);
   const { pushModal, show } = useModal();
-
-  const hideTipsOnViewportChangeToMobile = useEffectEvent(
-    (v: typeof viewport) => {
-      if (v === "mobile") {
-        setShowTips(false);
-      }
-    }
-  );
-  useEffect(() => {
-    hideTipsOnViewportChangeToMobile(viewport);
-  }, [viewport]);
 
   const completionPercentages = useFormStore(
     (state) => state.formCompletionPercentages

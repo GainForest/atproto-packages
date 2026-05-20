@@ -62,7 +62,7 @@ export function WalletLinkSection({ orgDid }: WalletLinkSectionProps) {
       <div className="border border-border rounded-xl p-6 flex flex-col gap-3">
         <h3 className="font-semibold">{t("enabled")}</h3>
         <p className="text-sm text-muted-foreground">
-          {t("walletLabel")} 
+          {t("walletLabel")}
           <span className="font-mono">
             {recipientStatus.address.slice(0, 6)}...
             {recipientStatus.address.slice(-4)}
